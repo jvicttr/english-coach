@@ -238,7 +238,7 @@ export default function Home() {
       style={{
         background: "var(--black)",
         fontFamily: "'Inter', sans-serif",
-        minHeight: "100dvh",
+        height: "100dvh",
       }}
     >
       {/* ── Header ─────────────────────────────────────────── */}
@@ -289,13 +289,11 @@ export default function Home() {
 
       {/* ── Chat area ──────────────────────────────────────── */}
       <div
-        className="w-full max-w-2xl flex-1 p-3 sm:p-4 mb-3 overflow-y-auto"
+        className="w-full max-w-2xl flex-1 min-h-0 p-3 sm:p-4 mb-3 overflow-y-auto"
         style={{
           background: "var(--dark1)",
           border: "1px solid #1f1f1f",
           borderRadius: "var(--radius)",
-          minHeight: "180px",
-          maxHeight: "calc(100dvh - 260px)",
           boxShadow: "var(--shadow)",
         }}
       >
