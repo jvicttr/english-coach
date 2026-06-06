@@ -234,15 +234,19 @@ export default function Home() {
 
   return (
     <div
-      className="min-h-screen flex flex-col items-center p-4 pb-6"
-      style={{ background: "var(--black)", fontFamily: "'Inter', sans-serif" }}
+      className="flex flex-col items-center px-3 pt-3 pb-4 sm:px-4 sm:pt-4 sm:pb-6"
+      style={{
+        background: "var(--black)",
+        fontFamily: "'Inter', sans-serif",
+        minHeight: "100dvh",
+      }}
     >
       {/* ── Header ─────────────────────────────────────────── */}
-      <header className="w-full max-w-2xl mt-2 mb-6">
-        {/* Logo row */}
-        <div className="flex items-center justify-between mb-5">
+      <header className="w-full max-w-2xl mb-4">
+        {/* Logo + level: stacked on mobile, side-by-side on sm+ */}
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          {/* Logo */}
           <div className="flex items-center gap-3">
-            {/* Logo mark */}
             <div
               className="w-9 h-9 rounded-xl flex items-center justify-center font-black text-base shrink-0"
               style={{ background: "var(--yellow)", color: "var(--black)" }}
@@ -258,12 +262,12 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Level indicator — auto-detected after first exchange */}
-          <div className="flex flex-col items-end gap-1">
+          {/* Level indicator */}
+          <div className="flex flex-col gap-1 sm:items-end">
             <span className="text-[10px]" style={{ color: "var(--gray2)" }}>
               {level ? "nível detectado" : "aguardando conversa..."}
             </span>
-            <div className="flex gap-1.5">
+            <div className="flex gap-1.5 flex-wrap">
               {(["beginner", "intermediate", "advanced"] as NonNullable<Level>[]).map((l) => (
                 <button
                   key={l}
@@ -281,18 +285,17 @@ export default function Home() {
             </div>
           </div>
         </div>
-
       </header>
 
       {/* ── Chat area ──────────────────────────────────────── */}
       <div
-        className="w-full max-w-2xl flex-1 p-4 mb-4 overflow-y-auto"
+        className="w-full max-w-2xl flex-1 p-3 sm:p-4 mb-3 overflow-y-auto"
         style={{
           background: "var(--dark1)",
           border: "1px solid #1f1f1f",
           borderRadius: "var(--radius)",
-          maxHeight: "50vh",
-          minHeight: "200px",
+          minHeight: "180px",
+          maxHeight: "calc(100dvh - 260px)",
           boxShadow: "var(--shadow)",
         }}
       >
@@ -307,7 +310,7 @@ export default function Home() {
             <div>
               <p className="font-semibold text-white">Pronto para praticar!</p>
               <p className="text-sm mt-1 max-w-xs" style={{ color: "var(--gray)" }}>
-                Use o microfone para falar em inglês ou escreva uma mensagem. Escolha a fase acima.
+                Use o microfone para falar em inglês ou escreva uma mensagem. Escolha o nível acima.
               </p>
             </div>
           </div>
@@ -324,7 +327,7 @@ export default function Home() {
               </div>
             )}
             <div
-              className="max-w-[78%] px-4 py-2.5 text-sm leading-relaxed"
+              className="max-w-[82%] sm:max-w-[78%] px-3 sm:px-4 py-2.5 text-sm leading-relaxed"
               style={
                 msg.role === "user"
                   ? {
@@ -374,16 +377,15 @@ export default function Home() {
         <div ref={bottomRef} />
       </div>
 
-
       {/* ── Mic error ──────────────────────────────────────── */}
       {micError && (
         <div
-          className="w-full max-w-2xl mb-3 px-4 py-2.5 flex gap-2 items-start text-sm"
+          className="w-full max-w-2xl mb-3 px-3 sm:px-4 py-2.5 flex gap-2 items-start text-sm"
           style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)", borderRadius: "var(--radius)" }}
         >
           <span>🎙️</span>
           <span style={{ color: "#fca5a5" }}>{micError}</span>
-          <button onClick={() => setMicError("")} className="ml-auto text-xs" style={{ color: "var(--gray2)" }}>✕</button>
+          <button onClick={() => setMicError("")} className="ml-auto text-xs shrink-0" style={{ color: "var(--gray2)" }}>✕</button>
         </div>
       )}
 
@@ -397,7 +399,7 @@ export default function Home() {
           }}
           placeholder="Type in English or use the mic..."
           rows={1}
-          className="flex-1 text-sm resize-none outline-none transition"
+          className="flex-1 resize-none outline-none transition"
           style={{
             background: "var(--dark1)",
             color: "var(--white)",
@@ -405,6 +407,7 @@ export default function Home() {
             borderRadius: "var(--radius)",
             padding: "12px 16px",
             fontFamily: "'Inter', sans-serif",
+            fontSize: "16px", // prevents iOS zoom on focus
           }}
           onFocus={(e) => (e.currentTarget.style.borderColor = "var(--yellow)")}
           onBlur={(e) => (e.currentTarget.style.borderColor = "#2a2a2a")}
@@ -455,7 +458,7 @@ export default function Home() {
       </div>
 
       {/* ── Status ─────────────────────────────────────────── */}
-      <div className="mt-3 h-4 text-xs text-center">
+      <div className="mt-2 h-4 text-xs text-center">
         {isListening && <span style={{ color: "#ef4444" }}>● Gravando... clique no mic para parar e enviar</span>}
         {isTranscribing && <span style={{ color: "var(--yellow)" }}>● Reconhecendo sua fala...</span>}
         {isSpeaking && !isListening && !isTranscribing && <span style={{ color: "var(--yellow)" }}>● Coach falando...</span>}
