@@ -42,6 +42,16 @@ export default function Home() {
   }
 
   const currentAudioRef = useRef<HTMLAudioElement | null>(null);
+  const audioUnlockedRef = useRef(false);
+
+  // iOS Safari requires a silent audio play inside a user-gesture handler
+  // to unlock audio for subsequent programmatic plays.
+  function unlockAudio() {
+    if (audioUnlockedRef.current) return;
+    audioUnlockedRef.current = true;
+    const silent = new Audio("data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=");
+    silent.play().catch(() => {});
+  }
 
   async function speak(text: string) {
     if (currentAudioRef.current) {
@@ -62,51 +72,16 @@ export default function Home() {
         body: JSON.stringify({ text: clean, speed }),
       });
 
-      if (!res.ok || !res.body) { setIsSpeaking(false); return; }
+      if (!res.ok) { setIsSpeaking(false); return; }
 
-      // Use MediaSource so audio starts playing as soon as first bytes arrive
-      if (typeof MediaSource !== "undefined" && MediaSource.isTypeSupported("audio/mpeg")) {
-        const mediaSource = new MediaSource();
-        const url = URL.createObjectURL(mediaSource);
-        const audio = new Audio(url);
-        currentAudioRef.current = audio;
-
-        audio.onended = () => { setIsSpeaking(false); URL.revokeObjectURL(url); currentAudioRef.current = null; };
-        audio.onerror = () => { setIsSpeaking(false); currentAudioRef.current = null; };
-
-        mediaSource.addEventListener("sourceopen", async () => {
-          const sb = mediaSource.addSourceBuffer("audio/mpeg");
-          const reader = res.body!.getReader();
-          let started = false;
-
-          const pump = async (): Promise<void> => {
-            const { done, value } = await reader.read();
-            if (done) {
-              if (!sb.updating) mediaSource.endOfStream();
-              else sb.addEventListener("updateend", () => mediaSource.endOfStream(), { once: true });
-              return;
-            }
-            sb.appendBuffer(value);
-            await new Promise<void>((resolve) =>
-              sb.addEventListener("updateend", () => resolve(), { once: true })
-            );
-            // Start playing as soon as we have the first chunk
-            if (!started) { started = true; audio.play().catch(() => {}); }
-            return pump();
-          };
-
-          pump().catch(() => { setIsSpeaking(false); });
-        });
-      } else {
-        // Fallback for browsers without MediaSource support
-        const blob = await res.blob();
-        const url = URL.createObjectURL(blob);
-        const audio = new Audio(url);
-        currentAudioRef.current = audio;
-        audio.onended = () => { setIsSpeaking(false); URL.revokeObjectURL(url); currentAudioRef.current = null; };
-        audio.onerror = () => { setIsSpeaking(false); currentAudioRef.current = null; };
-        audio.play().catch(() => setIsSpeaking(false));
-      }
+      // Blob approach: works reliably on iOS Safari and all mobile browsers
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const audio = new Audio(url);
+      currentAudioRef.current = audio;
+      audio.onended = () => { setIsSpeaking(false); URL.revokeObjectURL(url); currentAudioRef.current = null; };
+      audio.onerror = () => { setIsSpeaking(false); currentAudioRef.current = null; };
+      audio.play().catch(() => setIsSpeaking(false));
     } catch {
       setIsSpeaking(false);
     }
@@ -114,6 +89,7 @@ export default function Home() {
 
   async function sendMessage(text: string) {
     if (!text.trim()) return;
+    unlockAudio();
     const userMessage: Message = { role: "user", content: text };
     const updatedMessages = [...messages, userMessage];
     setMessages(updatedMessages);
@@ -136,6 +112,7 @@ export default function Home() {
 
   async function startListening() {
     setMicError("");
+    unlockAudio();
     if (currentAudioRef.current) {
       currentAudioRef.current.pause();
       currentAudioRef.current = null;
@@ -242,48 +219,36 @@ export default function Home() {
       }}
     >
       {/* ── Header ─────────────────────────────────────────── */}
-      <header className="w-full max-w-2xl mb-4">
-        {/* Logo + level: stacked on mobile, side-by-side on sm+ */}
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          {/* Logo */}
-          <div className="flex items-center gap-3">
-            <div
-              className="w-9 h-9 rounded-xl flex items-center justify-center font-black text-base shrink-0"
-              style={{ background: "var(--yellow)", color: "var(--black)" }}
-            >
-              JV
-            </div>
-            <div>
-              <span className="font-bold text-white text-base leading-none">Fale Inglês</span>
-              <span className="font-bold text-base leading-none ml-1" style={{ color: "var(--yellow)" }}>JV</span>
-              <p className="text-xs mt-0.5" style={{ color: "var(--gray)" }}>
-                Fale inglês de verdade, do jeito que você precisa
-              </p>
-            </div>
+      <header className="w-full max-w-2xl mb-3 flex items-center justify-between gap-2">
+        {/* Logo */}
+        <div className="flex items-center gap-2 shrink-0">
+          <div
+            className="w-8 h-8 rounded-xl flex items-center justify-center font-black text-sm shrink-0"
+            style={{ background: "var(--yellow)", color: "var(--black)" }}
+          >
+            JV
           </div>
+          <span className="font-bold text-white text-sm leading-none">
+            Fale Inglês <span style={{ color: "var(--yellow)" }}>JV</span>
+          </span>
+        </div>
 
-          {/* Level indicator */}
-          <div className="flex flex-col gap-1 sm:items-end">
-            <span className="text-[10px]" style={{ color: "var(--gray2)" }}>
-              {level ? "nível detectado" : "aguardando conversa..."}
-            </span>
-            <div className="flex gap-1.5 flex-wrap">
-              {(["beginner", "intermediate", "advanced"] as NonNullable<Level>[]).map((l) => (
-                <button
-                  key={l}
-                  onClick={() => setLevel(l)}
-                  className="px-3 py-1.5 rounded-full text-xs font-semibold transition-all"
-                  style={
-                    level === l
-                      ? { background: "var(--yellow)", color: "var(--black)" }
-                      : { background: "var(--dark2)", color: "var(--gray)", border: "1px solid #2a2a2a" }
-                  }
-                >
-                  {LEVEL_LABEL[l]}
-                </button>
-              ))}
-            </div>
-          </div>
+        {/* Level pills */}
+        <div className="flex gap-1.5">
+          {(["beginner", "intermediate", "advanced"] as NonNullable<Level>[]).map((l) => (
+            <button
+              key={l}
+              onClick={() => setLevel(l)}
+              className="px-2.5 py-1 rounded-full text-xs font-semibold transition-all"
+              style={
+                level === l
+                  ? { background: "var(--yellow)", color: "var(--black)" }
+                  : { background: "var(--dark2)", color: "var(--gray)", border: "1px solid #2a2a2a" }
+              }
+            >
+              {LEVEL_LABEL[l]}
+            </button>
+          ))}
         </div>
       </header>
 
@@ -456,15 +421,10 @@ export default function Home() {
       </div>
 
       {/* ── Status ─────────────────────────────────────────── */}
-      <div className="mt-2 h-4 text-xs text-center">
-        {isListening && <span style={{ color: "#ef4444" }}>● Gravando... clique no mic para parar e enviar</span>}
-        {isTranscribing && <span style={{ color: "var(--yellow)" }}>● Reconhecendo sua fala...</span>}
+      <div className="mt-1.5 h-3.5 text-[11px] text-center">
+        {isListening && <span style={{ color: "#ef4444" }}>● Gravando — toque no mic para enviar</span>}
+        {isTranscribing && <span style={{ color: "var(--yellow)" }}>● Reconhecendo...</span>}
         {isSpeaking && !isListening && !isTranscribing && <span style={{ color: "var(--yellow)" }}>● Coach falando...</span>}
-        {!isListening && !isTranscribing && !isSpeaking && (
-          <span style={{ color: "var(--gray2)" }}>
-            Mic ou Enter para enviar
-          </span>
-        )}
       </div>
     </div>
   );
