@@ -1,7 +1,16 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@supabase/supabase-js";
+import { auth } from "@clerk/nextjs/server";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+
+const supabase = createClient(
+  process.env.SUPABASE_URL!,
+  process.env.SUPABASE_SECRET_KEY!
+);
+
+const FREE_LIMIT = 10;
 
 const SYSTEM_PROMPT = `You are a friendly English conversation coach following the "Método Fale Inglês JV" — a natural acquisition method based on real communication, NOT traditional grammar drills or memorization.
 
@@ -64,8 +73,32 @@ After your reply, on a new line, output exactly one of these tokens based on the
 - Examples: "I've been meaning to catch that series — heard it's a slow burn but totally worth it", "If I'd known earlier, I would've handled it differently"`;
 
 export async function POST(req: NextRequest) {
-  const { messages, level } = await req.json();
+  const { userId } = await auth();
+  if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+  // Check and increment usage
+  const today = new Date().toISOString().split("T")[0];
+
+  const { data: row } = await supabase
+    .from("usage")
+    .select("count")
+    .eq("user_id", userId)
+    .eq("date", today)
+    .single();
+
+  const currentCount = row?.count ?? 0;
+
+  if (currentCount >= FREE_LIMIT) {
+    return NextResponse.json({ limitReached: true }, { status: 200 });
+  }
+
+  // Upsert usage count
+  await supabase.from("usage").upsert(
+    { user_id: userId, date: today, count: currentCount + 1 },
+    { onConflict: "user_id,date" }
+  );
+
+  const { messages, level } = await req.json();
   const systemFull = `${SYSTEM_PROMPT}\n\nCurrent detected level: ${level || "intermediate"}`;
 
   const response = await client.messages.create({
@@ -76,7 +109,6 @@ export async function POST(req: NextRequest) {
   });
 
   const raw = response.content[0].type === "text" ? response.content[0].text.trim() : "";
-
   const levelMatch = raw.match(/\[LEVEL:(beginner|intermediate|advanced)\]/);
   const detectedLevel = levelMatch?.[1] ?? null;
   const reply = raw.replace(/\[LEVEL:(beginner|intermediate|advanced)\]/, "").trim();

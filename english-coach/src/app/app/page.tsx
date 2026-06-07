@@ -23,6 +23,7 @@ export default function Home() {
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [micError, setMicError] = useState("");
+  const [limitReached, setLimitReached] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<AnySpeechRecognition>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -103,6 +104,7 @@ export default function Home() {
         body: JSON.stringify({ messages: updatedMessages, level }),
       });
       const data = await res.json();
+      if (data.limitReached) { setLimitReached(true); setMessages((prev) => prev.slice(0, -1)); return; }
       setMessages((prev) => [...prev, { role: "assistant", content: data.reply }]);
       if (data.detectedLevel) setLevel(data.detectedLevel as Level);
       speak(data.reply);
@@ -356,6 +358,27 @@ export default function Home() {
         <div ref={bottomRef} />
       </div>
 
+      {/* ── Limite diário ─────────────────────────────────── */}
+      {limitReached && (
+        <div
+          className="w-full max-w-2xl mb-3 px-4 py-5 flex flex-col items-center gap-3 text-center"
+          style={{ background: "var(--dark2)", border: "1px solid rgba(245,200,0,.3)", borderRadius: "var(--radius)" }}
+        >
+          <div className="text-2xl">🎯</div>
+          <div>
+            <p className="font-bold text-white text-sm">Você usou suas 10 mensagens de hoje</p>
+            <p className="text-xs mt-1" style={{ color: "var(--gray)" }}>Assine o Coach IA por R$ 47/mês e pratique sem limites todos os dias.</p>
+          </div>
+          <a
+            href="/planos"
+            className="px-5 py-2 rounded-full text-sm font-bold transition-all"
+            style={{ background: "var(--yellow)", color: "var(--black)" }}
+          >
+            Assinar Coach IA — R$ 47/mês
+          </a>
+        </div>
+      )}
+
       {/* ── Mic error ──────────────────────────────────────── */}
       {micError && (
         <div
@@ -395,7 +418,7 @@ export default function Home() {
         {/* Mic */}
         <button
           onClick={isListening ? stopListening : startListening}
-          disabled={isLoading || isSpeaking || isTranscribing}
+          disabled={isLoading || isSpeaking || isTranscribing || limitReached}
           title={isListening ? "Clique para parar e enviar" : "Clique para falar"}
           className="w-12 h-12 flex items-center justify-center transition-all shrink-0 disabled:opacity-40"
           style={{
@@ -425,7 +448,7 @@ export default function Home() {
         {/* Send */}
         <button
           onClick={() => sendMessage(input)}
-          disabled={isLoading || !input.trim()}
+          disabled={isLoading || !input.trim() || limitReached}
           className="w-12 h-12 flex items-center justify-center transition-all shrink-0 disabled:opacity-40"
           style={{ background: "var(--dark2)", border: "1px solid #2a2a2a", borderRadius: "var(--radius)" }}
         >
