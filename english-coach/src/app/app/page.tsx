@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { UserButton } from "@clerk/nextjs";
 
 type Message = { role: "user" | "assistant"; content: string };
 type Level = "beginner" | "intermediate" | "advanced" | null;
@@ -232,6 +233,9 @@ export default function Home() {
             Fale Inglês <span style={{ color: "var(--yellow)" }}>JV</span>
           </span>
         </div>
+
+        {/* User button */}
+        <UserButton />
 
         {/* Level pills — desktop: all three; mobile: only active */}
         <div className="hidden sm:flex gap-1.5">
