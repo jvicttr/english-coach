@@ -233,8 +233,8 @@ export default function Home() {
           </span>
         </div>
 
-        {/* Level pills */}
-        <div className="flex gap-1.5">
+        {/* Level pills — desktop: all three; mobile: only active */}
+        <div className="hidden sm:flex gap-1.5">
           {(["beginner", "intermediate", "advanced"] as NonNullable<Level>[]).map((l) => (
             <button
               key={l}
@@ -249,6 +249,18 @@ export default function Home() {
               {LEVEL_LABEL[l]}
             </button>
           ))}
+        </div>
+        <div className="sm:hidden">
+          <span
+            className="px-2.5 py-1 rounded-full text-xs font-semibold"
+            style={
+              level
+                ? { background: "var(--yellow)", color: "var(--black)" }
+                : { background: "var(--dark2)", color: "var(--gray)", border: "1px solid #2a2a2a" }
+            }
+          >
+            {level ? LEVEL_LABEL[level] : "Detectando..."}
+          </span>
         </div>
       </header>
 
@@ -353,7 +365,7 @@ export default function Home() {
       )}
 
       {/* ── Input ──────────────────────────────────────────── */}
-      <div className="w-full max-w-2xl flex gap-2 items-end">
+      <div className="-mx-3 sm:mx-auto w-full sm:max-w-2xl flex gap-2 items-end px-3 sm:px-0 pb-1 sm:pb-0" style={{ background: "var(--black)" }}>
         <textarea
           value={input}
           onChange={(e) => setInput(e.target.value)}
