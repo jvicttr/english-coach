@@ -85,6 +85,7 @@ export default function LandingPage() {
             <li><a href="#como-funciona" onClick={() => setMenuOpen(false)}>Como funciona</a></li>
             <li><a href="#depoimentos" onClick={() => setMenuOpen(false)}>Depoimentos</a></li>
             <li><a href="#faq" onClick={() => setMenuOpen(false)}>FAQ</a></li>
+            <li><a href="/app" onClick={() => setMenuOpen(false)}>Coach IA</a></li>
           </ul>
           <a className="nav-cta nav-cta-style" href={WPP} target="_blank" rel="noopener noreferrer">
             <i className="fab fa-whatsapp" /> Fale comigo
@@ -196,6 +197,35 @@ export default function LandingPage() {
               </div>
             </div>
           ))}
+        </div>
+      </section>
+
+      {/* APP SECTION */}
+      <section className="how" id="app">
+        <div className="section-label anim">Novidade</div>
+        <h2 className="anim anim-delay-1">Pratique inglês com <em>IA a qualquer hora</em></h2>
+        <p className="subtitle anim anim-delay-2">Entre as aulas, continue evoluindo com o seu coach virtual. Converse em inglês, receba correções em tempo real e ouça as respostas em áudio — sem sair de casa.</p>
+        <div className="why-grid anim anim-delay-3" style={{ marginTop: "2.5rem" }}>
+          <div className="why-card">
+            <div className="why-icon"><i className="fas fa-microphone" /></div>
+            <h3>Fale e seja entendido</h3>
+            <p>Use o microfone para praticar sua pronúncia. A IA transcreve sua fala e responde como um professor nativo.</p>
+          </div>
+          <div className="why-card">
+            <div className="why-icon"><i className="fas fa-volume-up" /></div>
+            <h3>Ouça o inglês correto</h3>
+            <p>Cada resposta do coach é reproduzida em áudio, ajudando você a absorver a pronúncia e entonação naturais.</p>
+          </div>
+          <div className="why-card">
+            <div className="why-icon"><i className="fas fa-sliders-h" /></div>
+            <h3>No seu nível</h3>
+            <p>O coach detecta automaticamente seu nível — básico, intermediário ou avançado — e adapta as conversas para você.</p>
+          </div>
+        </div>
+        <div style={{ textAlign: "center", marginTop: "2.5rem" }}>
+          <a className="btn-primary anim anim-delay-4" href="/app" style={{ display: "inline-flex" }}>
+            <i className="fas fa-robot" /> Experimentar o coach de IA
+          </a>
         </div>
       </section>
 
