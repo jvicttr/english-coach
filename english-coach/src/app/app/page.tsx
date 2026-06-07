@@ -376,7 +376,7 @@ export default function Home() {
           onKeyDown={(e) => {
             if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(input); }
           }}
-          placeholder="Digitar"
+          placeholder="Digite aqui ou grave áudio..."
           rows={1}
           className="flex-1 resize-none outline-none transition"
           style={{
