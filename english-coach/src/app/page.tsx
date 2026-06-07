@@ -41,22 +41,30 @@ export default function Home() {
       .trim();
   }
 
-  const currentAudioRef = useRef<HTMLAudioElement | null>(null);
-  const audioUnlockedRef = useRef(false);
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const currentSourceRef = useRef<AudioBufferSourceNode | null>(null);
 
-  // iOS Safari requires a silent audio play inside a user-gesture handler
-  // to unlock audio for subsequent programmatic plays.
+  // Must be called inside a user-gesture handler to unlock AudioContext on iOS Safari
+  function getAudioContext(): AudioContext {
+    if (!audioCtxRef.current) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const AC = window.AudioContext ?? (window as any).webkitAudioContext;
+      audioCtxRef.current = new AC();
+    }
+    if (audioCtxRef.current.state === "suspended") {
+      audioCtxRef.current.resume().catch(() => {});
+    }
+    return audioCtxRef.current;
+  }
+
   function unlockAudio() {
-    if (audioUnlockedRef.current) return;
-    audioUnlockedRef.current = true;
-    const silent = new Audio("data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=");
-    silent.play().catch(() => {});
+    getAudioContext();
   }
 
   async function speak(text: string) {
-    if (currentAudioRef.current) {
-      currentAudioRef.current.pause();
-      currentAudioRef.current = null;
+    if (currentSourceRef.current) {
+      try { currentSourceRef.current.stop(); } catch { /* already stopped */ }
+      currentSourceRef.current = null;
     }
 
     const clean = stripEmojis(text);
@@ -74,14 +82,16 @@ export default function Home() {
 
       if (!res.ok) { setIsSpeaking(false); return; }
 
-      // Blob approach: works reliably on iOS Safari and all mobile browsers
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const audio = new Audio(url);
-      currentAudioRef.current = audio;
-      audio.onended = () => { setIsSpeaking(false); URL.revokeObjectURL(url); currentAudioRef.current = null; };
-      audio.onerror = () => { setIsSpeaking(false); currentAudioRef.current = null; };
-      audio.play().catch(() => setIsSpeaking(false));
+      const arrayBuffer = await res.arrayBuffer();
+      const ctx = getAudioContext();
+      const audioBuffer = await ctx.decodeAudioData(arrayBuffer);
+
+      const source = ctx.createBufferSource();
+      source.buffer = audioBuffer;
+      source.connect(ctx.destination);
+      source.onended = () => { setIsSpeaking(false); currentSourceRef.current = null; };
+      currentSourceRef.current = source;
+      source.start(0);
     } catch {
       setIsSpeaking(false);
     }
@@ -113,9 +123,9 @@ export default function Home() {
   async function startListening() {
     setMicError("");
     unlockAudio();
-    if (currentAudioRef.current) {
-      currentAudioRef.current.pause();
-      currentAudioRef.current = null;
+    if (currentSourceRef.current) {
+      try { currentSourceRef.current.stop(); } catch { /* already stopped */ }
+      currentSourceRef.current = null;
       setIsSpeaking(false);
     }
 
