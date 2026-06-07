@@ -76,27 +76,35 @@ export async function POST(req: NextRequest) {
   const { userId } = await auth();
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  // Check and increment usage
-  const today = new Date().toISOString().split("T")[0];
-
-  const { data: row } = await supabase
-    .from("usage")
-    .select("count")
+  // Check subscription plan
+  const { data: sub } = await supabase
+    .from("subscriptions")
+    .select("plan")
     .eq("user_id", userId)
-    .eq("date", today)
     .single();
 
-  const currentCount = row?.count ?? 0;
+  const isPro = sub?.plan === "pro";
 
-  if (currentCount >= FREE_LIMIT) {
-    return NextResponse.json({ limitReached: true }, { status: 200 });
+  if (!isPro) {
+    const today = new Date().toISOString().split("T")[0];
+    const { data: row } = await supabase
+      .from("usage")
+      .select("count")
+      .eq("user_id", userId)
+      .eq("date", today)
+      .single();
+
+    const currentCount = row?.count ?? 0;
+
+    if (currentCount >= FREE_LIMIT) {
+      return NextResponse.json({ limitReached: true }, { status: 200 });
+    }
+
+    await supabase.from("usage").upsert(
+      { user_id: userId, date: today, count: currentCount + 1 },
+      { onConflict: "user_id,date" }
+    );
   }
-
-  // Upsert usage count
-  await supabase.from("usage").upsert(
-    { user_id: userId, date: today, count: currentCount + 1 },
-    { onConflict: "user_id,date" }
-  );
 
   const { messages, level } = await req.json();
   const systemFull = `${SYSTEM_PROMPT}\n\nCurrent detected level: ${level || "intermediate"}`;
