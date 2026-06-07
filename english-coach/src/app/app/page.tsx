@@ -236,6 +236,11 @@ export default function Home() {
           </span>
         </div>
 
+        {/* Planos link */}
+        <a href="/planos" style={{ fontSize: ".78rem", fontWeight: 700, color: "var(--yellow)", border: "1px solid rgba(245,200,0,.35)", borderRadius: "50px", padding: ".3rem .8rem", textDecoration: "none", whiteSpace: "nowrap" }}>
+          Planos
+        </a>
+
         {/* User button */}
         <UserButton />
 
