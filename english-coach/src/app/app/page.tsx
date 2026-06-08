@@ -137,6 +137,89 @@ export default function Home() {
     return segments.filter((s) => s.text.length > 0);
   }
 
+  // Check if MediaSource streaming is supported (not on iOS Safari)
+  function supportsMediaSourceAudio(): boolean {
+    if (typeof MediaSource === "undefined") return false;
+    // iOS Safari reports MediaSource but doesn't support audio/mpeg streaming
+    const ua = navigator.userAgent;
+    const isIOS = /iPad|iPhone|iPod/.test(ua) && !(window as unknown as Record<string, unknown>).MSStream;
+    if (isIOS) return false;
+    return MediaSource.isTypeSupported("audio/mpeg");
+  }
+
+  // Streaming playback: starts playing as first chunks arrive (~300-500ms faster)
+  function playStream(res: Response): Promise<boolean> {
+    return new Promise((resolve) => {
+      const mediaSource = new MediaSource();
+      const url = URL.createObjectURL(mediaSource);
+      const player = audioRef.current ?? new Audio();
+      audioRef.current = player;
+      player.src = url;
+
+      mediaSource.addEventListener("sourceopen", async () => {
+        URL.revokeObjectURL(url);
+        let sourceBuffer: SourceBuffer;
+        try {
+          sourceBuffer = mediaSource.addSourceBuffer("audio/mpeg");
+        } catch {
+          resolve(false);
+          return;
+        }
+
+        const queue: Uint8Array[] = [];
+        let appending = false;
+        let streamDone = false;
+
+        function appendNext() {
+          if (appending || queue.length === 0) return;
+          appending = true;
+          sourceBuffer.appendBuffer(queue.shift()!);
+        }
+
+        sourceBuffer.addEventListener("updateend", () => {
+          appending = false;
+          if (queue.length > 0) {
+            appendNext();
+          } else if (streamDone && mediaSource.readyState === "open") {
+            mediaSource.endOfStream();
+          }
+        });
+
+        // Start playing as soon as enough data is buffered
+        player.oncanplay = () => { player.play().catch(() => {}); };
+        player.onended = () => resolve(true);
+        player.onerror = () => resolve(false);
+
+        try {
+          const reader = res.body!.getReader();
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) { streamDone = true; if (!appending && queue.length === 0 && mediaSource.readyState === "open") mediaSource.endOfStream(); break; }
+            if (value) { queue.push(value); appendNext(); }
+          }
+        } catch {
+          resolve(false);
+        }
+      }, { once: true });
+
+      player.play().catch(() => {});
+    });
+  }
+
+  // Fallback: wait for full blob (iOS Safari)
+  async function playBlob(res: Response): Promise<boolean> {
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    return new Promise((resolve) => {
+      const player = audioRef.current ?? new Audio();
+      audioRef.current = player;
+      player.src = url;
+      player.onended = () => { URL.revokeObjectURL(url); resolve(true); };
+      player.onerror = () => { URL.revokeObjectURL(url); resolve(false); };
+      player.play().catch(() => { URL.revokeObjectURL(url); resolve(false); });
+    });
+  }
+
   async function fetchAudioUrl(text: string, lang: "en" | "pt", speed: number): Promise<string | null> {
     const clean = stripEmojis(text);
     if (!clean) return null;
@@ -148,6 +231,19 @@ export default function Home() {
     if (!res.ok) return null;
     const blob = await res.blob();
     return URL.createObjectURL(blob);
+  }
+
+  async function fetchAndPlay(text: string, lang: "en" | "pt", speed: number): Promise<boolean> {
+    const clean = stripEmojis(text);
+    if (!clean) return true;
+    const res = await fetch("/api/tts", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text: clean, speed, lang }),
+    });
+    if (!res.ok) return false;
+    if (supportsMediaSourceAudio()) return playStream(res);
+    return playBlob(res);
   }
 
   function playUrl(url: string): Promise<boolean> {
@@ -172,21 +268,8 @@ export default function Home() {
     setIsSpeaking(true);
     setPendingSpeak(null);
     try {
-      // Pre-fetch next segment while current one is playing to reduce perceived delay
-      let prefetched: Promise<string | null> | null = segments.length > 0
-        ? fetchAudioUrl(segments[0].text, segments[0].lang, speed)
-        : null;
-
-      for (let i = 0; i < segments.length; i++) {
-        // Start pre-fetching next segment immediately
-        const nextSeg = segments[i + 1];
-        const nextFetch = nextSeg ? fetchAudioUrl(nextSeg.text, nextSeg.lang, speed) : null;
-
-        const url = await prefetched;
-        prefetched = nextFetch;
-
-        if (!url) { setPendingSpeak(text); return; }
-        const ok = await playUrl(url);
+      for (const seg of segments) {
+        const ok = await fetchAndPlay(seg.text, seg.lang, speed);
         if (!ok) { setPendingSpeak(text); return; }
       }
     } finally {
