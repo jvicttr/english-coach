@@ -691,19 +691,12 @@ export default function Home() {
             {msg.role === "assistant" && (
               <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 mb-0.5" style={{ background: "var(--yellow)", color: "var(--black)" }}>
                 {isSpeaking && i === messages.reduce<number>((last, m, idx) => m.role === "assistant" ? idx : last, -1) ? (
-                  <span style={{ display: "flex", alignItems: "flex-end", gap: "2px", height: "16px" }}>
-                    {[0, 0.12, 0.24, 0.36].map((delay, k) => (
-                      <span key={k} style={{
-                        display: "inline-block",
-                        width: "3px",
-                        height: "14px",
-                        borderRadius: "2px",
-                        background: "#000",
-                        transformOrigin: "bottom",
-                        animation: `waveBar 0.5s ease-in-out ${delay}s infinite alternate`,
-                      }} />
-                    ))}
-                  </span>
+                  <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M4 16 Q10 10 4 4" stroke="#000" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round" fill="none"
+                      style={{ transformOrigin: "4px 10px", animation: "chevronPulse 0.55s ease-in-out 0s infinite alternate" }} />
+                    <path d="M11 16 Q17 10 11 4" stroke="#000" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round" fill="none"
+                      style={{ transformOrigin: "11px 10px", animation: "chevronPulse 0.55s ease-in-out 0.2s infinite alternate" }} />
+                  </svg>
                 ) : (
                   <span style={{ fontSize: "0.65rem", fontWeight: 900 }}>JV</span>
                 )}
