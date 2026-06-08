@@ -57,14 +57,14 @@ export default function Home() {
     audio.play().then(() => { audio.pause(); audio.currentTime = 0; }).catch(() => {});
   }
 
-  async function speak(text: string) {
+  async function speak(text: string, slow = false) {
     const audio = audioRef.current;
     if (audio && !audio.paused) audio.pause();
 
     const clean = stripEmojis(text);
     if (!clean) return;
 
-    const speed = level === "beginner" ? 0.85 : level === "advanced" ? 1.05 : 1.0;
+    const speed = slow ? 0.7 : level === "beginner" ? 0.85 : level === "advanced" ? 1.05 : 1.0;
     setIsSpeaking(true);
 
     try {
@@ -335,6 +335,26 @@ export default function Home() {
               {msg.role === "assistant" && msg.translation && (
                 <div style={{ marginTop: "8px", paddingTop: "8px", borderTop: "1px solid rgba(255,255,255,0.08)", color: "var(--gray)", fontSize: "0.78rem", fontStyle: "italic" }}>
                   🇧🇷 {msg.translation}
+                </div>
+              )}
+              {msg.role === "assistant" && (
+                <div style={{ marginTop: "8px", display: "flex", gap: "6px" }}>
+                  <button
+                    onClick={() => speak(msg.content)}
+                    disabled={isSpeaking || isLoading}
+                    title="Ouvir novamente"
+                    style={{ background: "transparent", border: "1px solid #3a3a3a", borderRadius: "50px", padding: "2px 10px", fontSize: "0.72rem", color: "var(--gray)", cursor: "pointer", display: "flex", alignItems: "center", gap: "4px", opacity: isSpeaking || isLoading ? 0.4 : 1 }}
+                  >
+                    🔊 Ouvir
+                  </button>
+                  <button
+                    onClick={() => speak(msg.content, true)}
+                    disabled={isSpeaking || isLoading}
+                    title="Repetir devagar"
+                    style={{ background: "transparent", border: "1px solid #3a3a3a", borderRadius: "50px", padding: "2px 10px", fontSize: "0.72rem", color: "var(--gray)", cursor: "pointer", display: "flex", alignItems: "center", gap: "4px", opacity: isSpeaking || isLoading ? 0.4 : 1 }}
+                  >
+                    🐢 Devagar
+                  </button>
                 </div>
               )}
             </div>
