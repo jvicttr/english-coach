@@ -39,6 +39,7 @@ export default function Home() {
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [micError, setMicError] = useState("");
+  const [pendingSpeak, setPendingSpeak] = useState<string | null>(null);
   const [limitReached, setLimitReached] = useState(false);
 
   // Quiz state
@@ -123,24 +124,24 @@ export default function Home() {
     return segments.filter((s) => s.text.length > 0);
   }
 
-  async function speakSegment(text: string, lang: "en" | "pt", speed: number): Promise<void> {
+  async function speakSegment(text: string, lang: "en" | "pt", speed: number): Promise<boolean> {
     const clean = stripEmojis(text);
-    if (!clean) return;
+    if (!clean) return true;
     const res = await fetch("/api/tts", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ text: clean, speed, lang }),
     });
-    if (!res.ok) return;
+    if (!res.ok) return false;
     const blob = await res.blob();
     const url = URL.createObjectURL(blob);
     return new Promise((resolve) => {
       const player = audioRef.current ?? new Audio();
       audioRef.current = player;
       player.src = url;
-      player.onended = () => { URL.revokeObjectURL(url); resolve(); };
-      player.onerror = () => { resolve(); };
-      player.play().catch(() => resolve());
+      player.onended = () => { URL.revokeObjectURL(url); resolve(true); };
+      player.onerror = () => { URL.revokeObjectURL(url); resolve(false); };
+      player.play().catch(() => { URL.revokeObjectURL(url); resolve(false); });
     });
   }
 
@@ -153,9 +154,15 @@ export default function Home() {
     if (segments.length === 0) return;
 
     setIsSpeaking(true);
+    setPendingSpeak(null);
     try {
       for (const seg of segments) {
-        await speakSegment(seg.text, seg.lang, speed);
+        const ok = await speakSegment(seg.text, seg.lang, speed);
+        if (!ok) {
+          // Autoplay blocked — store full text so user can tap to retry
+          setPendingSpeak(text);
+          return;
+        }
       }
     } finally {
       setIsSpeaking(false);
@@ -616,6 +623,19 @@ export default function Home() {
 
         <div ref={bottomRef} />
       </div>
+
+      {/* ── Áudio bloqueado ────────────────────────────────── */}
+      {pendingSpeak && !isSpeaking && (
+        <div className="w-full max-w-2xl mb-2">
+          <button
+            onClick={() => { const t = pendingSpeak; setPendingSpeak(null); speak(t); }}
+            className="w-full py-2.5 rounded-xl text-sm font-bold"
+            style={{ background: "rgba(245,200,0,0.1)", border: "1px solid rgba(245,200,0,0.35)", color: "var(--yellow)" }}
+          >
+            🔊 Toque para ouvir a resposta
+          </button>
+        </div>
+      )}
 
       {/* ── Encerrar conversa ──────────────────────────────── */}
       {messages.length >= 2 && !limitReached && (
