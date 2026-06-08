@@ -118,49 +118,44 @@ export default function AdminPage() {
         <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
           {filtered.map((u) => (
             <div key={u.id} style={{ borderRadius: "12px", overflow: "hidden", border: `1px solid ${u.plan === "pro" ? "rgba(245,200,0,0.25)" : "#1f1f1f"}` }}>
-            <div
-              style={{ background: "var(--dark1)", padding: "14px 16px", display: "flex", alignItems: "center", gap: "12px" }}
-            >
-              {/* Avatar */}
-              <Image
-                src={u.imageUrl}
-                alt={u.name}
-                width={40}
-                height={40}
-                style={{ borderRadius: "50%", objectFit: "cover", flexShrink: 0 }}
-              />
-
-              {/* Info */}
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <p style={{ color: "var(--white)", fontWeight: 600, fontSize: "0.9rem", margin: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{u.name}</p>
-                <p style={{ color: "var(--gray)", fontSize: "0.78rem", margin: "2px 0 0", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{u.email}</p>
+            <div style={{ background: "var(--dark1)", padding: "14px 16px" }}>
+              {/* Row 1: avatar + info + badge */}
+              <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "10px" }}>
+                <Image
+                  src={u.imageUrl}
+                  alt={u.name}
+                  width={40}
+                  height={40}
+                  style={{ borderRadius: "50%", objectFit: "cover", flexShrink: 0 }}
+                />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{ color: "var(--white)", fontWeight: 600, fontSize: "0.9rem", margin: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{u.name}</p>
+                  <p style={{ color: "var(--gray)", fontSize: "0.78rem", margin: "2px 0 0", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{u.email}</p>
+                </div>
+                <span style={{ padding: "3px 10px", borderRadius: "50px", fontSize: "0.72rem", fontWeight: 700, background: u.plan === "pro" ? "rgba(245,200,0,0.15)" : "var(--dark2)", color: u.plan === "pro" ? "var(--yellow)" : "var(--gray)", border: u.plan === "pro" ? "1px solid rgba(245,200,0,0.3)" : "1px solid #2a2a2a", flexShrink: 0 }}>
+                  {u.plan === "pro" ? "PRO" : "FREE"}
+                </span>
               </div>
-
-              {/* Plan badge */}
-              <span style={{ padding: "3px 10px", borderRadius: "50px", fontSize: "0.72rem", fontWeight: 700, background: u.plan === "pro" ? "rgba(245,200,0,0.15)" : "var(--dark2)", color: u.plan === "pro" ? "var(--yellow)" : "var(--gray)", border: u.plan === "pro" ? "1px solid rgba(245,200,0,0.3)" : "1px solid #2a2a2a", flexShrink: 0 }}>
-                {u.plan === "pro" ? "PRO" : "FREE"}
-              </span>
-
-              {/* Toggle button */}
-              <button
-                onClick={() => togglePlan(u.id, u.plan)}
-                disabled={updating === u.id}
-                style={{ padding: "6px 14px", borderRadius: "8px", fontSize: "0.78rem", fontWeight: 700, cursor: updating === u.id ? "not-allowed" : "pointer", opacity: updating === u.id ? 0.5 : 1, border: "none", background: u.plan === "pro" ? "rgba(248,113,113,0.15)" : "rgba(245,200,0,0.15)", color: u.plan === "pro" ? "#f87171" : "var(--yellow)", flexShrink: 0, whiteSpace: "nowrap" }}
-              >
-                {updating === u.id ? "..." : u.plan === "pro" ? "Remover Pro" : "Dar Pro"}
-              </button>
-
-              {/* Discount link button */}
-              <button
-                onClick={() => {
-                  if (discountOpen === u.id) { setDiscountOpen(null); setGeneratedLink(null); }
-                  else { setDiscountOpen(u.id); setGeneratedLink(null); setCopied(false); }
-                }}
-                style={{ padding: "6px 12px", borderRadius: "8px", fontSize: "0.78rem", fontWeight: 700, cursor: "pointer", border: "1px solid rgba(99,179,237,0.3)", background: "rgba(99,179,237,0.08)", color: "#63b3ed", flexShrink: 0, whiteSpace: "nowrap" }}
-              >
-                💸 Desconto
-              </button>
-            </div>{/* end flex row */}
+              {/* Row 2: action buttons */}
+              <div style={{ display: "flex", gap: "8px" }}>
+                <button
+                  onClick={() => togglePlan(u.id, u.plan)}
+                  disabled={updating === u.id}
+                  style={{ flex: 1, padding: "7px 0", borderRadius: "8px", fontSize: "0.78rem", fontWeight: 700, cursor: updating === u.id ? "not-allowed" : "pointer", opacity: updating === u.id ? 0.5 : 1, border: "none", background: u.plan === "pro" ? "rgba(248,113,113,0.15)" : "rgba(245,200,0,0.15)", color: u.plan === "pro" ? "#f87171" : "var(--yellow)" }}
+                >
+                  {updating === u.id ? "..." : u.plan === "pro" ? "Remover Pro" : "Dar Pro"}
+                </button>
+                <button
+                  onClick={() => {
+                    if (discountOpen === u.id) { setDiscountOpen(null); setGeneratedLink(null); }
+                    else { setDiscountOpen(u.id); setGeneratedLink(null); setCopied(false); }
+                  }}
+                  style={{ flex: 1, padding: "7px 0", borderRadius: "8px", fontSize: "0.78rem", fontWeight: 700, cursor: "pointer", border: "1px solid rgba(99,179,237,0.3)", background: discountOpen === u.id ? "rgba(99,179,237,0.15)" : "rgba(99,179,237,0.08)", color: "#63b3ed" }}
+                >
+                  💸 {discountOpen === u.id ? "Fechar" : "Gerar desconto"}
+                </button>
+              </div>
+            </div>{/* end card body */}
 
             {/* Discount panel */}
             {discountOpen === u.id && (
