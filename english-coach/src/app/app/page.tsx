@@ -691,14 +691,16 @@ export default function Home() {
             {msg.role === "assistant" && (
               <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 mb-0.5" style={{ background: "var(--yellow)", color: "var(--black)" }}>
                 {isSpeaking && i === messages.reduce<number>((last, m, idx) => m.role === "assistant" ? idx : last, -1) ? (
-                  <span style={{ display: "flex", alignItems: "center", gap: "2px", height: "16px" }}>
-                    {[0, 0.15, 0.3, 0.45].map((delay, k) => (
+                  <span style={{ display: "flex", alignItems: "flex-end", gap: "2px", height: "16px" }}>
+                    {[0, 0.12, 0.24, 0.36].map((delay, k) => (
                       <span key={k} style={{
                         display: "inline-block",
-                        width: "2.5px",
+                        width: "3px",
+                        height: "14px",
                         borderRadius: "2px",
                         background: "#000",
-                        animation: `waveBar 0.6s ease-in-out ${delay}s infinite alternate`,
+                        transformOrigin: "bottom",
+                        animation: `waveBar 0.5s ease-in-out ${delay}s infinite alternate`,
                       }} />
                     ))}
                   </span>

@@ -31,8 +31,8 @@ body {
 }
 
 @keyframes waveBar {
-  from { height: 3px; }
-  to   { height: 14px; }
+  from { transform: scaleY(0.2); }
+  to   { transform: scaleY(1); }
 }
 
 /* ═══════════════════════════════════════════
