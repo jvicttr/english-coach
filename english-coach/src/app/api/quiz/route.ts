@@ -69,7 +69,7 @@ export async function POST(req: NextRequest) {
   }
 
   // Save session to Supabase (without answers yet)
-  const { data: saved } = await supabase
+  const { data: saved, error: insertError } = await supabase
     .from("quiz_results")
     .insert({
       user_id: userId,
@@ -82,7 +82,9 @@ export async function POST(req: NextRequest) {
     .select("id")
     .single();
 
-  return NextResponse.json({ quiz, sessionId: saved?.id });
+  if (insertError) console.error("[quiz] insert error:", insertError.message);
+
+  return NextResponse.json({ quiz, sessionId: saved?.id ?? null });
 }
 
 export async function PATCH(req: NextRequest) {
@@ -91,11 +93,13 @@ export async function PATCH(req: NextRequest) {
 
   const { sessionId, score, answers } = await req.json();
 
-  await supabase
+  const { error: updateError } = await supabase
     .from("quiz_results")
     .update({ score, answers, completed_at: new Date().toISOString() })
     .eq("id", sessionId)
     .eq("user_id", userId);
+
+  if (updateError) console.error("[quiz] update error:", updateError.message);
 
   return NextResponse.json({ ok: true });
 }
