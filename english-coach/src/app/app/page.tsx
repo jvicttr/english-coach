@@ -4,7 +4,8 @@ import { useState, useRef, useEffect } from "react";
 import { UserButton } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 
-type Message = { role: "user" | "assistant"; content: string; translation?: string };
+type Correction = { wrong: string; right: string; phonetic: string };
+type Message = { role: "user" | "assistant"; content: string; translation?: string; correction?: Correction };
 type Level = "beginner" | "intermediate" | "advanced" | null;
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnySpeechRecognition = any;
@@ -210,7 +211,7 @@ export default function Home() {
         setMessages((prev) => [...prev, { role: "assistant", content: "Ops, não consegui responder. Tente de novo!" }]);
         return;
       }
-      setMessages((prev) => [...prev, { role: "assistant", content: data.reply, translation: data.translation ?? undefined }]);
+      setMessages((prev) => [...prev, { role: "assistant", content: data.reply, translation: data.translation ?? undefined, correction: data.correction ?? undefined }]);
       if (data.detectedLevel) setLevel(data.detectedLevel as Level);
       speak(data.reply);
     } catch {
@@ -612,6 +613,20 @@ export default function Home() {
               {msg.role === "assistant" && msg.translation && (
                 <div style={{ marginTop: "8px", paddingTop: "8px", borderTop: "1px solid rgba(255,255,255,0.08)", color: "var(--gray)", fontSize: "0.78rem", fontStyle: "italic" }}>
                   🇧🇷 {msg.translation}
+                </div>
+              )}
+              {msg.role === "assistant" && msg.correction && (
+                <div style={{ marginTop: "8px", paddingTop: "8px", borderTop: "1px solid rgba(255,255,255,0.06)", display: "flex", flexDirection: "column", gap: "4px" }}>
+                  <div style={{ fontSize: "0.72rem", color: "var(--gray)", marginBottom: "2px" }}>Correção</div>
+                  <div style={{ fontSize: "0.8rem", background: "rgba(248,113,113,0.08)", border: "1px solid rgba(248,113,113,0.2)", borderRadius: "8px", padding: "5px 10px" }}>
+                    ❌ <span style={{ color: "#f87171" }}>{msg.correction.wrong}</span>
+                  </div>
+                  <div style={{ fontSize: "0.8rem", background: "rgba(74,222,128,0.08)", border: "1px solid rgba(74,222,128,0.2)", borderRadius: "8px", padding: "5px 10px" }}>
+                    ✅ <span style={{ color: "#4ade80" }}>{msg.correction.right}</span>
+                  </div>
+                  <div style={{ fontSize: "0.72rem", color: "var(--gray)", fontStyle: "italic", paddingLeft: "4px" }}>
+                    🗣️ {msg.correction.phonetic}
+                  </div>
                 </div>
               )}
               {msg.role === "assistant" && (

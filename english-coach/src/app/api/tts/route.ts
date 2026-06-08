@@ -11,8 +11,8 @@ export async function POST(req: NextRequest) {
     }
 
     const isSlow = speed !== undefined && speed < 0.7;
-    // "echo" for English, "onyx" for Portuguese (deep, same masculine tone)
-    const voice = lang === "pt" ? "onyx" : "echo";
+    // "echo" for English, "nova" for Portuguese Brazilian (warmer, more BR-sounding)
+    const voice = lang === "pt" ? "nova" : "echo";
 
     const response = await openai.audio.speech.create({
       model: isSlow ? "tts-1-hd" : "tts-1",
