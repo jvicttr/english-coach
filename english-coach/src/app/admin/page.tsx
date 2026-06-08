@@ -19,6 +19,13 @@ export default function AdminPage() {
   const [search, setSearch] = useState("");
   const [error, setError] = useState("");
 
+  // Discount link state
+  const [discountOpen, setDiscountOpen] = useState<string | null>(null);
+  const [discountPercent, setDiscountPercent] = useState("50");
+  const [generatingLink, setGeneratingLink] = useState(false);
+  const [generatedLink, setGeneratedLink] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+
   useEffect(() => {
     fetch("/api/admin/users")
       .then((r) => {
@@ -28,6 +35,27 @@ export default function AdminPage() {
       .then((d) => { setUsers(d.users ?? []); setLoading(false); })
       .catch((e) => { setError(e.message); setLoading(false); });
   }, []);
+
+  async function generateDiscountLink(targetUserId: string) {
+    setGeneratingLink(true);
+    setGeneratedLink(null);
+    setCopied(false);
+    const res = await fetch("/api/admin/checkout-link", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ targetUserId, discountPercent: Number(discountPercent) }),
+    });
+    const data = await res.json();
+    setGeneratingLink(false);
+    if (data.url) setGeneratedLink(data.url);
+  }
+
+  function copyLink() {
+    if (!generatedLink) return;
+    navigator.clipboard.writeText(generatedLink);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
 
   async function togglePlan(userId: string, currentPlan: string) {
     const newPlan = currentPlan === "pro" ? "free" : "pro";
@@ -89,9 +117,9 @@ export default function AdminPage() {
         {/* Users list */}
         <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
           {filtered.map((u) => (
+            <div key={u.id} style={{ borderRadius: "12px", overflow: "hidden", border: `1px solid ${u.plan === "pro" ? "rgba(245,200,0,0.25)" : "#1f1f1f"}` }}>
             <div
-              key={u.id}
-              style={{ background: "var(--dark1)", border: `1px solid ${u.plan === "pro" ? "rgba(245,200,0,0.25)" : "#1f1f1f"}`, borderRadius: "12px", padding: "14px 16px", display: "flex", alignItems: "center", gap: "12px" }}
+              style={{ background: "var(--dark1)", padding: "14px 16px", display: "flex", alignItems: "center", gap: "12px" }}
             >
               {/* Avatar */}
               <Image
@@ -121,7 +149,67 @@ export default function AdminPage() {
               >
                 {updating === u.id ? "..." : u.plan === "pro" ? "Remover Pro" : "Dar Pro"}
               </button>
-            </div>
+
+              {/* Discount link button */}
+              <button
+                onClick={() => {
+                  if (discountOpen === u.id) { setDiscountOpen(null); setGeneratedLink(null); }
+                  else { setDiscountOpen(u.id); setGeneratedLink(null); setCopied(false); }
+                }}
+                style={{ padding: "6px 12px", borderRadius: "8px", fontSize: "0.78rem", fontWeight: 700, cursor: "pointer", border: "1px solid rgba(99,179,237,0.3)", background: "rgba(99,179,237,0.08)", color: "#63b3ed", flexShrink: 0, whiteSpace: "nowrap" }}
+              >
+                💸 Desconto
+              </button>
+            </div>{/* end flex row */}
+
+            {/* Discount panel */}
+            {discountOpen === u.id && (
+              <div style={{ margin: "0 16px 14px", padding: "14px", borderRadius: "10px", background: "var(--dark2)", border: "1px solid rgba(99,179,237,0.2)" }}>
+                <p style={{ color: "var(--gray)", fontSize: "0.78rem", marginBottom: "10px" }}>
+                  Gerar link de assinatura com desconto para <strong style={{ color: "var(--white)" }}>{u.name}</strong>
+                </p>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                    <input
+                      type="number"
+                      min={1}
+                      max={99}
+                      value={discountPercent}
+                      onChange={(e) => { setDiscountPercent(e.target.value); setGeneratedLink(null); }}
+                      style={{ width: "60px", padding: "6px 10px", borderRadius: "8px", background: "var(--dark1)", border: "1px solid #3a3a3a", color: "var(--white)", fontSize: "0.85rem", textAlign: "center", outline: "none" }}
+                    />
+                    <span style={{ color: "var(--gray)", fontSize: "0.85rem" }}>% de desconto</span>
+                  </div>
+                  <div style={{ color: "var(--gray)", fontSize: "0.78rem" }}>
+                    R$ 97 → <strong style={{ color: "var(--yellow)" }}>R$ {(97 * (1 - Number(discountPercent) / 100)).toFixed(0)}/mês</strong>
+                  </div>
+                  <button
+                    onClick={() => generateDiscountLink(u.id)}
+                    disabled={generatingLink}
+                    style={{ padding: "6px 16px", borderRadius: "8px", fontSize: "0.78rem", fontWeight: 700, cursor: generatingLink ? "not-allowed" : "pointer", border: "none", background: "#63b3ed", color: "#000", opacity: generatingLink ? 0.6 : 1 }}
+                  >
+                    {generatingLink ? "Gerando..." : "Gerar link"}
+                  </button>
+                </div>
+
+                {generatedLink && (
+                  <div style={{ marginTop: "10px", display: "flex", gap: "8px", alignItems: "center" }}>
+                    <input
+                      readOnly
+                      value={generatedLink}
+                      style={{ flex: 1, padding: "6px 10px", borderRadius: "8px", background: "var(--dark1)", border: "1px solid #3a3a3a", color: "var(--gray)", fontSize: "0.72rem", outline: "none", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
+                    />
+                    <button
+                      onClick={copyLink}
+                      style={{ padding: "6px 14px", borderRadius: "8px", fontSize: "0.78rem", fontWeight: 700, cursor: "pointer", border: "1px solid #3a3a3a", background: copied ? "rgba(74,222,128,0.2)" : "var(--dark1)", color: copied ? "#4ade80" : "var(--gray)", whiteSpace: "nowrap" }}
+                    >
+                      {copied ? "✓ Copiado!" : "Copiar"}
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+            </div>{/* end outer wrapper */}
           ))}
         </div>
 
