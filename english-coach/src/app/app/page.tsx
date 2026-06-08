@@ -154,7 +154,7 @@ export default function Home() {
     const audio = audioRef.current;
     if (audio && !audio.paused) audio.pause();
 
-    const speed = slow ? 0.25 : level === "beginner" ? 0.85 : level === "advanced" ? 1.05 : 1.0;
+    const speed = slow ? 0.4 : level === "beginner" ? 0.85 : level === "advanced" ? 1.05 : 1.0;
     const segments = splitSpeechSegments(text);
     if (segments.length === 0) return;
 
