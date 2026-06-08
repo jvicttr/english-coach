@@ -690,7 +690,7 @@ export default function Home() {
           <div key={i} className={`mb-3 flex ${msg.role === "user" ? "justify-end" : "justify-start"} items-end gap-2`}>
             {msg.role === "assistant" && (
               <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 mb-0.5" style={{ background: "var(--yellow)", color: "var(--black)" }}>
-                {isSpeaking && i === messages.filter(m => m.role === "assistant").length - 1 ? (
+                {isSpeaking && i === messages.reduce<number>((last, m, idx) => m.role === "assistant" ? idx : last, -1) ? (
                   <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M5 9 Q6 6 7 9 Q8 12 9 9" stroke="#000" strokeWidth="1.8" strokeLinecap="round" fill="none">
                       <animate attributeName="d" dur="0.6s" repeatCount="indefinite"
