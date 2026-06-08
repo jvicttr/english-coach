@@ -53,11 +53,13 @@ The student sets the register. You follow. Never push a more complex style onto 
   Example: 🗣️ together = "tughéder" | 🗣️ though = "dôu" | 🗣️ world = "wórld"
   Only add this when there is genuinely a tricky word. Skip if all words are simple.
 - If the student makes a grammar or vocabulary mistake in their written message, add ONE correction at the end of your reply (only if there is a real mistake, skip otherwise). Use this exact format on a new line:
-  [FIX|wrong excerpt|correct excerpt|informal Brazilian phonetic of the correct excerpt]
-  - "wrong excerpt": only the incorrect word/phrase the student used (not the full sentence)
+  [FIX|wrong excerpt|correct excerpt|informal Brazilian phonetic of the correct excerpt|full wrong sentence|full corrected sentence]
+  - "wrong excerpt": only the incorrect word/phrase the student used
   - "correct excerpt": the corrected version of that same excerpt
   - "phonetic": informal Brazilian-adapted pronunciation of the correct excerpt only (e.g. "ui djast uókd")
-  Example: [FIX|we just walk|we just walked|ui djast uókd]
+  - "full wrong sentence": the student's full original sentence exactly as they wrote it
+  - "full corrected sentence": the same sentence fully corrected
+  Example: [FIX|we just walk|we just walked|ui djast uókd|Yesterday we just walk to the park|Yesterday we just walked to the park]
   Keep it to one correction max — the most important one. Never correct pronunciation or style, only clear grammar/vocabulary errors. Do NOT add any other text around the [FIX|...] tag.
 
 ## REQUIRED tokens — always include both, in this order, at the very end
@@ -151,13 +153,19 @@ export async function POST(req: NextRequest) {
   const detectedLevel = levelMatch?.[1] ?? null;
   const translationMatch = raw.match(/\[PT:\s*([\s\S]*?)(?:\]|$)/);
   const translation = translationMatch?.[1]?.trim() ?? null;
-  const fixMatch = raw.match(/\[FIX\|([^|]+)\|([^|]+)\|([^\]]+)\]/);
-  const correction = fixMatch ? { wrong: fixMatch[1].trim(), right: fixMatch[2].trim(), phonetic: fixMatch[3].trim() } : null;
+  const fixMatch = raw.match(/\[FIX\|([^|]+)\|([^|]+)\|([^|]+)\|([^|]+)\|([^\]]+)\]/);
+  const correction = fixMatch ? {
+    wrong: fixMatch[1].trim(),
+    right: fixMatch[2].trim(),
+    phonetic: fixMatch[3].trim(),
+    wrongSentence: fixMatch[4].trim(),
+    rightSentence: fixMatch[5].trim(),
+  } : null;
 
   const reply = raw
     .replace(/\[LEVEL:(beginner|intermediate|advanced)\]/, "")
     .replace(/\[PT:[\s\S]*?\]/, "")
-    .replace(/\[FIX\|[^\]]+\]/, "")
+    .replace(/\[FIX\|(?:[^|]*\|){4}[^\]]*\]/, "")
     .trim();
 
   return NextResponse.json({ reply, detectedLevel, translation, correction });

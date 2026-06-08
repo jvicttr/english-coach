@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { UserButton } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 
-type Correction = { wrong: string; right: string; phonetic: string };
+type Correction = { wrong: string; right: string; phonetic: string; wrongSentence?: string; rightSentence?: string };
 type Message = { role: "user" | "assistant"; content: string; translation?: string; correction?: Correction };
 type Level = "beginner" | "intermediate" | "advanced" | null;
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -705,20 +705,36 @@ export default function Home() {
                   🇧🇷 {msg.translation}
                 </div>
               )}
-              {msg.role === "assistant" && msg.correction && (
-                <div style={{ marginTop: "8px", paddingTop: "8px", borderTop: "1px solid rgba(255,255,255,0.06)", display: "flex", flexDirection: "column", gap: "4px" }}>
-                  <div style={{ fontSize: "0.72rem", color: "var(--gray)", marginBottom: "2px" }}>Correção</div>
-                  <div style={{ fontSize: "0.8rem", background: "rgba(248,113,113,0.08)", border: "1px solid rgba(248,113,113,0.2)", borderRadius: "8px", padding: "5px 10px" }}>
-                    ❌ <span style={{ color: "#f87171" }}>{msg.correction.wrong}</span>
+              {msg.role === "assistant" && msg.correction && (() => {
+                const c = msg.correction;
+                // Highlight wrong/right part within the full sentence
+                function highlight(sentence: string, part: string, color: string) {
+                  if (!sentence) return <span style={{ color }}>{part}</span>;
+                  const idx = sentence.toLowerCase().indexOf(part.toLowerCase());
+                  if (idx === -1) return <span>{sentence}</span>;
+                  return (
+                    <>
+                      {sentence.slice(0, idx)}
+                      <span style={{ color, fontWeight: 700 }}>{sentence.slice(idx, idx + part.length)}</span>
+                      {sentence.slice(idx + part.length)}
+                    </>
+                  );
+                }
+                return (
+                  <div style={{ marginTop: "8px", paddingTop: "8px", borderTop: "1px solid rgba(255,255,255,0.06)", display: "flex", flexDirection: "column", gap: "4px" }}>
+                    <div style={{ fontSize: "0.72rem", color: "var(--gray)", marginBottom: "2px" }}>Correção</div>
+                    <div style={{ fontSize: "0.8rem", background: "rgba(248,113,113,0.08)", border: "1px solid rgba(248,113,113,0.2)", borderRadius: "8px", padding: "5px 10px", lineHeight: 1.5 }}>
+                      ❌ {highlight(c.wrongSentence ?? c.wrong, c.wrong, "#f87171")}
+                    </div>
+                    <div style={{ fontSize: "0.8rem", background: "rgba(74,222,128,0.08)", border: "1px solid rgba(74,222,128,0.2)", borderRadius: "8px", padding: "5px 10px", lineHeight: 1.5 }}>
+                      ✅ {highlight(c.rightSentence ?? c.right, c.right, "#4ade80")}
+                    </div>
+                    <div style={{ fontSize: "0.72rem", color: "var(--gray)", fontStyle: "italic", paddingLeft: "4px" }}>
+                      🗣️ {c.phonetic}
+                    </div>
                   </div>
-                  <div style={{ fontSize: "0.8rem", background: "rgba(74,222,128,0.08)", border: "1px solid rgba(74,222,128,0.2)", borderRadius: "8px", padding: "5px 10px" }}>
-                    ✅ <span style={{ color: "#4ade80" }}>{msg.correction.right}</span>
-                  </div>
-                  <div style={{ fontSize: "0.72rem", color: "var(--gray)", fontStyle: "italic", paddingLeft: "4px" }}>
-                    🗣️ {msg.correction.phonetic}
-                  </div>
-                </div>
-              )}
+                );
+              })()}
               {msg.role === "assistant" && (
                 <div style={{ marginTop: "8px", display: "flex", gap: "6px" }}>
                   <button
