@@ -707,27 +707,34 @@ export default function Home() {
               )}
               {msg.role === "assistant" && msg.correction && (() => {
                 const c = msg.correction;
-                // Highlight wrong/right part within the full sentence
-                function highlight(sentence: string, part: string, color: string) {
-                  if (!sentence) return <span style={{ color }}>{part}</span>;
-                  const idx = sentence.toLowerCase().indexOf(part.toLowerCase());
-                  if (idx === -1) return <span>{sentence}</span>;
-                  return (
-                    <>
-                      {sentence.slice(0, idx)}
-                      <span style={{ color, fontWeight: 700 }}>{sentence.slice(idx, idx + part.length)}</span>
-                      {sentence.slice(idx + part.length)}
-                    </>
-                  );
-                }
+                const wrongWords = (c.wrongSentence ?? c.wrong).split(" ");
+                const rightWords = (c.rightSentence ?? c.right).split(" ");
+                const maxLen = Math.max(wrongWords.length, rightWords.length);
+
+                const wrongHighlighted = wrongWords.map((w, i) => {
+                  const changed = w.toLowerCase().replace(/[^a-z]/g, "") !== (rightWords[i] ?? "").toLowerCase().replace(/[^a-z]/g, "");
+                  return changed
+                    ? <span key={i} style={{ color: "#f87171", fontWeight: 700 }}>{w} </span>
+                    : <span key={i}>{w} </span>;
+                });
+
+                const rightHighlighted = Array.from({ length: maxLen }, (_, i) => {
+                  const rw = rightWords[i] ?? "";
+                  const ww = wrongWords[i] ?? "";
+                  const changed = rw.toLowerCase().replace(/[^a-z]/g, "") !== ww.toLowerCase().replace(/[^a-z]/g, "");
+                  return changed
+                    ? <span key={i} style={{ color: "#4ade80", fontWeight: 700 }}>{rw} </span>
+                    : <span key={i}>{rw} </span>;
+                });
+
                 return (
                   <div style={{ marginTop: "8px", paddingTop: "8px", borderTop: "1px solid rgba(255,255,255,0.06)", display: "flex", flexDirection: "column", gap: "4px" }}>
                     <div style={{ fontSize: "0.72rem", color: "var(--gray)", marginBottom: "2px" }}>Correção</div>
                     <div style={{ fontSize: "0.8rem", background: "rgba(248,113,113,0.08)", border: "1px solid rgba(248,113,113,0.2)", borderRadius: "8px", padding: "5px 10px", lineHeight: 1.5 }}>
-                      ❌ {highlight(c.wrongSentence ?? c.wrong, c.wrong, "#f87171")}
+                      ❌ {wrongHighlighted}
                     </div>
                     <div style={{ fontSize: "0.8rem", background: "rgba(74,222,128,0.08)", border: "1px solid rgba(74,222,128,0.2)", borderRadius: "8px", padding: "5px 10px", lineHeight: 1.5 }}>
-                      ✅ {highlight(c.rightSentence ?? c.right, c.right, "#4ade80")}
+                      ✅ {rightHighlighted}
                     </div>
                     <div style={{ fontSize: "0.72rem", color: "var(--gray)", fontStyle: "italic", paddingLeft: "4px" }}>
                       🗣️ {c.phonetic}
