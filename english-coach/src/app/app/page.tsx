@@ -228,9 +228,11 @@ export default function Home() {
         setScreen("quiz");
       } else {
         setScreen("chat");
+        setMicError("Não foi possível gerar o quiz. Tente novamente!");
       }
     } catch {
       setScreen("chat");
+      setMicError("Erro ao gerar o quiz. Verifique sua conexão e tente novamente.");
     }
   }
 

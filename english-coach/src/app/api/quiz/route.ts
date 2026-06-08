@@ -41,6 +41,7 @@ export async function POST(req: NextRequest) {
   const { userId } = await auth();
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+  try {
   const { messages, level } = await req.json();
 
   const conversationText = messages
@@ -61,10 +62,14 @@ export async function POST(req: NextRequest) {
 
   const raw = response.content[0].type === "text" ? response.content[0].text.trim() : "";
 
+  // Strip markdown code blocks if model wrapped the JSON
+  const cleaned = raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
+
   let quiz;
   try {
-    quiz = JSON.parse(raw);
-  } catch {
+    quiz = JSON.parse(cleaned);
+  } catch (parseErr) {
+    console.error("[quiz] parse error:", parseErr, "\nraw:", raw);
     return NextResponse.json({ error: "Failed to parse quiz" }, { status: 500 });
   }
 
@@ -85,6 +90,11 @@ export async function POST(req: NextRequest) {
   if (insertError) console.error("[quiz] insert error:", insertError.message);
 
   return NextResponse.json({ quiz, sessionId: saved?.id ?? null });
+
+  } catch (err) {
+    console.error("[quiz] unexpected error:", err);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
 }
 
 export async function PATCH(req: NextRequest) {
