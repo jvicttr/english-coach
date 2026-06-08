@@ -2,11 +2,26 @@
 
 import { useState, useRef, useEffect } from "react";
 import { UserButton } from "@clerk/nextjs";
+import { useRouter } from "next/navigation";
 
 type Message = { role: "user" | "assistant"; content: string; translation?: string };
 type Level = "beginner" | "intermediate" | "advanced" | null;
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnySpeechRecognition = any;
+
+type QuizQuestion = {
+  question: string;
+  options: string[];
+  correct: number;
+  explanation: string;
+};
+
+type Quiz = {
+  title: string;
+  questions: QuizQuestion[];
+};
+
+type AppScreen = "chat" | "loading-quiz" | "quiz" | "result";
 
 const LEVEL_LABEL: Record<NonNullable<Level>, string> = {
   beginner: "Básico",
@@ -15,6 +30,7 @@ const LEVEL_LABEL: Record<NonNullable<Level>, string> = {
 };
 
 export default function Home() {
+  const router = useRouter();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [level, setLevel] = useState<Level>(null);
@@ -24,7 +40,18 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(false);
   const [micError, setMicError] = useState("");
   const [limitReached, setLimitReached] = useState(false);
+
+  // Quiz state
+  const [screen, setScreen] = useState<AppScreen>("chat");
+  const [quiz, setQuiz] = useState<Quiz | null>(null);
+  const [quizSessionId, setQuizSessionId] = useState<string | null>(null);
+  const [currentQ, setCurrentQ] = useState(0);
+  const [answers, setAnswers] = useState<(number | null)[]>([]);
+  const [showExplanation, setShowExplanation] = useState(false);
+  const [score, setScore] = useState(0);
+
   const bottomRef = useRef<HTMLDivElement>(null);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const recognitionRef = useRef<AnySpeechRecognition>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
@@ -46,8 +73,6 @@ export default function Home() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const audioUnlockedRef = useRef(false);
 
-  // iOS Safari requires the Audio element to be created AND played inside a user gesture.
-  // We create it once, play a silent clip to activate it, then reuse it for all TTS.
   function unlockAudio() {
     if (audioUnlockedRef.current) return;
     audioUnlockedRef.current = true;
@@ -114,6 +139,75 @@ export default function Home() {
     }
   }
 
+  async function endConversation() {
+    if (messages.length < 2) return;
+    setScreen("loading-quiz");
+    try {
+      const res = await fetch("/api/quiz", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ messages, level }),
+      });
+      const data = await res.json();
+      if (data.quiz) {
+        setQuiz(data.quiz);
+        setQuizSessionId(data.sessionId ?? null);
+        setAnswers(new Array(data.quiz.questions.length).fill(null));
+        setCurrentQ(0);
+        setShowExplanation(false);
+        setScore(0);
+        setScreen("quiz");
+      } else {
+        setScreen("chat");
+      }
+    } catch {
+      setScreen("chat");
+    }
+  }
+
+  function selectAnswer(optionIndex: number) {
+    if (answers[currentQ] !== null) return;
+    const newAnswers = [...answers];
+    newAnswers[currentQ] = optionIndex;
+    setAnswers(newAnswers);
+    setShowExplanation(true);
+  }
+
+  async function nextQuestion() {
+    setShowExplanation(false);
+    if (currentQ + 1 < (quiz?.questions.length ?? 0)) {
+      setCurrentQ(currentQ + 1);
+    } else {
+      // Calculate score and finish
+      const finalScore = answers.reduce((acc, a, i) => {
+        return acc + (a === quiz!.questions[i].correct ? 1 : 0);
+      }, 0) as number;
+      setScore(finalScore);
+      setScreen("result");
+      // Save to Supabase
+      if (quizSessionId) {
+        await fetch("/api/quiz", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ sessionId: quizSessionId, score: finalScore, answers }),
+        });
+      }
+    }
+  }
+
+  function restartChat() {
+    setMessages([]);
+    setInput("");
+    setLevel(null);
+    setQuiz(null);
+    setQuizSessionId(null);
+    setAnswers([]);
+    setCurrentQ(0);
+    setShowExplanation(false);
+    setScore(0);
+    setScreen("chat");
+  }
+
   async function startListening() {
     setMicError("");
     unlockAudio();
@@ -125,11 +219,7 @@ export default function Home() {
     let stream: MediaStream;
     try {
       stream = await navigator.mediaDevices.getUserMedia({
-        audio: {
-          echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: true,
-        },
+        audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
       });
     } catch {
       setMicError("Permissão de microfone negada. Clique no cadeado na barra de endereço e permita o microfone.");
@@ -138,7 +228,6 @@ export default function Home() {
 
     audioChunksRef.current = [];
 
-    // Opus/WebM is best for Whisper — fall back gracefully
     const mimeType = [
       "audio/webm;codecs=opus",
       "audio/webm",
@@ -169,10 +258,7 @@ export default function Home() {
 
       setIsTranscribing(true);
       try {
-        // Always name the file with the real mime type so Whisper parses it correctly
-        const ext = finalMime.includes("mp4") ? "mp4"
-          : finalMime.includes("ogg") ? "ogg"
-          : "webm";
+        const ext = finalMime.includes("mp4") ? "mp4" : finalMime.includes("ogg") ? "ogg" : "webm";
         const file = new File([blob], `recording.${ext}`, { type: finalMime });
         const form = new FormData();
         form.append("audio", file);
@@ -198,38 +284,183 @@ export default function Home() {
     mediaRecorderRef.current = recorder;
     recorder.start();
     setIsListening(true);
-
     autoStopTimerRef.current = setTimeout(() => stopListening(), 60000);
   }
 
   function stopListening() {
     if (autoStopTimerRef.current) clearTimeout(autoStopTimerRef.current);
     const rec = mediaRecorderRef.current;
-    if (rec && rec.state === "recording") {
-      rec.stop(); // triggers final ondataavailable automatically
-    }
+    if (rec && rec.state === "recording") rec.stop();
     setIsListening(false);
   }
 
+  // ── Loading Quiz Screen ──────────────────────────────────────────────────
+  if (screen === "loading-quiz") {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen gap-4" style={{ background: "var(--black)", fontFamily: "'Inter', sans-serif" }}>
+        <div className="flex gap-1.5">
+          {[0, 150, 300].map((d) => (
+            <span key={d} className="w-3 h-3 rounded-full animate-bounce" style={{ background: "var(--yellow)", animationDelay: `${d}ms` }} />
+          ))}
+        </div>
+        <p className="text-sm font-medium" style={{ color: "var(--gray)" }}>Gerando seu quiz personalizado...</p>
+      </div>
+    );
+  }
 
+  // ── Quiz Screen ──────────────────────────────────────────────────────────
+  if (screen === "quiz" && quiz) {
+    const q = quiz.questions[currentQ];
+    const chosen = answers[currentQ];
+    const total = quiz.questions.length;
+
+    return (
+      <div className="flex flex-col items-center px-4 pt-6 pb-8 min-h-screen" style={{ background: "var(--black)", fontFamily: "'Inter', sans-serif" }}>
+        <div className="w-full max-w-lg">
+          {/* Header */}
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: "var(--yellow)" }}>Quiz</p>
+              <h2 className="font-bold text-white text-base mt-0.5">{quiz.title}</h2>
+            </div>
+            <span className="text-sm font-bold" style={{ color: "var(--gray)" }}>{currentQ + 1}/{total}</span>
+          </div>
+
+          {/* Progress bar */}
+          <div className="w-full h-1.5 rounded-full mb-6" style={{ background: "var(--dark2)" }}>
+            <div
+              className="h-1.5 rounded-full transition-all duration-500"
+              style={{ background: "var(--yellow)", width: `${((currentQ) / total) * 100}%` }}
+            />
+          </div>
+
+          {/* Question */}
+          <div className="mb-6 px-4 py-4 rounded-2xl" style={{ background: "var(--dark1)", border: "1px solid #1f1f1f" }}>
+            <p className="text-white text-sm leading-relaxed font-medium">{q.question}</p>
+          </div>
+
+          {/* Options */}
+          <div className="flex flex-col gap-3 mb-6">
+            {q.options.map((opt, i) => {
+              let bg = "var(--dark1)";
+              let border = "1px solid #2a2a2a";
+              let color = "var(--white)";
+
+              if (chosen !== null) {
+                if (i === q.correct) { bg = "rgba(74,222,128,0.12)"; border = "1px solid #4ade80"; color = "#4ade80"; }
+                else if (i === chosen && chosen !== q.correct) { bg = "rgba(248,113,113,0.12)"; border = "1px solid #f87171"; color = "#f87171"; }
+                else { color = "var(--gray)"; }
+              }
+
+              return (
+                <button
+                  key={i}
+                  onClick={() => selectAnswer(i)}
+                  disabled={chosen !== null}
+                  className="w-full text-left px-4 py-3 rounded-xl text-sm font-medium transition-all"
+                  style={{ background: bg, border, color, cursor: chosen !== null ? "default" : "pointer" }}
+                >
+                  <span className="font-bold mr-2" style={{ opacity: 0.5 }}>{["A", "B", "C", "D"][i]}</span>
+                  {opt}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Explanation */}
+          {showExplanation && (
+            <div className="mb-5 px-4 py-3 rounded-xl text-sm" style={{ background: chosen === q.correct ? "rgba(74,222,128,0.08)" : "rgba(248,113,113,0.08)", border: chosen === q.correct ? "1px solid rgba(74,222,128,0.25)" : "1px solid rgba(248,113,113,0.25)" }}>
+              <p className="font-bold mb-1" style={{ color: chosen === q.correct ? "#4ade80" : "#f87171" }}>
+                {chosen === q.correct ? "✓ Correto!" : "✗ Quase lá!"}
+              </p>
+              <p style={{ color: "var(--gray)" }}>{q.explanation}</p>
+            </div>
+          )}
+
+          {/* Next button */}
+          {chosen !== null && (
+            <button
+              onClick={nextQuestion}
+              className="w-full py-3 rounded-xl font-bold text-sm transition-all"
+              style={{ background: "var(--yellow)", color: "var(--black)" }}
+            >
+              {currentQ + 1 < total ? "Próxima →" : "Ver resultado →"}
+            </button>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // ── Result Screen ────────────────────────────────────────────────────────
+  if (screen === "result" && quiz) {
+    const total = quiz.questions.length;
+    const pct = Math.round((score / total) * 100);
+    const emoji = pct >= 80 ? "🏆" : pct >= 60 ? "💪" : "📚";
+    const msg = pct >= 80 ? "Excelente! Você dominou essa conversa." : pct >= 60 ? "Bom trabalho! Continue praticando." : "Continue assim! Cada conversa te deixa melhor.";
+    const scoreColor = pct >= 80 ? "#4ade80" : pct >= 60 ? "var(--yellow)" : "#f87171";
+
+    return (
+      <div className="flex flex-col items-center justify-center px-4 pt-6 pb-8 min-h-screen" style={{ background: "var(--black)", fontFamily: "'Inter', sans-serif" }}>
+        <div className="w-full max-w-lg flex flex-col items-center text-center gap-5">
+          <div className="text-5xl">{emoji}</div>
+          <div>
+            <p className="font-black text-5xl" style={{ color: scoreColor }}>{pct}%</p>
+            <p className="text-lg font-bold text-white mt-1">{score}/{total} corretas</p>
+          </div>
+          <p className="text-sm" style={{ color: "var(--gray)" }}>{msg}</p>
+
+          {/* Review answers */}
+          <div className="w-full flex flex-col gap-2 mt-2">
+            {quiz.questions.map((q, i) => {
+              const correct = answers[i] === q.correct;
+              return (
+                <div key={i} className="text-left px-4 py-3 rounded-xl text-sm" style={{ background: "var(--dark1)", border: `1px solid ${correct ? "rgba(74,222,128,0.2)" : "rgba(248,113,113,0.2)"}` }}>
+                  <div className="flex items-start gap-2">
+                    <span>{correct ? "✓" : "✗"}</span>
+                    <div>
+                      <p className="font-medium text-white">{q.question}</p>
+                      <p className="text-xs mt-0.5" style={{ color: "var(--gray)" }}>
+                        Resposta correta: <span style={{ color: "#4ade80" }}>{q.options[q.correct]}</span>
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="flex gap-3 w-full mt-2">
+            <button
+              onClick={() => router.push("/app/historico")}
+              className="flex-1 py-3 rounded-xl font-bold text-sm"
+              style={{ background: "var(--dark2)", color: "var(--gray)", border: "1px solid #2a2a2a" }}
+            >
+              Ver histórico
+            </button>
+            <button
+              onClick={restartChat}
+              className="flex-1 py-3 rounded-xl font-bold text-sm"
+              style={{ background: "var(--yellow)", color: "var(--black)" }}
+            >
+              Nova conversa
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Chat Screen ──────────────────────────────────────────────────────────
   return (
     <div
       className="flex flex-col items-center px-3 pt-3 pb-4 sm:px-4 sm:pt-4 sm:pb-6"
-      style={{
-        background: "var(--black)",
-        fontFamily: "'Inter', sans-serif",
-        height: "100dvh",
-        overflow: "hidden",
-      }}
+      style={{ background: "var(--black)", fontFamily: "'Inter', sans-serif", height: "100dvh", overflow: "hidden" }}
     >
       {/* ── Header ─────────────────────────────────────────── */}
       <header className="w-full max-w-2xl mb-3 flex items-center justify-between gap-2">
-        {/* Logo */}
         <div className="flex items-center gap-2 shrink-0">
-          <div
-            className="w-8 h-8 rounded-xl flex items-center justify-center font-black text-sm shrink-0"
-            style={{ background: "var(--yellow)", color: "var(--black)" }}
-          >
+          <div className="w-8 h-8 rounded-xl flex items-center justify-center font-black text-sm shrink-0" style={{ background: "var(--yellow)", color: "var(--black)" }}>
             JV
           </div>
           <span className="font-bold text-white text-sm leading-none">
@@ -237,63 +468,48 @@ export default function Home() {
           </span>
         </div>
 
-        {/* Planos link */}
         <a href="/planos" style={{ fontSize: ".78rem", fontWeight: 700, color: "var(--yellow)", border: "1px solid rgba(245,200,0,.35)", borderRadius: "50px", padding: ".3rem .8rem", textDecoration: "none", whiteSpace: "nowrap" }}>
           Planos
         </a>
 
-        {/* User button */}
         <UserButton />
 
-        {/* Level pills — desktop: all three; mobile: only active */}
         <div className="hidden sm:flex gap-1.5">
           {(["beginner", "intermediate", "advanced"] as NonNullable<Level>[]).map((l) => (
             <button
               key={l}
               onClick={() => setLevel(l)}
               className="px-2.5 py-1 rounded-full text-xs font-semibold transition-all"
-              style={
-                level === l
-                  ? { background: "var(--yellow)", color: "var(--black)" }
-                  : { background: "var(--dark2)", color: "var(--gray)", border: "1px solid #2a2a2a" }
-              }
+              style={level === l ? { background: "var(--yellow)", color: "var(--black)" } : { background: "var(--dark2)", color: "var(--gray)", border: "1px solid #2a2a2a" }}
             >
               {LEVEL_LABEL[l]}
             </button>
           ))}
         </div>
         <div className="sm:hidden">
-          <span
-            className="px-2.5 py-1 rounded-full text-xs font-semibold"
-            style={
-              level
-                ? { background: "var(--yellow)", color: "var(--black)" }
-                : { background: "var(--dark2)", color: "var(--gray)", border: "1px solid #2a2a2a" }
-            }
-          >
+          <span className="px-2.5 py-1 rounded-full text-xs font-semibold" style={level ? { background: "var(--yellow)", color: "var(--black)" } : { background: "var(--dark2)", color: "var(--gray)", border: "1px solid #2a2a2a" }}>
             {level ? LEVEL_LABEL[level] : "Detectando..."}
           </span>
         </div>
+
+        {/* Histórico link */}
+        <button
+          onClick={() => router.push("/app/historico")}
+          title="Ver histórico de quizzes"
+          style={{ background: "var(--dark2)", border: "1px solid #2a2a2a", borderRadius: "10px", padding: "6px 10px", color: "var(--gray)", fontSize: "0.78rem", cursor: "pointer", whiteSpace: "nowrap" }}
+        >
+          🏆
+        </button>
       </header>
 
       {/* ── Chat area ──────────────────────────────────────── */}
       <div
         className="w-full max-w-2xl flex-1 min-h-0 p-3 sm:p-4 mb-3 overflow-y-auto"
-        style={{
-          background: "var(--dark1)",
-          border: "1px solid #1f1f1f",
-          borderRadius: "var(--radius)",
-          boxShadow: "var(--shadow)",
-        }}
+        style={{ background: "var(--dark1)", border: "1px solid #1f1f1f", borderRadius: "var(--radius)", boxShadow: "var(--shadow)" }}
       >
         {messages.length === 0 && (
           <div className="flex flex-col items-center justify-center h-full text-center py-6 gap-3">
-            <div
-              className="w-14 h-14 rounded-2xl flex items-center justify-center font-black text-xl"
-              style={{ background: "var(--yellow)", color: "var(--black)" }}
-            >
-              JV
-            </div>
+            <div className="w-14 h-14 rounded-2xl flex items-center justify-center font-black text-xl" style={{ background: "var(--yellow)", color: "var(--black)" }}>JV</div>
             <div>
               <p className="font-semibold text-white">Pronto para praticar!</p>
               <p className="text-sm mt-1 max-w-xs" style={{ color: "var(--gray)" }}>
@@ -306,29 +522,14 @@ export default function Home() {
         {messages.map((msg, i) => (
           <div key={i} className={`mb-3 flex ${msg.role === "user" ? "justify-end" : "justify-start"} items-end gap-2`}>
             {msg.role === "assistant" && (
-              <div
-                className="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-black shrink-0 mb-0.5"
-                style={{ background: "var(--yellow)", color: "var(--black)" }}
-              >
-                JV
-              </div>
+              <div className="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-black shrink-0 mb-0.5" style={{ background: "var(--yellow)", color: "var(--black)" }}>JV</div>
             )}
             <div
               className="max-w-[82%] sm:max-w-[78%] px-3 sm:px-4 py-2.5 text-sm leading-relaxed"
               style={
                 msg.role === "user"
-                  ? {
-                      background: "var(--yellow)",
-                      color: "var(--black)",
-                      borderRadius: "18px 18px 4px 18px",
-                      fontWeight: 500,
-                    }
-                  : {
-                      background: "var(--dark2)",
-                      color: "var(--white)",
-                      borderRadius: "18px 18px 18px 4px",
-                      border: "1px solid #2a2a2a",
-                    }
+                  ? { background: "var(--yellow)", color: "var(--black)", borderRadius: "18px 18px 4px 18px", fontWeight: 500 }
+                  : { background: "var(--dark2)", color: "var(--white)", borderRadius: "18px 18px 18px 4px", border: "1px solid #2a2a2a" }
               }
             >
               {msg.content}
@@ -363,23 +564,11 @@ export default function Home() {
 
         {isLoading && (
           <div className="flex items-end gap-2 mb-3">
-            <div
-              className="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-black shrink-0"
-              style={{ background: "var(--yellow)", color: "var(--black)" }}
-            >
-              JV
-            </div>
-            <div
-              className="px-4 py-3 text-sm"
-              style={{ background: "var(--dark2)", borderRadius: "18px 18px 18px 4px", border: "1px solid #2a2a2a" }}
-            >
+            <div className="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-black shrink-0" style={{ background: "var(--yellow)", color: "var(--black)" }}>JV</div>
+            <div className="px-4 py-3 text-sm" style={{ background: "var(--dark2)", borderRadius: "18px 18px 18px 4px", border: "1px solid #2a2a2a" }}>
               <span className="flex gap-1 items-center">
                 {[0, 150, 300].map((d) => (
-                  <span
-                    key={d}
-                    className="w-1.5 h-1.5 rounded-full animate-bounce"
-                    style={{ background: "var(--yellow)", animationDelay: `${d}ms` }}
-                  />
+                  <span key={d} className="w-1.5 h-1.5 rounded-full animate-bounce" style={{ background: "var(--yellow)", animationDelay: `${d}ms` }} />
                 ))}
               </span>
             </div>
@@ -389,22 +578,29 @@ export default function Home() {
         <div ref={bottomRef} />
       </div>
 
+      {/* ── Encerrar conversa ──────────────────────────────── */}
+      {messages.length >= 2 && !limitReached && (
+        <div className="w-full max-w-2xl mb-2">
+          <button
+            onClick={endConversation}
+            disabled={isLoading}
+            className="w-full py-2.5 rounded-xl text-sm font-bold transition-all disabled:opacity-40"
+            style={{ background: "transparent", border: "1px solid rgba(245,200,0,0.3)", color: "var(--yellow)" }}
+          >
+            🎯 Encerrar conversa e fazer quiz
+          </button>
+        </div>
+      )}
+
       {/* ── Limite diário ─────────────────────────────────── */}
       {limitReached && (
-        <div
-          className="w-full max-w-2xl mb-3 px-4 py-5 flex flex-col items-center gap-3 text-center"
-          style={{ background: "var(--dark2)", border: "1px solid rgba(245,200,0,.3)", borderRadius: "var(--radius)" }}
-        >
+        <div className="w-full max-w-2xl mb-3 px-4 py-5 flex flex-col items-center gap-3 text-center" style={{ background: "var(--dark2)", border: "1px solid rgba(245,200,0,.3)", borderRadius: "var(--radius)" }}>
           <div className="text-2xl">🎯</div>
           <div>
             <p className="font-bold text-white text-sm">Você usou suas 10 mensagens de hoje</p>
             <p className="text-xs mt-1" style={{ color: "var(--gray)" }}>Assine o Coach IA por R$ 47/mês e pratique sem limites todos os dias.</p>
           </div>
-          <a
-            href="/planos"
-            className="px-5 py-2 rounded-full text-sm font-bold transition-all"
-            style={{ background: "var(--yellow)", color: "var(--black)" }}
-          >
+          <a href="/planos" className="px-5 py-2 rounded-full text-sm font-bold transition-all" style={{ background: "var(--yellow)", color: "var(--black)" }}>
             Assinar Coach IA — R$ 47/mês
           </a>
         </div>
@@ -412,10 +608,7 @@ export default function Home() {
 
       {/* ── Mic error ──────────────────────────────────────── */}
       {micError && (
-        <div
-          className="w-full max-w-2xl mb-3 px-3 sm:px-4 py-2.5 flex gap-2 items-start text-sm"
-          style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)", borderRadius: "var(--radius)" }}
-        >
+        <div className="w-full max-w-2xl mb-3 px-3 sm:px-4 py-2.5 flex gap-2 items-start text-sm" style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)", borderRadius: "var(--radius)" }}>
           <span>🎙️</span>
           <span style={{ color: "#fca5a5" }}>{micError}</span>
           <button onClick={() => setMicError("")} className="ml-auto text-xs shrink-0" style={{ color: "var(--gray2)" }}>✕</button>
@@ -427,37 +620,21 @@ export default function Home() {
         <textarea
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(input); }
-          }}
+          onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(input); } }}
           placeholder="Digite aqui..."
           rows={1}
           className="flex-1 resize-none outline-none transition"
-          style={{
-            background: "var(--dark1)",
-            color: "var(--white)",
-            border: "1px solid #2a2a2a",
-            borderRadius: "var(--radius)",
-            padding: "12px 16px",
-            fontFamily: "'Inter', sans-serif",
-            fontSize: "16px", // prevents iOS zoom on focus
-          }}
+          style={{ background: "var(--dark1)", color: "var(--white)", border: "1px solid #2a2a2a", borderRadius: "var(--radius)", padding: "12px 16px", fontFamily: "'Inter', sans-serif", fontSize: "16px" }}
           onFocus={(e) => (e.currentTarget.style.borderColor = "var(--yellow)")}
           onBlur={(e) => (e.currentTarget.style.borderColor = "#2a2a2a")}
         />
 
-        {/* Mic */}
         <button
           onClick={isListening ? stopListening : startListening}
           disabled={isLoading || isSpeaking || isTranscribing || limitReached}
           title={isListening ? "Clique para parar e enviar" : "Clique para falar"}
           className="w-12 h-12 flex items-center justify-center transition-all shrink-0 disabled:opacity-40"
-          style={{
-            background: isListening ? "#ef4444" : isTranscribing ? "var(--dark2)" : "var(--yellow)",
-            borderRadius: "var(--radius)",
-            boxShadow: isListening ? "0 0 20px rgba(239,68,68,0.5)" : "none",
-            transform: isListening ? "scale(1.08)" : "scale(1)",
-          }}
+          style={{ background: isListening ? "#ef4444" : isTranscribing ? "var(--dark2)" : "var(--yellow)", borderRadius: "var(--radius)", boxShadow: isListening ? "0 0 20px rgba(239,68,68,0.5)" : "none", transform: isListening ? "scale(1.08)" : "scale(1)" }}
         >
           {isTranscribing ? (
             <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24" style={{ color: "var(--yellow)" }}>
@@ -465,8 +642,7 @@ export default function Home() {
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
             </svg>
           ) : (
-            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"
-              style={{ color: isListening ? "white" : "var(--black)" }}>
+            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24" style={{ color: isListening ? "white" : "var(--black)" }}>
               {isListening ? (
                 <rect x="6" y="6" width="12" height="12" rx="2" />
               ) : (
@@ -476,15 +652,13 @@ export default function Home() {
           )}
         </button>
 
-        {/* Send */}
         <button
           onClick={() => sendMessage(input)}
           disabled={isLoading || !input.trim() || limitReached}
           className="w-12 h-12 flex items-center justify-center transition-all shrink-0 disabled:opacity-40"
           style={{ background: "var(--dark2)", border: "1px solid #2a2a2a", borderRadius: "var(--radius)" }}
         >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"
-            style={{ color: "var(--yellow)" }}>
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: "var(--yellow)" }}>
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19V5m-7 7 7-7 7 7" />
           </svg>
         </button>
