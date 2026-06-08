@@ -179,9 +179,9 @@ export default function Home() {
       setCurrentQ(currentQ + 1);
     } else {
       // Calculate score and finish
-      const finalScore = answers.reduce((acc, a, i) => {
+      const finalScore = answers.reduce<number>((acc, a, i) => {
         return acc + (a === quiz!.questions[i].correct ? 1 : 0);
-      }, 0) as number;
+      }, 0);
       setScore(finalScore);
       setScreen("result");
       // Save to Supabase
