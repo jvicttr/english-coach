@@ -1,11 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 
 export default function PlanosPage() {
   const [loading, setLoading] = useState(false);
+  const [isPro, setIsPro] = useState(false);
   const router = useRouter();
+
+  useEffect(() => {
+    fetch("/api/me").then((r) => r.json()).then((d) => setIsPro(d.plan === "pro"));
+  }, []);
 
   async function handleAssinar() {
     setLoading(true);
@@ -62,7 +67,7 @@ export default function PlanosPage() {
         {/* Coach IA */}
         <div style={{ background: "var(--dark1)", border: "2px solid var(--yellow)", borderRadius: "var(--radius)", padding: "2rem", flex: "1 1 300px", maxWidth: 340, position: "relative" }}>
           <div style={{ position: "absolute", top: "-13px", left: "50%", transform: "translateX(-50%)", background: "var(--yellow)", color: "var(--black)", fontSize: ".72rem", fontWeight: 800, padding: ".3rem .9rem", borderRadius: "50px", whiteSpace: "nowrap" }}>
-            MAIS POPULAR
+            {isPro ? "✓ SEU PLANO" : "MAIS POPULAR"}
           </div>
           <div style={{ fontSize: ".8rem", fontWeight: 700, color: "var(--yellow)", textTransform: "uppercase", letterSpacing: ".5px", marginBottom: ".75rem" }}>Coach IA</div>
           <div style={{ fontSize: "2.5rem", fontWeight: 900, color: "var(--white)", marginBottom: ".25rem" }}>R$ 97</div>
