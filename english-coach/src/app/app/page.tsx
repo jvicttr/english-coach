@@ -691,16 +691,17 @@ export default function Home() {
             {msg.role === "assistant" && (
               <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 mb-0.5" style={{ background: "var(--yellow)", color: "var(--black)" }}>
                 {isSpeaking && i === messages.reduce<number>((last, m, idx) => m.role === "assistant" ? idx : last, -1) ? (
-                  <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M5 9 Q6 6 7 9 Q8 12 9 9" stroke="#000" strokeWidth="1.8" strokeLinecap="round" fill="none">
-                      <animate attributeName="d" dur="0.6s" repeatCount="indefinite"
-                        values="M5 9 Q6 6 7 9 Q8 12 9 9;M5 9 Q6 12 7 9 Q8 6 9 9;M5 9 Q6 6 7 9 Q8 12 9 9" />
-                    </path>
-                    <path d="M10 9 Q11 5.5 12 9 Q13 12.5 14 9" stroke="#000" strokeWidth="1.8" strokeLinecap="round" fill="none">
-                      <animate attributeName="d" dur="0.6s" repeatCount="indefinite" begin="0.15s"
-                        values="M10 9 Q11 5.5 12 9 Q13 12.5 14 9;M10 9 Q11 12.5 12 9 Q13 5.5 14 9;M10 9 Q11 5.5 12 9 Q13 12.5 14 9" />
-                    </path>
-                  </svg>
+                  <span style={{ display: "flex", alignItems: "center", gap: "2px", height: "16px" }}>
+                    {[0, 0.15, 0.3, 0.45].map((delay, k) => (
+                      <span key={k} style={{
+                        display: "inline-block",
+                        width: "2.5px",
+                        borderRadius: "2px",
+                        background: "#000",
+                        animation: `waveBar 0.6s ease-in-out ${delay}s infinite alternate`,
+                      }} />
+                    ))}
+                  </span>
                 ) : (
                   <span style={{ fontSize: "0.65rem", fontWeight: 900 }}>JV</span>
                 )}

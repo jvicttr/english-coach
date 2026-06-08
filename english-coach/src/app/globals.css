@@ -30,6 +30,11 @@ body {
   overflow-x: hidden;
 }
 
+@keyframes waveBar {
+  from { height: 3px; }
+  to   { height: 14px; }
+}
+
 /* ═══════════════════════════════════════════
    LANDING PAGE
 ═══════════════════════════════════════════ */
