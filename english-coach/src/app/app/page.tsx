@@ -115,7 +115,7 @@ export default function Home() {
   }
 
   async function sendMessage(text: string) {
-    if (!text.trim()) return;
+    if (!text.trim() || isLoading) return;
     unlockAudio();
     const userMessage: Message = { role: "user", content: text };
     const updatedMessages = [...messages, userMessage];
@@ -128,12 +128,21 @@ export default function Home() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ messages: updatedMessages, level }),
       });
+      if (!res.ok) {
+        setMessages((prev) => [...prev, { role: "assistant", content: "Ops, tive um problema. Tente enviar de novo!" }]);
+        return;
+      }
       const data = await res.json();
       if (data.limitReached) { setLimitReached(true); setMessages((prev) => prev.slice(0, -1)); return; }
-      if (!data.reply) return;
+      if (!data.reply) {
+        setMessages((prev) => [...prev, { role: "assistant", content: "Ops, não consegui responder. Tente de novo!" }]);
+        return;
+      }
       setMessages((prev) => [...prev, { role: "assistant", content: data.reply, translation: data.translation ?? undefined }]);
       if (data.detectedLevel) setLevel(data.detectedLevel as Level);
       speak(data.reply);
+    } catch {
+      setMessages((prev) => [...prev, { role: "assistant", content: "Erro de conexão. Verifique sua internet e tente novamente." }]);
     } finally {
       setIsLoading(false);
     }
