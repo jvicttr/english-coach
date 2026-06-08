@@ -81,6 +81,15 @@ export default function PlanosPage() {
           >
             {loading ? "Redirecionando..." : "Assinar agora"}
           </button>
+
+          <a
+            href="https://wa.me/5561995691219?text=Oi%20JV!%20Tenho%20interesse%20no%20plano%20Coach%20IA%20%F0%9F%91%8B"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: ".5rem", marginTop: ".75rem", width: "100%", padding: ".75rem", borderRadius: "50px", background: "transparent", border: "1px solid rgba(245,200,0,.25)", color: "var(--gray)", fontWeight: 600, fontSize: ".85rem", textDecoration: "none", transition: "border-color .2s" }}
+          >
+            💬 Tirar dúvidas no WhatsApp
+          </a>
         </div>
 
       </div>
