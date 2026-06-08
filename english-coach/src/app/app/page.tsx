@@ -64,7 +64,7 @@ export default function Home() {
     const clean = stripEmojis(text);
     if (!clean) return;
 
-    const speed = slow ? 0.7 : level === "beginner" ? 0.85 : level === "advanced" ? 1.05 : 1.0;
+    const speed = slow ? 0.55 : level === "beginner" ? 0.85 : level === "advanced" ? 1.05 : 1.0;
     setIsSpeaking(true);
 
     try {
