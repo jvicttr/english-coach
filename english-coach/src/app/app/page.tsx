@@ -166,7 +166,7 @@ export default function Home() {
           return;
         }
 
-        const queue: Uint8Array[] = [];
+        const queue: ArrayBuffer[] = [];
         let appending = false;
         let streamDone = false;
 
@@ -195,7 +195,7 @@ export default function Home() {
           while (true) {
             const { done, value } = await reader.read();
             if (done) { streamDone = true; if (!appending && queue.length === 0 && mediaSource.readyState === "open") mediaSource.endOfStream(); break; }
-            if (value) { queue.push(value); appendNext(); }
+            if (value) { queue.push(value.buffer.slice(value.byteOffset, value.byteOffset + value.byteLength)); appendNext(); }
           }
         } catch {
           resolve(false);
