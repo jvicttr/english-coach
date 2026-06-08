@@ -523,6 +523,7 @@ export default function Home() {
     >
       {/* ── Header ─────────────────────────────────────────── */}
       <header className="w-full max-w-2xl mb-3 flex items-center justify-between gap-2">
+        {/* Logo */}
         <div className="flex items-center gap-2 shrink-0">
           <div className="w-8 h-8 rounded-xl flex items-center justify-center font-black text-sm shrink-0" style={{ background: "var(--yellow)", color: "var(--black)" }}>
             JV
@@ -532,20 +533,25 @@ export default function Home() {
           </span>
         </div>
 
-        <a href="/planos" style={{ fontSize: ".78rem", fontWeight: 700, color: "var(--yellow)", border: "1px solid rgba(245,200,0,.35)", borderRadius: "50px", padding: ".3rem .8rem", textDecoration: "none", whiteSpace: "nowrap" }}>
-          Planos
-        </a>
+        {/* Ações — direita */}
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            onClick={() => router.push("/app/historico")}
+            title="Histórico de quizzes"
+            style={{ background: "var(--dark2)", border: "1px solid #2a2a2a", borderRadius: "10px", width: "36px", height: "36px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1rem", cursor: "pointer" }}
+          >
+            🏆
+          </button>
 
-        <UserButton />
+          <a
+            href="/planos"
+            style={{ fontSize: ".78rem", fontWeight: 700, color: "var(--yellow)", border: "1px solid rgba(245,200,0,.35)", borderRadius: "50px", padding: ".3rem .8rem", textDecoration: "none", whiteSpace: "nowrap" }}
+          >
+            Planos
+          </a>
 
-        {/* Histórico link */}
-        <button
-          onClick={() => router.push("/app/historico")}
-          title="Ver histórico de quizzes"
-          style={{ background: "var(--dark2)", border: "1px solid #2a2a2a", borderRadius: "10px", padding: "6px 10px", color: "var(--gray)", fontSize: "0.78rem", cursor: "pointer", whiteSpace: "nowrap" }}
-        >
-          🏆
-        </button>
+          <UserButton />
+        </div>
       </header>
 
       {/* ── Chat area ──────────────────────────────────────── */}
