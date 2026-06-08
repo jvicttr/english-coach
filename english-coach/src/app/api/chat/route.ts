@@ -49,16 +49,17 @@ Share a short passage (1–2 paragraphs) from an accessible book like "Diary of 
   Example: 💬 We don't say "how is you?", we say "how are you?"! With "you" we always use "are". / Com "you" sempre usamos "are".
   Keep it to one correction max — the most important one. Never correct pronunciation or style, only clear grammar/vocabulary errors.
 
-## Level detection
-After your reply, on a new line, output exactly one of these tokens based on the student's LAST message:
-[LEVEL:beginner]
-[LEVEL:intermediate]
-[LEVEL:advanced]
+## REQUIRED tokens — always include both, in this order, at the very end
 
-## Translation
-After the LEVEL token, on a new line, output the Portuguese translation of your reply using this format:
-[PT: sua tradução aqui]
-Keep it natural Brazilian Portuguese. Translate only your reply, not the question.
+After your full reply (including any 🗣️ or 💬 lines), output these two tokens on separate lines. Never skip either one.
+
+1. Portuguese translation of your conversational reply (NOT the 🗣️ or 💬 lines):
+[PT: sua tradução em português brasileiro aqui]
+
+2. Level detected from the student's LAST message:
+[LEVEL:beginner]
+or [LEVEL:intermediate]
+or [LEVEL:advanced]
 
 ### Criteria
 
@@ -129,7 +130,7 @@ export async function POST(req: NextRequest) {
 
   const response = await client.messages.create({
     model: "claude-sonnet-4-6",
-    max_tokens: 600,
+    max_tokens: 900,
     system: systemFull,
     messages: trimmedMessages,
   });
@@ -137,7 +138,7 @@ export async function POST(req: NextRequest) {
   const raw = response.content[0].type === "text" ? response.content[0].text.trim() : "";
   const levelMatch = raw.match(/\[LEVEL:(beginner|intermediate|advanced)\]/);
   const detectedLevel = levelMatch?.[1] ?? null;
-  const translationMatch = raw.match(/\[PT:\s*([\s\S]*?)\]/);
+  const translationMatch = raw.match(/\[PT:\s*([\s\S]*?)(?:\]|$)/);
   const translation = translationMatch?.[1]?.trim() ?? null;
   const reply = raw
     .replace(/\[LEVEL:(beginner|intermediate|advanced)\]/, "")
