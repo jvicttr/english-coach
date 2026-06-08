@@ -777,9 +777,14 @@ export default function Home() {
 
       {/* ── Status ─────────────────────────────────────────── */}
       <div className="mt-1.5 h-3.5 text-[11px] text-center">
-        {isListening && <span style={{ color: "#ef4444" }}>● Gravando — toque no mic para enviar</span>}
-        {isTranscribing && <span style={{ color: "var(--yellow)" }}>● Reconhecendo...</span>}
-        {isSpeaking && !isListening && !isTranscribing && <span style={{ color: "var(--yellow)" }}>● Coach falando...</span>}
+        {isListening
+          ? <span style={{ color: "#ef4444" }}>● Gravando — toque em ⏹ para enviar</span>
+          : isTranscribing
+          ? <span style={{ color: "var(--yellow)" }}>● Reconhecendo sua voz...</span>
+          : isSpeaking
+          ? <span style={{ color: "var(--yellow)" }}>● Coach falando...</span>
+          : <span style={{ color: "var(--gray2)", opacity: 0.6 }}>● Toque em 🎙️ para gravar sua voz</span>
+        }
       </div>
     </div>
   );
