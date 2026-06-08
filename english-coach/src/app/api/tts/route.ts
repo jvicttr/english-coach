@@ -10,11 +10,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "No text" }, { status: 400 });
     }
 
+    const isSlow = speed !== undefined && speed < 0.7;
+
     const response = await openai.audio.speech.create({
-      model: "tts-1",
+      model: isSlow ? "tts-1-hd" : "tts-1",
       voice: "echo",
       input: text,
-      speed: speed ?? 1.0,
+      speed: isSlow ? 0.25 : (speed ?? 1.0),
     });
 
     // Stream the audio directly — client starts playing before full download
