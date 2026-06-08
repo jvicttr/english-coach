@@ -531,24 +531,6 @@ export default function Home() {
 
         <UserButton />
 
-        <div className="hidden sm:flex gap-1.5">
-          {(["beginner", "intermediate", "advanced"] as NonNullable<Level>[]).map((l) => (
-            <button
-              key={l}
-              onClick={() => setLevel(l)}
-              className="px-2.5 py-1 rounded-full text-xs font-semibold transition-all"
-              style={level === l ? { background: "var(--yellow)", color: "var(--black)" } : { background: "var(--dark2)", color: "var(--gray)", border: "1px solid #2a2a2a" }}
-            >
-              {LEVEL_LABEL[l]}
-            </button>
-          ))}
-        </div>
-        <div className="sm:hidden">
-          <span className="px-2.5 py-1 rounded-full text-xs font-semibold" style={level ? { background: "var(--yellow)", color: "var(--black)" } : { background: "var(--dark2)", color: "var(--gray)", border: "1px solid #2a2a2a" }}>
-            {level ? LEVEL_LABEL[level] : "Detectando..."}
-          </span>
-        </div>
-
         {/* Histórico link */}
         <button
           onClick={() => router.push("/app/historico")}
@@ -570,7 +552,7 @@ export default function Home() {
             <div>
               <p className="font-semibold text-white">Pronto para praticar!</p>
               <p className="text-sm mt-1 max-w-xs" style={{ color: "var(--gray)" }}>
-                Use o microfone para falar em inglês ou escreva uma mensagem. Escolha o nível acima.
+                Use o microfone para falar em inglês ou escreva uma mensagem.
               </p>
             </div>
           </div>
