@@ -105,6 +105,7 @@ export default function Home() {
       });
       const data = await res.json();
       if (data.limitReached) { setLimitReached(true); setMessages((prev) => prev.slice(0, -1)); return; }
+      if (!data.reply) return;
       setMessages((prev) => [...prev, { role: "assistant", content: data.reply, translation: data.translation ?? undefined }]);
       if (data.detectedLevel) setLevel(data.detectedLevel as Level);
       speak(data.reply);
