@@ -31,7 +31,20 @@ export default function Historico() {
   const [results, setResults] = useState<QuizResult[]>([]);
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState<string | null>(null);
   const router = useRouter();
+
+  async function deleteQuiz(id: string) {
+    if (!confirm("Apagar este quiz do histórico?")) return;
+    setDeleting(id);
+    await fetch("/api/quiz-history", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id }),
+    });
+    setResults((prev) => prev.filter((r) => r.id !== id));
+    setDeleting(null);
+  }
 
   useEffect(() => {
     fetch("/api/quiz-history")
@@ -96,7 +109,7 @@ export default function Historico() {
                       {total} perguntas
                     </p>
                   </div>
-                  <div className="flex items-center gap-3 shrink-0">
+                  <div className="flex items-center gap-2 shrink-0">
                     {pct != null ? (
                       <div className="text-right">
                         <p className="font-black text-lg" style={{ color: scoreColor }}>{pct}%</p>
@@ -107,9 +120,17 @@ export default function Historico() {
                         Não finalizado
                       </span>
                     )}
-                    <span style={{ color: "var(--gray)", fontSize: "0.8rem", transition: "transform 0.2s", display: "inline-block", transform: isOpen ? "rotate(180deg)" : "rotate(0deg)" }}>
+                    <span style={{ color: "var(--gray)", fontSize: "0.8rem", display: "inline-block", transform: isOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s" }}>
                       ▼
                     </span>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); deleteQuiz(r.id); }}
+                      disabled={deleting === r.id}
+                      title="Apagar quiz"
+                      style={{ background: "transparent", border: "none", cursor: "pointer", fontSize: "0.9rem", opacity: deleting === r.id ? 0.4 : 0.5, padding: "2px 4px", lineHeight: 1 }}
+                    >
+                      🗑️
+                    </button>
                   </div>
                 </div>
               </button>
