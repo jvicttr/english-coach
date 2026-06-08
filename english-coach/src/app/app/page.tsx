@@ -41,6 +41,7 @@ export default function Home() {
   const [micError, setMicError] = useState("");
   const [pendingSpeak, setPendingSpeak] = useState<string | null>(null);
   const [limitReached, setLimitReached] = useState(false);
+  const [isPro, setIsPro] = useState(false);
 
   // Quiz state
   const [screen, setScreen] = useState<AppScreen>("chat");
@@ -61,6 +62,10 @@ export default function Home() {
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  useEffect(() => {
+    fetch("/api/me").then((r) => r.json()).then((d) => setIsPro(d.plan === "pro"));
+  }, []);
 
   function stripEmojis(text: string): string {
     return text
@@ -535,6 +540,11 @@ export default function Home() {
 
         {/* Ações — direita */}
         <div className="flex items-center gap-2 shrink-0">
+          {isPro && (
+            <span style={{ fontSize: "0.68rem", fontWeight: 800, letterSpacing: "0.5px", background: "linear-gradient(135deg, #f5c800, #e0a800)", color: "#000", padding: "3px 8px", borderRadius: "50px", boxShadow: "0 0 8px rgba(245,200,0,0.4)" }}>
+              PRO
+            </span>
+          )}
           <button
             onClick={() => router.push("/app/historico")}
             title="Histórico de quizzes"
