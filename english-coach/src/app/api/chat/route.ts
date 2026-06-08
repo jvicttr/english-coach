@@ -47,6 +47,11 @@ After your reply, on a new line, output exactly one of these tokens based on the
 [LEVEL:intermediate]
 [LEVEL:advanced]
 
+## Translation
+After the LEVEL token, on a new line, output the Portuguese translation of your reply using this format:
+[PT: sua tradução aqui]
+Keep it natural Brazilian Portuguese. Translate only your reply, not the question.
+
 ### Criteria
 
 **beginner**
@@ -109,17 +114,25 @@ export async function POST(req: NextRequest) {
   const { messages, level } = await req.json();
   const systemFull = `${SYSTEM_PROMPT}\n\nCurrent detected level: ${level || "intermediate"}`;
 
+  // Keep only the last 20 messages to limit input token cost
+  const trimmedMessages = messages.slice(-20);
+
   const response = await client.messages.create({
     model: "claude-sonnet-4-6",
     max_tokens: 350,
     system: systemFull,
-    messages,
+    messages: trimmedMessages,
   });
 
   const raw = response.content[0].type === "text" ? response.content[0].text.trim() : "";
   const levelMatch = raw.match(/\[LEVEL:(beginner|intermediate|advanced)\]/);
   const detectedLevel = levelMatch?.[1] ?? null;
-  const reply = raw.replace(/\[LEVEL:(beginner|intermediate|advanced)\]/, "").trim();
+  const translationMatch = raw.match(/\[PT:\s*([\s\S]*?)\]/);
+  const translation = translationMatch?.[1]?.trim() ?? null;
+  const reply = raw
+    .replace(/\[LEVEL:(beginner|intermediate|advanced)\]/, "")
+    .replace(/\[PT:[\s\S]*?\]/, "")
+    .trim();
 
-  return NextResponse.json({ reply, detectedLevel });
+  return NextResponse.json({ reply, detectedLevel, translation });
 }

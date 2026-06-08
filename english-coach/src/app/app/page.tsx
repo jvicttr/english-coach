@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { UserButton } from "@clerk/nextjs";
 
-type Message = { role: "user" | "assistant"; content: string };
+type Message = { role: "user" | "assistant"; content: string; translation?: string };
 type Level = "beginner" | "intermediate" | "advanced" | null;
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnySpeechRecognition = any;
@@ -105,7 +105,7 @@ export default function Home() {
       });
       const data = await res.json();
       if (data.limitReached) { setLimitReached(true); setMessages((prev) => prev.slice(0, -1)); return; }
-      setMessages((prev) => [...prev, { role: "assistant", content: data.reply }]);
+      setMessages((prev) => [...prev, { role: "assistant", content: data.reply, translation: data.translation ?? undefined }]);
       if (data.detectedLevel) setLevel(data.detectedLevel as Level);
       speak(data.reply);
     } finally {
@@ -331,6 +331,11 @@ export default function Home() {
               }
             >
               {msg.content}
+              {msg.role === "assistant" && msg.translation && (
+                <div style={{ marginTop: "8px", paddingTop: "8px", borderTop: "1px solid rgba(255,255,255,0.08)", color: "var(--gray)", fontSize: "0.78rem", fontStyle: "italic" }}>
+                  🇧🇷 {msg.translation}
+                </div>
+              )}
             </div>
           </div>
         ))}

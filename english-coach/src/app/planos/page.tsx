@@ -65,7 +65,7 @@ export default function PlanosPage() {
             MAIS POPULAR
           </div>
           <div style={{ fontSize: ".8rem", fontWeight: 700, color: "var(--yellow)", textTransform: "uppercase", letterSpacing: ".5px", marginBottom: ".75rem" }}>Coach IA</div>
-          <div style={{ fontSize: "2.5rem", fontWeight: 900, color: "var(--white)", marginBottom: ".25rem" }}>R$ 47</div>
+          <div style={{ fontSize: "2.5rem", fontWeight: 900, color: "var(--white)", marginBottom: ".25rem" }}>R$ 97</div>
           <div style={{ fontSize: ".85rem", color: "var(--gray)", marginBottom: "2rem" }}>por mês</div>
           <ul style={{ listStyle: "none", padding: 0, margin: "0 0 2rem", display: "flex", flexDirection: "column", gap: ".75rem" }}>
             {["Mensagens ilimitadas", "Respostas em áudio", "Detecção automática de nível", "Acesso ao coach de IA", "Suporte por WhatsApp"].map((f) => (
