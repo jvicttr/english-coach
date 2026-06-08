@@ -692,10 +692,12 @@ export default function Home() {
               <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 mb-0.5" style={{ background: "var(--yellow)", color: "var(--black)" }}>
                 {isSpeaking && i === messages.reduce<number>((last, m, idx) => m.role === "assistant" ? idx : last, -1) ? (
                   <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M4 16 Q10 10 4 4" stroke="#000" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round" fill="none"
-                      style={{ transformOrigin: "4px 10px", animation: "chevronPulse 0.55s ease-in-out 0s infinite alternate" }} />
-                    <path d="M11 16 Q17 10 11 4" stroke="#000" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round" fill="none"
-                      style={{ transformOrigin: "11px 10px", animation: "chevronPulse 0.55s ease-in-out 0.2s infinite alternate" }} />
+                    <path d="M4 16 Q11 10 4 4" stroke="#000" strokeWidth="3" strokeLinecap="round" fill="none">
+                      <animate attributeName="opacity" values="1;0.2;1" dur="0.8s" repeatCount="indefinite" begin="0s" />
+                    </path>
+                    <path d="M11 16 Q18 10 11 4" stroke="#000" strokeWidth="3" strokeLinecap="round" fill="none">
+                      <animate attributeName="opacity" values="1;0.2;1" dur="0.8s" repeatCount="indefinite" begin="0.28s" />
+                    </path>
                   </svg>
                 ) : (
                   <span style={{ fontSize: "0.65rem", fontWeight: 900 }}>JV</span>
