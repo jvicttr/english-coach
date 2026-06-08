@@ -42,7 +42,10 @@ export default function Home() {
   const [micError, setMicError] = useState("");
   const [pendingSpeak, setPendingSpeak] = useState<string | null>(null);
   const [limitReached, setLimitReached] = useState(false);
-  const [isPro, setIsPro] = useState(false);
+  const [isPro, setIsPro] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return localStorage.getItem("userPlan") === "pro";
+  });
 
   // Quiz state
   const [screen, setScreen] = useState<AppScreen>("chat");
@@ -65,7 +68,11 @@ export default function Home() {
   }, [messages]);
 
   useEffect(() => {
-    fetch("/api/me").then((r) => r.json()).then((d) => setIsPro(d.plan === "pro"));
+    fetch("/api/me").then((r) => r.json()).then((d) => {
+      const pro = d.plan === "pro";
+      setIsPro(pro);
+      localStorage.setItem("userPlan", d.plan ?? "free");
+    });
   }, []);
 
   function stripEmojis(text: string): string {

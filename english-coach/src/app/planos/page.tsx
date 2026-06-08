@@ -5,11 +5,18 @@ import { useRouter } from "next/navigation";
 
 export default function PlanosPage() {
   const [loading, setLoading] = useState(false);
-  const [isPro, setIsPro] = useState(false);
+  const [isPro, setIsPro] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return localStorage.getItem("userPlan") === "pro";
+  });
   const router = useRouter();
 
   useEffect(() => {
-    fetch("/api/me").then((r) => r.json()).then((d) => setIsPro(d.plan === "pro"));
+    fetch("/api/me").then((r) => r.json()).then((d) => {
+      const pro = d.plan === "pro";
+      setIsPro(pro);
+      localStorage.setItem("userPlan", d.plan ?? "free");
+    });
   }, []);
 
   async function handleAssinar() {
