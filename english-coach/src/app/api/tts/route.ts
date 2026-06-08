@@ -4,17 +4,19 @@ import { NextRequest, NextResponse } from "next/server";
 export async function POST(req: NextRequest) {
   const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
   try {
-    const { text, speed } = await req.json();
+    const { text, speed, lang } = await req.json();
 
     if (!text?.trim()) {
       return NextResponse.json({ error: "No text" }, { status: 400 });
     }
 
     const isSlow = speed !== undefined && speed < 0.7;
+    // "echo" for English, "onyx" for Portuguese (deep, same masculine tone)
+    const voice = lang === "pt" ? "onyx" : "echo";
 
     const response = await openai.audio.speech.create({
       model: isSlow ? "tts-1-hd" : "tts-1",
-      voice: "echo",
+      voice,
       input: text,
       speed: isSlow ? 0.25 : (speed ?? 1.0),
     });

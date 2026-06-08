@@ -82,34 +82,82 @@ export default function Home() {
     audio.play().then(() => { audio.pause(); audio.currentTime = 0; }).catch(() => {});
   }
 
+  // Splits message into segments: { text, lang }
+  // Removes 🗣️ lines entirely; for 💬 lines, reads English part with "en" and PT part with "pt"
+  function splitSpeechSegments(text: string): { text: string; lang: "en" | "pt" }[] {
+    const segments: { text: string; lang: "en" | "pt" }[] = [];
+    const lines = text.split("\n");
+    const enLines: string[] = [];
+
+    for (const line of lines) {
+      const trimmed = line.trim();
+      // Skip pronunciation hints entirely
+      if (trimmed.startsWith("🗣️")) continue;
+
+      // 💬 correction: "We don't say X, we say Y! English explanation. / Explicação em português."
+      if (trimmed.startsWith("💬")) {
+        const slashIdx = trimmed.indexOf(" / ");
+        if (slashIdx !== -1) {
+          const enPart = trimmed.slice(0, slashIdx).replace(/^💬\s*/, "").trim();
+          const ptPart = trimmed.slice(slashIdx + 3).trim();
+          if (enLines.length > 0) {
+            segments.push({ text: enLines.join(" ").trim(), lang: "en" });
+            enLines.length = 0;
+          }
+          if (enPart) segments.push({ text: enPart, lang: "en" });
+          if (ptPart) segments.push({ text: ptPart, lang: "pt" });
+        } else {
+          enLines.push(trimmed.replace(/^💬\s*/, ""));
+        }
+        continue;
+      }
+
+      enLines.push(trimmed);
+    }
+
+    if (enLines.length > 0) {
+      const joined = enLines.join(" ").trim();
+      if (joined) segments.push({ text: joined, lang: "en" });
+    }
+
+    return segments.filter((s) => s.text.length > 0);
+  }
+
+  async function speakSegment(text: string, lang: "en" | "pt", speed: number): Promise<void> {
+    const clean = stripEmojis(text);
+    if (!clean) return;
+    const res = await fetch("/api/tts", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text: clean, speed, lang }),
+    });
+    if (!res.ok) return;
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    return new Promise((resolve) => {
+      const player = audioRef.current ?? new Audio();
+      audioRef.current = player;
+      player.src = url;
+      player.onended = () => { URL.revokeObjectURL(url); resolve(); };
+      player.onerror = () => { resolve(); };
+      player.play().catch(() => resolve());
+    });
+  }
+
   async function speak(text: string, slow = false) {
     const audio = audioRef.current;
     if (audio && !audio.paused) audio.pause();
 
-    const clean = stripEmojis(text);
-    if (!clean) return;
+    const speed = slow ? 0.25 : level === "beginner" ? 0.85 : level === "advanced" ? 1.05 : 1.0;
+    const segments = splitSpeechSegments(text);
+    if (segments.length === 0) return;
 
-    const speed = slow ? 0.55 : level === "beginner" ? 0.85 : level === "advanced" ? 1.05 : 1.0;
     setIsSpeaking(true);
-
     try {
-      const res = await fetch("/api/tts", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: clean, speed }),
-      });
-
-      if (!res.ok) { setIsSpeaking(false); return; }
-
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const player = audioRef.current ?? new Audio();
-      audioRef.current = player;
-      player.src = url;
-      player.onended = () => { setIsSpeaking(false); URL.revokeObjectURL(url); };
-      player.onerror = () => { setIsSpeaking(false); };
-      player.play().catch(() => setIsSpeaking(false));
-    } catch {
+      for (const seg of segments) {
+        await speakSegment(seg.text, seg.lang, speed);
+      }
+    } finally {
       setIsSpeaking(false);
     }
   }
