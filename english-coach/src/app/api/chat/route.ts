@@ -122,8 +122,10 @@ export async function POST(req: NextRequest) {
   const { messages, level } = await req.json();
   const systemFull = `${SYSTEM_PROMPT}\n\nCurrent detected level: ${level || "intermediate"}`;
 
-  // Keep only the last 20 messages to limit input token cost
-  const trimmedMessages = messages.slice(-20);
+  // Keep only the last 20 messages and strip any extra fields (e.g. translation) that the API doesn't accept
+  const trimmedMessages = messages
+    .slice(-20)
+    .map(({ role, content }: { role: string; content: string }) => ({ role, content }));
 
   const response = await client.messages.create({
     model: "claude-sonnet-4-6",
