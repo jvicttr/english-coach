@@ -129,17 +129,20 @@ export default function Home() {
     return segments.filter((s) => s.text.length > 0);
   }
 
-  async function speakSegment(text: string, lang: "en" | "pt", speed: number): Promise<boolean> {
+  async function fetchAudioUrl(text: string, lang: "en" | "pt", speed: number): Promise<string | null> {
     const clean = stripEmojis(text);
-    if (!clean) return true;
+    if (!clean) return null;
     const res = await fetch("/api/tts", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ text: clean, speed, lang }),
     });
-    if (!res.ok) return false;
+    if (!res.ok) return null;
     const blob = await res.blob();
-    const url = URL.createObjectURL(blob);
+    return URL.createObjectURL(blob);
+  }
+
+  function playUrl(url: string): Promise<boolean> {
     return new Promise((resolve) => {
       const player = audioRef.current ?? new Audio();
       audioRef.current = player;
@@ -161,13 +164,22 @@ export default function Home() {
     setIsSpeaking(true);
     setPendingSpeak(null);
     try {
-      for (const seg of segments) {
-        const ok = await speakSegment(seg.text, seg.lang, speed);
-        if (!ok) {
-          // Autoplay blocked — store full text so user can tap to retry
-          setPendingSpeak(text);
-          return;
-        }
+      // Pre-fetch next segment while current one is playing to reduce perceived delay
+      let prefetched: Promise<string | null> | null = segments.length > 0
+        ? fetchAudioUrl(segments[0].text, segments[0].lang, speed)
+        : null;
+
+      for (let i = 0; i < segments.length; i++) {
+        // Start pre-fetching next segment immediately
+        const nextSeg = segments[i + 1];
+        const nextFetch = nextSeg ? fetchAudioUrl(nextSeg.text, nextSeg.lang, speed) : null;
+
+        const url = await prefetched;
+        prefetched = nextFetch;
+
+        if (!url) { setPendingSpeak(text); return; }
+        const ok = await playUrl(url);
+        if (!ok) { setPendingSpeak(text); return; }
       }
     } finally {
       setIsSpeaking(false);
