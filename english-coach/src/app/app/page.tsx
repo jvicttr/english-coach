@@ -689,7 +689,22 @@ export default function Home() {
         {messages.map((msg, i) => (
           <div key={i} className={`mb-3 flex ${msg.role === "user" ? "justify-end" : "justify-start"} items-end gap-2`}>
             {msg.role === "assistant" && (
-              <div className="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-black shrink-0 mb-0.5" style={{ background: "var(--yellow)", color: "var(--black)" }}>JV</div>
+              <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 mb-0.5" style={{ background: "var(--yellow)", color: "var(--black)" }}>
+                {isSpeaking && i === messages.filter(m => m.role === "assistant").length - 1 ? (
+                  <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M5 9 Q6 6 7 9 Q8 12 9 9" stroke="#000" strokeWidth="1.8" strokeLinecap="round" fill="none">
+                      <animate attributeName="d" dur="0.6s" repeatCount="indefinite"
+                        values="M5 9 Q6 6 7 9 Q8 12 9 9;M5 9 Q6 12 7 9 Q8 6 9 9;M5 9 Q6 6 7 9 Q8 12 9 9" />
+                    </path>
+                    <path d="M10 9 Q11 5.5 12 9 Q13 12.5 14 9" stroke="#000" strokeWidth="1.8" strokeLinecap="round" fill="none">
+                      <animate attributeName="d" dur="0.6s" repeatCount="indefinite" begin="0.15s"
+                        values="M10 9 Q11 5.5 12 9 Q13 12.5 14 9;M10 9 Q11 12.5 12 9 Q13 5.5 14 9;M10 9 Q11 5.5 12 9 Q13 12.5 14 9" />
+                    </path>
+                  </svg>
+                ) : (
+                  <span style={{ fontSize: "0.65rem", fontWeight: 900 }}>JV</span>
+                )}
+              </div>
             )}
             <div
               className="max-w-[82%] sm:max-w-[78%] px-3 sm:px-4 py-2.5 text-sm leading-relaxed"
@@ -768,7 +783,9 @@ export default function Home() {
 
         {isLoading && (
           <div className="flex items-end gap-2 mb-3">
-            <div className="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-black shrink-0" style={{ background: "var(--yellow)", color: "var(--black)" }}>JV</div>
+            <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{ background: "var(--yellow)", color: "var(--black)" }}>
+              <span style={{ fontSize: "0.65rem", fontWeight: 900 }}>JV</span>
+            </div>
             <div className="px-4 py-3 text-sm" style={{ background: "var(--dark2)", borderRadius: "18px 18px 18px 4px", border: "1px solid #2a2a2a" }}>
               <span className="flex gap-1 items-center">
                 {[0, 150, 300].map((d) => (
