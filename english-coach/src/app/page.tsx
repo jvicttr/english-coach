@@ -325,16 +325,6 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* PLANOS */}
-      <section className="why" id="planos" style={{ background: "var(--black)" }}>
-        <div className="section-label anim">Planos</div>
-        <h2 className="anim anim-delay-1">Aula + Coach IA: <em>combo completo</em></h2>
-        <p className="subtitle anim anim-delay-2">Combine aulas particulares com o Coach IA e pratique inglês todos os dias — com 50% de desconto no coach.</p>
-
-        {/* Toggle mensal/semestral */}
-        <PlanosToggle />
-      </section>
-
       {/* CTA CONTATO */}
       <div className="contact-cta anim scale-up">
         <h2>Pronto para dar o <em>primeiro passo</em>?</h2>
