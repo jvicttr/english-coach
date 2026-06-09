@@ -722,7 +722,7 @@ export default function Home() {
           <div className="w-8 h-8 rounded-xl flex items-center justify-center font-black text-sm shrink-0" style={{ background: "var(--yellow)", color: "var(--black)" }}>
             JV
           </div>
-          <span className="font-bold text-white text-sm leading-none">
+          <span className="hidden sm:inline font-bold text-white text-sm leading-none">
             Fale Inglês <span style={{ color: "var(--yellow)" }}>JV</span>
           </span>
         </div>
@@ -744,12 +744,16 @@ export default function Home() {
               </button>
             </>
           )}
+          {/* Portal do Aluno — texto no desktop, ícone no mobile */}
           <button
             onClick={() => router.push("/app/historico")}
-            title="Histórico de quizzes"
-            style={{ background: "var(--dark2)", border: "1px solid #2a2a2a", borderRadius: "10px", width: "36px", height: "36px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1rem", cursor: "pointer" }}
+            title="Portal do Aluno"
+            style={{ background: "var(--dark2)", border: "1px solid #2a2a2a", borderRadius: "10px", height: "36px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", whiteSpace: "nowrap" }}
           >
-            🏆
+            <span className="sm:hidden" style={{ width: "36px", textAlign: "center", fontSize: "1rem" }}>🏆</span>
+            <span className="hidden sm:flex" style={{ alignItems: "center", gap: "6px", padding: "0 12px", fontSize: "0.75rem", fontWeight: 600, color: "var(--gray)" }}>
+              <span style={{ fontSize: "0.9rem" }}>🏆</span> Portal do Aluno
+            </span>
           </button>
 
           <a
