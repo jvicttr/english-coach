@@ -24,6 +24,25 @@ type Quiz = {
 
 type AppScreen = "chat" | "loading-quiz" | "quiz" | "result";
 
+type TopicDef = {
+  id: string;
+  emoji: string;
+  label: string;
+  desc: string;
+  color: string;
+};
+
+const TOPICS: TopicDef[] = [
+  { id: "free",    emoji: "💬", label: "Conversa Livre",       desc: "Papo natural, qualquer assunto",       color: "#F5C800" },
+  { id: "work",    emoji: "💼", label: "Trabalho & Carreira",  desc: "Reuniões, entrevistas, e-mails",       color: "#60a5fa" },
+  { id: "travel",  emoji: "✈️", label: "Viagens & Turismo",    desc: "Aeroporto, hotel, direções",           color: "#4ade80" },
+  { id: "movies",  emoji: "🎬", label: "Filmes & Séries",      desc: "Fale sobre o que está assistindo",     color: "#a78bfa" },
+  { id: "phrasal", emoji: "🔥", label: "Phrasal Verbs",        desc: "Give up, go on, figure out...",        color: "#f97316" },
+  { id: "food",    emoji: "🍽️", label: "Comida & Restaurantes", desc: "Pedir, descrever, recomendar",        color: "#fb7185" },
+  { id: "tech",    emoji: "📱", label: "Tecnologia",           desc: "Apps, redes sociais, gadgets",         color: "#34d399" },
+  { id: "daily",   emoji: "🏠", label: "Rotina & Cotidiano",   desc: "Manhã, trabalho, fim de semana",       color: "#fbbf24" },
+];
+
 const LEVEL_LABEL: Record<NonNullable<Level>, string> = {
   beginner: "Básico",
   intermediate: "Intermediário",
@@ -49,6 +68,7 @@ export default function Home() {
   const [pendingCoupon, setPendingCoupon] = useState<string | null>(null);
   const [couponLoading, setCouponLoading] = useState(false);
   const [portalLoading, setPortalLoading] = useState(false);
+  const [topic, setTopic] = useState<TopicDef | null>(null);
 
   // Quiz state
   const [screen, setScreen] = useState<AppScreen>("chat");
@@ -315,6 +335,30 @@ export default function Home() {
     }
   }
 
+  async function startTopic(t: TopicDef) {
+    setTopic(t);
+    if (t.id === "free") return; // free chat: wait for user input
+    unlockAudio();
+    setIsLoading(true);
+    try {
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ messages: [], level, topic: t.id, topicStart: true }),
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data.limitReached) { setLimitReached(true); return; }
+      if (data.reply) {
+        setMessages([{ role: "assistant", content: data.reply, translation: data.translation ?? undefined }]);
+        speak(data.reply);
+      }
+      if (data.detectedLevel) setLevel(data.detectedLevel as Level);
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
   async function sendMessage(text: string) {
     if (!text.trim() || isLoading) return;
     unlockAudio();
@@ -327,7 +371,7 @@ export default function Home() {
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: updatedMessages, level }),
+        body: JSON.stringify({ messages: updatedMessages, level, topic: topic?.id ?? "free" }),
       });
       if (!res.ok) {
         setMessages((prev) => [...prev, { role: "assistant", content: "Ops, tive um problema. Tente enviar de novo!" }]);
@@ -418,6 +462,8 @@ export default function Home() {
     setShowExplanation(false);
     setScore(0);
     setScreen("chat");
+    setTopic(null); // back to topic selection
+    setLimitReached(false);
   }
 
   async function startListening() {
@@ -722,15 +768,89 @@ export default function Home() {
         className="w-full max-w-2xl flex-1 min-h-0 p-3 sm:p-4 mb-3 overflow-y-auto"
         style={{ background: "var(--dark1)", border: "1px solid #1f1f1f", borderRadius: "var(--radius)", boxShadow: "var(--shadow)" }}
       >
-        {messages.length === 0 && (
-          <div className="flex flex-col items-center justify-center h-full text-center py-6 gap-3">
-            <div className="w-14 h-14 rounded-2xl flex items-center justify-center font-black text-xl" style={{ background: "var(--yellow)", color: "var(--black)" }}>JV</div>
+        {/* ── Topic selection ─────────────────────────────── */}
+        {messages.length === 0 && !topic && !isLoading && (
+          <div className="flex flex-col h-full py-4 gap-4 overflow-y-auto">
+            <div className="text-center">
+              <div className="w-14 h-14 rounded-2xl flex items-center justify-center font-black text-xl mx-auto mb-3" style={{ background: "var(--yellow)", color: "var(--black)" }}>JV</div>
+              <p className="font-bold text-white text-base">O que vamos praticar hoje?</p>
+              <p className="text-xs mt-1" style={{ color: "var(--gray)" }}>Escolha um tópico para começar</p>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "0.6rem" }}>
+              {TOPICS.map((t) => (
+                <button
+                  key={t.id}
+                  onClick={() => startTopic(t)}
+                  className="text-left transition-all active:scale-95"
+                  style={{
+                    background: "var(--dark2)",
+                    border: `1px solid #2a2a2a`,
+                    borderRadius: "14px",
+                    padding: "14px 14px",
+                    cursor: "pointer",
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.borderColor = t.color + "66")}
+                  onMouseLeave={(e) => (e.currentTarget.style.borderColor = "#2a2a2a")}
+                >
+                  <div style={{ fontSize: "1.6rem", lineHeight: 1, marginBottom: "8px" }}>{t.emoji}</div>
+                  <p style={{ fontSize: "0.8rem", fontWeight: 700, color: "var(--white)", lineHeight: 1.2 }}>{t.label}</p>
+                  <p style={{ fontSize: "0.68rem", color: "var(--gray)", marginTop: "3px", lineHeight: 1.3 }}>{t.desc}</p>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ── Topic loading (AI opening message) ──────────── */}
+        {messages.length === 0 && topic && isLoading && (
+          <div className="flex flex-col items-center justify-center h-full gap-3">
+            <div className="text-3xl">{topic.emoji}</div>
+            <div className="flex gap-1.5">
+              {[0, 150, 300].map((d) => (
+                <span key={d} className="w-2 h-2 rounded-full animate-bounce" style={{ background: "var(--yellow)", animationDelay: `${d}ms` }} />
+              ))}
+            </div>
+            <p className="text-xs" style={{ color: "var(--gray)" }}>Preparando sua aula de {topic.label.toLowerCase()}...</p>
+          </div>
+        )}
+
+        {/* ── Free chat ready state ────────────────────────── */}
+        {messages.length === 0 && topic?.id === "free" && !isLoading && (
+          <div className="flex flex-col items-center justify-center h-full text-center gap-3">
+            <div className="text-3xl">💬</div>
             <div>
-              <p className="font-semibold text-white">Pronto para praticar!</p>
-              <p className="text-sm mt-1 max-w-xs" style={{ color: "var(--gray)" }}>
-                Use o microfone para falar em inglês ou escreva uma mensagem.
+              <p className="font-semibold text-white text-sm">Conversa Livre</p>
+              <p className="text-xs mt-1 max-w-xs" style={{ color: "var(--gray)" }}>
+                Use o microfone ou escreva em inglês. Fala sobre qualquer coisa!
               </p>
             </div>
+            <button
+              onClick={() => setTopic(null)}
+              style={{ fontSize: "0.72rem", color: "var(--gray2)", background: "transparent", border: "none", cursor: "pointer", textDecoration: "underline" }}
+            >
+              Trocar tópico
+            </button>
+          </div>
+        )}
+
+        {/* ── Active topic pill ───────────────────────────── */}
+        {topic && messages.length > 0 && (
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "10px", paddingBottom: "10px", borderBottom: "1px solid #1f1f1f" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+              <span style={{ fontSize: "1rem" }}>{topic.emoji}</span>
+              <span style={{ fontSize: "0.72rem", fontWeight: 700, color: topic.color }}>{topic.label}</span>
+              {level && (
+                <span style={{ fontSize: "0.62rem", color: "var(--gray2)", background: "var(--dark2)", padding: "1px 7px", borderRadius: "50px", border: "1px solid #2a2a2a" }}>
+                  {level === "beginner" ? "Básico" : level === "intermediate" ? "Intermediário" : "Avançado"}
+                </span>
+              )}
+            </div>
+            <button
+              onClick={restartChat}
+              style={{ fontSize: "0.68rem", color: "var(--gray2)", background: "transparent", border: "none", cursor: "pointer", opacity: 0.7 }}
+            >
+              Trocar tópico
+            </button>
           </div>
         )}
 
@@ -928,17 +1048,18 @@ export default function Home() {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(input); } }}
-          placeholder="Digite aqui..."
+          placeholder={!topic ? "Escolha um tópico acima para começar..." : "Digite aqui..."}
+          disabled={!topic || limitReached}
           rows={1}
           className="flex-1 resize-none outline-none transition"
-          style={{ background: "var(--dark1)", color: "var(--white)", border: "1px solid #2a2a2a", borderRadius: "var(--radius)", padding: "12px 16px", fontFamily: "'Inter', sans-serif", fontSize: "16px" }}
+          style={{ background: "var(--dark1)", color: "var(--white)", border: "1px solid #2a2a2a", borderRadius: "var(--radius)", padding: "12px 16px", fontFamily: "'Inter', sans-serif", fontSize: "16px", opacity: !topic ? 0.4 : 1 }}
           onFocus={(e) => (e.currentTarget.style.borderColor = "var(--yellow)")}
           onBlur={(e) => (e.currentTarget.style.borderColor = "#2a2a2a")}
         />
 
         <button
           onClick={isListening ? stopListening : startListening}
-          disabled={isLoading || isSpeaking || isTranscribing || limitReached}
+          disabled={isLoading || isSpeaking || isTranscribing || limitReached || !topic}
           title={isListening ? "Clique para parar e enviar" : "Clique para falar"}
           className="w-12 h-12 flex items-center justify-center transition-all shrink-0 disabled:opacity-40"
           style={{ background: isListening ? "#ef4444" : isTranscribing ? "var(--dark2)" : "var(--yellow)", borderRadius: "var(--radius)", boxShadow: isListening ? "0 0 20px rgba(239,68,68,0.5)" : "none", transform: isListening ? "scale(1.08)" : "scale(1)" }}
@@ -961,7 +1082,7 @@ export default function Home() {
 
         <button
           onClick={() => sendMessage(input)}
-          disabled={isLoading || !input.trim() || limitReached}
+          disabled={isLoading || !input.trim() || limitReached || !topic}
           className="w-12 h-12 flex items-center justify-center transition-all shrink-0 disabled:opacity-40"
           style={{ background: "var(--dark2)", border: "1px solid #2a2a2a", borderRadius: "var(--radius)" }}
         >
