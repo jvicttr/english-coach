@@ -58,7 +58,7 @@ function PlanosToggle() {
   const blur: React.CSSProperties = { filter: "blur(6px)", userSelect: "none", pointerEvents: "none" };
 
   return (
-    <div className="anim anim-delay-3">
+    <div>
       {/* Toggle */}
       <div style={{ display: "flex", justifyContent: "center", gap: ".5rem", margin: "2.5rem 0 2rem" }}>
         {(["mensal", "semestral"] as const).map((t) => (
