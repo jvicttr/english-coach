@@ -737,22 +737,22 @@ export default function Home() {
               <button
                 onClick={openPortal}
                 disabled={portalLoading}
-                title="Gerenciar assinatura"
+                title="Portal do Aluno"
                 style={{ background: "var(--dark2)", border: "1px solid #2a2a2a", borderRadius: "10px", height: "36px", padding: "0 .75rem", display: "flex", alignItems: "center", gap: ".35rem", fontSize: ".75rem", fontWeight: 600, color: "var(--gray)", cursor: "pointer", opacity: portalLoading ? .5 : 1, whiteSpace: "nowrap" }}
               >
-                {portalLoading ? "..." : <><span style={{ fontSize: ".85rem" }}>⚙️</span> Assinatura</>}
+                {portalLoading ? "..." : <><span style={{ fontSize: ".85rem" }}>👤</span> Portal do Aluno</>}
               </button>
             </>
           )}
-          {/* Portal do Aluno — texto no desktop, ícone no mobile */}
+          {/* Histórico — texto no desktop, ícone no mobile */}
           <button
             onClick={() => router.push("/app/historico")}
-            title="Portal do Aluno"
+            title="Histórico"
             style={{ background: "var(--dark2)", border: "1px solid #2a2a2a", borderRadius: "10px", height: "36px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", whiteSpace: "nowrap" }}
           >
             <span className="sm:hidden" style={{ width: "36px", textAlign: "center", fontSize: "1rem" }}>🏆</span>
             <span className="hidden sm:flex" style={{ alignItems: "center", gap: "6px", padding: "0 12px", fontSize: "0.75rem", fontWeight: 600, color: "var(--gray)" }}>
-              <span style={{ fontSize: "0.9rem" }}>🏆</span> Portal do Aluno
+              <span style={{ fontSize: "0.9rem" }}>🏆</span> Histórico
             </span>
           </button>
 
