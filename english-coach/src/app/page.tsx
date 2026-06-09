@@ -38,20 +38,24 @@ const FAQS = [
 ];
 
 const MENSAL = [
-  { freq: "1x por semana", aulas: "4 aulas/mês",  soAula: "R$ 259,90", coach: "R$ 48,50", total: "R$ 308,40/mês" },
-  { freq: "2x por semana", aulas: "8 aulas/mês",  soAula: "R$ 359,90", coach: "R$ 48,50", total: "R$ 408,40/mês" },
-  { freq: "3x por semana", aulas: "12 aulas/mês", soAula: "R$ 459,90", coach: "R$ 48,50", total: "R$ 508,40/mês" },
+  { freq: "1x por semana", aulas: "4 aulas/mês",  soAula: "R$ 259,90", coach: "R$ 58,20", total: "R$ 318,10/mês" },
+  { freq: "2x por semana", aulas: "8 aulas/mês",  soAula: "R$ 359,90", coach: "R$ 58,20", total: "R$ 418,10/mês" },
+  { freq: "3x por semana", aulas: "12 aulas/mês", soAula: "R$ 459,90", coach: "R$ 58,20", total: "R$ 518,10/mês" },
 ];
 
 const SEMESTRAL = [
-  { freq: "1x por semana", aulas: "4 aulas/mês",  parcela: "R$ 200,00", coach: "R$ 48,50", total: "6x de R$ 248,50" },
-  { freq: "2x por semana", aulas: "8 aulas/mês",  parcela: "R$ 300,00", coach: "R$ 48,50", total: "6x de R$ 348,50" },
-  { freq: "3x por semana", aulas: "12 aulas/mês", parcela: "R$ 400,00", coach: "R$ 48,50", total: "6x de R$ 448,50" },
+  { freq: "1x por semana", aulas: "4 aulas/mês",  parcela: "R$ 200,00", coach: "R$ 58,20", total: "6x de R$ 258,20" },
+  { freq: "2x por semana", aulas: "8 aulas/mês",  parcela: "R$ 300,00", coach: "R$ 58,20", total: "6x de R$ 358,20" },
+  { freq: "3x por semana", aulas: "12 aulas/mês", parcela: "R$ 400,00", coach: "R$ 58,20", total: "6x de R$ 458,20" },
 ];
+
+const WPP_PLANOS = "https://wa.me/5561995691219?text=Ol%C3%A1%20JV!%20Vi%20os%20planos%20de%20aula%20%2B%20Coach%20IA%20no%20site%20e%20quero%20saber%20mais%20%F0%9F%91%8B";
 
 function PlanosToggle() {
   const [tab, setTab] = useState<"mensal" | "semestral">("mensal");
   const planos = tab === "mensal" ? MENSAL : SEMESTRAL;
+
+  const blur: React.CSSProperties = { filter: "blur(6px)", userSelect: "none", pointerEvents: "none" };
 
   return (
     <div className="anim anim-delay-3">
@@ -88,46 +92,50 @@ function PlanosToggle() {
                 MAIS POPULAR
               </div>
             )}
+
+            {/* Frequência — visível */}
             <div style={{ marginBottom: "1.2rem" }}>
-              <div style={{ fontSize: ".8rem", fontWeight: 700, color: "var(--yellow)", textTransform: "uppercase", letterSpacing: ".5px", marginBottom: ".4rem" }}>{p.freq}</div>
+              <div style={{ fontSize: ".8rem", fontWeight: 700, color: "var(--yellow)", textTransform: "uppercase" as const, letterSpacing: ".5px", marginBottom: ".4rem" }}>{p.freq}</div>
               <div style={{ fontSize: ".85rem", color: "var(--gray)" }}>{p.aulas}</div>
             </div>
 
+            {/* Preços — borrados */}
             <div style={{ display: "flex", flexDirection: "column", gap: ".6rem", marginBottom: "1.4rem", fontSize: ".85rem" }}>
               <div style={{ display: "flex", justifyContent: "space-between", color: "var(--gray)" }}>
                 <span>Aulas particulares</span>
-                <span style={{ color: "var(--white)", fontWeight: 600 }}>{"parcela" in p ? p.parcela : p.soAula}</span>
+                <span style={{ ...blur, color: "var(--white)", fontWeight: 600 }}>{"parcela" in p ? p.parcela : p.soAula}</span>
               </div>
               <div style={{ display: "flex", justifyContent: "space-between", color: "var(--gray)" }}>
-                <span>Coach IA <span style={{ background: "rgba(245,200,0,.12)", color: "var(--yellow)", fontSize: ".7rem", fontWeight: 700, padding: "1px 7px", borderRadius: "50px" }}>50% OFF</span></span>
-                <span style={{ color: "var(--yellow)", fontWeight: 600 }}>{p.coach}/mês</span>
+                <span>Coach IA <span style={{ background: "rgba(245,200,0,.12)", color: "var(--yellow)", fontSize: ".7rem", fontWeight: 700, padding: "1px 7px", borderRadius: "50px" }}>40% OFF</span></span>
+                <span style={{ ...blur, color: "var(--yellow)", fontWeight: 600 }}>{p.coach}/mês</span>
               </div>
               <div style={{ borderTop: "1px solid rgba(255,255,255,.07)", paddingTop: ".6rem", display: "flex", justifyContent: "space-between" }}>
                 <span style={{ fontWeight: 700, color: "var(--white)" }}>Total</span>
-                <span style={{ fontWeight: 800, color: "var(--yellow)", fontSize: "1rem" }}>{p.total}</span>
+                <span style={{ ...blur, fontWeight: 800, color: "var(--yellow)", fontSize: "1rem" }}>{p.total}</span>
               </div>
             </div>
 
+            {/* CTA WhatsApp */}
             <a
-              href="https://wa.me/5561995691219?text=Ol%C3%A1%20JV!%20Quero%20o%20combo%20de%20aulas%20%2B%20Coach%20IA%20%F0%9F%91%8B"
+              href={WPP_PLANOS}
               target="_blank"
               rel="noopener noreferrer"
               style={{
-                display: "block", textAlign: "center", padding: ".8rem", borderRadius: "50px", fontWeight: 800, fontSize: ".9rem", textDecoration: "none",
+                display: "flex", alignItems: "center", justifyContent: "center", gap: ".5rem",
+                textAlign: "center", padding: ".8rem", borderRadius: "50px", fontWeight: 800, fontSize: ".9rem", textDecoration: "none",
                 background: i === 1 ? "var(--yellow)" : "transparent",
                 color: i === 1 ? "var(--black)" : "var(--yellow)",
                 border: i === 1 ? "none" : "1px solid rgba(245,200,0,.4)",
-                transition: "opacity .2s",
               }}
             >
-              Quero este plano
+              <i className="fab fa-whatsapp" /> Ver preço no WhatsApp
             </a>
           </div>
         ))}
       </div>
 
       <p style={{ textAlign: "center", marginTop: "1.5rem", fontSize: ".78rem", color: "var(--gray2)" }}>
-        Coach IA: de R$ 97,00 por <strong style={{ color: "var(--yellow)" }}>R$ 48,50/mês</strong> — exclusivo para alunos · Pagamento seguro via Stripe · Cancele quando quiser
+        Coach IA com <strong style={{ color: "var(--yellow)" }}>40% de desconto</strong> exclusivo para alunos — fale comigo para saber o valor exato do seu plano
       </p>
     </div>
   );
@@ -323,6 +331,14 @@ export default function LandingPage() {
             <i className="fas fa-robot" /> Experimentar o coach de IA
           </a>
         </div>
+      </section>
+
+      {/* PLANOS */}
+      <section className="why" id="planos" style={{ background: "var(--black)" }}>
+        <div className="section-label anim">Planos</div>
+        <h2 className="anim anim-delay-1">Aula + Coach IA: <em>combo completo</em></h2>
+        <p className="subtitle anim anim-delay-2">Combine aulas particulares com o Coach IA e pratique inglês todos os dias — com 40% de desconto exclusivo no coach.</p>
+        <PlanosToggle />
       </section>
 
       {/* CTA CONTATO */}
