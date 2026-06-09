@@ -764,7 +764,7 @@ export default function Home() {
     >
       {/* ── Header ─────────────────────────────────────────── */}
       <header className="w-full max-w-2xl mb-3 flex items-center justify-between gap-2" style={{ position: "relative" }}>
-        {/* Esquerda: voltar ao tópico ou logo */}
+        {/* Esquerda: voltar ao tópico (ou logo) + casinha */}
         <div className="flex items-center gap-2 shrink-0">
           {topic ? (
             <button
@@ -777,19 +777,8 @@ export default function Home() {
           ) : (
             <Image src="/favicon.png" alt="Fale Inglês JV" width={32} height={32} className="rounded-xl shrink-0" />
           )}
-        </div>
 
-        {/* Direita */}
-        <div className="flex items-center gap-2 shrink-0">
-
-          {/* PRO badge — sempre visível */}
-          {isPro && (
-            <span style={{ fontSize: "0.68rem", fontWeight: 800, letterSpacing: "0.5px", background: "linear-gradient(135deg, #f5c800, #e0a800)", color: "#000", padding: "3px 8px", borderRadius: "50px", boxShadow: "0 0 8px rgba(245,200,0,0.4)" }}>
-              PRO
-            </span>
-          )}
-
-          {/* Casinha — sempre visível */}
+          {/* Casinha — sempre visível, ao lado do elemento esquerdo */}
           <a
             href="/"
             title="Voltar ao site"
@@ -800,6 +789,10 @@ export default function Home() {
               <path d="M9 21V12h6v9"/>
             </svg>
           </a>
+        </div>
+
+        {/* Direita */}
+        <div className="flex items-center gap-2 shrink-0">
 
           {/* Portal, Histórico, Revisão — só no desktop */}
           {isPro && (
@@ -855,7 +848,15 @@ export default function Home() {
             }
           </button>
 
-          <UserButton />
+          {/* Foto de perfil com selo PRO overlay */}
+          <div style={{ position: "relative", display: "inline-flex", flexShrink: 0 }}>
+            <UserButton />
+            {isPro && (
+              <span style={{ position: "absolute", bottom: -4, left: "50%", transform: "translateX(-50%)", fontSize: "0.52rem", fontWeight: 800, letterSpacing: "0.4px", background: "linear-gradient(135deg, #f5c800, #e0a800)", color: "#000", padding: "1px 5px", borderRadius: "50px", boxShadow: "0 0 6px rgba(245,200,0,0.5)", whiteSpace: "nowrap", lineHeight: 1.4, pointerEvents: "none" }}>
+                PRO
+              </span>
+            )}
+          </div>
         </div>
 
         {/* Dropdown mobile menu */}
