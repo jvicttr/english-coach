@@ -1,8 +1,9 @@
-"use client";
+﻿"use client";
 
 import { useState, useRef, useEffect } from "react";
 import { UserButton } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 
 type Correction = { wrong: string; right: string; phonetic: string; wrongSentence?: string; rightSentence?: string };
 type Message = { role: "user" | "assistant"; content: string; translation?: string; correction?: Correction };
@@ -69,6 +70,10 @@ export default function Home() {
   const [couponLoading, setCouponLoading] = useState(false);
   const [portalLoading, setPortalLoading] = useState(false);
   const [topic, setTopic] = useState<TopicDef | null>(null);
+  const [installPrompt, setInstallPrompt] = useState<Event | null>(null);
+  const [showInstallBanner, setShowInstallBanner] = useState(false);
+  const [isIOS, setIsIOS] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Quiz state
   const [screen, setScreen] = useState<AppScreen>("chat");
@@ -91,6 +96,21 @@ export default function Home() {
   }, [messages]);
 
   useEffect(() => {
+    const isStandalone = window.matchMedia("(display-mode: standalone)").matches || (navigator as unknown as Record<string, unknown>).standalone === true;
+    if (isStandalone) return;
+    const ios = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as unknown as Record<string, unknown>).MSStream;
+    setIsIOS(!!ios);
+    if (ios) {
+      const dismissed = sessionStorage.getItem("pwa_banner_dismissed");
+      if (!dismissed) setShowInstallBanner(true);
+    } else {
+      const handler = (e: Event) => { e.preventDefault(); setInstallPrompt(e); setShowInstallBanner(true); };
+      window.addEventListener("beforeinstallprompt", handler);
+      return () => window.removeEventListener("beforeinstallprompt", handler);
+    }
+  }, []);
+
+  useEffect(() => {
     fetch("/api/me").then((r) => r.json()).then((d) => {
       const pro = d.plan === "pro";
       setIsPro(pro);
@@ -108,7 +128,13 @@ export default function Home() {
     try {
       const res = await fetch("/api/portal", { method: "POST" });
       const data = await res.json();
-      if (data.url) window.location.href = data.url;
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        alert("Erro: " + (data.error ?? "Sem URL retornada"));
+      }
+    } catch (e) {
+      alert("Erro ao abrir o portal: " + String(e));
     } finally {
       setPortalLoading(false);
     }
@@ -148,35 +174,46 @@ export default function Home() {
   function unlockAudio() {
     if (audioUnlockedRef.current) return;
     audioUnlockedRef.current = true;
-    const audio = new Audio();
-    audioRef.current = audio;
-    audio.src = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=";
-    audio.play().then(() => { audio.pause(); audio.currentTime = 0; }).catch(() => {});
+    // Use a throwaway element just to unlock browser autoplay — don't pollute audioRef
+    const tmp = new Audio();
+    tmp.src = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=";
+    tmp.play().then(() => { tmp.pause(); }).catch(() => {});
   }
 
   // Splits message into segments: { text, lang }
-  // Removes 🗣️ lines entirely; for 💬 lines, reads English part with "en" and PT part with "pt"
+  // Handles: 🗣️ (skip), 💬 (en/pt split), [BR:word] inline PT tags
   function splitSpeechSegments(text: string): { text: string; lang: "en" | "pt" }[] {
     const segments: { text: string; lang: "en" | "pt" }[] = [];
     const lines = text.split("\n");
     const enLines: string[] = [];
 
+    // Expands [BR:word] tags in a line into alternating en/pt segments
+    function expandBrTags(line: string, lang: "en" | "pt", out: { text: string; lang: "en" | "pt" }[]) {
+      const parts = line.split(/(\[BR:[^\]]+\])/g);
+      for (const part of parts) {
+        const brMatch = part.match(/^\[BR:([^\]]+)\]$/);
+        if (brMatch) {
+          out.push({ text: brMatch[1].trim(), lang: "pt" });
+        } else if (part.trim()) {
+          out.push({ text: part.trim(), lang });
+        }
+      }
+    }
+
     for (const line of lines) {
       const trimmed = line.trim();
-      // Skip pronunciation hints entirely
       if (trimmed.startsWith("🗣️")) continue;
 
-      // 💬 correction: "We don't say X, we say Y! English explanation. / Explicação em português."
       if (trimmed.startsWith("💬")) {
         const slashIdx = trimmed.indexOf(" / ");
         if (slashIdx !== -1) {
           const enPart = trimmed.slice(0, slashIdx).replace(/^💬\s*/, "").trim();
           const ptPart = trimmed.slice(slashIdx + 3).trim();
           if (enLines.length > 0) {
-            segments.push({ text: enLines.join(" ").trim(), lang: "en" });
+            expandBrTags(enLines.join(" ").trim(), "en", segments);
             enLines.length = 0;
           }
-          if (enPart) segments.push({ text: enPart, lang: "en" });
+          if (enPart) expandBrTags(enPart, "en", segments);
           if (ptPart) segments.push({ text: ptPart, lang: "pt" });
         } else {
           enLines.push(trimmed.replace(/^💬\s*/, ""));
@@ -188,8 +225,7 @@ export default function Home() {
     }
 
     if (enLines.length > 0) {
-      const joined = enLines.join(" ").trim();
-      if (joined) segments.push({ text: joined, lang: "en" });
+      expandBrTags(enLines.join(" ").trim(), "en", segments);
     }
 
     return segments.filter((s) => s.text.length > 0);
@@ -208,9 +244,15 @@ export default function Home() {
   // Streaming playback: starts playing as first chunks arrive (~300-500ms faster)
   function playStream(res: Response): Promise<boolean> {
     return new Promise((resolve) => {
+      let resolved = false;
+      const done = (v: boolean) => { if (!resolved) { resolved = true; resolve(v); } };
+
+      // Safety timeout — if nothing resolves in 12s, give up
+      const timeout = setTimeout(() => done(false), 12000);
+
       const mediaSource = new MediaSource();
       const url = URL.createObjectURL(mediaSource);
-      const player = audioRef.current ?? new Audio();
+      const player = new Audio();
       audioRef.current = player;
       player.src = url;
 
@@ -220,7 +262,7 @@ export default function Home() {
         try {
           sourceBuffer = mediaSource.addSourceBuffer("audio/mpeg");
         } catch {
-          resolve(false);
+          clearTimeout(timeout); done(false);
           return;
         }
 
@@ -243,22 +285,26 @@ export default function Home() {
           }
         });
 
-        // Start playing as soon as enough data is buffered
-        player.oncanplay = () => { player.play().catch(() => {}); };
-        player.onended = () => resolve(true);
-        player.onerror = () => resolve(false);
+        player.oncanplay = () => {
+          player.play().catch(() => { clearTimeout(timeout); done(false); });
+        };
+        player.onended = () => { clearTimeout(timeout); done(true); };
+        player.onerror = () => { clearTimeout(timeout); done(false); };
 
         try {
           const reader = res.body!.getReader();
           while (true) {
-            const { done, value } = await reader.read();
-            if (done) { streamDone = true; if (!appending && queue.length === 0 && mediaSource.readyState === "open") mediaSource.endOfStream(); break; }
+            const { done: streamEnd, value } = await reader.read();
+            if (streamEnd) { streamDone = true; if (!appending && queue.length === 0 && mediaSource.readyState === "open") mediaSource.endOfStream(); break; }
             if (value) { queue.push(value.buffer.slice(value.byteOffset, value.byteOffset + value.byteLength)); appendNext(); }
           }
         } catch {
-          resolve(false);
+          clearTimeout(timeout); done(false);
         }
       }, { once: true });
+
+      // sourceopen may never fire if MediaSource fails silently
+      mediaSource.addEventListener("error" as keyof MediaSourceEventMap, () => { clearTimeout(timeout); done(false); });
 
       player.play().catch(() => {});
     });
@@ -269,12 +315,15 @@ export default function Home() {
     const blob = await res.blob();
     const url = URL.createObjectURL(blob);
     return new Promise((resolve) => {
-      const player = audioRef.current ?? new Audio();
+      let resolved = false;
+      const done = (v: boolean) => { if (!resolved) { resolved = true; URL.revokeObjectURL(url); resolve(v); } };
+      const timeout = setTimeout(() => done(false), 12000);
+      const player = new Audio();
       audioRef.current = player;
       player.src = url;
-      player.onended = () => { URL.revokeObjectURL(url); resolve(true); };
-      player.onerror = () => { URL.revokeObjectURL(url); resolve(false); };
-      player.play().catch(() => { URL.revokeObjectURL(url); resolve(false); });
+      player.onended = () => { clearTimeout(timeout); done(true); };
+      player.onerror = () => { clearTimeout(timeout); done(false); };
+      player.play().catch(() => { clearTimeout(timeout); done(false); });
     });
   }
 
@@ -306,7 +355,7 @@ export default function Home() {
 
   function playUrl(url: string): Promise<boolean> {
     return new Promise((resolve) => {
-      const player = audioRef.current ?? new Audio();
+      const player = new Audio();
       audioRef.current = player;
       player.src = url;
       player.onended = () => { URL.revokeObjectURL(url); resolve(true); };
@@ -319,7 +368,7 @@ export default function Home() {
     const audio = audioRef.current;
     if (audio && !audio.paused) audio.pause();
 
-    const speed = slow ? 0.4 : level === "beginner" ? 0.85 : level === "advanced" ? 1.05 : 1.0;
+    const speed = slow ? 0.75 : level === "beginner" ? 0.78 : level === "advanced" ? 0.95 : 0.9;
     const segments = splitSpeechSegments(text);
     if (segments.length === 0) return;
 
@@ -351,7 +400,6 @@ export default function Home() {
       if (data.limitReached) { setLimitReached(true); return; }
       if (data.reply) {
         setMessages([{ role: "assistant", content: data.reply, translation: data.translation ?? undefined }]);
-        speak(data.reply);
       }
       if (data.detectedLevel) setLevel(data.detectedLevel as Level);
     } finally {
@@ -385,7 +433,6 @@ export default function Home() {
       }
       setMessages((prev) => [...prev, { role: "assistant", content: data.reply, translation: data.translation ?? undefined, correction: data.correction ?? undefined }]);
       if (data.detectedLevel) setLevel(data.detectedLevel as Level);
-      speak(data.reply);
     } catch {
       setMessages((prev) => [...prev, { role: "assistant", content: "Erro de conexão. Verifique sua internet e tente novamente." }]);
     } finally {
@@ -716,46 +763,79 @@ export default function Home() {
       style={{ background: "var(--black)", fontFamily: "'Inter', sans-serif", height: "100dvh", overflow: "hidden" }}
     >
       {/* ── Header ─────────────────────────────────────────── */}
-      <header className="w-full max-w-2xl mb-3 flex items-center justify-between gap-2">
-        {/* Logo */}
+      <header className="w-full max-w-2xl mb-3 flex items-center justify-between gap-2" style={{ position: "relative" }}>
+        {/* Esquerda: voltar ao tópico ou logo */}
         <div className="flex items-center gap-2 shrink-0">
-          <div className="w-8 h-8 rounded-xl flex items-center justify-center font-black text-sm shrink-0" style={{ background: "var(--yellow)", color: "var(--black)" }}>
-            JV
-          </div>
-          <span className="hidden sm:inline font-bold text-white text-sm leading-none">
-            Fale Inglês <span style={{ color: "var(--yellow)" }}>JV</span>
-          </span>
+          {topic ? (
+            <button
+              onClick={restartChat}
+              style={{ background: "var(--dark2)", border: "1px solid #2a2a2a", borderRadius: "10px", height: "36px", padding: "0 10px", display: "flex", alignItems: "center", gap: "5px", fontSize: "0.75rem", fontWeight: 600, color: "var(--gray)", cursor: "pointer" }}
+            >
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M9 2L4 7L9 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              <span className="hidden sm:inline">Tópicos</span>
+            </button>
+          ) : (
+            <Image src="/favicon.png" alt="Fale Inglês JV" width={32} height={32} className="rounded-xl shrink-0" />
+          )}
         </div>
 
-        {/* Ações — direita */}
+        {/* Direita */}
         <div className="flex items-center gap-2 shrink-0">
+
+          {/* PRO badge — sempre visível */}
           {isPro && (
-            <>
-              <span style={{ fontSize: "0.68rem", fontWeight: 800, letterSpacing: "0.5px", background: "linear-gradient(135deg, #f5c800, #e0a800)", color: "#000", padding: "3px 8px", borderRadius: "50px", boxShadow: "0 0 8px rgba(245,200,0,0.4)" }}>
-                PRO
-              </span>
-              <button
-                onClick={openPortal}
-                disabled={portalLoading}
-                title="Portal do Aluno"
-                style={{ background: "var(--dark2)", border: "1px solid #2a2a2a", borderRadius: "10px", height: "36px", padding: "0 .75rem", display: "flex", alignItems: "center", gap: ".35rem", fontSize: ".75rem", fontWeight: 600, color: "var(--gray)", cursor: "pointer", opacity: portalLoading ? .5 : 1, whiteSpace: "nowrap" }}
-              >
-                {portalLoading ? "..." : <><span style={{ fontSize: ".85rem" }}>👤</span> Portal do Aluno</>}
-              </button>
-            </>
+            <span style={{ fontSize: "0.68rem", fontWeight: 800, letterSpacing: "0.5px", background: "linear-gradient(135deg, #f5c800, #e0a800)", color: "#000", padding: "3px 8px", borderRadius: "50px", boxShadow: "0 0 8px rgba(245,200,0,0.4)" }}>
+              PRO
+            </span>
           )}
-          {/* Histórico — texto no desktop, ícone no mobile */}
+
+          {/* Casinha — sempre visível */}
+          <a
+            href="/"
+            title="Voltar ao site"
+            style={{ background: "var(--dark2)", border: "1px solid #2a2a2a", borderRadius: "10px", height: "36px", width: 36, display: "flex", alignItems: "center", justifyContent: "center", textDecoration: "none", flexShrink: 0 }}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--gray)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9.5z"/>
+              <path d="M9 21V12h6v9"/>
+            </svg>
+          </a>
+
+          {/* Portal, Histórico, Revisão — só no desktop */}
+          {isPro && (
+            <button
+              onClick={openPortal}
+              disabled={portalLoading}
+              title="Portal do Aluno"
+              className="icon-expand-btn hidden sm:flex"
+              style={{ background: "var(--dark2)", border: "1px solid #2a2a2a", borderRadius: "10px", height: "36px", alignItems: "center", cursor: "pointer", opacity: portalLoading ? .5 : 1 }}
+            >
+              <span style={{ fontSize: "1rem", flexShrink: 0, width: 36, textAlign: "center" }}>{portalLoading ? "…" : "👤"}</span>
+              <span className="icon-expand-label">Portal do Aluno</span>
+            </button>
+          )}
           <button
             onClick={() => router.push("/app/historico")}
             title="Histórico"
-            style={{ background: "var(--dark2)", border: "1px solid #2a2a2a", borderRadius: "10px", height: "36px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", whiteSpace: "nowrap" }}
+            className="icon-expand-btn hidden sm:flex"
+            style={{ background: "var(--dark2)", border: "1px solid #2a2a2a", borderRadius: "10px", height: "36px", alignItems: "center", cursor: "pointer" }}
           >
-            <span className="sm:hidden" style={{ width: "36px", textAlign: "center", fontSize: "1rem" }}>🏆</span>
-            <span className="hidden sm:flex" style={{ alignItems: "center", gap: "6px", padding: "0 12px", fontSize: "0.75rem", fontWeight: 600, color: "var(--gray)" }}>
-              <span style={{ fontSize: "0.9rem" }}>🏆</span> Histórico
-            </span>
+            <span style={{ fontSize: "1rem", flexShrink: 0, width: 36, textAlign: "center" }}>🏆</span>
+            <span className="icon-expand-label">Histórico</span>
           </button>
+          {isPro && (
+            <button
+              onClick={() => router.push("/app/resumo")}
+              title="Revisão de Aula"
+              className="icon-expand-btn hidden sm:flex"
+              style={{ background: "var(--dark2)", border: "1px solid #2a2a2a", borderRadius: "10px", height: "36px", alignItems: "center", cursor: "pointer" }}
+            >
+              <span style={{ fontSize: "1rem", flexShrink: 0, width: 36, textAlign: "center" }}>📄</span>
+              <span className="icon-expand-label">Revisão de Aula</span>
+            </button>
+          )}
 
+          {/* Planos — sempre visível */}
           <a
             href="/planos"
             style={{ fontSize: ".78rem", fontWeight: 700, color: "var(--yellow)", border: "1px solid rgba(245,200,0,.35)", borderRadius: "50px", padding: ".3rem .8rem", textDecoration: "none", whiteSpace: "nowrap" }}
@@ -763,8 +843,52 @@ export default function Home() {
             Planos
           </a>
 
+          {/* Hambúrguer — só no mobile */}
+          <button
+            onClick={() => setMobileMenuOpen((v) => !v)}
+            className="flex sm:hidden"
+            style={{ background: "var(--dark2)", border: "1px solid #2a2a2a", borderRadius: "10px", height: "36px", width: 36, alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }}
+          >
+            {mobileMenuOpen
+              ? <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--gray)" strokeWidth="2.5" strokeLinecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+              : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--gray)" strokeWidth="2.5" strokeLinecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+            }
+          </button>
+
           <UserButton />
         </div>
+
+        {/* Dropdown mobile menu */}
+        {mobileMenuOpen && (
+          <div className="flex sm:hidden" style={{ position: "absolute", top: "calc(100% + 8px)", right: 0, background: "var(--dark1)", border: "1px solid #2a2a2a", borderRadius: "14px", padding: ".5rem", display: "flex", flexDirection: "column", gap: ".35rem", zIndex: 50, minWidth: 200, boxShadow: "0 8px 32px rgba(0,0,0,.5)" }}>
+            {isPro && (
+              <button
+                onClick={() => { openPortal(); setMobileMenuOpen(false); }}
+                disabled={portalLoading}
+                style={{ background: "transparent", border: "none", borderRadius: "10px", height: "42px", display: "flex", alignItems: "center", gap: "10px", padding: "0 12px", cursor: "pointer", width: "100%" }}
+              >
+                <span style={{ fontSize: "1rem", width: 24, textAlign: "center" }}>{portalLoading ? "…" : "👤"}</span>
+                <span style={{ fontSize: ".85rem", fontWeight: 600, color: "var(--gray)" }}>Portal do Aluno</span>
+              </button>
+            )}
+            <button
+              onClick={() => { router.push("/app/historico"); setMobileMenuOpen(false); }}
+              style={{ background: "transparent", border: "none", borderRadius: "10px", height: "42px", display: "flex", alignItems: "center", gap: "10px", padding: "0 12px", cursor: "pointer", width: "100%" }}
+            >
+              <span style={{ fontSize: "1rem", width: 24, textAlign: "center" }}>🏆</span>
+              <span style={{ fontSize: ".85rem", fontWeight: 600, color: "var(--gray)" }}>Histórico</span>
+            </button>
+            {isPro && (
+              <button
+                onClick={() => { router.push("/app/resumo"); setMobileMenuOpen(false); }}
+                style={{ background: "transparent", border: "none", borderRadius: "10px", height: "42px", display: "flex", alignItems: "center", gap: "10px", padding: "0 12px", cursor: "pointer", width: "100%" }}
+              >
+                <span style={{ fontSize: "1rem", width: 24, textAlign: "center" }}>📄</span>
+                <span style={{ fontSize: ".85rem", fontWeight: 600, color: "var(--gray)" }}>Revisão de Aula</span>
+              </button>
+            )}
+          </div>
+        )}
       </header>
 
       {/* ── Chat area ──────────────────────────────────────── */}
@@ -774,13 +898,13 @@ export default function Home() {
       >
         {/* ── Topic selection ─────────────────────────────── */}
         {messages.length === 0 && !topic && !isLoading && (
-          <div className="flex flex-col h-full py-4 gap-4 overflow-y-auto">
+          <div className="flex flex-col h-full py-1 sm:py-2 gap-2 sm:gap-3 overflow-y-auto">
             <div className="text-center">
-              <div className="w-14 h-14 rounded-2xl flex items-center justify-center font-black text-xl mx-auto mb-3" style={{ background: "var(--yellow)", color: "var(--black)" }}>JV</div>
-              <p className="font-bold text-white text-base">O que vamos praticar hoje?</p>
-              <p className="text-xs mt-1" style={{ color: "var(--gray)" }}>Escolha um tópico para começar</p>
+              <Image src="/favicon.png" alt="Fale Inglês JV" width={48} height={48} className="rounded-2xl mx-auto mb-1.5 sm:mb-2" />
+              <p className="font-bold text-white text-xs sm:text-sm">O que vamos praticar hoje?</p>
+              <p className="text-xs mt-0.5" style={{ color: "var(--gray)" }}>Escolha um tópico para começar</p>
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "0.6rem" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "0.4rem" }}>
               {TOPICS.map((t) => (
                 <button
                   key={t.id}
@@ -789,16 +913,16 @@ export default function Home() {
                   style={{
                     background: "var(--dark2)",
                     border: `1px solid #2a2a2a`,
-                    borderRadius: "14px",
-                    padding: "14px 14px",
+                    borderRadius: "12px",
+                    padding: "8px 10px",
                     cursor: "pointer",
                   }}
                   onMouseEnter={(e) => (e.currentTarget.style.borderColor = t.color + "66")}
                   onMouseLeave={(e) => (e.currentTarget.style.borderColor = "#2a2a2a")}
                 >
-                  <div style={{ fontSize: "1.6rem", lineHeight: 1, marginBottom: "8px" }}>{t.emoji}</div>
-                  <p style={{ fontSize: "0.8rem", fontWeight: 700, color: "var(--white)", lineHeight: 1.2 }}>{t.label}</p>
-                  <p style={{ fontSize: "0.68rem", color: "var(--gray)", marginTop: "3px", lineHeight: 1.3 }}>{t.desc}</p>
+                  <div style={{ fontSize: "1.1rem", lineHeight: 1, marginBottom: "4px" }}>{t.emoji}</div>
+                  <p style={{ fontSize: "0.72rem", fontWeight: 700, color: "var(--white)", lineHeight: 1.2 }}>{t.label}</p>
+                  <p style={{ fontSize: "0.62rem", color: "var(--gray)", marginTop: "2px", lineHeight: 1.3 }}>{t.desc}</p>
                 </button>
               ))}
             </div>
@@ -807,7 +931,7 @@ export default function Home() {
 
         {/* ── Topic loading (AI opening message) ──────────── */}
         {messages.length === 0 && topic && isLoading && (
-          <div className="flex flex-col items-center justify-center h-full gap-3">
+          <div className="flex flex-col items-center justify-center gap-3" style={{ minHeight: "60%", paddingBottom: "20%" }}>
             <div className="text-3xl">{topic.emoji}</div>
             <div className="flex gap-1.5">
               {[0, 150, 300].map((d) => (
@@ -861,18 +985,18 @@ export default function Home() {
         {messages.map((msg, i) => (
           <div key={i} className={`mb-3 flex ${msg.role === "user" ? "justify-end" : "justify-start"} items-end gap-2`}>
             {msg.role === "assistant" && (
-              <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 mb-0.5" style={{ background: "var(--yellow)", color: "var(--black)" }}>
+              <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 mb-0.5 overflow-hidden" style={isSpeaking && i === messages.reduce<number>((last, m, idx) => m.role === "assistant" ? idx : last, -1) ? { background: "var(--yellow)" } : {}}>
                 {isSpeaking && i === messages.reduce<number>((last, m, idx) => m.role === "assistant" ? idx : last, -1) ? (
                   <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M4 16 Q11 10 4 4" stroke="#000" strokeWidth="3" strokeLinecap="round" fill="none">
-                      <animate attributeName="opacity" values="1;0.2;1" dur="0.8s" repeatCount="indefinite" begin="0s" />
+                    <path d="M3 15 L8 10 L3 5" stroke="#000" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round" fill="none">
+                      <animate attributeName="opacity" values="1;0.15;1" dur="0.75s" repeatCount="indefinite" begin="0s" />
                     </path>
-                    <path d="M11 16 Q18 10 11 4" stroke="#000" strokeWidth="3" strokeLinecap="round" fill="none">
-                      <animate attributeName="opacity" values="1;0.2;1" dur="0.8s" repeatCount="indefinite" begin="0.28s" />
+                    <path d="M10 15 L15 10 L10 5" stroke="#000" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round" fill="none">
+                      <animate attributeName="opacity" values="1;0.15;1" dur="0.75s" repeatCount="indefinite" begin="0.25s" />
                     </path>
                   </svg>
                 ) : (
-                  <span style={{ fontSize: "0.65rem", fontWeight: 900 }}>JV</span>
+                  <Image src="/logo-jv.png" alt="JV" width={28} height={28} style={{ borderRadius: "6px" }} />
                 )}
               </div>
             )}
@@ -930,7 +1054,7 @@ export default function Home() {
               {msg.role === "assistant" && (
                 <div style={{ marginTop: "8px", display: "flex", gap: "6px" }}>
                   <button
-                    onClick={() => speak(msg.content)}
+                    onClick={() => { unlockAudio(); speak(msg.content); }}
                     disabled={isSpeaking || isLoading}
                     title="Ouvir novamente"
                     style={{ background: "transparent", border: "1px solid #3a3a3a", borderRadius: "50px", padding: "2px 10px", fontSize: "0.72rem", color: "var(--gray)", cursor: "pointer", display: "flex", alignItems: "center", gap: "4px", opacity: isSpeaking || isLoading ? 0.4 : 1 }}
@@ -938,7 +1062,7 @@ export default function Home() {
                     🔊 Ouvir
                   </button>
                   <button
-                    onClick={() => speak(msg.content, true)}
+                    onClick={() => { unlockAudio(); speak(msg.content, true); }}
                     disabled={isSpeaking || isLoading}
                     title="Repetir devagar"
                     style={{ background: "transparent", border: "1px solid #3a3a3a", borderRadius: "50px", padding: "2px 10px", fontSize: "0.72rem", color: "var(--gray)", cursor: "pointer", display: "flex", alignItems: "center", gap: "4px", opacity: isSpeaking || isLoading ? 0.4 : 1 }}
@@ -953,8 +1077,8 @@ export default function Home() {
 
         {isLoading && (
           <div className="flex items-end gap-2 mb-3">
-            <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{ background: "var(--yellow)", color: "var(--black)" }}>
-              <span style={{ fontSize: "0.65rem", fontWeight: 900 }}>JV</span>
+            <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 overflow-hidden">
+              <Image src="/logo-jv.png" alt="JV" width={28} height={28} style={{ borderRadius: "6px" }} />
             </div>
             <div className="px-4 py-3 text-sm" style={{ background: "var(--dark2)", borderRadius: "18px 18px 18px 4px", border: "1px solid #2a2a2a" }}>
               <span className="flex gap-1 items-center">
@@ -974,7 +1098,7 @@ export default function Home() {
         <div className="w-full max-w-2xl mb-2 px-4 py-3 flex items-center justify-between gap-3" style={{ background: "rgba(245,200,0,.08)", border: "1px solid rgba(245,200,0,.35)", borderRadius: "var(--radius)" }}>
           <div>
             <p className="text-sm font-bold" style={{ color: "var(--yellow)" }}>🎁 Você tem um desconto esperando!</p>
-            <p className="text-xs mt-0.5" style={{ color: "var(--gray)" }}>Clique para ativar e assinar o Coach IA com desconto exclusivo.</p>
+            <p className="text-xs mt-0.5" style={{ color: "var(--gray)" }}>Clique para ativar e assinar o JV IA com desconto exclusivo.</p>
           </div>
           <div style={{ display: "flex", gap: "8px", flexShrink: 0 }}>
             <button
@@ -1023,16 +1147,49 @@ export default function Home() {
         </div>
       )}
 
+      {/* ── Banner instalar PWA ───────────────────────────── */}
+      {showInstallBanner && (
+        <div className="w-full max-w-2xl mb-2 px-3 py-2.5 flex items-center gap-3" style={{ background: "rgba(245,200,0,0.08)", border: "1px solid rgba(245,200,0,0.3)", borderRadius: "var(--radius)" }}>
+          <span style={{ fontSize: "1.2rem" }}>📲</span>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <p style={{ fontSize: "0.72rem", fontWeight: 700, color: "var(--white)", margin: 0 }}>Adicione à tela inicial</p>
+            {isIOS ? (
+              <p style={{ fontSize: "0.65rem", color: "var(--gray)", margin: "1px 0 0" }}>Toque em <strong style={{ color: "var(--white)" }}>Compartilhar</strong> → <strong style={{ color: "var(--white)" }}>Adicionar à Tela de Início</strong></p>
+            ) : (
+              <p style={{ fontSize: "0.65rem", color: "var(--gray)", margin: "1px 0 0" }}>Instale o app para acessar mais rápido</p>
+            )}
+          </div>
+          {!isIOS && (
+            <button
+              onClick={async () => {
+                if (!installPrompt) return;
+                (installPrompt as unknown as { prompt: () => void }).prompt();
+                setShowInstallBanner(false);
+              }}
+              style={{ background: "var(--yellow)", color: "var(--black)", border: "none", borderRadius: "8px", padding: "5px 12px", fontSize: "0.7rem", fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}
+            >
+              Instalar
+            </button>
+          )}
+          <button
+            onClick={() => { setShowInstallBanner(false); sessionStorage.setItem("pwa_banner_dismissed", "1"); }}
+            style={{ background: "transparent", border: "none", color: "var(--gray)", cursor: "pointer", fontSize: "1rem", lineHeight: 1, padding: "0 2px" }}
+          >
+            ✕
+          </button>
+        </div>
+      )}
+
       {/* ── Limite diário ─────────────────────────────────── */}
       {limitReached && (
         <div className="w-full max-w-2xl mb-3 px-4 py-5 flex flex-col items-center gap-3 text-center" style={{ background: "var(--dark2)", border: "1px solid rgba(245,200,0,.3)", borderRadius: "var(--radius)" }}>
           <div className="text-2xl">🎯</div>
           <div>
             <p className="font-bold text-white text-sm">Você usou suas 10 mensagens de hoje</p>
-            <p className="text-xs mt-1" style={{ color: "var(--gray)" }}>Assine o Coach IA por R$ 47/mês e pratique sem limites todos os dias.</p>
+            <p className="text-xs mt-1" style={{ color: "var(--gray)" }}>Assine o JV IA por R$ 47/mês e pratique sem limites todos os dias.</p>
           </div>
           <a href="/planos" className="px-5 py-2 rounded-full text-sm font-bold transition-all" style={{ background: "var(--yellow)", color: "var(--black)" }}>
-            Assinar Coach IA — R$ 47/mês
+            Assinar JV IA — R$ 47/mês
           </a>
         </div>
       )}
@@ -1052,7 +1209,7 @@ export default function Home() {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(input); } }}
-          placeholder={!topic ? "Escolha um tópico acima para começar..." : "Digite aqui..."}
+          placeholder={!topic ? "☝️ Escolha um tópico..." : "Digite aqui..."}
           disabled={!topic || limitReached}
           rows={1}
           className="flex-1 resize-none outline-none transition"
@@ -1110,3 +1267,4 @@ export default function Home() {
     </div>
   );
 }
+

@@ -30,6 +30,31 @@ body {
   overflow-x: hidden;
 }
 
+/* Icon-only buttons that expand on hover */
+.icon-expand-btn {
+  width: 36px;
+  padding: 0 !important;
+  overflow: hidden;
+  transition: width .22s ease !important;
+}
+.icon-expand-btn:hover {
+  width: 160px;
+}
+.icon-expand-label {
+  width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  transition: width .22s ease, padding-right .22s ease;
+  padding-right: 0 !important;
+  font-size: .75rem;
+  font-weight: 600;
+  color: var(--gray);
+}
+.icon-expand-btn:hover .icon-expand-label {
+  width: auto;
+  padding-right: .65rem !important;
+}
+
 @keyframes waveBar {
   from { transform: scaleY(0.2); }
   to   { transform: scaleY(1); }

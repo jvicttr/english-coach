@@ -1,4 +1,4 @@
-// Shared email utility — uses Resend REST API (no extra package needed)
+﻿// Shared email utility — uses Resend REST API (no extra package needed)
 
 export async function sendEmail({
   to,
@@ -50,7 +50,7 @@ export function welcomeEmailHtml(firstName: string): string {
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Bem-vindo ao Coach IA</title>
+  <title>Bem-vindo ao JV IA</title>
 </head>
 <body style="margin:0;padding:0;background:#0a0a0a;font-family:'Helvetica Neue',Arial,sans-serif;color:#ffffff;">
   <table width="100%" cellpadding="0" cellspacing="0" style="background:#0a0a0a;padding:40px 16px;">
@@ -81,7 +81,7 @@ export function welcomeEmailHtml(firstName: string): string {
                 Bem-vindo, ${firstName}! 🎉
               </p>
               <p style="font-size:15px;color:#aaaaaa;line-height:1.7;margin:0 0 20px;">
-                Sua conta no <strong style="color:#ffffff;">Coach IA — Fale Inglês JV</strong> está pronta.
+                Sua conta no <strong style="color:#ffffff;">JV IA — Fale Inglês JV</strong> está pronta.
                 Agora você pode praticar inglês em conversas reais, com correção, pronúncia e quiz personalizado — tudo no ritmo certo pra você.
               </p>
 
@@ -151,7 +151,7 @@ export function welcomeEmailHtml(firstName: string): string {
             <td style="padding:20px 32px;border-top:1px solid #1f1f1f;">
               <p style="font-size:11px;color:#444444;margin:0;text-align:center;">
                 Fale Inglês JV · <a href="https://www.faleinglesjv.com" style="color:#666;text-decoration:none;">faleinglesjv.com</a><br/>
-                Você está recebendo este e-mail porque criou uma conta no Coach IA.
+                Você está recebendo este e-mail porque criou uma conta no JV IA.
               </p>
             </td>
           </tr>
@@ -245,3 +245,4 @@ export function streakReminderHtml(firstName: string, streak: number): string {
 </body>
 </html>`;
 }
+

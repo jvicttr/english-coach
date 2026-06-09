@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
@@ -71,12 +71,12 @@ export default function PlanosPage() {
           </button>
         </div>
 
-        {/* Coach IA */}
+        {/* JV IA */}
         <div style={{ background: "var(--dark1)", border: "2px solid var(--yellow)", borderRadius: "var(--radius)", padding: "2rem", flex: "1 1 300px", maxWidth: 340, position: "relative" }}>
           <div style={{ position: "absolute", top: "-13px", left: "50%", transform: "translateX(-50%)", background: "var(--yellow)", color: "var(--black)", fontSize: ".72rem", fontWeight: 800, padding: ".3rem .9rem", borderRadius: "50px", whiteSpace: "nowrap" }}>
             {isPro ? "✓ SEU PLANO" : "MAIS POPULAR"}
           </div>
-          <div style={{ fontSize: ".8rem", fontWeight: 700, color: "var(--yellow)", textTransform: "uppercase", letterSpacing: ".5px", marginBottom: ".75rem" }}>Coach IA</div>
+          <div style={{ fontSize: ".8rem", fontWeight: 700, color: "var(--yellow)", textTransform: "uppercase", letterSpacing: ".5px", marginBottom: ".75rem" }}>JV IA</div>
           <div style={{ fontSize: "2.5rem", fontWeight: 900, color: "var(--white)", marginBottom: ".25rem" }}>R$ 97</div>
           <div style={{ fontSize: ".85rem", color: "var(--gray)", marginBottom: "2rem" }}>por mês</div>
           <ul style={{ listStyle: "none", padding: 0, margin: "0 0 2rem", display: "flex", flexDirection: "column", gap: ".75rem" }}>
@@ -112,3 +112,4 @@ export default function PlanosPage() {
     </div>
   );
 }
+

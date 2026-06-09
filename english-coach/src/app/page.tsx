@@ -1,6 +1,6 @@
-"use client";
+﻿"use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
 const WPP = "https://wa.me/5561995691219?text=Ol%C3%A1%2C+quero+aprender+ingl%C3%AAs.+Quais+s%C3%A3o+os+planos+dispon%C3%ADveis%3F";
 
@@ -51,6 +51,85 @@ const SEMESTRAL = [
 
 const WPP_PLANOS = "https://wa.me/5561995691219?text=Ol%C3%A1%20JV!%20Vi%20os%20planos%20de%20aula%20%2B%20Coach%20IA%20no%20site%20e%20quero%20saber%20mais%20%F0%9F%91%8B";
 
+const DEMO_STEPS = [
+  { role: "user",  text: ["I went to the ", { word: "supermercado", en: "supermarket" }, " yesterday but I forgot to buy the ", { word: "detergente", en: "dish soap" }, "."] },
+  { role: "coach", text: ["No problem! Quick vocab: ", { highlight: "supermercado" }, " = supermarket, and ", { highlight: "detergente" }, " = dish soap. Great sentence structure! 💡"] },
+  { role: "user",  text: ["Thanks! I also need to call my ", { word: "senhorio", en: "landlord" }, " about the ", { word: "vazamento", en: "leak" }, "."] },
+  { role: "coach", text: ["Perfect! Say: \"I need to call my landlord about the leak.\" You're mixing naturally — that's exactly how fluency builds! 🎉"] },
+];
+
+function MixDemo() {
+  const [step, setStep] = useState(0);
+  const [visible, setVisible] = useState<number[]>([]);
+  const ref = useRef<HTMLDivElement>(null);
+  const started = useRef(false);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(([e]) => {
+      if (e.isIntersecting && !started.current) {
+        started.current = true;
+        obs.disconnect();
+        let i = 0;
+        const show = () => {
+          setVisible(v => [...v, i]);
+          i++;
+          if (i < DEMO_STEPS.length) setTimeout(show, 1400);
+        };
+        setTimeout(show, 400);
+      }
+    }, { threshold: 0.3 });
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
+
+  return (
+    <div ref={ref} style={{
+      background: "var(--dark2)", borderRadius: 16, padding: "1.4rem 1.2rem",
+      maxWidth: 520, margin: "2.5rem auto 0", border: "1px solid rgba(245,200,0,.13)",
+    }}>
+      <div style={{ display: "flex", alignItems: "center", gap: ".5rem", marginBottom: "1rem", fontSize: ".78rem", color: "var(--gray)", fontWeight: 600 }}>
+        <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#4ade80", display: "inline-block" }} />
+        JV IA — Coach de Inglês
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: ".75rem" }}>
+        {DEMO_STEPS.map((msg, i) => (
+          <div key={i} style={{
+            opacity: visible.includes(i) ? 1 : 0,
+            transform: visible.includes(i) ? "translateY(0)" : "translateY(8px)",
+            transition: "opacity .45s ease, transform .45s ease",
+            display: "flex", justifyContent: msg.role === "user" ? "flex-end" : "flex-start",
+          }}>
+            <div style={{
+              maxWidth: "88%", padding: ".65rem .9rem", borderRadius: msg.role === "user" ? "14px 14px 2px 14px" : "14px 14px 14px 2px",
+              background: msg.role === "user" ? "rgba(245,200,0,.13)" : "rgba(255,255,255,.06)",
+              border: msg.role === "user" ? "1px solid rgba(245,200,0,.25)" : "1px solid rgba(255,255,255,.08)",
+              fontSize: ".82rem", lineHeight: 1.55, color: "var(--white)",
+            }}>
+              {msg.text.map((part, j) =>
+                typeof part === "string" ? (
+                  <span key={j}>{part}</span>
+                ) : "en" in part ? (
+                  <span key={j} title={`em inglês: ${part.en}`} style={{
+                    background: "rgba(245,200,0,.22)", color: "var(--yellow)", fontWeight: 700,
+                    borderRadius: 4, padding: "0 4px", borderBottom: "2px solid var(--yellow)", cursor: "help",
+                  }}>{part.word}</span>
+                ) : (
+                  <span key={j} style={{ color: "var(--yellow)", fontWeight: 700 }}>{part.highlight}</span>
+                )
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+      <p style={{ textAlign: "center", marginTop: "1rem", fontSize: ".72rem", color: "var(--gray2)" }}>
+        Passe o mouse sobre as palavras em amarelo para ver a tradução ↑
+      </p>
+    </div>
+  );
+}
+
 function PlanosToggle() {
   const [tab, setTab] = useState<"mensal" | "semestral">("mensal");
   const planos = tab === "mensal" ? MENSAL : SEMESTRAL;
@@ -74,7 +153,7 @@ function PlanosToggle() {
             }}
           >
             {t === "mensal" ? "Mensal" : "Semestral"}
-            {t === "semestral" && <span style={{ marginLeft: ".4rem", fontSize: ".72rem", background: "rgba(245,200,0,.2)", color: "var(--yellow)", padding: "2px 7px", borderRadius: "50px" }}>-22%</span>}
+            {t === "semestral" && <span style={{ marginLeft: ".4rem", fontSize: ".72rem", background: tab === "semestral" ? "rgba(0,0,0,.18)" : "rgba(245,200,0,.2)", color: tab === "semestral" ? "var(--black)" : "var(--yellow)", padding: "2px 7px", borderRadius: "50px" }}>-22%</span>}
           </button>
         ))}
       </div>
@@ -106,7 +185,7 @@ function PlanosToggle() {
                 <span style={{ ...blur, color: "var(--white)", fontWeight: 600 }}>{"parcela" in p ? p.parcela : p.soAula}</span>
               </div>
               <div style={{ display: "flex", justifyContent: "space-between", color: "var(--gray)" }}>
-                <span>Coach IA <span style={{ background: "rgba(245,200,0,.12)", color: "var(--yellow)", fontSize: ".7rem", fontWeight: 700, padding: "1px 7px", borderRadius: "50px" }}>40% OFF</span></span>
+                <span>JV IA <span style={{ background: "rgba(245,200,0,.12)", color: "var(--yellow)", fontSize: ".7rem", fontWeight: 700, padding: "1px 7px", borderRadius: "50px" }}>40% OFF</span></span>
                 <span style={{ ...blur, color: "var(--yellow)", fontWeight: 600 }}>{p.coach}/mês</span>
               </div>
               <div style={{ borderTop: "1px solid rgba(255,255,255,.07)", paddingTop: ".6rem", display: "flex", justifyContent: "space-between" }}>
@@ -135,7 +214,7 @@ function PlanosToggle() {
       </div>
 
       <p style={{ textAlign: "center", marginTop: "1.5rem", fontSize: ".78rem", color: "var(--gray2)" }}>
-        Coach IA com <strong style={{ color: "var(--yellow)" }}>40% de desconto</strong> exclusivo para alunos — fale comigo para saber o valor exato do seu plano
+        JV IA com <strong style={{ color: "var(--yellow)" }}>40% de desconto</strong> exclusivo para alunos — fale comigo para saber o valor exato do seu plano
       </p>
     </div>
   );
@@ -189,7 +268,7 @@ export default function LandingPage() {
             <li><a href="#como-funciona" onClick={() => setMenuOpen(false)}>Como funciona</a></li>
             <li><a href="#depoimentos" onClick={() => setMenuOpen(false)}>Depoimentos</a></li>
             <li><a href="#faq" onClick={() => setMenuOpen(false)}>FAQ</a></li>
-            <li><a href="/app" onClick={() => setMenuOpen(false)}>Coach IA</a></li>
+            <li><a href="/app" onClick={() => setMenuOpen(false)}>JV IA</a></li>
           </ul>
           <a className="nav-cta nav-cta-style" href={WPP} target="_blank" rel="noopener noreferrer">
             <i className="fab fa-whatsapp" /> Fale comigo
@@ -325,10 +404,19 @@ export default function LandingPage() {
             <h3>No seu nível</h3>
             <p>O coach detecta automaticamente seu nível — básico, intermediário ou avançado — e adapta as conversas para você.</p>
           </div>
+          <div className="why-card" style={{ border: "1px solid rgba(245,200,0,.25)" }}>
+            <div className="why-icon"><i className="fas fa-language" /></div>
+            <h3>Misture português e inglês</h3>
+            <p>Esqueceu uma palavra em inglês? Fale em português mesmo! O coach entende, traduz e te ensina o vocabulário no contexto certo — sem interromper o fluxo da conversa.</p>
+          </div>
         </div>
-        <div style={{ textAlign: "center", marginTop: "2.5rem" }}>
+        <MixDemo />
+        <div style={{ textAlign: "center", marginTop: "2.5rem", display: "flex", justifyContent: "center", gap: "1rem", flexWrap: "wrap" }}>
           <a className="btn-primary anim anim-delay-4" href="/app" style={{ display: "inline-flex" }}>
-            <i className="fas fa-robot" /> Experimentar o coach de IA
+            <i className="fas fa-robot" /> Experimentar o JV IA
+          </a>
+          <a className="btn-secondary anim anim-delay-4" href="/ia" style={{ display: "inline-flex", alignItems: "center", gap: ".5rem" }}>
+            Saiba mais →
           </a>
         </div>
       </section>
@@ -336,8 +424,8 @@ export default function LandingPage() {
       {/* PLANOS */}
       <section className="why" id="planos" style={{ background: "var(--black)" }}>
         <div className="section-label anim">Planos</div>
-        <h2 className="anim anim-delay-1">Aula + Coach IA: <em>combo completo</em></h2>
-        <p className="subtitle anim anim-delay-2">Combine aulas particulares com o Coach IA e pratique inglês todos os dias — com 40% de desconto exclusivo no coach.</p>
+        <h2 className="anim anim-delay-1">Aulas ao vivo + JV IA: <em>combo completo</em></h2>
+        <p className="subtitle anim anim-delay-2">Combine aulas particulares com o JV IA e pratique inglês todos os dias — com 40% de desconto exclusivo no coach.</p>
         <PlanosToggle />
       </section>
 
@@ -417,3 +505,4 @@ export default function LandingPage() {
     </div>
   );
 }
+

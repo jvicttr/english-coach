@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
@@ -86,7 +86,7 @@ export default function DescontoPage() {
         </div>
 
         <h1 style={{ fontSize: "1.8rem", fontWeight: 900, color: "#fff", letterSpacing: "-1px", marginBottom: ".75rem" }}>
-          Coach IA com<br />
+          JV IA com<br />
           <span style={{ color: "#F5C800" }}>
             {percent ? `${percent}% de desconto` : "desconto especial"}
           </span>
@@ -103,7 +103,7 @@ export default function DescontoPage() {
         {/* Benefícios */}
         <div style={{ textAlign: "left", margin: "1.5rem 0", display: "flex", flexDirection: "column", gap: ".6rem" }}>
           {[
-            "Mensagens ilimitadas com o Coach IA",
+            "Mensagens ilimitadas com o JV IA",
             "Respostas em áudio — ouça o inglês correto",
             "Correções automáticas de gramática",
             "Disponível 24h por dia, 7 dias por semana",

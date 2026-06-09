@@ -1,4 +1,4 @@
-import { Webhook } from "svix";
+﻿import { Webhook } from "svix";
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { sendEmail, welcomeEmailHtml } from "@/lib/email";
@@ -80,16 +80,17 @@ export async function POST(req: NextRequest) {
     if (primaryEmail) {
       await sendEmail({
         to: primaryEmail,
-        subject: `Bem-vindo ao Coach IA, ${firstName || "aluno"}! 🎉`,
+        subject: `Bem-vindo ao JV IA, ${firstName || "aluno"}! 🎉`,
         html: welcomeEmailHtml(firstName || "aluno"),
       });
     }
 
     // Notify JV on WhatsApp
     await notifyWhatsApp(
-      `👤 Novo cadastro no Coach IA!\n📛 ${fullName}\n📧 ${primaryEmail ?? "sem email"}`
+      `👤 Novo cadastro no JV IA!\n📛 ${fullName}\n📧 ${primaryEmail ?? "sem email"}`
     );
   }
 
   return NextResponse.json({ received: true });
 }
+

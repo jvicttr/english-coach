@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { createClerkClient } from "@clerk/backend";
 import { createClient } from "@supabase/supabase-js";
+import Stripe from "stripe";
+
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
 const clerk = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY! });
 
@@ -58,9 +61,42 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: "Invalid" }, { status: 400 });
   }
 
+  // If giving PRO manually, ensure user has a Stripe customer
+  let stripeCustomerId: string | undefined;
+  if (plan === "pro") {
+    // Check if already has a stripe_customer_id
+    const { data: existing } = await supabase
+      .from("subscriptions")
+      .select("stripe_customer_id")
+      .eq("user_id", userId)
+      .single();
+
+    if (!existing?.stripe_customer_id) {
+      // Fetch user email from Clerk to create a named customer
+      const clerkUser = await clerk.users.getUser(userId);
+      const email = clerkUser.emailAddresses[0]?.emailAddress;
+      const name = `${clerkUser.firstName ?? ""} ${clerkUser.lastName ?? ""}`.trim() || undefined;
+
+      const customer = await stripe.customers.create({
+        email,
+        name,
+        metadata: { clerk_user_id: userId, manual_pro: "true" },
+      });
+      stripeCustomerId = customer.id;
+    }
+  }
+
   await supabase
     .from("subscriptions")
-    .upsert({ user_id: userId, plan, updated_at: new Date().toISOString() }, { onConflict: "user_id" });
+    .upsert(
+      {
+        user_id: userId,
+        plan,
+        updated_at: new Date().toISOString(),
+        ...(stripeCustomerId ? { stripe_customer_id: stripeCustomerId } : {}),
+      },
+      { onConflict: "user_id" }
+    );
 
   return NextResponse.json({ ok: true });
 }

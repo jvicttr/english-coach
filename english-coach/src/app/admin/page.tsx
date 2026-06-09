@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
@@ -167,7 +167,7 @@ export default function AdminPage() {
               >
                 {shareable.copied ? "✓ Copiado!" : "Copiar"}
               </button>
-              <a href={`https://wa.me/?text=${encodeURIComponent("Olá! Aqui está seu desconto exclusivo no Coach IA: " + shareable.url)}`} target="_blank" rel="noopener noreferrer"
+              <a href={`https://wa.me/?text=${encodeURIComponent("Olá! Aqui está seu desconto exclusivo no JV IA: " + shareable.url)}`} target="_blank" rel="noopener noreferrer"
                 style={{ padding: "6px 14px", borderRadius: 8, fontSize: ".78rem", fontWeight: 700, cursor: "pointer", background: "#25d366", color: "#fff", textDecoration: "none", whiteSpace: "nowrap" }}>
                 📲 WhatsApp
               </a>
@@ -296,3 +296,4 @@ export default function AdminPage() {
     </div>
   );
 }
+
