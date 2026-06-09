@@ -48,6 +48,7 @@ export default function Home() {
   });
   const [pendingCoupon, setPendingCoupon] = useState<string | null>(null);
   const [couponLoading, setCouponLoading] = useState(false);
+  const [portalLoading, setPortalLoading] = useState(false);
 
   // Quiz state
   const [screen, setScreen] = useState<AppScreen>("chat");
@@ -81,6 +82,17 @@ export default function Home() {
       }
     });
   }, []);
+
+  async function openPortal() {
+    setPortalLoading(true);
+    try {
+      const res = await fetch("/api/portal", { method: "POST" });
+      const data = await res.json();
+      if (data.url) window.location.href = data.url;
+    } finally {
+      setPortalLoading(false);
+    }
+  }
 
   async function activateCoupon() {
     if (!pendingCoupon) return;
@@ -672,9 +684,19 @@ export default function Home() {
         {/* Ações — direita */}
         <div className="flex items-center gap-2 shrink-0">
           {isPro && (
-            <span style={{ fontSize: "0.68rem", fontWeight: 800, letterSpacing: "0.5px", background: "linear-gradient(135deg, #f5c800, #e0a800)", color: "#000", padding: "3px 8px", borderRadius: "50px", boxShadow: "0 0 8px rgba(245,200,0,0.4)" }}>
-              PRO
-            </span>
+            <>
+              <span style={{ fontSize: "0.68rem", fontWeight: 800, letterSpacing: "0.5px", background: "linear-gradient(135deg, #f5c800, #e0a800)", color: "#000", padding: "3px 8px", borderRadius: "50px", boxShadow: "0 0 8px rgba(245,200,0,0.4)" }}>
+                PRO
+              </span>
+              <button
+                onClick={openPortal}
+                disabled={portalLoading}
+                title="Gerenciar assinatura"
+                style={{ background: "var(--dark2)", border: "1px solid #2a2a2a", borderRadius: "10px", height: "36px", padding: "0 .75rem", display: "flex", alignItems: "center", gap: ".35rem", fontSize: ".75rem", fontWeight: 600, color: "var(--gray)", cursor: "pointer", opacity: portalLoading ? .5 : 1, whiteSpace: "nowrap" }}
+              >
+                {portalLoading ? "..." : <><span style={{ fontSize: ".85rem" }}>⚙️</span> Assinatura</>}
+              </button>
+            </>
           )}
           <button
             onClick={() => router.push("/app/historico")}
