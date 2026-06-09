@@ -10,13 +10,23 @@ const caveat = Caveat({ subsets: ["latin"], variable: "--font-caveat", weight: [
 export const metadata: Metadata = {
   title: "Fale Inglês JV",
   description: "Aprenda inglês online com o professor João Victor. Aulas personalizadas para todos os objetivos.",
-  icons: { icon: "/favicon.png" },
+  manifest: "/manifest.webmanifest",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "JV IA",
+  },
+  icons: {
+    icon: "/favicon.png",
+    apple: "/apple-touch-icon.png",
+  },
 };
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
+  themeColor: "#F5C800",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
