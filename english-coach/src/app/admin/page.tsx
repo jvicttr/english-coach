@@ -3,6 +3,14 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 
+type ShareableLinkState = {
+  percent: string;
+  label: string;
+  loading: boolean;
+  url: string | null;
+  copied: boolean;
+};
+
 type User = {
   id: string;
   name: string;
@@ -14,6 +22,25 @@ type User = {
 
 export default function AdminPage() {
   const [users, setUsers] = useState<User[]>([]);
+  const [shareable, setShareable] = useState<ShareableLinkState>({ percent: "50", label: "", loading: false, url: null, copied: false });
+
+  async function generateShareableLink() {
+    setShareable((s) => ({ ...s, loading: true, url: null, copied: false }));
+    const res = await fetch("/api/admin/coupon", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ discountPercent: Number(shareable.percent), label: shareable.label || undefined }),
+    });
+    const data = await res.json();
+    setShareable((s) => ({ ...s, loading: false, url: data.url ?? null }));
+  }
+
+  function copyShareableLink() {
+    if (!shareable.url) return;
+    navigator.clipboard.writeText(shareable.url);
+    setShareable((s) => ({ ...s, copied: true }));
+    setTimeout(() => setShareable((s) => ({ ...s, copied: false })), 2000);
+  }
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState<string | null>(null);
   const [search, setSearch] = useState("");
@@ -92,6 +119,60 @@ export default function AdminPage() {
             <span style={{ color: "var(--gray)", fontSize: "0.85rem" }}>Pro: <strong style={{ color: "var(--yellow)" }}>{proCount}</strong></span>
             <span style={{ color: "var(--gray)", fontSize: "0.85rem" }}>Free: <strong style={{ color: "var(--white)" }}>{users.length - proCount}</strong></span>
           </div>
+        </div>
+
+        {/* ── Link compartilhável (sem precisar de usuário cadastrado) ── */}
+        <div style={{ background: "var(--dark1)", border: "1px solid rgba(99,179,237,.25)", borderRadius: 14, padding: "1.25rem 1.5rem", marginBottom: "1.5rem" }}>
+          <p style={{ color: "#63b3ed", fontWeight: 700, fontSize: ".9rem", marginBottom: ".25rem" }}>🔗 Gerar link de desconto compartilhável</p>
+          <p style={{ color: "var(--gray)", fontSize: ".78rem", marginBottom: "1rem" }}>
+            Funciona para quem ainda <strong style={{ color: "var(--white)" }}>não tem cadastro</strong>. O aluno clica, cria a conta e o desconto é aplicado automaticamente.
+          </p>
+          <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "center" }}>
+            <input
+              placeholder="Nome / aluno (opcional)"
+              value={shareable.label}
+              onChange={(e) => setShareable((s) => ({ ...s, label: e.target.value, url: null }))}
+              style={{ flex: "1 1 140px", padding: "7px 12px", borderRadius: 8, background: "var(--dark2)", border: "1px solid #3a3a3a", color: "var(--white)", fontSize: ".85rem", outline: "none" }}
+            />
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <input
+                type="number" min={1} max={99}
+                value={shareable.percent}
+                onChange={(e) => setShareable((s) => ({ ...s, percent: e.target.value, url: null }))}
+                style={{ width: 56, padding: "7px 10px", borderRadius: 8, background: "var(--dark2)", border: "1px solid #3a3a3a", color: "var(--white)", fontSize: ".85rem", textAlign: "center", outline: "none" }}
+              />
+              <span style={{ color: "var(--gray)", fontSize: ".85rem" }}>% off</span>
+              <span style={{ color: "var(--gray)", fontSize: ".78rem" }}>
+                → <strong style={{ color: "var(--yellow)" }}>R$ {Math.round(97 * (1 - Number(shareable.percent) / 100))}/mês</strong>
+              </span>
+            </div>
+            <button
+              onClick={generateShareableLink}
+              disabled={shareable.loading}
+              style={{ padding: "7px 18px", borderRadius: 8, fontSize: ".78rem", fontWeight: 700, cursor: shareable.loading ? "not-allowed" : "pointer", border: "none", background: "#63b3ed", color: "#000", opacity: shareable.loading ? .6 : 1, whiteSpace: "nowrap" }}
+            >
+              {shareable.loading ? "Gerando..." : "Gerar link"}
+            </button>
+          </div>
+
+          {shareable.url && (
+            <div style={{ marginTop: "10px", display: "flex", gap: 8, alignItems: "center" }}>
+              <input
+                readOnly value={shareable.url}
+                style={{ flex: 1, padding: "6px 10px", borderRadius: 8, background: "var(--dark2)", border: "1px solid #3a3a3a", color: "var(--gray)", fontSize: ".72rem", outline: "none", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
+              />
+              <button
+                onClick={copyShareableLink}
+                style={{ padding: "6px 14px", borderRadius: 8, fontSize: ".78rem", fontWeight: 700, cursor: "pointer", border: "1px solid #3a3a3a", background: shareable.copied ? "rgba(74,222,128,.2)" : "var(--dark2)", color: shareable.copied ? "#4ade80" : "var(--gray)", whiteSpace: "nowrap" }}
+              >
+                {shareable.copied ? "✓ Copiado!" : "Copiar"}
+              </button>
+              <a href={`https://wa.me/?text=${encodeURIComponent("Olá! Aqui está seu desconto exclusivo no Coach IA: " + shareable.url)}`} target="_blank" rel="noopener noreferrer"
+                style={{ padding: "6px 14px", borderRadius: 8, fontSize: ".78rem", fontWeight: 700, cursor: "pointer", background: "#25d366", color: "#fff", textDecoration: "none", whiteSpace: "nowrap" }}>
+                📲 WhatsApp
+              </a>
+            </div>
+          )}
         </div>
 
         {/* Search */}

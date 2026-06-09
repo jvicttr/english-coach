@@ -10,7 +10,17 @@ export async function POST(req: NextRequest) {
 
   const origin = req.headers.get("origin") ?? "http://localhost:3000";
 
-  const session = await stripe.checkout.sessions.create({
+  let couponId: string | undefined;
+  try {
+    const body = await req.json().catch(() => ({}));
+    if (body.coupon) {
+      // Validate coupon before using
+      const coupon = await stripe.coupons.retrieve(body.coupon).catch(() => null);
+      if (coupon?.valid) couponId = coupon.id;
+    }
+  } catch { /* no body */ }
+
+  const sessionParams: Stripe.Checkout.SessionCreateParams = {
     mode: "subscription",
     payment_method_types: ["card"],
     line_items: [{ price: process.env.STRIPE_PRICE_ID!, quantity: 1 }],
@@ -18,7 +28,12 @@ export async function POST(req: NextRequest) {
     cancel_url: `${origin}/planos`,
     metadata: { userId },
     subscription_data: { metadata: { userId } },
-  });
+  };
 
+  if (couponId) {
+    sessionParams.discounts = [{ coupon: couponId }];
+  }
+
+  const session = await stripe.checkout.sessions.create(sessionParams);
   return NextResponse.json({ url: session.url });
 }

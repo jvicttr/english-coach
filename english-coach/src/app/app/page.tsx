@@ -46,6 +46,8 @@ export default function Home() {
     if (typeof window === "undefined") return false;
     return localStorage.getItem("userPlan") === "pro";
   });
+  const [pendingCoupon, setPendingCoupon] = useState<string | null>(null);
+  const [couponLoading, setCouponLoading] = useState(false);
 
   // Quiz state
   const [screen, setScreen] = useState<AppScreen>("chat");
@@ -72,8 +74,32 @@ export default function Home() {
       const pro = d.plan === "pro";
       setIsPro(pro);
       localStorage.setItem("userPlan", d.plan ?? "free");
+      // Check for pending discount coupon
+      if (!pro) {
+        const coupon = localStorage.getItem("jv_coupon");
+        if (coupon) setPendingCoupon(coupon);
+      }
     });
   }, []);
+
+  async function activateCoupon() {
+    if (!pendingCoupon) return;
+    setCouponLoading(true);
+    try {
+      const res = await fetch("/api/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ coupon: pendingCoupon }),
+      });
+      const data = await res.json();
+      if (data.url) {
+        localStorage.removeItem("jv_coupon");
+        window.location.href = data.url;
+      }
+    } finally {
+      setCouponLoading(false);
+    }
+  }
 
   function stripEmojis(text: string): string {
     return text
@@ -796,6 +822,33 @@ export default function Home() {
 
         <div ref={bottomRef} />
       </div>
+
+      {/* ── Banner de desconto pendente ────────────────────── */}
+      {pendingCoupon && !isPro && (
+        <div className="w-full max-w-2xl mb-2 px-4 py-3 flex items-center justify-between gap-3" style={{ background: "rgba(245,200,0,.08)", border: "1px solid rgba(245,200,0,.35)", borderRadius: "var(--radius)" }}>
+          <div>
+            <p className="text-sm font-bold" style={{ color: "var(--yellow)" }}>🎁 Você tem um desconto esperando!</p>
+            <p className="text-xs mt-0.5" style={{ color: "var(--gray)" }}>Clique para ativar e assinar o Coach IA com desconto exclusivo.</p>
+          </div>
+          <div style={{ display: "flex", gap: "8px", flexShrink: 0 }}>
+            <button
+              onClick={activateCoupon}
+              disabled={couponLoading}
+              className="text-xs font-bold px-4 py-2 rounded-full"
+              style={{ background: "var(--yellow)", color: "var(--black)", border: "none", cursor: "pointer", opacity: couponLoading ? .6 : 1 }}
+            >
+              {couponLoading ? "..." : "Ativar"}
+            </button>
+            <button
+              onClick={() => { localStorage.removeItem("jv_coupon"); setPendingCoupon(null); }}
+              className="text-xs"
+              style={{ background: "transparent", border: "none", color: "var(--gray2)", cursor: "pointer" }}
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* ── Áudio bloqueado ────────────────────────────────── */}
       {pendingSpeak && !isSpeaking && (
