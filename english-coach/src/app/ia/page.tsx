@@ -78,7 +78,7 @@ const HOW_STEPS = [
 const MIX_DEMO_STEPS = [
   { role: "user",  text: ["I went to the ", { word: "supermercado", en: "supermarket" }, " yesterday but I forgot to buy the ", { word: "detergente", en: "dish soap" }, "."] },
   { role: "coach", text: ["No problem! Quick vocab: ", { highlight: "supermercado" }, " = supermarket, and ", { highlight: "detergente" }, " = dish soap. Great sentence structure! 💡"] },
-  { role: "user",  text: ["Thanks! I also need to call my ", { word: "senhorio", en: "landlord" }, " about the ", { word: "vazamento", en: "leak" }, "."] },
+  { role: "user",  text: ["Thanks! I also need to call my ", { word: "proprietário", en: "landlord" }, " about the ", { word: "vazamento", en: "leak" }, "."] },
   { role: "coach", text: ["Perfect! Say: \"I need to call my landlord about the leak.\" You're mixing naturally — that's exactly how fluency builds! 🎉"] },
 ];
 
