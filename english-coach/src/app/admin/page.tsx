@@ -204,7 +204,7 @@ export default function AdminPage() {
                 )}
               </div>
             )}
-            </div>{/* end outer wrapper */}
+            </div>
           ))}
         </div>
 
