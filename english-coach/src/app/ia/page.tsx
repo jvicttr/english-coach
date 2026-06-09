@@ -75,6 +75,88 @@ const HOW_STEPS = [
   { n: "05", title: "Faça o quiz", desc: "Ao final, gere um quiz com 5 questões sobre o que foi praticado. Veja seu resultado e salve no histórico." },
 ];
 
+const MIX_DEMO_STEPS = [
+  { role: "user",  text: ["I went to the ", { word: "supermercado", en: "supermarket" }, " yesterday but I forgot to buy the ", { word: "detergente", en: "dish soap" }, "."] },
+  { role: "coach", text: ["No problem! Quick vocab: ", { highlight: "supermercado" }, " = supermarket, and ", { highlight: "detergente" }, " = dish soap. Great sentence structure! 💡"] },
+  { role: "user",  text: ["Thanks! I also need to call my ", { word: "senhorio", en: "landlord" }, " about the ", { word: "vazamento", en: "leak" }, "."] },
+  { role: "coach", text: ["Perfect! Say: \"I need to call my landlord about the leak.\" You're mixing naturally — that's exactly how fluency builds! 🎉"] },
+];
+
+type MixPart = string | { word: string; en: string } | { highlight: string };
+
+function MixDemo() {
+  const [visible, setVisible] = useState<number[]>([]);
+  const ref = useRef<HTMLDivElement>(null);
+  const started = useRef(false);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(([e]) => {
+      if (e.isIntersecting && !started.current) {
+        started.current = true;
+        obs.disconnect();
+        let i = 0;
+        const show = () => {
+          setVisible(v => [...v, i]);
+          i++;
+          if (i < MIX_DEMO_STEPS.length) setTimeout(show, 1400);
+        };
+        setTimeout(show, 400);
+      }
+    }, { threshold: 0.3 });
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
+
+  return (
+    <div ref={ref} style={{ background:"#111", border:"1px solid rgba(245,200,0,.2)", borderRadius:20, padding:"1.4rem 1.2rem", maxWidth:500, width:"100%", boxShadow:"0 24px 80px rgba(0,0,0,.6)", fontFamily:"'Inter',sans-serif" }}>
+      <div style={{ display:"flex", alignItems:"center", gap:".5rem", marginBottom:"1rem", fontSize:".75rem", color:"var(--gray)", fontWeight:600 }}>
+        <span style={{ width:8, height:8, borderRadius:"50%", background:"#4ade80", display:"inline-block" }} />
+        JV IA — detectando português automaticamente
+      </div>
+      <div style={{ display:"flex", flexDirection:"column", gap:".75rem" }}>
+        {MIX_DEMO_STEPS.map((msg, i) => (
+          <div key={i} style={{
+            opacity: visible.includes(i) ? 1 : 0,
+            transform: visible.includes(i) ? "translateY(0)" : "translateY(8px)",
+            transition: "opacity .45s ease, transform .45s ease",
+            display:"flex", justifyContent: msg.role === "user" ? "flex-end" : "flex-start",
+          }}>
+            <div style={{
+              maxWidth:"88%", padding:".65rem .9rem",
+              borderRadius: msg.role === "user" ? "14px 14px 2px 14px" : "14px 14px 14px 2px",
+              background: msg.role === "user" ? "var(--yellow)" : "#1a1a1a",
+              color: msg.role === "user" ? "#000" : "#fff",
+              border: msg.role === "ai" ? "1px solid #2a2a2a" : "none",
+              fontSize:".82rem", lineHeight:1.55,
+            }}>
+              {(msg.text as MixPart[]).map((part, j) =>
+                typeof part === "string" ? (
+                  <span key={j}>{part}</span>
+                ) : "en" in part ? (
+                  <span key={j} title={`em inglês: ${part.en}`} style={{
+                    background: msg.role === "user" ? "rgba(0,0,0,.15)" : "rgba(245,200,0,.22)",
+                    color: msg.role === "user" ? "#000" : "var(--yellow)",
+                    fontWeight:700, borderRadius:4, padding:"0 4px",
+                    borderBottom: msg.role === "user" ? "2px solid rgba(0,0,0,.3)" : "2px solid var(--yellow)",
+                    cursor:"help",
+                  }}>{part.word}</span>
+                ) : (
+                  <span key={j} style={{ color:"var(--yellow)", fontWeight:700 }}>{part.highlight}</span>
+                )
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+      <p style={{ textAlign:"center", marginTop:"1rem", fontSize:".7rem", color:"var(--gray2)" }}>
+        Passe o mouse sobre as palavras destacadas para ver a tradução ↑
+      </p>
+    </div>
+  );
+}
+
 // Chat mockup messages
 const MOCK_MESSAGES = [
   { role: "ai", text: "Hey! So good to have you here 😊 So tell me — what have you been up to today? Anything interesting happen?", pt: "Que bom ter você aqui! Me conta — o que você andou fazendo hoje?" },
@@ -333,6 +415,32 @@ export default function IALanding() {
                 <p style={{ fontSize:".875rem", color:"rgba(255,255,255,.5)", lineHeight:1.65 }}>{f.desc}</p>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── MISTURE PORTUGUÊS E INGLÊS ──────────────────────────── */}
+      <section style={{ background:"#0d0d0d", borderTop:"1px solid #1a1a1a" }}>
+        <div className="section-inner" style={{ display:"grid", gridTemplateColumns:"1fr", gap:"3rem", alignItems:"center" }}>
+          <div className="anim">
+            <div className="section-label">Funcionalidade exclusiva</div>
+            <h2 className="big">Misture português<br /><em>e inglês à vontade</em></h2>
+            <p className="subtitle">Esqueceu uma palavra em inglês? Fale em português mesmo, no meio da frase. O JV IA entende, traduz na hora e te ensina o vocabulário certo — sem interromper o fluxo da conversa.</p>
+            <ul style={{ marginTop:"1.5rem", display:"flex", flexDirection:"column", gap:".75rem" }}>
+              {[
+                "Fale como você pensa — misturando os dois idiomas",
+                "O coach detecta automaticamente a palavra em português",
+                "Tradução e contexto em tempo real, sem sair da conversa",
+                "Vocabulário fixado porque apareceu no contexto certo",
+              ].map((item, i) => (
+                <li key={i} style={{ display:"flex", gap:".75rem", alignItems:"flex-start", fontSize:".9rem", color:"rgba(255,255,255,.65)" }}>
+                  <span style={{ color:"var(--yellow)", fontWeight:700, flexShrink:0 }}>✓</span> {item}
+                </li>
+              ))}
+            </ul>
+          </div>
+          <div className="anim anim-delay-2" style={{ display:"flex", justifyContent:"center" }}>
+            <MixDemo />
           </div>
         </div>
       </section>

@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 
 const WPP = "https://wa.me/5561995691219?text=Ol%C3%A1%2C+quero+aprender+ingl%C3%AAs.+Quais+s%C3%A3o+os+planos+dispon%C3%ADveis%3F";
 
@@ -50,85 +50,6 @@ const SEMESTRAL = [
 ];
 
 const WPP_PLANOS = "https://wa.me/5561995691219?text=Ol%C3%A1%20JV!%20Vi%20os%20planos%20de%20aula%20%2B%20Coach%20IA%20no%20site%20e%20quero%20saber%20mais%20%F0%9F%91%8B";
-
-const DEMO_STEPS = [
-  { role: "user",  text: ["I went to the ", { word: "supermercado", en: "supermarket" }, " yesterday but I forgot to buy the ", { word: "detergente", en: "dish soap" }, "."] },
-  { role: "coach", text: ["No problem! Quick vocab: ", { highlight: "supermercado" }, " = supermarket, and ", { highlight: "detergente" }, " = dish soap. Great sentence structure! 💡"] },
-  { role: "user",  text: ["Thanks! I also need to call my ", { word: "senhorio", en: "landlord" }, " about the ", { word: "vazamento", en: "leak" }, "."] },
-  { role: "coach", text: ["Perfect! Say: \"I need to call my landlord about the leak.\" You're mixing naturally — that's exactly how fluency builds! 🎉"] },
-];
-
-function MixDemo() {
-  const [step, setStep] = useState(0);
-  const [visible, setVisible] = useState<number[]>([]);
-  const ref = useRef<HTMLDivElement>(null);
-  const started = useRef(false);
-
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const obs = new IntersectionObserver(([e]) => {
-      if (e.isIntersecting && !started.current) {
-        started.current = true;
-        obs.disconnect();
-        let i = 0;
-        const show = () => {
-          setVisible(v => [...v, i]);
-          i++;
-          if (i < DEMO_STEPS.length) setTimeout(show, 1400);
-        };
-        setTimeout(show, 400);
-      }
-    }, { threshold: 0.3 });
-    obs.observe(el);
-    return () => obs.disconnect();
-  }, []);
-
-  return (
-    <div ref={ref} style={{
-      background: "var(--dark2)", borderRadius: 16, padding: "1.4rem 1.2rem",
-      maxWidth: 520, margin: "2.5rem auto 0", border: "1px solid rgba(245,200,0,.13)",
-    }}>
-      <div style={{ display: "flex", alignItems: "center", gap: ".5rem", marginBottom: "1rem", fontSize: ".78rem", color: "var(--gray)", fontWeight: 600 }}>
-        <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#4ade80", display: "inline-block" }} />
-        JV IA — Coach de Inglês
-      </div>
-      <div style={{ display: "flex", flexDirection: "column", gap: ".75rem" }}>
-        {DEMO_STEPS.map((msg, i) => (
-          <div key={i} style={{
-            opacity: visible.includes(i) ? 1 : 0,
-            transform: visible.includes(i) ? "translateY(0)" : "translateY(8px)",
-            transition: "opacity .45s ease, transform .45s ease",
-            display: "flex", justifyContent: msg.role === "user" ? "flex-end" : "flex-start",
-          }}>
-            <div style={{
-              maxWidth: "88%", padding: ".65rem .9rem", borderRadius: msg.role === "user" ? "14px 14px 2px 14px" : "14px 14px 14px 2px",
-              background: msg.role === "user" ? "rgba(245,200,0,.13)" : "rgba(255,255,255,.06)",
-              border: msg.role === "user" ? "1px solid rgba(245,200,0,.25)" : "1px solid rgba(255,255,255,.08)",
-              fontSize: ".82rem", lineHeight: 1.55, color: "var(--white)",
-            }}>
-              {msg.text.map((part, j) =>
-                typeof part === "string" ? (
-                  <span key={j}>{part}</span>
-                ) : "en" in part ? (
-                  <span key={j} title={`em inglês: ${part.en}`} style={{
-                    background: "rgba(245,200,0,.22)", color: "var(--yellow)", fontWeight: 700,
-                    borderRadius: 4, padding: "0 4px", borderBottom: "2px solid var(--yellow)", cursor: "help",
-                  }}>{part.word}</span>
-                ) : (
-                  <span key={j} style={{ color: "var(--yellow)", fontWeight: 700 }}>{part.highlight}</span>
-                )
-              )}
-            </div>
-          </div>
-        ))}
-      </div>
-      <p style={{ textAlign: "center", marginTop: "1rem", fontSize: ".72rem", color: "var(--gray2)" }}>
-        Passe o mouse sobre as palavras em amarelo para ver a tradução ↑
-      </p>
-    </div>
-  );
-}
 
 function PlanosToggle() {
   const [tab, setTab] = useState<"mensal" | "semestral">("mensal");
@@ -404,13 +325,7 @@ export default function LandingPage() {
             <h3>No seu nível</h3>
             <p>O coach detecta automaticamente seu nível — básico, intermediário ou avançado — e adapta as conversas para você.</p>
           </div>
-          <div className="why-card" style={{ border: "1px solid rgba(245,200,0,.25)" }}>
-            <div className="why-icon"><i className="fas fa-language" /></div>
-            <h3>Misture português e inglês</h3>
-            <p>Esqueceu uma palavra em inglês? Fale em português mesmo! O coach entende, traduz e te ensina o vocabulário no contexto certo — sem interromper o fluxo da conversa.</p>
-          </div>
         </div>
-        <MixDemo />
         <div style={{ textAlign: "center", marginTop: "2.5rem", display: "flex", justifyContent: "center", gap: "1rem", flexWrap: "wrap" }}>
           <a className="btn-primary anim anim-delay-4" href="/app" style={{ display: "inline-flex" }}>
             <i className="fas fa-robot" /> Experimentar o JV IA
