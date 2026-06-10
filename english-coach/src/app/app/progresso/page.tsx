@@ -168,9 +168,9 @@ export default function Progresso() {
         <div style={{ background: "var(--dark1)", border: "1px solid #1e1e1e", borderRadius: 16, padding: "16px" }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
             <p style={{ fontWeight: 700, color: "#fff", fontSize: "0.9rem", margin: 0 }}>Esta semana</p>
-            <span style={{ fontSize: "0.75rem", color: "var(--gray)" }}>{weekTotal} sessão{weekTotal !== 1 ? "ões" : ""}</span>
+            <span style={{ fontSize: "0.75rem", color: "var(--gray)" }}>{weekTotal} {weekTotal !== 1 ? "sessões" : "sessão"}</span>
           </div>
-          <div style={{ display: "flex", alignItems: "flex-end", gap: 6, height: 80 }}>
+          <div style={{ display: "flex", alignItems: "flex-end", gap: 6, height: 100, paddingTop: 20 }}>
             {weekDays.map((day, i) => {
               const score = weekScores[i];
               const isToday = day.toDateString() === new Date().toDateString();
