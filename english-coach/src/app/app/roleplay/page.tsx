@@ -39,6 +39,7 @@ export default function RolePlay() {
   const [screen, setScreen] = useState<AppScreen>("scenarios");
   const [scenario, setScenario] = useState<Scenario | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
+  const [visibleTranslations, setVisibleTranslations] = useState<Set<number>>(new Set());
   const [input, setInput] = useState("");
   const [level, setLevel] = useState<Level>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -614,8 +615,19 @@ export default function RolePlay() {
               }>
               {msg.content}
               {msg.role === "assistant" && msg.translation && (
-                <div style={{ marginTop: "8px", paddingTop: "8px", borderTop: "1px solid rgba(255,255,255,0.08)", color: "var(--gray)", fontSize: "0.78rem", fontStyle: "italic" }}>
-                  🇧🇷 {msg.translation}
+                <div style={{ marginTop: "8px" }}>
+                  {visibleTranslations.has(i) ? (
+                    <div style={{ paddingTop: "8px", borderTop: "1px solid rgba(255,255,255,0.08)", color: "var(--gray)", fontSize: "0.78rem", fontStyle: "italic" }}>
+                      🇧🇷 {msg.translation}
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => setVisibleTranslations(prev => new Set(prev).add(i))}
+                      style={{ background: "transparent", border: "1px solid #3a3a3a", borderRadius: "50px", padding: "2px 10px", fontSize: "0.72rem", color: "var(--gray)", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: "4px" }}
+                    >
+                      🇧🇷 Ver tradução
+                    </button>
+                  )}
                 </div>
               )}
               {msg.role === "assistant" && (
