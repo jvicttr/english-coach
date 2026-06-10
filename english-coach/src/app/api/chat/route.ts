@@ -277,7 +277,13 @@ Important roleplay rules:
 - Still output the [PT:...] translation, [LEVEL:...] tag, and [FIX|...] correction when applicable
 - If the student breaks character (asks a meta question), gently steer them back in character
 ${topicStart ? `- Start the conversation: open with the first line a ${sc.role} would say in this situation.` : ""}`;
-  } else if (topic && topic !== "free" && TOPIC_CONTEXTS[topic]) {
+  } else if (topic === "free" || !topic) {
+    systemFull += `\n\nTOPIC FOCUS — Free conversation.
+The student chose open conversation — they can talk about literally anything they want.
+DO NOT introduce a specific topic or steer the conversation toward any particular subject.
+Just respond naturally to whatever the student says. If they say "hey" or something brief, respond warmly and leave the door open for them to lead — ask something like "What's on your mind?" or "How's it going?" Keep it open-ended and friendly.
+Never assume a topic. Follow the student's lead completely.`;
+  } else if (topic && TOPIC_CONTEXTS[topic]) {
     systemFull += `\n\n${TOPIC_CONTEXTS[topic]}`;
   }
 
