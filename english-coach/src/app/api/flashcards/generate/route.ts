@@ -40,20 +40,24 @@ Return ONLY valid JSON, no markdown:
   ]
 }`;
 
-  const response = await client.messages.create({
-    model: "claude-haiku-4-5-20251001",
-    max_tokens: 800,
-    messages: [{ role: "user", content: prompt }],
-  });
-
-  const raw = response.content[0].type === "text" ? response.content[0].text.trim() : "{}";
-
   let cards: { word: string; translation: string; phonetic?: string; example?: string }[] = [];
+
   try {
-    const parsed = JSON.parse(raw);
+    const response = await client.messages.create({
+      model: "claude-haiku-4-5-20251001",
+      max_tokens: 800,
+      messages: [{ role: "user", content: prompt }],
+    });
+
+    const raw = response.content[0].type === "text" ? response.content[0].text.trim() : "{}";
+    // Strip markdown code fences if present
+    const json = raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
+
+    const parsed = JSON.parse(json);
     cards = parsed.cards ?? [];
-  } catch {
-    return NextResponse.json({ cards: [] });
+  } catch (err) {
+    console.error("[flashcards/generate] AI or parse error:", err);
+    return NextResponse.json({ cards: [], error: "generation_failed" }, { status: 500 });
   }
 
   if (cards.length > 0) {
@@ -69,7 +73,23 @@ Return ONLY valid JSON, no markdown:
       next_review: new Date().toISOString().split("T")[0],
     }));
 
-    await supabase.from("flashcards").upsert(rows, { onConflict: "user_id,word", ignoreDuplicates: true });
+    // Check which words already exist to avoid duplicates manually (fallback if unique constraint missing)
+    const { data: existing } = await supabase
+      .from("flashcards")
+      .select("word")
+      .eq("user_id", userId)
+      .in("word", rows.map((r) => r.word));
+
+    const existingWords = new Set((existing ?? []).map((e: { word: string }) => e.word));
+    const newRows = rows.filter((r) => !existingWords.has(r.word));
+
+    if (newRows.length > 0) {
+      const { error: dbError } = await supabase.from("flashcards").insert(newRows);
+      if (dbError) {
+        console.error("[flashcards/generate] Supabase insert error:", dbError);
+        return NextResponse.json({ cards: [], error: "db_failed" }, { status: 500 });
+      }
+    }
   }
 
   return NextResponse.json({ cards });
