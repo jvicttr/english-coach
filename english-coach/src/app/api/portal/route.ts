@@ -4,25 +4,26 @@ import { auth } from "@clerk/nextjs/server";
 import { createClerkClient } from "@clerk/backend";
 import { createClient } from "@supabase/supabase-js";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
-const clerk = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY! });
 const supabase = createClient(
   process.env.SUPABASE_URL!,
   process.env.SUPABASE_SECRET_KEY!
 );
 
-async function getOrCreateCustomer(userId: string, existingId?: string): Promise<string> {
-  // Try existing customer first
+async function getOrCreateCustomer(
+  stripe: Stripe,
+  clerk: ReturnType<typeof createClerkClient>,
+  userId: string,
+  existingId?: string
+): Promise<string> {
   if (existingId) {
     try {
       await stripe.customers.retrieve(existingId);
-      return existingId; // still valid
+      return existingId;
     } catch {
       // Customer doesn't exist in Stripe — create a new one below
     }
   }
 
-  // Create new Stripe customer
   const clerkUser = await clerk.users.getUser(userId);
   const email = clerkUser.emailAddresses[0]?.emailAddress;
   const name = `${clerkUser.firstName ?? ""} ${clerkUser.lastName ?? ""}`.trim() || undefined;
@@ -33,7 +34,6 @@ async function getOrCreateCustomer(userId: string, existingId?: string): Promise
     metadata: { clerk_user_id: userId },
   });
 
-  // Save new customer ID to Supabase
   await supabase
     .from("subscriptions")
     .upsert(
@@ -45,6 +45,9 @@ async function getOrCreateCustomer(userId: string, existingId?: string): Promise
 }
 
 export async function POST(req: NextRequest) {
+  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
+  const clerk = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY! });
+
   const { userId } = await auth();
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
@@ -57,7 +60,7 @@ export async function POST(req: NextRequest) {
   const origin = req.headers.get("origin") ?? "https://faleinglesjv.com";
 
   try {
-    const customerId = await getOrCreateCustomer(userId, data?.stripe_customer_id);
+    const customerId = await getOrCreateCustomer(stripe, clerk, userId, data?.stripe_customer_id);
 
     const session = await stripe.billingPortal.sessions.create({
       customer: customerId,

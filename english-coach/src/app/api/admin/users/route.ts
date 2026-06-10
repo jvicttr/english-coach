@@ -4,10 +4,6 @@ import { createClerkClient } from "@clerk/backend";
 import { createClient } from "@supabase/supabase-js";
 import Stripe from "stripe";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
-
-const clerk = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY! });
-
 const supabase = createClient(
   process.env.SUPABASE_URL!,
   process.env.SUPABASE_SECRET_KEY!
@@ -26,10 +22,10 @@ export async function GET() {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  // Get all users from Clerk
+  const clerk = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY! });
+
   const { data: clerkUsers } = await clerk.users.getUserList({ limit: 100, orderBy: "-created_at" });
 
-  // Get all subscriptions from Supabase
   const { data: subs } = await supabase
     .from("subscriptions")
     .select("user_id, plan, updated_at");
@@ -56,15 +52,16 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
+  const clerk = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY! });
+  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
+
   const { userId, plan } = await req.json();
   if (!userId || !["free", "pro"].includes(plan)) {
     return NextResponse.json({ error: "Invalid" }, { status: 400 });
   }
 
-  // If giving PRO manually, ensure user has a Stripe customer
   let stripeCustomerId: string | undefined;
   if (plan === "pro") {
-    // Check if already has a stripe_customer_id
     const { data: existing } = await supabase
       .from("subscriptions")
       .select("stripe_customer_id")
@@ -72,7 +69,6 @@ export async function PATCH(req: NextRequest) {
       .single();
 
     if (!existing?.stripe_customer_id) {
-      // Fetch user email from Clerk to create a named customer
       const clerkUser = await clerk.users.getUser(userId);
       const email = clerkUser.emailAddresses[0]?.emailAddress;
       const name = `${clerkUser.firstName ?? ""} ${clerkUser.lastName ?? ""}`.trim() || undefined;
