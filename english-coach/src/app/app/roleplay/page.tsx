@@ -73,12 +73,19 @@ export default function RolePlay() {
     fetch("/api/me").then((r) => r.json()).then((d) => setIsPro(d.plan === "pro"));
   }, []);
 
+  const SILENT_WAV = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=";
+
+  function getAudio(): HTMLAudioElement {
+    if (!audioRef.current) audioRef.current = new Audio();
+    return audioRef.current;
+  }
+
   function unlockAudio() {
+    const a = getAudio();
     if (audioUnlockedRef.current) return;
     audioUnlockedRef.current = true;
-    const tmp = new Audio();
-    tmp.src = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=";
-    tmp.play().then(() => { tmp.pause(); }).catch(() => {});
+    a.src = SILENT_WAV;
+    a.play().then(() => a.pause()).catch(() => {});
   }
 
   function stripEmojis(text: string): string {
@@ -98,11 +105,12 @@ export default function RolePlay() {
       let resolved = false;
       const done = (v: boolean) => { if (!resolved) { resolved = true; resolve(v); } };
       const timeout = setTimeout(() => done(false), 12000);
+      const player = getAudio();
+      if (!player.paused) player.pause();
       const mediaSource = new MediaSource();
       const url = URL.createObjectURL(mediaSource);
-      const player = new Audio();
-      audioRef.current = player;
       player.src = url;
+      player.play().catch(() => {});
       mediaSource.addEventListener("sourceopen", async () => {
         URL.revokeObjectURL(url);
         let sourceBuffer: SourceBuffer;
@@ -112,7 +120,6 @@ export default function RolePlay() {
         let streamDone = false;
         function appendNext() { if (appending || queue.length === 0) return; appending = true; sourceBuffer.appendBuffer(queue.shift()!); }
         sourceBuffer.addEventListener("updateend", () => { appending = false; if (queue.length > 0) appendNext(); else if (streamDone && mediaSource.readyState === "open") mediaSource.endOfStream(); });
-        player.oncanplay = () => { player.play().catch(() => { clearTimeout(timeout); done(false); }); };
         player.onended = () => { clearTimeout(timeout); done(true); };
         player.onerror = () => { clearTimeout(timeout); done(false); };
         try {
@@ -125,19 +132,18 @@ export default function RolePlay() {
         } catch { clearTimeout(timeout); done(false); }
       }, { once: true });
       mediaSource.addEventListener("error" as keyof MediaSourceEventMap, () => { clearTimeout(timeout); done(false); });
-      player.play().catch(() => {});
     });
   }
 
   async function playBlob(res: Response): Promise<boolean> {
+    const player = getAudio();
     const blob = await res.blob();
     const url = URL.createObjectURL(blob);
     return new Promise((resolve) => {
       let resolved = false;
       const done = (v: boolean) => { if (!resolved) { resolved = true; URL.revokeObjectURL(url); resolve(v); } };
       const timeout = setTimeout(() => done(false), 12000);
-      const player = new Audio();
-      audioRef.current = player;
+      if (!player.paused) player.pause();
       player.src = url;
       player.onended = () => { clearTimeout(timeout); done(true); };
       player.onerror = () => { clearTimeout(timeout); done(false); };
@@ -187,11 +193,15 @@ export default function RolePlay() {
   }
 
   async function speak(text: string, slow = false) {
-    const audio = audioRef.current;
-    if (audio && !audio.paused) audio.pause();
+    const player = getAudio();
+    if (!player.paused) player.pause();
     const speed = slow ? 0.75 : level === "beginner" ? 0.78 : level === "advanced" ? 0.95 : 0.9;
     const segments = splitSpeechSegments(text);
     if (segments.length === 0) return;
+    if (!supportsMediaSourceAudio()) {
+      player.src = SILENT_WAV;
+      player.play().catch(() => {});
+    }
     setIsSpeaking(true);
     setPendingSpeak(null);
     try {

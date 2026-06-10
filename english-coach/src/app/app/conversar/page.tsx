@@ -171,14 +171,23 @@ export default function Home() {
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const audioUnlockedRef = useRef(false);
+  const SILENT_WAV = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=";
 
+  // Returns the persistent Audio element, creating it once
+  function getAudio(): HTMLAudioElement {
+    if (!audioRef.current) audioRef.current = new Audio();
+    return audioRef.current;
+  }
+
+  // Must be called synchronously inside a user-gesture handler (onClick).
+  // Plays a silent clip on the persistent element so the browser marks it as
+  // "user-activated" — subsequent async play() calls on the same element work.
   function unlockAudio() {
+    const a = getAudio();
     if (audioUnlockedRef.current) return;
     audioUnlockedRef.current = true;
-    // Use a throwaway element just to unlock browser autoplay — don't pollute audioRef
-    const tmp = new Audio();
-    tmp.src = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=";
-    tmp.play().then(() => { tmp.pause(); }).catch(() => {});
+    a.src = SILENT_WAV;
+    a.play().then(() => a.pause()).catch(() => {});
   }
 
   // Splits message into segments: { text, lang }
@@ -232,30 +241,33 @@ export default function Home() {
     return segments.filter((s) => s.text.length > 0);
   }
 
-  // Check if MediaSource streaming is supported (not on iOS Safari)
   function supportsMediaSourceAudio(): boolean {
     if (typeof MediaSource === "undefined") return false;
-    // iOS Safari reports MediaSource but doesn't support audio/mpeg streaming
     const ua = navigator.userAgent;
     const isIOS = /iPad|iPhone|iPod/.test(ua) && !(window as unknown as Record<string, unknown>).MSStream;
     if (isIOS) return false;
     return MediaSource.isTypeSupported("audio/mpeg");
   }
 
-  // Streaming playback: starts playing as first chunks arrive (~300-500ms faster)
+  // Streaming via MediaSource — reuses the persistent audio element.
+  // play() is called immediately (before sourceopen) so it stays within the
+  // user-gesture activation window on browsers that need it.
   function playStream(res: Response): Promise<boolean> {
     return new Promise((resolve) => {
       let resolved = false;
       const done = (v: boolean) => { if (!resolved) { resolved = true; resolve(v); } };
-
-      // Safety timeout — if nothing resolves in 12s, give up
       const timeout = setTimeout(() => done(false), 12000);
+
+      const player = getAudio();
+      if (!player.paused) player.pause();
 
       const mediaSource = new MediaSource();
       const url = URL.createObjectURL(mediaSource);
-      const player = new Audio();
-      audioRef.current = player;
       player.src = url;
+
+      // Call play() NOW — still within the user-gesture context. It will
+      // buffer until there's data; this is what prevents the autoplay block.
+      player.play().catch(() => {});
 
       mediaSource.addEventListener("sourceopen", async () => {
         URL.revokeObjectURL(url);
@@ -263,8 +275,7 @@ export default function Home() {
         try {
           sourceBuffer = mediaSource.addSourceBuffer("audio/mpeg");
         } catch {
-          clearTimeout(timeout); done(false);
-          return;
+          clearTimeout(timeout); done(false); return;
         }
 
         const queue: ArrayBuffer[] = [];
@@ -279,16 +290,10 @@ export default function Home() {
 
         sourceBuffer.addEventListener("updateend", () => {
           appending = false;
-          if (queue.length > 0) {
-            appendNext();
-          } else if (streamDone && mediaSource.readyState === "open") {
-            mediaSource.endOfStream();
-          }
+          if (queue.length > 0) appendNext();
+          else if (streamDone && mediaSource.readyState === "open") mediaSource.endOfStream();
         });
 
-        player.oncanplay = () => {
-          player.play().catch(() => { clearTimeout(timeout); done(false); });
-        };
         player.onended = () => { clearTimeout(timeout); done(true); };
         player.onerror = () => { clearTimeout(timeout); done(false); };
 
@@ -296,49 +301,35 @@ export default function Home() {
           const reader = res.body!.getReader();
           while (true) {
             const { done: streamEnd, value } = await reader.read();
-            if (streamEnd) { streamDone = true; if (!appending && queue.length === 0 && mediaSource.readyState === "open") mediaSource.endOfStream(); break; }
+            if (streamEnd) {
+              streamDone = true;
+              if (!appending && queue.length === 0 && mediaSource.readyState === "open") mediaSource.endOfStream();
+              break;
+            }
             if (value) { queue.push(value.buffer.slice(value.byteOffset, value.byteOffset + value.byteLength)); appendNext(); }
           }
-        } catch {
-          clearTimeout(timeout); done(false);
-        }
+        } catch { clearTimeout(timeout); done(false); }
       }, { once: true });
 
-      // sourceopen may never fire if MediaSource fails silently
       mediaSource.addEventListener("error" as keyof MediaSourceEventMap, () => { clearTimeout(timeout); done(false); });
-
-      player.play().catch(() => {});
     });
   }
 
-  // Fallback: wait for full blob (iOS Safari)
+  // Fallback for iOS Safari: fetch full blob then play on the persistent element.
   async function playBlob(res: Response): Promise<boolean> {
+    const player = getAudio();
     const blob = await res.blob();
     const url = URL.createObjectURL(blob);
     return new Promise((resolve) => {
       let resolved = false;
       const done = (v: boolean) => { if (!resolved) { resolved = true; URL.revokeObjectURL(url); resolve(v); } };
       const timeout = setTimeout(() => done(false), 12000);
-      const player = new Audio();
-      audioRef.current = player;
+      if (!player.paused) player.pause();
       player.src = url;
       player.onended = () => { clearTimeout(timeout); done(true); };
       player.onerror = () => { clearTimeout(timeout); done(false); };
       player.play().catch(() => { clearTimeout(timeout); done(false); });
     });
-  }
-
-  async function fetchAudioUrl(text: string, lang: "en" | "pt", speed: number): Promise<string | null> {
-    const clean = stripEmojis(text);
-    if (!clean) return null;
-    const res = await fetch("/api/tts", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text: clean, speed, lang }),
-    });
-    if (!res.ok) return null;
-    const blob = await res.blob();
-    return URL.createObjectURL(blob);
   }
 
   async function fetchAndPlay(text: string, lang: "en" | "pt", speed: number): Promise<boolean> {
@@ -354,24 +345,20 @@ export default function Home() {
     return playBlob(res);
   }
 
-  function playUrl(url: string): Promise<boolean> {
-    return new Promise((resolve) => {
-      const player = new Audio();
-      audioRef.current = player;
-      player.src = url;
-      player.onended = () => { URL.revokeObjectURL(url); resolve(true); };
-      player.onerror = () => { URL.revokeObjectURL(url); resolve(false); };
-      player.play().catch(() => { URL.revokeObjectURL(url); resolve(false); });
-    });
-  }
-
   async function speak(text: string, slow = false) {
-    const audio = audioRef.current;
-    if (audio && !audio.paused) audio.pause();
+    const player = getAudio();
+    if (!player.paused) player.pause();
 
     const speed = slow ? 0.75 : level === "beginner" ? 0.78 : level === "advanced" ? 0.95 : 0.9;
     const segments = splitSpeechSegments(text);
     if (segments.length === 0) return;
+
+    // For non-streaming (iOS): call play() here synchronously so the browser
+    // activates the element before the async fetch begins.
+    if (!supportsMediaSourceAudio()) {
+      player.src = SILENT_WAV;
+      player.play().catch(() => {});
+    }
 
     setIsSpeaking(true);
     setPendingSpeak(null);
