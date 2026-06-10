@@ -90,6 +90,9 @@ export default function AppHome() {
       {/* ── Header ─────────────────────────────────────────────────────────── */}
       <header style={{ padding: "14px 16px 12px", display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid #1e1e1e", position: "sticky", top: 0, background: "rgba(0,0,0,.92)", backdropFilter: "blur(12px)", zIndex: 40 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <a href="https://www.faleinglesjv.com" style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 32, height: 32, borderRadius: 8, background: "var(--dark2)", border: "1px solid #2a2a2a", textDecoration: "none", flexShrink: 0 }} title="Voltar ao site">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M9 2L4 7L9 12" stroke="var(--gray)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+          </a>
           <Image src="/favicon.png" alt="JV IA" width={28} height={28} style={{ borderRadius: 8 }} />
           <span style={{ fontWeight: 800, fontSize: "0.95rem", color: "#fff" }}>JV <span style={{ color: "var(--yellow)" }}>IA</span></span>
         </div>
