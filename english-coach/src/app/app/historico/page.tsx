@@ -252,7 +252,7 @@ export default function Historico() {
           {results.length > 0 && (
             <>
               <p style={{ fontSize: "0.78rem", fontWeight: 700, color: "var(--gray)", textTransform: "uppercase", letterSpacing: "0.5px", marginTop: "0.25rem" }}>
-                Histórico detalhado
+                Progresso detalhado
               </p>
               <div className="flex flex-col gap-3">
                 {results.map((r) => {

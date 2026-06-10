@@ -138,7 +138,7 @@ export default function AppHome() {
           <div style={{ position: "fixed", top: 62, right: 16, background: "#1a1a1a", border: "1px solid #2a2a2a", borderRadius: 14, padding: "6px 0", zIndex: 95, minWidth: 200, boxShadow: "0 8px 32px rgba(0,0,0,.6)" }}>
             {[
               { href: "/app/conta", icon: "👤", label: "Portal do Aluno" },
-              { href: "/app/historico", icon: "🏆", label: "Histórico" },
+              { href: "/app/historico", icon: "🏆", label: "Progresso" },
               { href: "/app/resumo", icon: "📄", label: "Revisão de Aula" },
             ].map((item) => (
               <a key={item.href} href={item.href} onClick={() => setMenuOpen(false)} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", textDecoration: "none", color: "#fff", fontSize: "0.9rem", fontWeight: 600 }}
