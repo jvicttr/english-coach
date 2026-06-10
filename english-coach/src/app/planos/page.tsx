@@ -60,7 +60,7 @@ export default function PlanosPage() {
           <div style={{ fontSize: "2.5rem", fontWeight: 900, color: "var(--white)", marginBottom: ".25rem" }}>R$ 0</div>
           <div style={{ fontSize: ".85rem", color: "var(--gray)", marginBottom: "2rem" }}>para sempre</div>
           <ul style={{ listStyle: "none", padding: 0, margin: "0 0 2rem", display: "flex", flexDirection: "column", gap: ".75rem" }}>
-            {["10 mensagens por dia", "Respostas em áudio", "Detecção automática de nível", "Acesso ao coach de IA"].map((f) => (
+            {["10 mensagens por dia", "Respostas em áudio", "Correção de gramática em tempo real", "Detecção automática de nível"].map((f) => (
               <li key={f} style={{ display: "flex", alignItems: "center", gap: ".6rem", fontSize: ".9rem", color: "var(--gray)" }}>
                 <span style={{ color: "var(--yellow)" }}>✓</span> {f}
               </li>
