@@ -61,6 +61,7 @@ export default function AppHome() {
   const [isPro, setIsPro] = useState(false);
   const [userName, setUserName] = useState("");
   const [loading, setLoading] = useState(true);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
     const saved = localStorage.getItem("lastTopic");
@@ -101,6 +102,19 @@ export default function AppHome() {
             Planos
           </a>
 
+          {/* Hambúrguer */}
+          <button onClick={() => setMenuOpen((v) => !v)} style={{ background: "var(--dark2)", border: "1px solid #2a2a2a", borderRadius: 8, width: 32, height: 32, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4, cursor: "pointer", flexShrink: 0 }}>
+            {menuOpen ? (
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 2L12 12M12 2L2 12" stroke="var(--gray)" strokeWidth="2" strokeLinecap="round"/></svg>
+            ) : (
+              <>
+                <span style={{ width: 14, height: 2, background: "var(--gray)", borderRadius: 2 }} />
+                <span style={{ width: 14, height: 2, background: "var(--gray)", borderRadius: 2 }} />
+                <span style={{ width: 14, height: 2, background: "var(--gray)", borderRadius: 2 }} />
+              </>
+            )}
+          </button>
+
           {!loading && isPro && (
             <div style={{ position: "relative", display: "inline-flex", flexShrink: 0 }}>
               <UserButton appearance={{ elements: { avatarBox: { width: 38, height: 38 } } }} />
@@ -116,6 +130,28 @@ export default function AppHome() {
           )}
         </div>
       </header>
+
+      {/* ── Dropdown menu ──────────────────────────────────────────────────── */}
+      {menuOpen && (
+        <>
+          <div onClick={() => setMenuOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 90 }} />
+          <div style={{ position: "fixed", top: 62, right: 16, background: "#1a1a1a", border: "1px solid #2a2a2a", borderRadius: 14, padding: "6px 0", zIndex: 95, minWidth: 200, boxShadow: "0 8px 32px rgba(0,0,0,.6)" }}>
+            {[
+              { href: "/app/conta", icon: "👤", label: "Portal do Aluno" },
+              { href: "/app/historico", icon: "🏆", label: "Histórico" },
+              { href: "/app/resumo", icon: "📄", label: "Revisão de Aula" },
+            ].map((item) => (
+              <a key={item.href} href={item.href} onClick={() => setMenuOpen(false)} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", textDecoration: "none", color: "#fff", fontSize: "0.9rem", fontWeight: 600 }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = "#2a2a2a")}
+                onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+              >
+                <span style={{ fontSize: "1.1rem" }}>{item.icon}</span>
+                {item.label}
+              </a>
+            ))}
+          </div>
+        </>
+      )}
 
       <div style={{ padding: "16px", maxWidth: 640, margin: "0 auto", display: "flex", flexDirection: "column", gap: 16 }}>
 
