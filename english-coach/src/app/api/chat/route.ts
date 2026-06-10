@@ -53,16 +53,18 @@ The student sets the register. You follow. Never push a more complex style onto 
   🗣️ [word] = "[brazilian-friendly pronunciation]"
   Example: 🗣️ together = "tughéder" | 🗣️ though = "dôu" | 🗣️ world = "wórld"
   Only add this when there is genuinely a tricky word. Skip if all words are simple.
-- If the student makes a grammar or vocabulary mistake in their written/spoken message, add ONE correction at the end of your reply (only if there is a real mistake, skip otherwise). Use this exact format on a new line:
+- If the student makes grammar or vocabulary mistakes in their written/spoken message, add a correction for EACH distinct mistake at the end of your reply (only if there are real mistakes, skip otherwise). Use this exact format on a new line for each error:
   [FIX|wrong excerpt|correct excerpt|informal Brazilian phonetic of the correct excerpt|full wrong sentence|full corrected sentence]
-  - "wrong excerpt": only the incorrect word/phrase the student used
-  - "correct excerpt": the corrected version of that same excerpt
+  - "wrong excerpt": only the incorrect word/phrase for this specific error
+  - "correct excerpt": the corrected version of that specific excerpt
   - "phonetic": informal Brazilian-adapted pronunciation of the ENTIRE full corrected sentence from the very first word to the very last — never just the corrected part, always the whole sentence
   - "full wrong sentence": the student's full original sentence exactly as they wrote it
-  - "full corrected sentence": the same sentence with ALL grammar/vocabulary errors fixed (not just the highlighted one)
-  Example: [FIX|I go|I went|lést uíkend ai uent tu de párk end ui eit e snék|Last weekend I go to the park and we eat a snack|Last weekend I went to the park and we ate a snack]
-  Another example: [FIX|is my birthday|was my birthday|lest manth uóz mai bérTHdei end mai síster guéiv mi e prézent|last month is my birthday and i get a present to my sister|Last month was my birthday and my sister gave me a present]
-  The highlight shows only the most important error, but the full corrected sentence must fix every mistake. Keep it to one [FIX] tag max. Never correct pronunciation or style. Do NOT add any other text around the [FIX|...] tag.
+  - "full corrected sentence": the same sentence with ALL grammar/vocabulary errors fixed
+  Example (single error): [FIX|I go|I went|lést uíkend ai uent tu de párk end ui eit e snék|Last weekend I go to the park and we eat a snack|Last weekend I went to the park and we ate a snack]
+  Example (multiple errors — one [FIX] per error):
+    [FIX|I go|I went|lést uíkend ai uent tu de párk end ui eit e snék|Last weekend I go to the park and we eat a snack|Last weekend I went to the park and we ate a snack]
+    [FIX|we eat|we ate|lést uíkend ai uent tu de párk end ui eit e snék|Last weekend I go to the park and we eat a snack|Last weekend I went to the park and we ate a snack]
+  Each [FIX] highlights one specific error, but the full corrected sentence in all of them must fix every mistake. Never correct pronunciation or style. Do NOT add any other text around the [FIX|...] tags.
 
 - **Inline Portuguese words in your own replies**: When your reply includes a word that is inherently Portuguese and would sound wrong if read with English phonetics — city names (São Paulo, Rio de Janeiro, Florianópolis), people names (João, Fernanda), food names (pão de queijo, brigadeiro, coxinha), Brazilian brands, or any word the student used in Portuguese that you're echoing back — wrap it with [BR:word]. This tells the text-to-speech engine to pronounce it in Brazilian Portuguese. Example: "Have you ever been to [BR:São Paulo]? It's incredible!" or "I'd love to try [BR:pão de queijo] sometime!" Never use [BR:...] for English words, only for genuinely Portuguese ones.
 
@@ -289,21 +291,25 @@ ${topicStart ? `- Start the conversation: open with the first line a ${sc.role} 
   const detectedLevel = levelMatch?.[1] ?? null;
   const translationMatch = raw.match(/\[PT:\s*([\s\S]*?)(?:\]|$)/);
   const translation = translationMatch?.[1]?.trim() ?? null;
-  const fixMatch = raw.match(/\[FIX\|([^|]+)\|([^|]+)\|([^|]+)\|([^|]+)\|([^\]]+)\]/);
-  const correction = fixMatch ? {
-    wrong: fixMatch[1].trim(),
-    right: fixMatch[2].trim(),
-    phonetic: fixMatch[3].trim(),
-    wrongSentence: fixMatch[4].trim(),
-    rightSentence: fixMatch[5].trim(),
-  } : null;
+  const fixRegex = /\[FIX\|([^|]+)\|([^|]+)\|([^|]+)\|([^|]+)\|([^\]]+)\]/g;
+  const corrections: { wrong: string; right: string; phonetic: string; wrongSentence: string; rightSentence: string }[] = [];
+  let fixMatch;
+  while ((fixMatch = fixRegex.exec(raw)) !== null) {
+    corrections.push({
+      wrong: fixMatch[1].trim(),
+      right: fixMatch[2].trim(),
+      phonetic: fixMatch[3].trim(),
+      wrongSentence: fixMatch[4].trim(),
+      rightSentence: fixMatch[5].trim(),
+    });
+  }
 
   const reply = raw
     .replace(/\[LEVEL:(beginner|intermediate|advanced)\]/, "")
     .replace(/\[PT:[\s\S]*?\]/, "")
-    .replace(/\[FIX\|(?:[^|]*\|){4}[^\]]*\]/, "")
+    .replace(/\[FIX\|(?:[^|]*\|){4}[^\]]*\]/g, "")
     .replace(/\[BR:([^\]]+)\]/g, "$1")
     .trim();
 
-  return NextResponse.json({ reply, detectedLevel, translation, correction });
+  return NextResponse.json({ reply, detectedLevel, translation, corrections });
 }
