@@ -3,6 +3,15 @@
 import { useState, useEffect } from "react";
 import { UserButton } from "@clerk/nextjs";
 
+type Flashcard = {
+  id: string;
+  word: string;
+  translation: string;
+  topic: string | null;
+  next_review: string;
+  created_at?: string;
+};
+
 type QuizResult = {
   id: string;
   title: string;
@@ -55,15 +64,16 @@ function getWeekDays(): Date[] {
 export default function Progresso() {
   const [results, setResults] = useState<QuizResult[]>([]);
   const [loading, setLoading] = useState(true);
-  const [flashcardCount, setFlashcardCount] = useState(0);
+  const [flashcards, setFlashcards] = useState<Flashcard[]>([]);
+  const [showAllFlashcards, setShowAllFlashcards] = useState(false);
 
   useEffect(() => {
     Promise.all([
       fetch("/api/quiz-history").then((r) => r.json()),
-      fetch("/api/flashcards").then((r) => r.json()),
+      fetch("/api/flashcards").then((r) => (r.ok ? r.json() : { cards: [] })),
     ]).then(([quizData, fcData]) => {
       setResults(quizData.results ?? []);
-      setFlashcardCount(fcData.pending ?? 0);
+      setFlashcards(fcData.cards ?? []);
       setLoading(false);
     });
   }, []);
@@ -133,7 +143,7 @@ export default function Progresso() {
             { emoji: "🔥", label: "Sequência", value: streak > 0 ? `${streak} dia${streak !== 1 ? "s" : ""}` : "—", color: streak > 0 ? "#f97316" : "var(--gray)" },
             { emoji: "📝", label: "Total de sessões", value: String(totalSessions), color: "var(--yellow)" },
             { emoji: "🎯", label: "Média geral", value: totalSessions > 0 ? `${avgScore}%` : "—", color: avgScore >= 80 ? "#4ade80" : avgScore >= 60 ? "var(--yellow)" : avgScore > 0 ? "#f87171" : "var(--gray)" },
-            { emoji: "🃏", label: "Flashcards pendentes", value: String(flashcardCount), color: flashcardCount > 0 ? "#60a5fa" : "var(--gray)" },
+            { emoji: "🃏", label: "Flashcards criados", value: String(flashcards.length), color: flashcards.length > 0 ? "#60a5fa" : "var(--gray)" },
           ].map((stat) => (
             <div key={stat.label} style={{ background: "var(--dark1)", border: "1px solid #1e1e1e", borderRadius: 16, padding: "14px 16px" }}>
               <p style={{ fontSize: "0.7rem", color: "var(--gray)", marginBottom: 6, fontWeight: 600 }}>{stat.emoji} {stat.label}</p>
@@ -205,6 +215,46 @@ export default function Progresso() {
                 );
               })}
             </div>
+          </div>
+        )}
+
+        {/* Flashcards criados */}
+        {flashcards.length > 0 && (
+          <div style={{ background: "var(--dark1)", border: "1px solid #1e1e1e", borderRadius: 16, padding: "16px" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+              <p style={{ fontWeight: 700, color: "#fff", fontSize: "0.9rem", margin: 0 }}>🃏 Flashcards criados</p>
+              <a href="/app/flashcards" style={{ fontSize: "0.75rem", color: "var(--yellow)", textDecoration: "none", fontWeight: 600 }}>Revisar →</a>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {(showAllFlashcards ? flashcards : flashcards.slice(0, 5)).map((fc) => {
+                const today = new Date().toISOString().split("T")[0];
+                const isPending = fc.next_review <= today;
+                return (
+                  <div key={fc.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 12px", background: "var(--dark2)", borderRadius: 10, border: "1px solid #2a2a2a" }}>
+                    <div>
+                      <p style={{ fontSize: "0.85rem", fontWeight: 700, color: "#fff", margin: 0 }}>{fc.word}</p>
+                      <p style={{ fontSize: "0.72rem", color: "var(--gray)", margin: "2px 0 0" }}>{fc.translation}</p>
+                    </div>
+                    <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 3 }}>
+                      {fc.topic && (
+                        <span style={{ fontSize: "0.6rem", background: "rgba(96,165,250,.12)", color: "#60a5fa", borderRadius: 6, padding: "2px 7px", fontWeight: 600 }}>#{fc.topic}</span>
+                      )}
+                      <span style={{ fontSize: "0.6rem", color: isPending ? "#f97316" : "var(--gray2)", fontWeight: 600 }}>
+                        {isPending ? "Revisar hoje" : `Próxima: ${new Date(fc.next_review + "T12:00:00").toLocaleDateString("pt-BR")}`}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            {flashcards.length > 5 && (
+              <button
+                onClick={() => setShowAllFlashcards((v) => !v)}
+                style={{ marginTop: 12, width: "100%", background: "none", border: "1px solid #2a2a2a", borderRadius: 10, color: "var(--gray)", fontSize: "0.75rem", fontWeight: 600, padding: "8px 0", cursor: "pointer" }}
+              >
+                {showAllFlashcards ? "Ver menos" : `Ver todos os ${flashcards.length} flashcards`}
+              </button>
+            )}
           </div>
         )}
 
