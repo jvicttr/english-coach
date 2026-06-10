@@ -158,10 +158,23 @@ export default function RolePlay() {
   async function fetchAndPlay(text: string, lang: "en" | "pt", speed: number): Promise<boolean> {
     const clean = stripEmojis(text);
     if (!clean) return true;
-    const res = await fetch("/api/tts", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text: clean, speed, lang }) });
-    if (!res.ok) return false;
-    if (supportsMediaSourceAudio()) return playStream(res);
-    return playBlob(res);
+    const controller = new AbortController();
+    const ttsTimeout = setTimeout(() => controller.abort(), 9000);
+    try {
+      const res = await fetch("/api/tts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: clean, speed, lang }),
+        signal: controller.signal,
+      });
+      clearTimeout(ttsTimeout);
+      if (!res.ok) return false;
+      if (supportsMediaSourceAudio()) return playStream(res);
+      return playBlob(res);
+    } catch {
+      clearTimeout(ttsTimeout);
+      return false;
+    }
   }
 
   function splitSpeechSegments(text: string): { text: string; lang: "en" | "pt" }[] {
@@ -679,6 +692,17 @@ export default function RolePlay() {
         )}
         <div ref={bottomRef} />
       </div>
+
+      {isSpeaking && (
+        <div className="w-full max-w-2xl mb-2 flex justify-center">
+          <button
+            onClick={() => { const p = getAudio(); p.pause(); setIsSpeaking(false); setPendingSpeak(null); }}
+            style={{ background: "transparent", border: "1px solid #3a3a3a", borderRadius: "50px", padding: "4px 14px", fontSize: "0.7rem", color: "var(--gray)", cursor: "pointer" }}
+          >
+            ✕ Parar áudio
+          </button>
+        </div>
+      )}
 
       {pendingSpeak && !isSpeaking && (
         <div className="w-full max-w-2xl mb-2">
