@@ -3,13 +3,11 @@
 import { useState, useEffect } from "react";
 import { UserButton } from "@clerk/nextjs";
 
-type Flashcard = {
-  id: string;
-  word: string;
-  translation: string;
-  topic: string | null;
-  next_review: string;
-  created_at?: string;
+type QuizQuestion = {
+  question: string;
+  options: string[];
+  correct: number;
+  explanation: string;
 };
 
 type QuizResult = {
@@ -17,10 +15,19 @@ type QuizResult = {
   title: string;
   level: string;
   score: number | null;
-  questions: { question: string; options: string[]; correct: number; explanation: string }[];
+  questions: QuizQuestion[];
   answers: (number | null)[] | null;
   completed_at: string | null;
   created_at: string;
+};
+
+type Flashcard = {
+  id: string;
+  word: string;
+  translation: string;
+  topic: string | null;
+  next_review: string;
+  created_at?: string;
 };
 
 const LEVEL_LABEL: Record<string, string> = { beginner: "Básico", intermediate: "Intermediário", advanced: "Avançado" };
@@ -61,11 +68,39 @@ function getWeekDays(): Date[] {
   });
 }
 
+function Sparkline({ data }: { data: number[] }) {
+  if (data.length < 2) return null;
+  const W = 280, H = 64, pad = 8;
+  const pts = data.map((v, i) => {
+    const x = pad + (i / (data.length - 1)) * (W - pad * 2);
+    const y = H - pad - (v / 100) * (H - pad * 2);
+    return [x, y] as [number, number];
+  });
+  const line = pts.map((p, i) => `${i === 0 ? "M" : "L"}${p[0].toFixed(1)},${p[1].toFixed(1)}`).join(" ");
+  const area = line + ` L${pts[pts.length - 1][0].toFixed(1)},${H} L${pts[0][0].toFixed(1)},${H} Z`;
+  const last = pts[pts.length - 1];
+  return (
+    <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} style={{ overflow: "visible" }}>
+      <defs>
+        <linearGradient id="sg" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#F5C800" stopOpacity="0.25" />
+          <stop offset="100%" stopColor="#F5C800" stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      <path d={area} fill="url(#sg)" />
+      <path d={line} fill="none" stroke="#F5C800" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <circle cx={last[0]} cy={last[1]} r="4" fill="#F5C800" />
+    </svg>
+  );
+}
+
 export default function Progresso() {
   const [results, setResults] = useState<QuizResult[]>([]);
   const [loading, setLoading] = useState(true);
   const [flashcards, setFlashcards] = useState<Flashcard[]>([]);
   const [showAllFlashcards, setShowAllFlashcards] = useState(false);
+  const [expanded, setExpanded] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState<string | null>(null);
 
   useEffect(() => {
     Promise.all([
@@ -78,12 +113,30 @@ export default function Progresso() {
     });
   }, []);
 
+  async function deleteQuiz(id: string) {
+    if (!confirm("Apagar este quiz do histórico?")) return;
+    setDeleting(id);
+    await fetch("/api/quiz-history", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id }),
+    });
+    setResults((prev) => prev.filter((r) => r.id !== id));
+    setDeleting(null);
+  }
+
+  const completed = results.filter((r) => r.score != null && r.questions?.length);
+  const scores = completed.map((r) => Math.round((r.score! / r.questions.length) * 100));
   const streak = calcStreak(results);
-  const completed = results.filter((r) => r.score != null);
-  const totalSessions = completed.length;
-  const avgScore = totalSessions > 0
-    ? Math.round(completed.reduce((acc, r) => acc + Math.round((r.score! / r.questions.length) * 100), 0) / totalSessions)
-    : 0;
+  const avgScore = scores.length ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : 0;
+  const bestScore = scores.length ? Math.max(...scores) : null;
+  const last10 = [...scores].reverse().slice(-10);
+
+  const levelCounts = completed.reduce<Record<string, number>>((acc, r) => {
+    acc[r.level] = (acc[r.level] ?? 0) + 1;
+    return acc;
+  }, {});
+  const dominantLevel = Object.entries(levelCounts).sort((a, b) => b[1] - a[1])[0]?.[0];
 
   const weekDays = getWeekDays();
   const weekScores = weekDays.map((day) => {
@@ -92,25 +145,7 @@ export default function Progresso() {
     if (dayResults.length === 0) return null;
     return Math.round(dayResults.reduce((acc, r) => acc + Math.round((r.score! / r.questions.length) * 100), 0) / dayResults.length);
   });
-
   const weekTotal = weekScores.filter((s) => s !== null).length;
-  const last5 = completed.slice(0, 5);
-
-  const BottomNav = () => (
-    <nav style={{ position: "fixed", bottom: 0, left: 0, right: 0, background: "#0d0d0d", borderTop: "1px solid #1e1e1e", display: "grid", gridTemplateColumns: "repeat(4,1fr)", paddingBottom: "env(safe-area-inset-bottom, 0px)", zIndex: 50 }}>
-      {[
-        { href: "/app", icon: "🏠", label: "Início", active: false },
-        { href: "/app/conversar", icon: "💬", label: "Conversar", active: false },
-        { href: "/app/flashcards", icon: "🃏", label: "Flashcards", active: false },
-        { href: "/app/progresso", icon: "📊", label: "Progresso", active: true },
-      ].map((item) => (
-        <a key={item.href} href={item.href} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2, padding: "8px 0 10px", textDecoration: "none" }}>
-          <span style={{ fontSize: "1.1rem" }}>{item.icon}</span>
-          <span style={{ fontSize: "0.6rem", fontWeight: 700, color: item.active ? "var(--yellow)" : "#444" }}>{item.label}</span>
-        </a>
-      ))}
-    </nav>
-  );
 
   if (loading) {
     return (
@@ -124,13 +159,13 @@ export default function Progresso() {
   }
 
   return (
-    <div style={{ background: "var(--black)", minHeight: "100dvh", fontFamily: "'Inter', sans-serif", paddingBottom: 80 }}>
+    <div style={{ background: "var(--black)", minHeight: "100dvh", fontFamily: "'Inter', sans-serif", paddingBottom: 100 }}>
       <header style={{ padding: "16px 16px 12px", display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid #1e1e1e" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <a href="/app" style={{ background: "var(--dark2)", border: "1px solid #2a2a2a", borderRadius: "10px", height: "36px", width: 36, display: "flex", alignItems: "center", justifyContent: "center", textDecoration: "none" }}>
             <svg width="16" height="16" viewBox="0 0 14 14" fill="none"><path d="M9 2L4 7L9 12" stroke="var(--gray)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
           </a>
-          <span style={{ fontWeight: 800, color: "#fff", fontSize: "0.95rem" }}>📊 Meu progresso</span>
+          <span style={{ fontWeight: 800, color: "#fff", fontSize: "0.95rem" }}>📊 Meu Progresso</span>
         </div>
         <UserButton />
       </header>
@@ -140,28 +175,19 @@ export default function Progresso() {
         {/* Stats cards */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 10 }}>
           {[
-            { emoji: "🔥", label: "Sequência", value: streak > 0 ? `${streak} dia${streak !== 1 ? "s" : ""}` : "—", color: streak > 0 ? "#f97316" : "var(--gray)", href: null },
-            { emoji: "📝", label: "Total de sessões", value: String(totalSessions), color: "var(--yellow)", href: "/app/historico" },
-            { emoji: "🎯", label: "Média geral", value: totalSessions > 0 ? `${avgScore}%` : "—", color: avgScore >= 80 ? "#4ade80" : avgScore >= 60 ? "var(--yellow)" : avgScore > 0 ? "#f87171" : "var(--gray)", href: null },
-            { emoji: "🃏", label: "Flashcards criados", value: String(flashcards.length), color: flashcards.length > 0 ? "#60a5fa" : "var(--gray)", href: "/app/flashcards" },
-          ].map((stat) => {
-            const inner = (
-              <>
-                <p style={{ fontSize: "0.7rem", color: "var(--gray)", marginBottom: 6, fontWeight: 600 }}>{stat.emoji} {stat.label}</p>
-                <p style={{ fontSize: "1.6rem", fontWeight: 900, color: stat.color, margin: 0, lineHeight: 1 }}>{stat.value}</p>
-                {stat.href && <p style={{ fontSize: "0.6rem", color: "var(--gray2)", margin: "6px 0 0", fontWeight: 600 }}>Ver tudo →</p>}
-              </>
-            );
-            const baseStyle = { background: "var(--dark1)", border: "1px solid #1e1e1e", borderRadius: 16, padding: "14px 16px", display: "block", textDecoration: "none" };
-            return stat.href ? (
-              <a key={stat.label} href={stat.href} style={{ ...baseStyle, cursor: "pointer", transition: "border-color .15s", borderColor: "#2a2a2a" }}
-                onMouseEnter={(e) => (e.currentTarget.style.borderColor = "rgba(245,200,0,.3)")}
-                onMouseLeave={(e) => (e.currentTarget.style.borderColor = "#1e1e1e")}
-              >{inner}</a>
-            ) : (
-              <div key={stat.label} style={baseStyle}>{inner}</div>
-            );
-          })}
+            { emoji: "🔥", label: "Sequência", value: streak > 0 ? `${streak} dia${streak !== 1 ? "s" : ""}` : "—", color: streak > 0 ? "#f97316" : "var(--gray)" },
+            { emoji: "📝", label: "Total de sessões", value: String(completed.length), color: "var(--yellow)" },
+            { emoji: "🎯", label: "Média geral", value: completed.length > 0 ? `${avgScore}%` : "—", color: avgScore >= 80 ? "#4ade80" : avgScore >= 60 ? "var(--yellow)" : avgScore > 0 ? "#f87171" : "var(--gray)" },
+            { emoji: "🏆", label: "Melhor resultado", value: bestScore != null ? `${bestScore}%` : "—", color: "#4ade80" },
+          ].map((stat) => (
+            <div key={stat.label} style={{ background: "var(--dark1)", border: "1px solid #1e1e1e", borderRadius: 16, padding: "14px 16px" }}>
+              <p style={{ fontSize: "0.7rem", color: "var(--gray)", marginBottom: 6, fontWeight: 600 }}>{stat.emoji} {stat.label}</p>
+              <p style={{ fontSize: "1.6rem", fontWeight: 900, color: stat.color, margin: 0, lineHeight: 1 }}>{stat.value}</p>
+              {stat.label === "Total de sessões" && dominantLevel && (
+                <p style={{ fontSize: "0.6rem", color: LEVEL_COLOR[dominantLevel], margin: "5px 0 0", fontWeight: 700 }}>{LEVEL_LABEL[dominantLevel]}</p>
+              )}
+            </div>
+          ))}
         </div>
 
         {/* Weekly chart */}
@@ -193,44 +219,33 @@ export default function Progresso() {
           </div>
         </div>
 
-        {/* Recent sessions */}
-        {last5.length > 0 && (
+        {/* Sparkline evolution */}
+        {last10.length >= 2 && (
           <div style={{ background: "var(--dark1)", border: "1px solid #1e1e1e", borderRadius: 16, padding: "16px" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
-              <p style={{ fontWeight: 700, color: "#fff", fontSize: "0.9rem", margin: 0 }}>Últimas sessões</p>
-              <a href="/app/historico" style={{ fontSize: "0.75rem", color: "var(--yellow)", textDecoration: "none", fontWeight: 600 }}>Ver tudo →</a>
+              <div>
+                <p style={{ fontWeight: 700, fontSize: "0.9rem", color: "#fff", margin: 0 }}>Evolução dos quizzes</p>
+                <p style={{ fontSize: "0.72rem", color: "var(--gray)", marginTop: 2 }}>Últimos {last10.length} resultados</p>
+              </div>
+              <span style={{
+                fontSize: "0.72rem", fontWeight: 700, padding: "2px 8px", borderRadius: "50px",
+                background: last10[last10.length - 1] >= last10[0] ? "rgba(74,222,128,0.15)" : "rgba(248,113,113,0.15)",
+                color: last10[last10.length - 1] >= last10[0] ? "#4ade80" : "#f87171",
+              }}>
+                {last10[last10.length - 1] >= last10[0] ? "↑" : "↓"} {Math.abs(last10[last10.length - 1] - last10[0])}pp
+              </span>
             </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              {last5.map((r) => {
-                const pct = r.score != null ? Math.round((r.score / r.questions.length) * 100) : null;
-                const scoreColor = pct == null ? "var(--gray)" : pct >= 80 ? "#4ade80" : pct >= 60 ? "var(--yellow)" : "#f87171";
-                return (
-                  <div key={r.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 12px", background: "var(--dark2)", borderRadius: 10, border: "1px solid #2a2a2a" }}>
-                    <div>
-                      <p style={{ fontSize: "0.8rem", fontWeight: 700, color: "#fff", margin: 0 }}>{r.title}</p>
-                      <div style={{ display: "flex", gap: 6, marginTop: 3 }}>
-                        <span style={{ fontSize: "0.65rem", color: LEVEL_COLOR[r.level] ?? "var(--gray)", fontWeight: 600 }}>{LEVEL_LABEL[r.level] ?? r.level}</span>
-                        <span style={{ fontSize: "0.65rem", color: "var(--gray2)" }}>
-                          {new Date(r.created_at).toLocaleDateString("pt-BR")}
-                        </span>
-                      </div>
-                    </div>
-                    <div style={{ textAlign: "right" }}>
-                      <p style={{ fontSize: "1rem", fontWeight: 900, color: scoreColor, margin: 0 }}>
-                        {pct != null ? `${pct}%` : "—"}
-                      </p>
-                      {r.score != null && (
-                        <p style={{ fontSize: "0.6rem", color: "var(--gray)", margin: 0 }}>{r.score}/{r.questions.length}</p>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
+            <div style={{ overflowX: "auto" }}>
+              <Sparkline data={last10} />
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", marginTop: 6 }}>
+              <span style={{ fontSize: "0.65rem", color: "var(--gray2)" }}>mais antigo</span>
+              <span style={{ fontSize: "0.65rem", color: "var(--gray2)" }}>mais recente</span>
             </div>
           </div>
         )}
 
-        {/* Flashcards criados */}
+        {/* Flashcards */}
         {flashcards.length > 0 && (
           <div style={{ background: "var(--dark1)", border: "1px solid #1e1e1e", borderRadius: 16, padding: "16px" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
@@ -270,8 +285,107 @@ export default function Progresso() {
           </div>
         )}
 
+        {/* Quiz list */}
+        {results.length > 0 && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <p style={{ fontSize: "0.78rem", fontWeight: 700, color: "var(--gray)", textTransform: "uppercase", letterSpacing: "0.5px", margin: 0 }}>
+              Histórico de quizzes
+            </p>
+            {results.map((r) => {
+              const total = r.questions?.length ?? 0;
+              const pct = r.score != null && total > 0 ? Math.round((r.score / total) * 100) : null;
+              const scoreColor = pct == null ? "var(--gray)" : pct >= 80 ? "#4ade80" : pct >= 50 ? "var(--yellow)" : "#f87171";
+              const isOpen = expanded === r.id;
+              return (
+                <div key={r.id} style={{ background: "var(--dark1)", border: "1px solid #1e1e1e", borderRadius: 16, overflow: "hidden" }}>
+                  <button
+                    onClick={() => setExpanded(isOpen ? null : r.id)}
+                    style={{ width: "100%", textAlign: "left", padding: "14px 16px", background: "transparent", border: "none", cursor: "pointer" }}
+                  >
+                    <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <p style={{ fontSize: "0.85rem", fontWeight: 700, color: "#fff", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.title}</p>
+                        <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 4, flexWrap: "wrap" }}>
+                          <span style={{ fontSize: "0.68rem", color: "var(--gray)" }}>
+                            {new Date(r.created_at).toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "numeric" })}
+                          </span>
+                          <span style={{ fontSize: "0.68rem", background: `${LEVEL_COLOR[r.level] ?? "#999"}22`, color: LEVEL_COLOR[r.level] ?? "var(--gray)", padding: "1px 7px", borderRadius: "50px", fontWeight: 600 }}>
+                            {LEVEL_LABEL[r.level] ?? r.level}
+                          </span>
+                        </div>
+                      </div>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+                        {pct != null ? (
+                          <div style={{ textAlign: "right" }}>
+                            <p style={{ fontSize: "1.1rem", fontWeight: 900, color: scoreColor, margin: 0 }}>{pct}%</p>
+                            <p style={{ fontSize: "0.6rem", color: "var(--gray)", margin: 0 }}>{r.score}/{total}</p>
+                          </div>
+                        ) : (
+                          <span style={{ fontSize: "0.68rem", padding: "2px 8px", borderRadius: "50px", background: "rgba(245,200,0,0.1)", color: "var(--yellow)", border: "1px solid rgba(245,200,0,0.2)" }}>Incompleto</span>
+                        )}
+                        <span style={{ color: "var(--gray)", fontSize: "0.8rem", display: "inline-block", transform: isOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s" }}>▼</span>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); deleteQuiz(r.id); }}
+                          disabled={deleting === r.id}
+                          title="Apagar quiz"
+                          style={{ background: "transparent", border: "none", cursor: "pointer", fontSize: "0.9rem", opacity: deleting === r.id ? 0.4 : 0.5, padding: "2px 4px" }}
+                        >🗑️</button>
+                      </div>
+                    </div>
+                  </button>
+
+                  {isOpen && (
+                    <div style={{ borderTop: "1px solid #1e1e1e", padding: "14px 16px" }}>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                        {r.questions.map((q, i) => {
+                          const chosen = r.answers?.[i] ?? null;
+                          const correct = chosen === q.correct;
+                          return (
+                            <div key={i}>
+                              <div style={{ display: "flex", alignItems: "flex-start", gap: 8, marginBottom: 8 }}>
+                                <span style={{
+                                  flexShrink: 0, width: 20, height: 20, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center",
+                                  fontSize: "0.72rem", fontWeight: 700, marginTop: 2,
+                                  background: chosen === null ? "var(--dark2)" : correct ? "rgba(74,222,128,0.2)" : "rgba(248,113,113,0.2)",
+                                  color: chosen === null ? "var(--gray)" : correct ? "#4ade80" : "#f87171",
+                                }}>
+                                  {chosen === null ? i + 1 : correct ? "✓" : "✗"}
+                                </span>
+                                <p style={{ fontSize: "0.85rem", color: "#fff", fontWeight: 600, margin: 0 }}>{q.question}</p>
+                              </div>
+                              <div style={{ display: "flex", flexDirection: "column", gap: 6, paddingLeft: 28 }}>
+                                {q.options.map((opt, j) => {
+                                  const isCorrect = j === q.correct;
+                                  const isChosen = j === chosen;
+                                  let color = "var(--gray)", border = "1px solid #2a2a2a", bg = "transparent";
+                                  if (isCorrect) { color = "#4ade80"; border = "1px solid rgba(74,222,128,0.3)"; bg = "rgba(74,222,128,0.06)"; }
+                                  else if (isChosen && !isCorrect) { color = "#f87171"; border = "1px solid rgba(248,113,113,0.3)"; bg = "rgba(248,113,113,0.06)"; }
+                                  return (
+                                    <div key={j} style={{ padding: "8px 12px", borderRadius: 10, background: bg, border, color, fontSize: "0.8rem" }}>
+                                      <span style={{ fontWeight: 700, marginRight: 6, opacity: 0.6 }}>{["A","B","C","D"][j]}</span>
+                                      {opt}
+                                      {isChosen && !isCorrect && <span style={{ marginLeft: 8, opacity: 0.7 }}>← sua resposta</span>}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                              {chosen !== null && (
+                                <p style={{ fontSize: "0.75rem", marginTop: 8, paddingLeft: 28, color: "var(--gray)", fontStyle: "italic" }}>{q.explanation}</p>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+
         {/* Empty state */}
-        {totalSessions === 0 && (
+        {completed.length === 0 && (
           <div style={{ textAlign: "center", padding: "32px 0", display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
             <div style={{ fontSize: "2.5rem" }}>📊</div>
             <p style={{ color: "#fff", fontWeight: 700, fontSize: "1rem", margin: 0 }}>Nenhuma sessão ainda</p>
@@ -283,7 +397,19 @@ export default function Progresso() {
         )}
       </div>
 
-      <BottomNav />
+      <nav style={{ position: "fixed", bottom: 0, left: 0, right: 0, background: "#0d0d0d", borderTop: "1px solid #1e1e1e", display: "grid", gridTemplateColumns: "repeat(4,1fr)", paddingBottom: "env(safe-area-inset-bottom, 0px)", zIndex: 50 }}>
+        {[
+          { href: "/app", icon: "🏠", label: "Início", active: false },
+          { href: "/app/conversar", icon: "💬", label: "Conversar", active: false },
+          { href: "/app/flashcards", icon: "🃏", label: "Flashcards", active: false },
+          { href: "/app/progresso", icon: "📊", label: "Progresso", active: true },
+        ].map((item) => (
+          <a key={item.href} href={item.href} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2, padding: "8px 0 10px", textDecoration: "none" }}>
+            <span style={{ fontSize: "1.1rem" }}>{item.icon}</span>
+            <span style={{ fontSize: "0.6rem", fontWeight: 700, color: item.active ? "var(--yellow)" : "#444" }}>{item.label}</span>
+          </a>
+        ))}
+      </nav>
     </div>
   );
 }

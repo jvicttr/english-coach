@@ -765,7 +765,7 @@ export default function Home() {
 
           <div className="flex gap-3 w-full mt-2">
             <button
-              onClick={() => router.push("/app/historico")}
+              onClick={() => router.push("/app/progresso")}
               className="flex-1 py-3 rounded-xl font-bold text-sm"
               style={{ background: "var(--dark2)", color: "var(--gray)", border: "1px solid #2a2a2a" }}
             >
@@ -836,7 +836,7 @@ export default function Home() {
             </button>
           )}
           <button
-            onClick={() => router.push("/app/historico")}
+            onClick={() => router.push("/app/progresso")}
             title="Progresso"
             className="icon-expand-btn hidden sm:flex"
             style={{ background: "var(--dark2)", border: "1px solid #2a2a2a", borderRadius: "10px", height: "36px", alignItems: "center", cursor: "pointer" }}
@@ -901,7 +901,7 @@ export default function Home() {
               </button>
             )}
             <button
-              onClick={() => { router.push("/app/historico"); setMobileMenuOpen(false); }}
+              onClick={() => { router.push("/app/progresso"); setMobileMenuOpen(false); }}
               style={{ background: "transparent", border: "none", borderRadius: "10px", height: "42px", display: "flex", alignItems: "center", gap: "10px", padding: "0 12px", cursor: "pointer", width: "100%" }}
             >
               <span style={{ fontSize: "1rem", width: 24, textAlign: "center" }}>🏆</span>

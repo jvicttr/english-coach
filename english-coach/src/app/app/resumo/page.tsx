@@ -358,8 +358,8 @@ export default function ResumoAula() {
           </div>
 
           <div style={{ display: "flex", gap: "10px", width: "100%", marginTop: ".5rem" }}>
-            <button onClick={() => router.push("/app/historico")} style={{ flex: 1, padding: ".875rem", borderRadius: "12px", background: "var(--dark2)", color: "var(--gray)", fontWeight: 700, fontSize: ".875rem", border: "1px solid #2a2a2a", cursor: "pointer" }}>
-              Ver histórico
+            <button onClick={() => router.push("/app/progresso")} style={{ flex: 1, padding: ".875rem", borderRadius: "12px", background: "var(--dark2)", color: "var(--gray)", fontWeight: 700, fontSize: ".875rem", border: "1px solid #2a2a2a", cursor: "pointer" }}>
+              Ver progresso
             </button>
             <button onClick={() => { setScreen("upload"); setMessages([]); setLessonContext(null); setFileName(null); setQuiz(null); }} style={{ flex: 1, padding: ".875rem", borderRadius: "12px", background: "var(--yellow)", color: "var(--black)", fontWeight: 700, fontSize: ".875rem", border: "none", cursor: "pointer" }}>
               Nova aula

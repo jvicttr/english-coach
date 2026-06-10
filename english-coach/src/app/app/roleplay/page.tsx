@@ -512,7 +512,7 @@ export default function RolePlay() {
             })}
           </div>
           <div className="flex gap-3 w-full mt-2">
-            <button onClick={() => window.location.href = "/app/historico"} className="flex-1 py-3 rounded-xl font-bold text-sm" style={{ background: "var(--dark2)", color: "var(--gray)", border: "1px solid #2a2a2a" }}>Ver histórico</button>
+            <button onClick={() => window.location.href = "/app/progresso"} className="flex-1 py-3 rounded-xl font-bold text-sm" style={{ background: "var(--dark2)", color: "var(--gray)", border: "1px solid #2a2a2a" }}>Ver progresso</button>
             <button onClick={restartChat} className="flex-1 py-3 rounded-xl font-bold text-sm" style={{ background: "var(--yellow)", color: "var(--black)" }}>Novo cenário</button>
           </div>
         </div>
