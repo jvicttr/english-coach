@@ -61,7 +61,6 @@ export default function AppHome() {
   const [isPro, setIsPro] = useState(false);
   const [userName, setUserName] = useState("");
   const [loading, setLoading] = useState(true);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     const saved = localStorage.getItem("lastTopic");
@@ -97,40 +96,15 @@ export default function AppHome() {
           <span style={{ fontWeight: 800, fontSize: "0.95rem", color: "#fff" }}>JV <span style={{ color: "var(--yellow)" }}>IA</span></span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          {!isPro && (
+
+          {isPro ? (
+            <a href="/app/resumo" style={{ fontSize: ".75rem", fontWeight: 600, color: "var(--gray)", border: "1px solid #2a2a2a", borderRadius: "50px", padding: ".25rem .75rem", textDecoration: "none" }}>
+              📄 Revisão de Aula
+            </a>
+          ) : (
             <a href="/planos" style={{ fontSize: ".75rem", fontWeight: 700, color: "var(--yellow)", border: "1px solid rgba(245,200,0,.35)", borderRadius: "50px", padding: ".25rem .75rem", textDecoration: "none" }}>
               Planos
             </a>
-          )}
-
-          {/* Desktop: portal link */}
-          {isPro && (
-            <a href="/app/resumo" className="hidden sm:flex" style={{ fontSize: ".75rem", fontWeight: 600, color: "var(--gray)", border: "1px solid #2a2a2a", borderRadius: "50px", padding: ".25rem .75rem", textDecoration: "none", alignItems: "center", gap: 4 }}>
-              📄 Revisão de Aula
-            </a>
-          )}
-
-          {/* Hamburger for mobile extra items */}
-          <button onClick={() => setMobileMenuOpen((v) => !v)} className="flex sm:hidden" style={{ background: "var(--dark2)", border: "1px solid #2a2a2a", borderRadius: "10px", height: "34px", width: 34, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", position: "relative" }}>
-            {mobileMenuOpen
-              ? <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--gray)" strokeWidth="2.5" strokeLinecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
-              : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--gray)" strokeWidth="2.5" strokeLinecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
-            }
-          </button>
-          {mobileMenuOpen && (
-            <div style={{ position: "fixed", top: 60, right: 12, background: "var(--dark1)", border: "1px solid #2a2a2a", borderRadius: 14, padding: ".5rem", display: "flex", flexDirection: "column", gap: ".25rem", zIndex: 100, minWidth: 180, boxShadow: "0 8px 32px rgba(0,0,0,.5)" }}>
-              {isPro && (
-                <a href="/app/resumo" onClick={() => setMobileMenuOpen(false)} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", borderRadius: 10, textDecoration: "none", fontSize: ".85rem", fontWeight: 600, color: "var(--gray)" }}>
-                  📄 Revisão de Aula
-                </a>
-              )}
-              <a href="/app/historico" onClick={() => setMobileMenuOpen(false)} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", borderRadius: 10, textDecoration: "none", fontSize: ".85rem", fontWeight: 600, color: "var(--gray)" }}>
-                🏆 Progresso
-              </a>
-              <a href="/" style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", borderRadius: 10, textDecoration: "none", fontSize: ".85rem", fontWeight: 600, color: "var(--gray)" }}>
-                🏠 Site principal
-              </a>
-            </div>
           )}
 
           <div style={{ position: "relative", display: "inline-flex" }}>
