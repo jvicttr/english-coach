@@ -569,6 +569,12 @@ export default function RolePlay() {
                   🇧🇷 {msg.translation}
                 </div>
               )}
+              {msg.role === "assistant" && (
+                <div style={{ marginTop: "8px", display: "flex", gap: "6px" }}>
+                  <button onClick={() => { unlockAudio(); speak(msg.content); }} disabled={isSpeaking || isLoading} style={{ background: "transparent", border: "1px solid #3a3a3a", borderRadius: "50px", padding: "2px 10px", fontSize: "0.72rem", color: "var(--gray)", cursor: "pointer", opacity: isSpeaking || isLoading ? 0.4 : 1 }}>🔊 Ouvir</button>
+                  <button onClick={() => { unlockAudio(); speak(msg.content, true); }} disabled={isSpeaking || isLoading} style={{ background: "transparent", border: "1px solid #3a3a3a", borderRadius: "50px", padding: "2px 10px", fontSize: "0.72rem", color: "var(--gray)", cursor: "pointer", opacity: isSpeaking || isLoading ? 0.4 : 1 }}>🐢 Devagar</button>
+                </div>
+              )}
               {msg.role === "assistant" && msg.corrections && msg.corrections.length > 0 && (
                 <div style={{ marginTop: "8px", paddingTop: "8px", borderTop: "1px solid rgba(255,255,255,0.06)", display: "flex", flexDirection: "column", gap: "10px" }}>
                   <div style={{ fontSize: "0.72rem", color: "var(--gray)" }}>
@@ -617,12 +623,6 @@ export default function RolePlay() {
                       </div>
                     );
                   })}
-                </div>
-              )}
-              {msg.role === "assistant" && (
-                <div style={{ marginTop: "8px", display: "flex", gap: "6px" }}>
-                  <button onClick={() => { unlockAudio(); speak(msg.content); }} disabled={isSpeaking || isLoading} style={{ background: "transparent", border: "1px solid #3a3a3a", borderRadius: "50px", padding: "2px 10px", fontSize: "0.72rem", color: "var(--gray)", cursor: "pointer", opacity: isSpeaking || isLoading ? 0.4 : 1 }}>🔊 Ouvir</button>
-                  <button onClick={() => { unlockAudio(); speak(msg.content, true); }} disabled={isSpeaking || isLoading} style={{ background: "transparent", border: "1px solid #3a3a3a", borderRadius: "50px", padding: "2px 10px", fontSize: "0.72rem", color: "var(--gray)", cursor: "pointer", opacity: isSpeaking || isLoading ? 0.4 : 1 }}>🐢 Devagar</button>
                 </div>
               )}
             </div>
