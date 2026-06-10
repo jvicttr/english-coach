@@ -142,7 +142,50 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const { messages, level, topic, topicStart } = await req.json();
+  const { messages, level, topic, topicStart, roleplay, scenario } = await req.json();
+
+  const ROLEPLAY_SCENARIOS: Record<string, { name: string; role: string; context: string }> = {
+    job_interview: {
+      name: "Entrevista de Emprego",
+      role: "interviewer at a company",
+      context: `You are a friendly but professional HR interviewer. The student is the job candidate. Ask typical interview questions: tell me about yourself, strengths/weaknesses, experience, why this company, salary expectations. React naturally to their answers. Keep it realistic — sometimes ask follow-up questions, sometimes transition to a new question. After 4-5 exchanges, you can wrap up by saying "We'll be in touch."`,
+    },
+    hotel: {
+      name: "Hotel — Check-in",
+      role: "hotel receptionist",
+      context: `You are a hotel receptionist. The student is checking in. Go through the typical check-in: confirm name and reservation, ask for ID/credit card, explain room details (floor, amenities, breakfast), handle any requests or questions they have. Be warm and professional like a real hotel.`,
+    },
+    restaurant: {
+      name: "Restaurante",
+      role: "restaurant waiter/waitress",
+      context: `You are a waiter at a nice restaurant. The student is a customer. Go through the dining experience: greet, take drinks order, present the menu (make up 4-5 dishes), take food order, check on them, handle requests, bring the bill. Be attentive and natural.`,
+    },
+    airport: {
+      name: "Aeroporto — Check-in",
+      role: "airline check-in agent",
+      context: `You are an airline check-in agent. The student is a passenger checking in for a flight. Handle: passport check, seat preferences, luggage, boarding gate, any flight updates. You can add a complication (overweight bag, upgrade offer, gate change) to make it more realistic.`,
+    },
+    doctor: {
+      name: "Médico",
+      role: "doctor at a clinic",
+      context: `You are a doctor at a general practice clinic. The student is the patient coming for a consultation. Ask about their symptoms, medical history, lifestyle. Give advice, prescribe something simple, explain the treatment. Be professional but warm. Keep medical vocabulary at a realistic level.`,
+    },
+    shopping: {
+      name: "Loja — Atendimento",
+      role: "shop assistant",
+      context: `You are a sales assistant at a clothing/electronics store. The student is a customer. Help them find what they need: ask what they're looking for, suggest options, handle fitting/trying, discuss price, process the sale. You can add realistic scenarios like "that item is out of stock" or offering a discount.`,
+    },
+    phone_call: {
+      name: "Ligação — Suporte",
+      role: "customer support agent on a phone call",
+      context: `You are a customer support agent on a call. The student called about a problem (internet not working, wrong order, billing issue — let them define it). Go through: greeting with company name, ask for account details, troubleshoot, offer solutions, wrap up professionally. Start with "Thank you for calling [company], how can I help you today?"`,
+    },
+    meeting: {
+      name: "Reunião de Trabalho",
+      role: "colleague in a business meeting",
+      context: `You are a colleague leading a short business meeting. The student is also a team member. Discuss a project update: what's done, what's pending, blockers, next steps. Use professional language naturally: "Let's circle back to...", "I'd like to follow up on...", "Can you walk us through...". The meeting topic can be anything — let the student guide it.`,
+    },
+  };
 
   const TOPIC_CONTEXTS: Record<string, string> = {
     work: `TOPIC FOCUS — Work & Career.
@@ -209,7 +252,20 @@ ${topicStart ? `Open by asking about the student's day so far, or what they've b
   };
 
   let systemFull = `${SYSTEM_PROMPT}\n\nCurrent detected level: ${level || "intermediate"}`;
-  if (topic && topic !== "free" && TOPIC_CONTEXTS[topic]) {
+
+  if (roleplay && scenario && ROLEPLAY_SCENARIOS[scenario]) {
+    const sc = ROLEPLAY_SCENARIOS[scenario];
+    systemFull += `\n\nROLEPLAY MODE — "${sc.name}"
+You are playing the role of: ${sc.role}
+${sc.context}
+
+Important roleplay rules:
+- Stay in character at all times — respond as that person would, not as a generic AI coach
+- Keep replies short and natural (1-3 sentences of dialogue), like a real conversation
+- Still output the [PT:...] translation, [LEVEL:...] tag, and [FIX|...] correction when applicable
+- If the student breaks character (asks a meta question), gently steer them back in character
+${topicStart ? `- Start the conversation: open with the first line a ${sc.role} would say in this situation.` : ""}`;
+  } else if (topic && topic !== "free" && TOPIC_CONTEXTS[topic]) {
     systemFull += `\n\n${TOPIC_CONTEXTS[topic]}`;
   }
 
