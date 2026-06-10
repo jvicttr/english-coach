@@ -140,16 +140,28 @@ export default function Progresso() {
         {/* Stats cards */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 10 }}>
           {[
-            { emoji: "🔥", label: "Sequência", value: streak > 0 ? `${streak} dia${streak !== 1 ? "s" : ""}` : "—", color: streak > 0 ? "#f97316" : "var(--gray)" },
-            { emoji: "📝", label: "Total de sessões", value: String(totalSessions), color: "var(--yellow)" },
-            { emoji: "🎯", label: "Média geral", value: totalSessions > 0 ? `${avgScore}%` : "—", color: avgScore >= 80 ? "#4ade80" : avgScore >= 60 ? "var(--yellow)" : avgScore > 0 ? "#f87171" : "var(--gray)" },
-            { emoji: "🃏", label: "Flashcards criados", value: String(flashcards.length), color: flashcards.length > 0 ? "#60a5fa" : "var(--gray)" },
-          ].map((stat) => (
-            <div key={stat.label} style={{ background: "var(--dark1)", border: "1px solid #1e1e1e", borderRadius: 16, padding: "14px 16px" }}>
-              <p style={{ fontSize: "0.7rem", color: "var(--gray)", marginBottom: 6, fontWeight: 600 }}>{stat.emoji} {stat.label}</p>
-              <p style={{ fontSize: "1.6rem", fontWeight: 900, color: stat.color, margin: 0, lineHeight: 1 }}>{stat.value}</p>
-            </div>
-          ))}
+            { emoji: "🔥", label: "Sequência", value: streak > 0 ? `${streak} dia${streak !== 1 ? "s" : ""}` : "—", color: streak > 0 ? "#f97316" : "var(--gray)", href: null },
+            { emoji: "📝", label: "Total de sessões", value: String(totalSessions), color: "var(--yellow)", href: "/app/historico" },
+            { emoji: "🎯", label: "Média geral", value: totalSessions > 0 ? `${avgScore}%` : "—", color: avgScore >= 80 ? "#4ade80" : avgScore >= 60 ? "var(--yellow)" : avgScore > 0 ? "#f87171" : "var(--gray)", href: null },
+            { emoji: "🃏", label: "Flashcards criados", value: String(flashcards.length), color: flashcards.length > 0 ? "#60a5fa" : "var(--gray)", href: "/app/flashcards" },
+          ].map((stat) => {
+            const inner = (
+              <>
+                <p style={{ fontSize: "0.7rem", color: "var(--gray)", marginBottom: 6, fontWeight: 600 }}>{stat.emoji} {stat.label}</p>
+                <p style={{ fontSize: "1.6rem", fontWeight: 900, color: stat.color, margin: 0, lineHeight: 1 }}>{stat.value}</p>
+                {stat.href && <p style={{ fontSize: "0.6rem", color: "var(--gray2)", margin: "6px 0 0", fontWeight: 600 }}>Ver tudo →</p>}
+              </>
+            );
+            const baseStyle = { background: "var(--dark1)", border: "1px solid #1e1e1e", borderRadius: 16, padding: "14px 16px", display: "block", textDecoration: "none" };
+            return stat.href ? (
+              <a key={stat.label} href={stat.href} style={{ ...baseStyle, cursor: "pointer", transition: "border-color .15s", borderColor: "#2a2a2a" }}
+                onMouseEnter={(e) => (e.currentTarget.style.borderColor = "rgba(245,200,0,.3)")}
+                onMouseLeave={(e) => (e.currentTarget.style.borderColor = "#1e1e1e")}
+              >{inner}</a>
+            ) : (
+              <div key={stat.label} style={baseStyle}>{inner}</div>
+            );
+          })}
         </div>
 
         {/* Weekly chart */}
