@@ -14,17 +14,12 @@ export async function GET() {
     .from("flashcards")
     .select("*")
     .eq("user_id", userId)
-    .lte("next_review", today)
     .order("next_review", { ascending: true })
-    .limit(20);
+    .limit(200);
 
-  const { count } = await supabase
-    .from("flashcards")
-    .select("*", { count: "exact", head: true })
-    .eq("user_id", userId)
-    .lte("next_review", today);
+  const pending = (cards ?? []).filter((c: { next_review: string }) => c.next_review <= today).length;
 
-  return NextResponse.json({ cards: cards ?? [], pending: count ?? 0 });
+  return NextResponse.json({ cards: cards ?? [], pending });
 }
 
 export async function POST(req: NextRequest) {
