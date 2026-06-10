@@ -198,7 +198,7 @@ export default function AppHome() {
                 href: "/app/conversar",
                 emoji: "💬",
                 title: "Conversar",
-                desc: "8 tópicos disponíveis",
+                desc: "Conversa livre ou por tópico",
                 iconBg: "rgba(96,165,250,.12)",
                 iconColor: "#60a5fa",
                 badge: null,
