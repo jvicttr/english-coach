@@ -97,11 +97,7 @@ export default function AppHome() {
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
 
-          {isPro ? (
-            <a href="/app/resumo" style={{ fontSize: ".75rem", fontWeight: 600, color: "var(--gray)", border: "1px solid #2a2a2a", borderRadius: "50px", padding: ".25rem .75rem", textDecoration: "none" }}>
-              📄 Revisão de Aula
-            </a>
-          ) : (
+          {!isPro && (
             <a href="/planos" style={{ fontSize: ".75rem", fontWeight: 700, color: "var(--yellow)", border: "1px solid rgba(245,200,0,.35)", borderRadius: "50px", padding: ".25rem .75rem", textDecoration: "none" }}>
               Planos
             </a>
