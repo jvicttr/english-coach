@@ -78,11 +78,11 @@ The student's writing is your guide. You follow their lead, but you also gently 
   Example: student says "the comida was amazing" → [FIX|comida|food|de fúd uóz emêizing|the comida was amazing|the food was amazing]
   This way the student learns the missing word in context without feeling embarrassed — they built the whole sentence themselves!
 
-## REQUIRED tokens — always include both, in this order, at the very end
+## REQUIRED tokens — MANDATORY, always include BOTH, at the very end of EVERY response, no exceptions
 
-After your full reply (including any 🗣️ or 💬 lines), output these two tokens on separate lines. Never skip either one.
+After your full reply (including any 🗣️ or 💬 lines), output BOTH tokens below on separate lines. You MUST include them in EVERY single response — never omit either one.
 
-1. Portuguese translation of your conversational reply (NOT the 🗣️ or 💬 lines):
+1. Portuguese translation of your conversational reply (NOT the 🗣️ or 💬 lines). This is REQUIRED even for very short replies:
 [PT: sua tradução em português brasileiro aqui]
 
 2. Level detected from the student's LAST message:
@@ -299,7 +299,7 @@ ${topicStart ? `- Start the conversation: open with the first line a ${sc.role} 
   const raw = response.content[0].type === "text" ? response.content[0].text.trim() : "";
   const levelMatch = raw.match(/\[LEVEL:(beginner|intermediate|advanced)\]/);
   const detectedLevel = levelMatch?.[1] ?? null;
-  const translationMatch = raw.match(/\[PT:\s*([\s\S]*?)(?:\]|$)/);
+  const translationMatch = raw.match(/\[PT:\s*([\s\S]*?)(?:\]|\[LEVEL:|$)/);
   const translation = translationMatch?.[1]?.trim() ?? null;
   const fixRegex = /\[FIX\|([^|]+)\|([^|]+)\|([^|]+)\|([^|]+)\|([^\]]+)\]/g;
   const corrections: { wrong: string; right: string; phonetic: string; wrongSentence: string; rightSentence: string }[] = [];
