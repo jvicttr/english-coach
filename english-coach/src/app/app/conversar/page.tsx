@@ -24,7 +24,7 @@ type Quiz = {
   questions: QuizQuestion[];
 };
 
-type AppScreen = "chat" | "loading-quiz" | "quiz" | "result";
+type AppScreen = "chat" | "loading-quiz" | "loading-flashcards" | "quiz" | "result";
 
 type TopicDef = {
   id: string;
@@ -442,38 +442,46 @@ export default function Home() {
     }
   }
 
-  async function endConversation() {
+  async function endConversation(mode: "quiz" | "flashcards") {
     if (messages.length < 2) return;
-    setScreen("loading-quiz");
-    try {
-      const [quizRes] = await Promise.all([
-        fetch("/api/quiz", {
+    if (mode === "quiz") {
+      setScreen("loading-quiz");
+      try {
+        const res = await fetch("/api/quiz", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ messages, level }),
-        }),
-        fetch("/api/flashcards/generate", {
+        });
+        const data = await res.json();
+        if (data.quiz) {
+          setQuiz(data.quiz);
+          setQuizSessionId(data.sessionId ?? null);
+          setAnswers(new Array(data.quiz.questions.length).fill(null));
+          setCurrentQ(0);
+          setShowExplanation(false);
+          setScore(0);
+          setScreen("quiz");
+        } else {
+          setScreen("chat");
+          setMicError("Não foi possível gerar o quiz. Tente novamente!");
+        }
+      } catch {
+        setScreen("chat");
+        setMicError("Erro ao gerar o quiz. Verifique sua conexão e tente novamente.");
+      }
+    } else {
+      setScreen("loading-flashcards");
+      try {
+        await fetch("/api/flashcards/generate", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ messages, topic: topic?.id }),
-        }),
-      ]);
-      const data = await quizRes.json();
-      if (data.quiz) {
-        setQuiz(data.quiz);
-        setQuizSessionId(data.sessionId ?? null);
-        setAnswers(new Array(data.quiz.questions.length).fill(null));
-        setCurrentQ(0);
-        setShowExplanation(false);
-        setScore(0);
-        setScreen("quiz");
-      } else {
+        });
+        router.push("/app/flashcards");
+      } catch {
         setScreen("chat");
-        setMicError("Não foi possível gerar o quiz. Tente novamente!");
+        setMicError("Erro ao gerar os flashcards. Verifique sua conexão e tente novamente.");
       }
-    } catch {
-      setScreen("chat");
-      setMicError("Erro ao gerar o quiz. Verifique sua conexão e tente novamente.");
     }
   }
 
@@ -618,6 +626,20 @@ export default function Home() {
           ))}
         </div>
         <p className="text-sm font-medium" style={{ color: "var(--gray)" }}>Gerando seu quiz personalizado...</p>
+      </div>
+    );
+  }
+
+  // ── Loading Flashcards Screen ─────────────────────────────────────────────
+  if (screen === "loading-flashcards") {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen gap-4" style={{ background: "var(--black)", fontFamily: "'Inter', sans-serif" }}>
+        <div className="flex gap-1.5">
+          {[0, 150, 300].map((d) => (
+            <span key={d} className="w-3 h-3 rounded-full animate-bounce" style={{ background: "var(--yellow)", animationDelay: `${d}ms` }} />
+          ))}
+        </div>
+        <p className="text-sm font-medium" style={{ color: "var(--gray)" }}>Criando seus flashcards...</p>
       </div>
     );
   }
@@ -1165,14 +1187,22 @@ export default function Home() {
 
       {/* ── Encerrar conversa ──────────────────────────────── */}
       {messages.length >= 2 && !limitReached && (
-        <div className="w-full max-w-2xl mb-2">
+        <div className="w-full max-w-2xl mb-2 flex gap-2">
           <button
-            onClick={endConversation}
+            onClick={() => endConversation("quiz")}
             disabled={isLoading}
-            className="w-full py-2.5 rounded-xl text-sm font-bold transition-all disabled:opacity-40"
+            className="flex-1 py-2.5 rounded-xl text-sm font-bold transition-all disabled:opacity-40"
             style={{ background: "transparent", border: "1px solid rgba(245,200,0,0.3)", color: "var(--yellow)" }}
           >
-            🎯 Encerrar conversa e fazer quiz
+            🎯 Fazer quiz
+          </button>
+          <button
+            onClick={() => endConversation("flashcards")}
+            disabled={isLoading}
+            className="flex-1 py-2.5 rounded-xl text-sm font-bold transition-all disabled:opacity-40"
+            style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.15)", color: "var(--white)" }}
+          >
+            🃏 Criar flashcards
           </button>
         </div>
       )}
