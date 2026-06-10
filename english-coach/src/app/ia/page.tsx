@@ -337,8 +337,6 @@ export default function IALanding() {
           <span style={{ fontWeight:800, fontSize:".95rem", color:"#fff" }}>JV <span style={{ color:"var(--yellow)" }}>IA</span></span>
         </a>
         <div style={{ display:"flex", alignItems:"center", gap:"1rem" }}>
-          <a href="#funcionalidades" style={{ fontSize:".85rem", color:"rgba(255,255,255,.65)", textDecoration:"none", fontWeight:500 }} className="hidden sm:block">Funcionalidades</a>
-          <a href="#como-funciona" style={{ fontSize:".85rem", color:"rgba(255,255,255,.65)", textDecoration:"none", fontWeight:500 }} className="hidden sm:block">Como funciona</a>
           <a href="/app" style={{ background:"var(--yellow)", color:"#000", padding:".45rem 1.1rem", borderRadius:"50px", textDecoration:"none", fontWeight:700, fontSize:".85rem" }}>Experimentar</a>
         </div>
       </nav>
