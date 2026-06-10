@@ -822,7 +822,7 @@ export default function Home() {
         {/* Direita */}
         <div className="flex items-center gap-2 shrink-0">
 
-          {/* Portal, Histórico, Revisão — só no desktop */}
+          {/* Portal, Progresso, Revisão — só no desktop */}
           {isPro && (
             <button
               onClick={openPortal}
@@ -837,12 +837,12 @@ export default function Home() {
           )}
           <button
             onClick={() => router.push("/app/historico")}
-            title="Histórico"
+            title="Progresso"
             className="icon-expand-btn hidden sm:flex"
             style={{ background: "var(--dark2)", border: "1px solid #2a2a2a", borderRadius: "10px", height: "36px", alignItems: "center", cursor: "pointer" }}
           >
             <span style={{ fontSize: "1rem", flexShrink: 0, width: 36, textAlign: "center" }}>🏆</span>
-            <span className="icon-expand-label">Histórico</span>
+            <span className="icon-expand-label">Progresso</span>
           </button>
           {isPro && (
             <button
@@ -905,7 +905,7 @@ export default function Home() {
               style={{ background: "transparent", border: "none", borderRadius: "10px", height: "42px", display: "flex", alignItems: "center", gap: "10px", padding: "0 12px", cursor: "pointer", width: "100%" }}
             >
               <span style={{ fontSize: "1rem", width: 24, textAlign: "center" }}>🏆</span>
-              <span style={{ fontSize: ".85rem", fontWeight: 600, color: "var(--gray)" }}>Histórico</span>
+              <span style={{ fontSize: ".85rem", fontWeight: 600, color: "var(--gray)" }}>Progresso</span>
             </button>
             {isPro && (
               <button
