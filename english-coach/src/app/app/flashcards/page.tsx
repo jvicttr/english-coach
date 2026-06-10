@@ -99,7 +99,7 @@ export default function Flashcards() {
           <div style={{ fontSize: "3rem" }}>🃏</div>
           <h2 style={{ color: "#fff", fontSize: "1.1rem", fontWeight: 700, margin: 0 }}>Nenhum flashcard ainda</h2>
           <p style={{ color: "var(--gray)", fontSize: "0.875rem", lineHeight: 1.6, margin: 0 }}>
-            Os flashcards são gerados automaticamente quando você encerra uma conversa ou role-play. Pratique e volte aqui para revisar!
+            Seus flashcards ficam salvos aqui. Para criar, encerre uma conversa e escolha <strong style={{ color: "var(--white)" }}>Criar flashcards</strong>.
           </p>
           <a href="/app/conversar" style={{ background: "var(--yellow)", color: "#000", padding: "0.75rem 2rem", borderRadius: "50px", textDecoration: "none", fontWeight: 800, fontSize: "0.9rem" }}>
             Começar uma conversa
