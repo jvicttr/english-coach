@@ -10,7 +10,7 @@ const supabase = createClient(
   process.env.SUPABASE_SECRET_KEY!
 );
 
-const FREE_LIMIT = 10;
+const FREE_LIMIT = 5;
 
 const SYSTEM_PROMPT = `You are a friendly English conversation coach following the "Método Fale Inglês JV" — a natural acquisition method based on real communication, NOT traditional grammar drills or memorization.
 
@@ -147,6 +147,11 @@ export async function POST(req: NextRequest) {
   }
 
   const { messages, level, topic, topicStart, roleplay, scenario } = await req.json();
+
+  // Role-play is Pro only
+  if (roleplay && !isPro) {
+    return NextResponse.json({ proRequired: true }, { status: 403 });
+  }
 
   const ROLEPLAY_SCENARIOS: Record<string, { name: string; role: string; context: string }> = {
     job_interview: {

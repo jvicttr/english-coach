@@ -70,8 +70,12 @@ export default function RolePlay() {
   }, [messages]);
 
   useEffect(() => {
-    fetch("/api/me").then((r) => r.json()).then((d) => setIsPro(d.plan === "pro"));
-  }, []);
+    fetch("/api/me").then((r) => r.json()).then((d) => {
+      const pro = d.plan === "pro";
+      setIsPro(pro);
+      if (!pro) router.replace("/planos");
+    });
+  }, [router]);
 
   const SILENT_WAV = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=";
 

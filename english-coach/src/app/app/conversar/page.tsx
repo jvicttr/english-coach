@@ -1184,12 +1184,12 @@ export default function Home() {
             🎯 Fazer quiz
           </button>
           <button
-            onClick={() => endConversation("flashcards")}
+            onClick={() => isPro ? endConversation("flashcards") : router.push("/planos")}
             disabled={isLoading}
             className="flex-1 py-2.5 rounded-xl text-sm font-bold transition-all disabled:opacity-40"
-            style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.15)", color: "var(--white)" }}
+            style={{ background: "transparent", border: `1px solid ${isPro ? "rgba(255,255,255,0.15)" : "rgba(245,200,0,0.2)"}`, color: isPro ? "var(--white)" : "var(--yellow)" }}
           >
-            🃏 Criar flashcards
+            {isPro ? "🃏 Criar flashcards" : "🔒 Criar flashcards"}
           </button>
         </div>
       )}

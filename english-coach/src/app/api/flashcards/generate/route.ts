@@ -10,6 +10,9 @@ export async function POST(req: NextRequest) {
   const { userId } = await auth();
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+  const { data: sub } = await supabase.from("subscriptions").select("plan").eq("user_id", userId).single();
+  if (sub?.plan !== "pro") return NextResponse.json({ error: "Pro required" }, { status: 403 });
+
   const { messages, topic } = await req.json();
   if (!messages?.length) return NextResponse.json({ cards: [] });
 

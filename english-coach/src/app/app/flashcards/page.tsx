@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { UserButton } from "@clerk/nextjs";
 
 type Flashcard = {
@@ -14,6 +15,7 @@ type Flashcard = {
 };
 
 export default function Flashcards() {
+  const router = useRouter();
   const [cards, setCards] = useState<Flashcard[]>([]);
   const [pending, setPending] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -25,13 +27,17 @@ export default function Flashcards() {
 
   useEffect(() => {
     fetch("/api/flashcards")
-      .then((r) => r.json())
+      .then((r) => {
+        if (r.status === 403) { router.replace("/planos"); return null; }
+        return r.json();
+      })
       .then((d) => {
+        if (!d) return;
         setCards(d.cards ?? []);
         setPending(d.pending ?? 0);
         setLoading(false);
       });
-  }, []);
+  }, [router]);
 
   async function rate(r: "easy" | "hard" | "miss") {
     const card = cards[currentIndex];

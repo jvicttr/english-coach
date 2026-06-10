@@ -8,6 +8,9 @@ export async function GET() {
   const { userId } = await auth();
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+  const { data: sub } = await supabase.from("subscriptions").select("plan").eq("user_id", userId).single();
+  if (sub?.plan !== "pro") return NextResponse.json({ error: "Pro required" }, { status: 403 });
+
   const today = new Date().toISOString().split("T")[0];
 
   const { data: cards } = await supabase
