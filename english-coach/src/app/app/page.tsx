@@ -125,7 +125,7 @@ export default function AppHome() {
                 </a>
               )}
               <a href="/app/historico" onClick={() => setMobileMenuOpen(false)} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", borderRadius: 10, textDecoration: "none", fontSize: ".85rem", fontWeight: 600, color: "var(--gray)" }}>
-                🏆 Histórico de quizzes
+                🏆 Progresso
               </a>
               <a href="/" style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", borderRadius: 10, textDecoration: "none", fontSize: ".85rem", fontWeight: 600, color: "var(--gray)" }}>
                 🏠 Site principal
