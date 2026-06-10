@@ -462,7 +462,7 @@ export default function Home() {
         await fetch("/api/flashcards/generate", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ messages, topic: topic?.id }),
+          body: JSON.stringify({ messages, topic: topic?.id, packName: topic?.label ?? "Conversa livre" }),
         });
         router.push("/app/flashcards");
       } catch {

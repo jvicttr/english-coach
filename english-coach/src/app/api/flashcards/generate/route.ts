@@ -13,7 +13,7 @@ export async function POST(req: NextRequest) {
   const { data: sub } = await supabase.from("subscriptions").select("plan").eq("user_id", userId).single();
   if (sub?.plan !== "pro") return NextResponse.json({ error: "Pro required" }, { status: 403 });
 
-  const { messages, topic } = await req.json();
+  const { messages, topic, packName } = await req.json();
   if (!messages?.length) return NextResponse.json({ cards: [] });
 
   const conversation = messages
@@ -64,6 +64,8 @@ Return ONLY valid JSON, no markdown:
   }
 
   if (cards.length > 0) {
+    const packId = crypto.randomUUID();
+    const resolvedPackName = packName ?? topic ?? "Conversa livre";
     const rows = cards.map((c) => ({
       user_id: userId,
       word: c.word,
@@ -71,6 +73,8 @@ Return ONLY valid JSON, no markdown:
       phonetic: c.phonetic ?? null,
       example: c.example ?? null,
       topic: topic ?? null,
+      pack_id: packId,
+      pack_name: resolvedPackName,
       interval: 1,
       ease_factor: 2.5,
       next_review: new Date().toISOString().split("T")[0],

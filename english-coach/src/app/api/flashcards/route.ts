@@ -17,12 +17,30 @@ export async function GET() {
     .from("flashcards")
     .select("*")
     .eq("user_id", userId)
-    .order("next_review", { ascending: true })
-    .limit(200);
+    .order("created_at", { ascending: false })
+    .limit(500);
 
-  const pending = (cards ?? []).filter((c: { next_review: string }) => c.next_review <= today).length;
+  const allCards = cards ?? [];
+  const pending = allCards.filter((c: { next_review: string }) => c.next_review <= today).length;
 
-  return NextResponse.json({ cards: cards ?? [], pending });
+  // Group into packs (newest first)
+  const packMap = new Map<string, { pack_id: string; pack_name: string; created_at: string; cards: typeof allCards }>();
+  for (const card of allCards) {
+    const key = card.pack_id ?? "__legacy__";
+    if (!packMap.has(key)) {
+      packMap.set(key, {
+        pack_id: key,
+        pack_name: card.pack_name ?? "Flashcards anteriores",
+        created_at: card.created_at,
+        cards: [],
+      });
+    }
+    packMap.get(key)!.cards.push(card);
+  }
+
+  const packs = Array.from(packMap.values());
+
+  return NextResponse.json({ cards: allCards, packs, pending });
 }
 
 export async function POST(req: NextRequest) {

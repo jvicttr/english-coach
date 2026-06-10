@@ -292,7 +292,7 @@ export default function RolePlay() {
     } else {
       setScreen("loading-flashcards");
       try {
-        await fetch("/api/flashcards/generate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ messages, topic: scenario?.id }) });
+        await fetch("/api/flashcards/generate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ messages, topic: scenario?.id, packName: scenario?.name ?? "Role-play" }) });
         router.push("/app/flashcards");
       } catch {
         setScreen("chat");
