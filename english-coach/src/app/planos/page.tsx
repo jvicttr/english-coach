@@ -80,7 +80,7 @@ export default function PlanosPage() {
           <div style={{ fontSize: "2.5rem", fontWeight: 900, color: "var(--white)", marginBottom: ".25rem" }}>R$ 97</div>
           <div style={{ fontSize: ".85rem", color: "var(--gray)", marginBottom: "2rem" }}>por mês</div>
           <ul style={{ listStyle: "none", padding: 0, margin: "0 0 2rem", display: "flex", flexDirection: "column", gap: ".75rem" }}>
-            {["Mensagens ilimitadas", "Respostas em áudio", "Detecção automática de nível", "Acesso ao coach de IA", "Suporte por WhatsApp"].map((f) => (
+            {["Conversas ilimitadas por tópico", "Role-play em cenários reais", "Flashcards com revisão espaçada", "Quiz ao final de cada conversa", "Respostas em áudio (normal e devagar)", "Correção de gramática em tempo real", "Detecção automática de nível", "Revisão de aula com PDF", "Suporte por WhatsApp"].map((f) => (
               <li key={f} style={{ display: "flex", alignItems: "center", gap: ".6rem", fontSize: ".9rem", color: "var(--white)" }}>
                 <span style={{ color: "var(--yellow)" }}>✓</span> {f}
               </li>
