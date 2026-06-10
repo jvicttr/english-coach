@@ -366,7 +366,7 @@ export default function IALanding() {
               </a>
             </div>
             <div style={{ display:"flex", gap:"2rem", flexWrap:"wrap" }}>
-              {[["8", "Tópicos de conversa"], ["24h", "Disponível sempre"]].map(([n, l]) => (
+              {[["24h", "Disponível sempre"]].map(([n, l]) => (
                 <div key={n}>
                   <div style={{ fontSize:"1.8rem", fontWeight:900, color:"var(--yellow)", lineHeight:1 }}>{n}</div>
                   <div style={{ fontSize:".7rem", color:"rgba(255,255,255,.4)", marginTop:".2rem", textTransform:"uppercase", letterSpacing:".5px" }}>{l}</div>
