@@ -421,23 +421,28 @@ export default function Flashcards() {
                   )}
                 </div>
               </div>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 10 }}>
-                {pack.cards.slice(0, 4).map((c) => (
-                  <span key={c.id} style={{ fontSize: "0.7rem", color: "rgba(255,255,255,.5)", background: "rgba(255,255,255,.05)", borderRadius: 6, padding: "2px 8px" }}>{c.word}</span>
-                ))}
-                {pack.cards.length > 4 && (
-                  <span style={{ fontSize: "0.7rem", color: "var(--gray2)", padding: "2px 4px" }}>+{pack.cards.length - 4} mais</span>
-                )}
+              <div style={{ marginTop: 10, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                  {pack.cards.slice(0, 4).map((c) => (
+                    <span key={c.id} style={{ fontSize: "0.7rem", color: "rgba(255,255,255,.5)", background: "rgba(255,255,255,.05)", borderRadius: 6, padding: "2px 8px" }}>{c.word}</span>
+                  ))}
+                  {pack.cards.length > 4 && (
+                    <span style={{ fontSize: "0.7rem", color: "var(--gray2)", padding: "2px 4px" }}>+{pack.cards.length - 4} mais</span>
+                  )}
+                </div>
               </div>
             </button>
             <button
               onClick={(e) => deletePack(pack, e)}
               title="Apagar pack"
-              style={{ position: "absolute", top: 10, right: 10, background: "transparent", border: "none", cursor: "pointer", padding: "4px 6px", borderRadius: 8, color: "var(--gray2)", fontSize: "0.85rem", lineHeight: 1, opacity: 0.6, transition: "opacity .15s, color .15s" }}
-              onMouseEnter={(e) => { e.currentTarget.style.opacity = "1"; e.currentTarget.style.color = "#f87171"; }}
-              onMouseLeave={(e) => { e.currentTarget.style.opacity = "0.6"; e.currentTarget.style.color = "var(--gray2)"; }}
+              style={{ position: "absolute", bottom: 12, right: 12, background: "rgba(248,113,113,0.1)", border: "1px solid rgba(248,113,113,0.25)", borderRadius: 8, cursor: "pointer", padding: "5px 8px", display: "flex", alignItems: "center", gap: 4, transition: "background .15s, border-color .15s" }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(248,113,113,0.22)"; e.currentTarget.style.borderColor = "rgba(248,113,113,0.5)"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(248,113,113,0.1)"; e.currentTarget.style.borderColor = "rgba(248,113,113,0.25)"; }}
             >
-              🗑
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#f87171" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+              </svg>
+              <span style={{ fontSize: "0.65rem", fontWeight: 700, color: "#f87171" }}>Apagar</span>
             </button>
             </div>
           );
