@@ -74,9 +74,6 @@ export default function Home() {
   const [portalLoading, setPortalLoading] = useState(false);
   const [topic, setTopic] = useState<TopicDef | null>(null);
   const [trilhaStep, setTrilhaStep] = useState<TrailStep | null>(null);
-  const [installPrompt, setInstallPrompt] = useState<Event | null>(null);
-  const [showInstallBanner, setShowInstallBanner] = useState(false);
-  const [isIOS, setIsIOS] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Quiz state
@@ -98,21 +95,6 @@ export default function Home() {
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
-
-  useEffect(() => {
-    const isStandalone = window.matchMedia("(display-mode: standalone)").matches || (navigator as unknown as Record<string, unknown>).standalone === true;
-    if (isStandalone) return;
-    const ios = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as unknown as Record<string, unknown>).MSStream;
-    setIsIOS(!!ios);
-    if (ios) {
-      const dismissed = sessionStorage.getItem("pwa_banner_dismissed");
-      if (!dismissed) setShowInstallBanner(true);
-    } else {
-      const handler = (e: Event) => { e.preventDefault(); setInstallPrompt(e); setShowInstallBanner(true); };
-      window.addEventListener("beforeinstallprompt", handler);
-      return () => window.removeEventListener("beforeinstallprompt", handler);
-    }
-  }, []);
 
   useEffect(() => {
     fetch("/api/me").then((r) => r.json()).then((d) => {
@@ -1351,38 +1333,6 @@ export default function Home() {
       )}
 
       {/* ── Banner instalar PWA ───────────────────────────── */}
-      {showInstallBanner && (
-        <div className="w-full max-w-2xl mb-2 px-3 py-2.5 flex items-center gap-3" style={{ background: "rgba(245,200,0,0.08)", border: "1px solid rgba(245,200,0,0.3)", borderRadius: "var(--radius)" }}>
-          <span style={{ fontSize: "1.2rem" }}>📲</span>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <p style={{ fontSize: "0.72rem", fontWeight: 700, color: "var(--white)", margin: 0 }}>Adicione à tela inicial</p>
-            {isIOS ? (
-              <p style={{ fontSize: "0.65rem", color: "var(--gray)", margin: "1px 0 0" }}>Toque em <strong style={{ color: "var(--white)" }}>Compartilhar</strong> → <strong style={{ color: "var(--white)" }}>Adicionar à Tela de Início</strong></p>
-            ) : (
-              <p style={{ fontSize: "0.65rem", color: "var(--gray)", margin: "1px 0 0" }}>Instale o app para acessar mais rápido</p>
-            )}
-          </div>
-          {!isIOS && (
-            <button
-              onClick={async () => {
-                if (!installPrompt) return;
-                (installPrompt as unknown as { prompt: () => void }).prompt();
-                setShowInstallBanner(false);
-              }}
-              style={{ background: "var(--yellow)", color: "var(--black)", border: "none", borderRadius: "8px", padding: "5px 12px", fontSize: "0.7rem", fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}
-            >
-              Instalar
-            </button>
-          )}
-          <button
-            onClick={() => { setShowInstallBanner(false); sessionStorage.setItem("pwa_banner_dismissed", "1"); }}
-            style={{ background: "transparent", border: "none", color: "var(--gray)", cursor: "pointer", fontSize: "1rem", lineHeight: 1, padding: "0 2px" }}
-          >
-            ✕
-          </button>
-        </div>
-      )}
-
       {/* ── Limite diário ─────────────────────────────────── */}
       {limitReached && (
         <div className="w-full max-w-2xl mb-3 px-4 py-5 flex flex-col items-center gap-3 text-center" style={{ background: "var(--dark2)", border: "1px solid rgba(245,200,0,.3)", borderRadius: "var(--radius)" }}>
