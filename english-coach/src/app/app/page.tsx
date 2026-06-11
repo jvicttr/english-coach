@@ -104,7 +104,7 @@ export default function AppHome() {
   const todayIdx = (new Date().getDay() + 6) % 7; // 0=Mon
 
   return (
-    <div style={{ background: "var(--black)", minHeight: "100dvh", fontFamily: "'Inter', sans-serif", paddingBottom: 70 }}>
+    <div style={{ background: "var(--black)", minHeight: "100%", fontFamily: "'Inter', sans-serif", paddingBottom: 70 }}>
       <style>{`@keyframes fadeUp { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }`}</style>
 
       {/* ── Header ─────────────────────────────────────────────────────────── */}

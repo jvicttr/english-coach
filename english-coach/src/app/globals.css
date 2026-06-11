@@ -23,11 +23,25 @@
   --color-jv-gray2: var(--gray2);
 }
 
+html, body {
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
 body {
   background: var(--black);
   color: var(--white);
   font-family: 'Inter', sans-serif;
+}
+
+/* App pages scroll via their own container, not the body */
+.app-scroll {
+  height: 100dvh;
+  overflow-y: auto;
   overflow-x: hidden;
+  overscroll-behavior: none;
+  -webkit-overflow-scrolling: touch;
 }
 
 @keyframes avatar-pulse {
