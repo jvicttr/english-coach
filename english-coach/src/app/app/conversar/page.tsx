@@ -784,6 +784,112 @@ export default function Home() {
     );
   }
 
+  // ── Topic Selection Screen ───────────────────────────────────────────────
+  if (!topic && !isLoading && messages.length === 0) {
+    return (
+      <div className="flex flex-col items-center px-3 pt-3 pb-4 sm:px-4 sm:pt-4 sm:pb-6" style={{ background: "var(--black)", fontFamily: "'Inter', sans-serif", minHeight: "100dvh" }}>
+        <header className="w-full max-w-2xl mb-4 flex items-center justify-between gap-2" style={{ position: "relative" }}>
+          <div className="flex items-center gap-2 shrink-0">
+            <Image src="/favicon.png" alt="Fale Inglês JV" width={32} height={32} className="rounded-xl shrink-0" />
+            <a href="/app" title="Início" style={{ background: "var(--dark2)", border: "1px solid #2a2a2a", borderRadius: "10px", height: "36px", width: 36, display: "flex", alignItems: "center", justifyContent: "center", textDecoration: "none", flexShrink: 0 }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--gray)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9.5z"/>
+                <path d="M9 21V12h6v9"/>
+              </svg>
+            </a>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            {isPro && (
+              <button onClick={openPortal} disabled={portalLoading} title="Portal do Aluno" className="icon-expand-btn hidden sm:flex" style={{ background: "var(--dark2)", border: "1px solid #2a2a2a", borderRadius: "10px", height: "36px", alignItems: "center", cursor: "pointer", opacity: portalLoading ? .5 : 1 }}>
+                <span style={{ fontSize: "1rem", flexShrink: 0, width: 36, textAlign: "center" }}>{portalLoading ? "…" : "👤"}</span>
+                <span className="icon-expand-label">Portal do Aluno</span>
+              </button>
+            )}
+            <button onClick={() => router.push("/app/progresso")} title="Progresso" className="icon-expand-btn hidden sm:flex" style={{ background: "var(--dark2)", border: "1px solid #2a2a2a", borderRadius: "10px", height: "36px", alignItems: "center", cursor: "pointer" }}>
+              <span style={{ fontSize: "1rem", flexShrink: 0, width: 36, textAlign: "center" }}>🏆</span>
+              <span className="icon-expand-label">Progresso</span>
+            </button>
+            {isPro && (
+              <button onClick={() => router.push("/app/resumo")} title="Revisão de Aula" className="icon-expand-btn hidden sm:flex" style={{ background: "var(--dark2)", border: "1px solid #2a2a2a", borderRadius: "10px", height: "36px", alignItems: "center", cursor: "pointer" }}>
+                <span style={{ fontSize: "1rem", flexShrink: 0, width: 36, textAlign: "center" }}>📄</span>
+                <span className="icon-expand-label">Revisão de Aula</span>
+              </button>
+            )}
+            <a href="/planos" style={{ fontSize: ".78rem", fontWeight: 700, color: "var(--yellow)", border: "1px solid rgba(245,200,0,.35)", borderRadius: "50px", padding: ".3rem .8rem", textDecoration: "none", whiteSpace: "nowrap" }}>Planos</a>
+            <button onClick={() => setMobileMenuOpen((v) => !v)} className="flex sm:hidden" style={{ background: "var(--dark2)", border: "1px solid #2a2a2a", borderRadius: "10px", height: "36px", width: 36, alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }}>
+              {mobileMenuOpen
+                ? <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--gray)" strokeWidth="2.5" strokeLinecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+                : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--gray)" strokeWidth="2.5" strokeLinecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+              }
+            </button>
+            <div style={{ position: "relative", display: "inline-flex", flexShrink: 0 }}>
+              <UserButton />
+              {isPro && <span style={{ position: "absolute", bottom: -4, left: "50%", transform: "translateX(-50%)", fontSize: "0.52rem", fontWeight: 800, letterSpacing: "0.4px", background: "linear-gradient(135deg, #f5c800, #e0a800)", color: "#000", padding: "1px 5px", borderRadius: "50px", boxShadow: "0 0 6px rgba(245,200,0,0.5)", whiteSpace: "nowrap", lineHeight: 1.4, pointerEvents: "none" }}>PRO</span>}
+            </div>
+          </div>
+          {mobileMenuOpen && (
+            <div className="flex sm:hidden" style={{ position: "absolute", top: "calc(100% + 8px)", right: 0, background: "var(--dark1)", border: "1px solid #2a2a2a", borderRadius: "14px", padding: ".5rem", display: "flex", flexDirection: "column", gap: ".35rem", zIndex: 50, minWidth: 200, boxShadow: "0 8px 32px rgba(0,0,0,.5)" }}>
+              {isPro && (
+                <button onClick={() => { openPortal(); setMobileMenuOpen(false); }} disabled={portalLoading} style={{ background: "transparent", border: "none", borderRadius: "10px", height: "42px", display: "flex", alignItems: "center", gap: "10px", padding: "0 12px", cursor: "pointer", width: "100%" }}>
+                  <span style={{ fontSize: "1rem", width: 24, textAlign: "center" }}>{portalLoading ? "…" : "👤"}</span>
+                  <span style={{ fontSize: ".85rem", fontWeight: 600, color: "var(--gray)" }}>Portal do Aluno</span>
+                </button>
+              )}
+              <button onClick={() => { router.push("/app/progresso"); setMobileMenuOpen(false); }} style={{ background: "transparent", border: "none", borderRadius: "10px", height: "42px", display: "flex", alignItems: "center", gap: "10px", padding: "0 12px", cursor: "pointer", width: "100%" }}>
+                <span style={{ fontSize: "1rem", width: 24, textAlign: "center" }}>🏆</span>
+                <span style={{ fontSize: ".85rem", fontWeight: 600, color: "var(--gray)" }}>Progresso</span>
+              </button>
+              {isPro && (
+                <button onClick={() => { router.push("/app/resumo"); setMobileMenuOpen(false); }} style={{ background: "transparent", border: "none", borderRadius: "10px", height: "42px", display: "flex", alignItems: "center", gap: "10px", padding: "0 12px", cursor: "pointer", width: "100%" }}>
+                  <span style={{ fontSize: "1rem", width: 24, textAlign: "center" }}>📄</span>
+                  <span style={{ fontSize: ".85rem", fontWeight: 600, color: "var(--gray)" }}>Revisão de Aula</span>
+                </button>
+              )}
+            </div>
+          )}
+        </header>
+
+        <div className="w-full max-w-2xl flex-1">
+          <div className="mb-5 text-center">
+            <Image src="/favicon.png" alt="Fale Inglês JV" width={48} height={48} className="rounded-2xl mx-auto mb-2" />
+            <p className="font-bold text-white text-sm mb-1">O que vamos praticar hoje?</p>
+            <p className="text-xs" style={{ color: "var(--gray)" }}>Escolha um tópico para começar</p>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "0.6rem" }}>
+            {TOPICS.map((t) => (
+              <button
+                key={t.id}
+                onClick={() => startTopic(t)}
+                className="text-left transition-all active:scale-95"
+                style={{ background: "var(--dark2)", border: "1px solid #2a2a2a", borderRadius: "14px", padding: "12px", cursor: "pointer" }}
+                onMouseEnter={(e) => (e.currentTarget.style.borderColor = t.color + "66")}
+                onMouseLeave={(e) => (e.currentTarget.style.borderColor = "#2a2a2a")}
+              >
+                <div style={{ fontSize: "1.4rem", marginBottom: 6 }}>{t.emoji}</div>
+                <p style={{ fontSize: "0.78rem", fontWeight: 700, color: "#fff", lineHeight: 1.3, marginBottom: 3 }}>{t.label}</p>
+                <p style={{ fontSize: "0.68rem", color: "var(--gray)", lineHeight: 1.3 }}>{t.desc}</p>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <nav className="-mx-3 sm:mx-auto w-full sm:max-w-2xl mt-4" style={{ background: "#0d0d0d", borderTop: "1px solid #1e1e1e", display: "grid", gridTemplateColumns: "repeat(4,1fr)", paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
+          {[
+            { href: "/app", icon: "🏠", label: "Início", active: false },
+            { href: "/app/conversar", icon: "💬", label: "Conversar", active: true },
+            { href: "/app/flashcards", icon: "🃏", label: "Flashcards", active: false },
+            { href: "/app/progresso", icon: "📊", label: "Progresso", active: false },
+          ].map((item) => (
+            <a key={item.href} href={item.href} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2, padding: "8px 0 10px", textDecoration: "none" }}>
+              <span style={{ fontSize: "1.1rem" }}>{item.icon}</span>
+              <span style={{ fontSize: "0.6rem", fontWeight: 700, color: item.active ? "var(--yellow)" : "#444" }}>{item.label}</span>
+            </a>
+          ))}
+        </nav>
+      </div>
+    );
+  }
+
   // ── Chat Screen ──────────────────────────────────────────────────────────
   return (
     <div
@@ -925,39 +1031,6 @@ export default function Home() {
         className="w-full max-w-2xl flex-1 min-h-0 p-3 sm:p-4 mb-3 overflow-y-auto"
         style={{ background: "var(--dark1)", border: "1px solid #1f1f1f", borderRadius: "var(--radius)", boxShadow: "var(--shadow)" }}
       >
-        {/* ── Topic selection ─────────────────────────────── */}
-        {messages.length === 0 && !topic && !isLoading && (
-          <div className="flex flex-col h-full py-1 sm:py-2 gap-2 sm:gap-3 overflow-y-auto">
-            <div className="text-center">
-              <Image src="/favicon.png" alt="Fale Inglês JV" width={48} height={48} className="rounded-2xl mx-auto mb-1.5 sm:mb-2" />
-              <p className="font-bold text-white text-xs sm:text-sm">O que vamos praticar hoje?</p>
-              <p className="text-xs mt-0.5" style={{ color: "var(--gray)" }}>Escolha um tópico para começar</p>
-            </div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "0.4rem" }}>
-              {TOPICS.map((t) => (
-                <button
-                  key={t.id}
-                  onClick={() => startTopic(t)}
-                  className="text-left transition-all active:scale-95"
-                  style={{
-                    background: "var(--dark2)",
-                    border: `1px solid #2a2a2a`,
-                    borderRadius: "12px",
-                    padding: "8px 10px",
-                    cursor: "pointer",
-                  }}
-                  onMouseEnter={(e) => (e.currentTarget.style.borderColor = t.color + "66")}
-                  onMouseLeave={(e) => (e.currentTarget.style.borderColor = "#2a2a2a")}
-                >
-                  <div style={{ fontSize: "1.1rem", lineHeight: 1, marginBottom: "4px" }}>{t.emoji}</div>
-                  <p style={{ fontSize: "0.72rem", fontWeight: 700, color: "var(--white)", lineHeight: 1.2 }}>{t.label}</p>
-                  <p style={{ fontSize: "0.62rem", color: "var(--gray)", marginTop: "2px", lineHeight: 1.3 }}>{t.desc}</p>
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
         {/* ── Topic loading (AI opening message) ──────────── */}
         {messages.length === 0 && topic && isLoading && (
           <div className="flex flex-col items-center justify-center gap-3" style={{ minHeight: "60%", paddingBottom: "20%" }}>
