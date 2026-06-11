@@ -94,10 +94,13 @@ function Sparkline({ data }: { data: number[] }) {
   );
 }
 
+type TrilhaProgress = { step_id: string; score: number; total: number; completed_at: string };
+
 export default function Progresso() {
   const [results, setResults] = useState<QuizResult[]>([]);
   const [loading, setLoading] = useState(true);
   const [flashcards, setFlashcards] = useState<Flashcard[]>([]);
+  const [trilhaProgress, setTrilhaProgress] = useState<TrilhaProgress[]>([]);
   const [showAllFlashcards, setShowAllFlashcards] = useState(false);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
@@ -106,9 +109,11 @@ export default function Progresso() {
     Promise.all([
       fetch("/api/quiz-history").then((r) => r.json()),
       fetch("/api/flashcards").then((r) => (r.ok ? r.json() : { cards: [] })),
-    ]).then(([quizData, fcData]) => {
+      fetch("/api/trilha").then((r) => r.json()),
+    ]).then(([quizData, fcData, trilhaData]) => {
       setResults(quizData.results ?? []);
       setFlashcards(fcData.cards ?? []);
+      setTrilhaProgress(trilhaData.completed ?? []);
       setLoading(false);
     });
   }, []);
@@ -137,6 +142,33 @@ export default function Progresso() {
     return acc;
   }, {});
   const dominantLevel = Object.entries(levelCounts).sort((a, b) => b[1] - a[1])[0]?.[0];
+
+  // Topics breakdown
+  const topicCounts = completed.reduce<Record<string, { count: number; totalScore: number }>>((acc, r) => {
+    const topic = r.title ?? "Outro";
+    if (!acc[topic]) acc[topic] = { count: 0, totalScore: 0 };
+    acc[topic].count++;
+    acc[topic].totalScore += Math.round((r.score! / r.questions.length) * 100);
+    return acc;
+  }, {});
+  const topTopics = Object.entries(topicCounts)
+    .map(([name, d]) => ({ name, count: d.count, avg: Math.round(d.totalScore / d.count) }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 5);
+
+  // Flashcard stats
+  const today = new Date().toISOString().split("T")[0];
+  const fcPending = flashcards.filter((f) => f.next_review <= today).length;
+  const fcMastered = flashcards.filter((f) => f.next_review > today).length;
+
+  // Trilha stats
+  const LEVEL_ORDER = ["A1", "A2", "B1", "B2", "C1"];
+  const trilhaByLevel = LEVEL_ORDER.map((lvl) => {
+    const total = 8; // ~8 steps per level
+    const done = trilhaProgress.filter((p) => p.step_id.startsWith(lvl.toLowerCase())).length;
+    return { lvl, done, total };
+  });
+  const trilhaTotal = trilhaProgress.length;
 
   const weekDays = getWeekDays();
   const weekScores = weekDays.map((day) => {
@@ -245,7 +277,85 @@ export default function Progresso() {
           </div>
         )}
 
-        {/* Flashcards */}
+        {/* Trilha progress */}
+        <div style={{ background: "var(--dark1)", border: "1px solid #1e1e1e", borderRadius: 16, padding: "16px" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+            <p style={{ fontWeight: 700, color: "#fff", fontSize: "0.9rem", margin: 0 }}>🗺️ Trilha de aprendizado</p>
+            <span style={{ fontSize: "0.72rem", color: "var(--gray)" }}>{trilhaTotal} {trilhaTotal !== 1 ? "passos" : "passo"} concluídos</span>
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {trilhaByLevel.map(({ lvl, done, total }) => {
+              const pct = Math.round((done / total) * 100);
+              const colors: Record<string, string> = { A1: "#60a5fa", A2: "#a78bfa", B1: "#F5C800", B2: "#fb923c", C1: "#4ade80" };
+              const color = colors[lvl] ?? "var(--yellow)";
+              return (
+                <div key={lvl}>
+                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+                    <span style={{ fontSize: "0.75rem", fontWeight: 700, color }}>{lvl}</span>
+                    <span style={{ fontSize: "0.7rem", color: "var(--gray)" }}>{done}/{total}</span>
+                  </div>
+                  <div style={{ height: 6, background: "#2a2a2a", borderRadius: 99, overflow: "hidden" }}>
+                    <div style={{ height: "100%", width: `${pct}%`, background: color, borderRadius: 99, transition: "width .4s ease" }} />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          {trilhaTotal === 0 && (
+            <p style={{ fontSize: "0.78rem", color: "var(--gray)", marginTop: 10, textAlign: "center" }}>
+              Comece a trilha para ver seu progresso aqui.{" "}
+              <a href="/app/trilha" style={{ color: "var(--yellow)", textDecoration: "none", fontWeight: 700 }}>Ir para a trilha →</a>
+            </p>
+          )}
+        </div>
+
+        {/* Flashcard stats */}
+        {flashcards.length > 0 && (
+          <div style={{ background: "var(--dark1)", border: "1px solid #1e1e1e", borderRadius: 16, padding: "16px" }}>
+            <p style={{ fontWeight: 700, color: "#fff", fontSize: "0.9rem", margin: "0 0 14px" }}>🃏 Vocabulário</p>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10 }}>
+              {[
+                { label: "Total", value: flashcards.length, color: "#fff" },
+                { label: "Para revisar", value: fcPending, color: fcPending > 0 ? "#f97316" : "#4ade80" },
+                { label: "Em dia", value: fcMastered, color: "#4ade80" },
+              ].map((s) => (
+                <div key={s.label} style={{ background: "var(--dark2)", borderRadius: 12, padding: "10px 12px", textAlign: "center" }}>
+                  <p style={{ fontSize: "1.4rem", fontWeight: 900, color: s.color, margin: 0 }}>{s.value}</p>
+                  <p style={{ fontSize: "0.62rem", color: "var(--gray)", margin: "4px 0 0", fontWeight: 600 }}>{s.label}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Topics breakdown */}
+        {topTopics.length > 0 && (
+          <div style={{ background: "var(--dark1)", border: "1px solid #1e1e1e", borderRadius: 16, padding: "16px" }}>
+            <p style={{ fontWeight: 700, color: "#fff", fontSize: "0.9rem", margin: "0 0 14px" }}>📚 Tópicos mais praticados</p>
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              {topTopics.map(({ name, count, avg }) => {
+                const scoreColor = avg >= 80 ? "#4ade80" : avg >= 60 ? "var(--yellow)" : "#f87171";
+                const maxCount = topTopics[0].count;
+                return (
+                  <div key={name}>
+                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4, alignItems: "center" }}>
+                      <span style={{ fontSize: "0.78rem", color: "#fff", fontWeight: 600, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginRight: 8 }}>{name}</span>
+                      <div style={{ display: "flex", gap: 8, alignItems: "center", flexShrink: 0 }}>
+                        <span style={{ fontSize: "0.65rem", color: "var(--gray)" }}>{count}x</span>
+                        <span style={{ fontSize: "0.65rem", fontWeight: 700, color: scoreColor }}>{avg}% média</span>
+                      </div>
+                    </div>
+                    <div style={{ height: 5, background: "#2a2a2a", borderRadius: 99, overflow: "hidden" }}>
+                      <div style={{ height: "100%", width: `${Math.round((count / maxCount) * 100)}%`, background: "var(--yellow)", borderRadius: 99, opacity: 0.7 }} />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Flashcards list */}
         {flashcards.length > 0 && (
           <div style={{ background: "var(--dark1)", border: "1px solid #1e1e1e", borderRadius: 16, padding: "16px" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
