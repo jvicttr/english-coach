@@ -122,11 +122,12 @@ export async function POST(req: NextRequest) {
   // Check subscription plan
   const { data: sub } = await supabase
     .from("subscriptions")
-    .select("plan")
+    .select("plan, level")
     .eq("user_id", userId)
     .single();
 
   const isPro = sub?.plan === "pro";
+  const savedLevel = sub?.level ?? null;
 
   if (!isPro) {
     const today = new Date().toISOString().split("T")[0];
@@ -263,7 +264,8 @@ The student chose to practice English for everyday situations — the foundation
 ${topicStart ? `Open by asking about the student's day so far, or what they've been up to this week. Super casual, like bumping into a friend.` : ""}`,
   };
 
-  let systemFull = `${SYSTEM_PROMPT}\n\nCurrent detected level: ${level || "intermediate"}`;
+  const effectiveLevel = level || savedLevel || "intermediate";
+  let systemFull = `${SYSTEM_PROMPT}\n\nStudent level: ${effectiveLevel} (this is their saved profile level — trust it from the start, do not re-detect from scratch)`;
 
   if (roleplay && scenario && ROLEPLAY_SCENARIOS[scenario]) {
     const sc = ROLEPLAY_SCENARIOS[scenario];

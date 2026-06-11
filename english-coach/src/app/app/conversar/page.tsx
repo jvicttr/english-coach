@@ -117,13 +117,22 @@ export default function Home() {
       const pro = d.plan === "pro";
       setIsPro(pro);
       localStorage.setItem("userPlan", d.plan ?? "free");
+      // Load saved level
+      if (d.level) {
+        setLevel(d.level as Level);
+        localStorage.setItem("userLevel", d.level);
+      } else if (!localStorage.getItem("userLevel")) {
+        router.replace("/app/nivel");
+      } else {
+        setLevel(localStorage.getItem("userLevel") as Level);
+      }
       // Check for pending discount coupon
       if (!pro) {
         const coupon = localStorage.getItem("jv_coupon");
         if (coupon) setPendingCoupon(coupon);
       }
     });
-  }, []);
+  }, [router]);
 
   async function openPortal() {
     setPortalLoading(true);

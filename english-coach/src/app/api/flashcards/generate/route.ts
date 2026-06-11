@@ -10,10 +10,11 @@ export async function POST(req: NextRequest) {
   const { userId } = await auth();
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { data: sub } = await supabase.from("subscriptions").select("plan").eq("user_id", userId).single();
+  const { data: sub } = await supabase.from("subscriptions").select("plan, level").eq("user_id", userId).single();
   if (sub?.plan !== "pro") return NextResponse.json({ error: "Pro required" }, { status: 403 });
 
   const { messages, topic, packName } = await req.json();
+  const userLevel: string = sub?.level ?? "intermediate";
   if (!messages?.length) return NextResponse.json({ cards: [] });
 
   const conversation = messages
@@ -21,7 +22,16 @@ export async function POST(req: NextRequest) {
     .map((m: { role: string; content: string }) => `${m.role === "user" ? "Student" : "Coach"}: ${m.content}`)
     .join("\n");
 
+  const levelGuide: Record<string, string> = {
+    beginner: "The student is a BEGINNER. Pick simple, high-frequency vocabulary they need to survive basic conversations. Avoid advanced idioms or complex phrases. Examples of good picks: 'schedule a meeting', 'I'd like to', 'by the way'.",
+    intermediate: "The student is INTERMEDIATE. Pick useful phrases and expressions that go beyond basics. Avoid trivial words (go, eat, want). Examples: 'get along with', 'it turns out', 'I was wondering'.",
+    advanced: "The student is ADVANCED. Pick sophisticated vocabulary, nuanced expressions, and idiomatic language. Skip anything too common. Examples: 'in retrospect', 'bear in mind', 'come across as'.",
+  };
+
   const prompt = `Analyze this English conversation and extract exactly 5 vocabulary words or expressions the student should review.
+
+Student level: ${userLevel}
+Level guidance: ${levelGuide[userLevel] ?? levelGuide.intermediate}
 
 Conversation:
 ${conversation}
@@ -29,7 +39,7 @@ ${conversation}
 Rules:
 - Pick words/expressions the student used incorrectly OR interesting vocabulary from the coach's replies
 - Prefer phrases over single common words when possible (e.g. "get along with" > "good")
-- Skip very basic words (go, eat, like, good)
+- Strictly respect the student level — do not pick vocabulary that is too easy or too hard for their level
 
 Return ONLY valid JSON, no markdown:
 {
