@@ -58,9 +58,8 @@ export default function AppHome() {
   const [results, setResults] = useState<QuizResult[]>([]);
   const [flashcardPending, setFlashcardPending] = useState(0);
   const [lastTopic, setLastTopic] = useState<TopicDef | null>(null);
-  const [isPro, setIsPro] = useState(false);
+  const [isPro, setIsPro] = useState<boolean | null>(null); // null = still loading
   const [userName, setUserName] = useState("");
-  const [loading, setLoading] = useState(true);
   const [menuOpen, setMenuOpen] = useState(false);
   const [portalLoading, setPortalLoading] = useState(false);
 
@@ -98,7 +97,6 @@ export default function AppHome() {
       setFlashcardPending(fcData.pending ?? 0);
       setIsPro(meData.plan === "pro");
       setUserName(meData.firstName ?? "");
-      setLoading(false);
     });
   }, []);
 
@@ -138,19 +136,14 @@ export default function AppHome() {
             )}
           </button>
 
-          {!loading && isPro && (
-            <div style={{ position: "relative", display: "inline-flex", flexShrink: 0 }}>
-              <UserButton appearance={{ elements: { avatarBox: { width: 38, height: 38 } } }} />
+          <div style={{ position: "relative", display: "inline-flex", flexShrink: 0 }}>
+            <UserButton appearance={{ elements: { avatarBox: { width: 38, height: 38 } } }} />
+            {isPro === true && (
               <span style={{ position: "absolute", bottom: -4, left: "50%", transform: "translateX(-50%)", fontSize: "0.52rem", fontWeight: 800, letterSpacing: "0.4px", background: "linear-gradient(135deg, #f5c800, #e0a800)", color: "#000", padding: "1px 5px", borderRadius: "50px", whiteSpace: "nowrap", lineHeight: 1.4, pointerEvents: "none" }}>
                 PRO
               </span>
-            </div>
-          )}
-          {(loading || !isPro) && (
-            <div style={{ flexShrink: 0 }}>
-              <UserButton appearance={{ elements: { avatarBox: { width: 38, height: 38 } } }} />
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </header>
 
@@ -193,8 +186,7 @@ export default function AppHome() {
         </div>
 
         {/* ── Streak ─────────────────────────────────────────────────────────── */}
-        {!loading && (
-          <div style={{ background: "var(--dark1)", border: "1px solid #1e1e1e", borderRadius: 16, padding: "12px 14px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <div style={{ background: "var(--dark1)", border: "1px solid #1e1e1e", borderRadius: 16, padding: "12px 14px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
               <span style={{ fontSize: "1.4rem" }}>🔥</span>
               <div>
@@ -214,8 +206,7 @@ export default function AppHome() {
                 );
               })}
             </div>
-          </div>
-        )}
+        </div>
 
         {/* ── Continue ───────────────────────────────────────────────────────── */}
         {lastTopic && (
@@ -245,22 +236,22 @@ export default function AppHome() {
                 badge: null,
               },
               {
-                href: isPro ? "/app/roleplay" : "/planos",
+                href: isPro === true ? "/app/roleplay" : "/planos",
                 emoji: "🎭",
                 title: "Role-play",
-                desc: isPro ? "Situações reais" : "Exclusivo Pro",
+                desc: isPro === true ? "Situações reais" : "Exclusivo Pro",
                 iconBg: "rgba(167,139,250,.12)",
                 iconColor: "#a78bfa",
-                badge: !isPro ? { label: "🔒 Pro", color: "var(--yellow)", bg: "rgba(245,200,0,.1)" } : null,
+                badge: isPro === false ? { label: "🔒 Pro", color: "var(--yellow)", bg: "rgba(245,200,0,.1)" } : null,
               },
               {
-                href: isPro ? "/app/flashcards" : "/planos",
+                href: isPro === true ? "/app/flashcards" : "/planos",
                 emoji: "🃏",
                 title: "Flashcards",
-                desc: isPro ? (flashcardPending > 0 ? `${flashcardPending} para revisar` : "Revisar vocabulário") : "Exclusivo Pro",
+                desc: isPro === true ? (flashcardPending > 0 ? `${flashcardPending} para revisar` : "Revisar vocabulário") : "Exclusivo Pro",
                 iconBg: "rgba(74,222,128,.12)",
                 iconColor: "#4ade80",
-                badge: !isPro ? { label: "🔒 Pro", color: "var(--yellow)", bg: "rgba(245,200,0,.1)" } : (flashcardPending > 0 ? { label: `${flashcardPending} pendentes`, color: "#4ade80", bg: "rgba(74,222,128,.12)" } : null),
+                badge: isPro === false ? { label: "🔒 Pro", color: "var(--yellow)", bg: "rgba(245,200,0,.1)" } : (flashcardPending > 0 ? { label: `${flashcardPending} pendentes`, color: "#4ade80", bg: "rgba(74,222,128,.12)" } : null),
               },
               {
                 href: "/app/progresso",
@@ -294,7 +285,7 @@ export default function AppHome() {
         </div>
 
         {/* ── PRO exclusive ──────────────────────────────────────────────────── */}
-        {isPro && (
+        {isPro === true && (
           <a href="/app/resumo" style={{ background: "var(--dark1)", border: "1px solid rgba(245,200,0,.2)", borderRadius: 16, padding: "14px 16px", textDecoration: "none", display: "flex", alignItems: "center", gap: 14 }}>
             <div style={{ width: 40, height: 40, borderRadius: 12, background: "rgba(245,200,0,.1)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.2rem", flexShrink: 0 }}>📄</div>
             <div>
@@ -309,7 +300,7 @@ export default function AppHome() {
         )}
 
         {/* ── No-content CTA ─────────────────────────────────────────────────── */}
-        {!loading && results.length === 0 && !lastTopic && (
+        {isPro !== null && results.length === 0 && !lastTopic && (
           <div style={{ background: "var(--dark1)", border: "1px solid #1e1e1e", borderRadius: 16, padding: "20px 16px", textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
             <div style={{ fontSize: "2rem" }}>👋</div>
             <p style={{ fontWeight: 700, color: "#fff", fontSize: "0.95rem", margin: 0 }}>Boas-vindas ao JV IA!</p>
