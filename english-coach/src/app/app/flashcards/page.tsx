@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { UserButton } from "@clerk/nextjs";
 
@@ -36,6 +36,36 @@ export default function Flashcards() {
   const [done, setDone] = useState(false);
   const [sessionResults, setSessionResults] = useState({ easy: 0, hard: 0, miss: 0 });
   const [rating, setRating] = useState<string | null>(null);
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  function getAudio() {
+    if (!audioRef.current) audioRef.current = new Audio();
+    return audioRef.current;
+  }
+
+  async function speak(text: string, lang: "en" | "pt" = "en") {
+    if (isSpeaking) return;
+    setIsSpeaking(true);
+    try {
+      const res = await fetch("/api/tts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text, speed: 0.9, lang }),
+      });
+      if (!res.ok) return;
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const player = getAudio();
+      if (!player.paused) player.pause();
+      player.src = url;
+      player.onended = () => { setIsSpeaking(false); URL.revokeObjectURL(url); };
+      player.onerror = () => { setIsSpeaking(false); URL.revokeObjectURL(url); };
+      await player.play();
+    } catch {
+      setIsSpeaking(false);
+    }
+  }
 
   useEffect(() => {
     fetch("/api/flashcards")
@@ -213,16 +243,40 @@ export default function Flashcards() {
                   {card.topic ? `#${card.topic}` : "vocabulário"}
                 </p>
                 <p style={{ fontSize: "1.6rem", fontWeight: 800, color: "#fff", margin: 0 }}>{card.word}</p>
-                <p style={{ fontSize: "0.75rem", color: "var(--gray)", marginTop: 4 }}>Toque para ver a tradução</p>
+                <button
+                  onClick={(e) => { e.stopPropagation(); speak(card.word); }}
+                  disabled={isSpeaking}
+                  style={{ marginTop: 10, background: "transparent", border: "1px solid #3a3a3a", borderRadius: "50px", padding: "4px 14px", fontSize: "0.72rem", color: isSpeaking ? "var(--gray2)" : "var(--gray)", cursor: isSpeaking ? "default" : "pointer", display: "flex", alignItems: "center", gap: 5, opacity: isSpeaking ? 0.5 : 1 }}
+                >
+                  🔊 Ouvir pronúncia
+                </button>
+                <p style={{ fontSize: "0.72rem", color: "var(--gray2)", marginTop: 8, opacity: 0.6 }}>Toque no card para ver a tradução</p>
               </>
             ) : (
               <>
-                <p style={{ fontSize: "0.75rem", fontWeight: 700, color: "var(--yellow)", letterSpacing: ".05em", marginBottom: 4 }}>{card.word}</p>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                  <p style={{ fontSize: "0.75rem", fontWeight: 700, color: "var(--yellow)", letterSpacing: ".05em", margin: 0 }}>{card.word}</p>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); speak(card.word); }}
+                    disabled={isSpeaking}
+                    title="Ouvir palavra"
+                    style={{ background: "transparent", border: "1px solid rgba(245,200,0,.3)", borderRadius: "50px", padding: "2px 10px", fontSize: "0.68rem", color: "var(--yellow)", cursor: isSpeaking ? "default" : "pointer", opacity: isSpeaking ? 0.4 : 1 }}
+                  >
+                    🔊
+                  </button>
+                </div>
                 <p style={{ fontSize: "1.4rem", fontWeight: 800, color: "#fff", margin: 0 }}>{card.translation}</p>
                 {card.phonetic && <p style={{ fontSize: "0.8rem", color: "#60a5fa", fontStyle: "italic", marginTop: 4 }}>🗣️ {card.phonetic}</p>}
                 {card.example && (
-                  <div style={{ marginTop: 12, padding: "10px 14px", background: "rgba(255,255,255,.04)", borderRadius: 10, border: "1px solid #2a2a2a" }}>
-                    <p style={{ fontSize: "0.78rem", color: "rgba(255,255,255,.65)", lineHeight: 1.6, margin: 0, fontStyle: "italic" }}>"{card.example}"</p>
+                  <div style={{ marginTop: 12, padding: "10px 14px", background: "rgba(255,255,255,.04)", borderRadius: 10, border: "1px solid #2a2a2a", width: "100%" }}>
+                    <p style={{ fontSize: "0.78rem", color: "rgba(255,255,255,.65)", lineHeight: 1.6, margin: "0 0 8px", fontStyle: "italic" }}>"{card.example}"</p>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); speak(card.example!); }}
+                      disabled={isSpeaking}
+                      style={{ background: "transparent", border: "1px solid #3a3a3a", borderRadius: "50px", padding: "3px 12px", fontSize: "0.68rem", color: "var(--gray)", cursor: isSpeaking ? "default" : "pointer", opacity: isSpeaking ? 0.4 : 1 }}
+                    >
+                      🔊 Ouvir exemplo
+                    </button>
                   </div>
                 )}
               </>
