@@ -105,8 +105,9 @@ export default function AppHome() {
   const todayIdx = (new Date().getDay() + 6) % 7; // 0=Mon
 
   return (
+    <>
+    <OnboardingTour />
     <div className="app-scroll" style={{ background: "var(--black)", fontFamily: "'Inter', sans-serif", paddingBottom: 70 }}>
-      <OnboardingTour />
       <style>{`@keyframes fadeUp { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }`}</style>
 
       {/* ── Header ─────────────────────────────────────────────────────────── */}
@@ -326,5 +327,6 @@ export default function AppHome() {
         ))}
       </nav>
     </div>
+    </>
   );
 }
