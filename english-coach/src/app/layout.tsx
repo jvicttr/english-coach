@@ -30,9 +30,38 @@ export const viewport: Viewport = {
   themeColor: "#F5C800",
 };
 
+const clerkAppearance = {
+  variables: {
+    colorPrimary: "#F5C800",
+    colorBackground: "#0a0a0a",
+    colorInputBackground: "#141414",
+    colorInputText: "#ffffff",
+    colorText: "#ffffff",
+    colorTextSecondary: "#999999",
+    colorNeutral: "#ffffff",
+    borderRadius: "12px",
+    fontFamily: "Inter, sans-serif",
+  },
+  elements: {
+    card: { background: "#111111", border: "1px solid #1e1e1e", boxShadow: "0 24px 64px rgba(0,0,0,0.6)" },
+    headerTitle: { color: "#ffffff", fontWeight: "800" },
+    headerSubtitle: { color: "#999999" },
+    socialButtonsBlockButton: { background: "#1a1a1a", border: "1px solid #2a2a2a", color: "#ffffff" },
+    socialButtonsBlockButtonText: { color: "#ffffff" },
+    dividerLine: { background: "#2a2a2a" },
+    dividerText: { color: "#555555" },
+    formFieldLabel: { color: "#cccccc" },
+    formFieldInput: { background: "#141414", border: "1px solid #2a2a2a", color: "#ffffff" },
+    footerActionLink: { color: "#F5C800" },
+    formButtonPrimary: { background: "#F5C800", color: "#000000", fontWeight: "800" },
+    identityPreviewText: { color: "#ffffff" },
+    identityPreviewEditButton: { color: "#F5C800" },
+  },
+};
+
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <ClerkProvider>
+    <ClerkProvider appearance={clerkAppearance}>
       <html lang="pt-BR" className={`${inter.variable} ${caveat.variable}`}>
         <head>
           <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
