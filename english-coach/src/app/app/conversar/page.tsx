@@ -1261,7 +1261,7 @@ export default function Home() {
         {isLoading && (
           <div className="flex items-end gap-2 mb-3">
             <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 overflow-hidden">
-              <Image src="/logo-jv.png" alt="JV" width={28} height={28} style={{ borderRadius: "6px" }} />
+              <Image src="/favicon.png" alt="JV" width={28} height={28} style={{ borderRadius: "6px" }} />
             </div>
             <div className="px-4 py-3 text-sm" style={{ background: "var(--dark2)", borderRadius: "18px 18px 18px 4px", border: "1px solid #2a2a2a" }}>
               <span className="flex gap-1 items-center">
