@@ -83,10 +83,11 @@ export default function Home() {
   const [topic, setTopic] = useState<TopicDef | null>(null);
   const [trilhaStep, setTrilhaStep] = useState<TrailStep | null>(null);
   const [trilhaPhase, setTrilhaPhase] = useState<"chat1" | "chat2" | null>(null);
+  const [trilhaMsgCount, setTrilhaMsgCount] = useState(0);
+  const [trilhaChat1Messages, setTrilhaChat1Messages] = useState<Message[]>([]);
   const [trilhaFlashcards, setTrilhaFlashcards] = useState<TrilhaFlashcard[]>([]);
   const [fcIndex, setFcIndex] = useState(0);
   const [fcFlipped, setFcFlipped] = useState(false);
-  const [trilhaQuizResult, setTrilhaQuizResult] = useState<{ score: number; total: number } | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Quiz state
@@ -455,6 +456,7 @@ export default function Home() {
     const updatedMessages = [...messages, userMessage];
     setMessages(updatedMessages);
     setInput("");
+    if (trilhaStep) setTrilhaMsgCount((c) => c + 1);
     setIsLoading(true);
     try {
       const activeStepContext = trilhaStep
@@ -556,12 +558,8 @@ export default function Home() {
           body: JSON.stringify({ sessionId: quizSessionId, score: finalScore, answers }),
         });
       }
-      // Trilha chat1: if ≥70% save quiz result for later (step is marked complete after chat2)
-      if (trilhaStep && trilhaPhase === "chat1" && finalScore / (quiz?.questions.length ?? 1) >= 0.7) {
-        setTrilhaQuizResult({ score: finalScore, total: quiz?.questions.length ?? 0 });
-        // Don't mark complete yet — user still needs flashcards + chat2
-      }
-      // Non-trilha quiz: mark complete immediately (legacy behavior)
+      // Trilha: quiz score is saved but step is only marked complete after chat2 (via finalizePractice)
+      // Non-trilha: mark step complete immediately if score ≥70%
       if (trilhaStep && trilhaPhase !== "chat1" && finalScore / (quiz?.questions.length ?? 1) >= 0.7) {
         await fetch("/api/trilha", {
           method: "POST",
@@ -586,8 +584,9 @@ export default function Home() {
     setTopic(null);
     setTrilhaStep(null);
     setTrilhaPhase(null);
+    setTrilhaMsgCount(0);
+    setTrilhaChat1Messages([]);
     setTrilhaFlashcards([]);
-    setTrilhaQuizResult(null);
     setFcIndex(0);
     setFcFlipped(false);
     setLimitReached(false);
@@ -595,6 +594,7 @@ export default function Home() {
 
   async function proceedToFlashcards() {
     if (!trilhaStep) return;
+    setTrilhaChat1Messages(messages); // save chat1 messages for quiz generation later
     setScreen("loading-flashcards");
     try {
       const res = await fetch("/api/flashcards/generate", {
@@ -609,7 +609,32 @@ export default function Home() {
         setFcFlipped(false);
         setScreen("trail-fc");
       } else {
-        // If flashcard generation fails, go straight to chat2
+        // Flashcard generation failed — go straight to quiz with saved messages
+        await generateTrailQuiz(messages);
+      }
+    } catch {
+      await generateTrailQuiz(messages);
+    }
+  }
+
+  async function generateTrailQuiz(msgs: Message[]) {
+    setScreen("loading-quiz");
+    try {
+      const res = await fetch("/api/quiz", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ messages: msgs, level }),
+      });
+      const data = await res.json();
+      if (data.quiz) {
+        setQuiz(data.quiz);
+        setQuizSessionId(data.sessionId ?? null);
+        setAnswers(new Array(data.quiz.questions.length).fill(null));
+        setCurrentQ(0);
+        setShowExplanation(false);
+        setScore(0);
+        setScreen("quiz");
+      } else {
         await startChat2();
       }
     } catch {
@@ -631,6 +656,7 @@ export default function Home() {
     setFcIndex(0);
     setFcFlipped(false);
     setTrilhaPhase("chat2");
+    setTrilhaMsgCount(0);
     setScreen("chat");
     const ctx = `${trilhaStep.context}\n\nPRACTICE SESSION — The student has already had an initial conversation on this topic and just reviewed the key vocabulary with flashcards. Now guide a warm follow-up practice where they naturally use the vocabulary they studied. Be encouraging.`;
     setIsLoading(true);
@@ -652,11 +678,10 @@ export default function Home() {
 
   async function finalizePractice() {
     if (!trilhaStep) return;
-    const result = trilhaQuizResult ?? { score: 5, total: 5 };
     await fetch("/api/trilha", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ stepId: trilhaStep.id, score: result.score, total: result.total }),
+      body: JSON.stringify({ stepId: trilhaStep.id, score: score, total: quiz?.questions.length ?? 5 }),
     });
     setScreen("trail-complete");
   }
@@ -875,11 +900,11 @@ export default function Home() {
                 </p>
               </div>
               <button
-                onClick={startChat2}
+                onClick={() => generateTrailQuiz(trilhaChat1Messages)}
                 className="w-full py-3 rounded-xl font-bold text-sm"
-                style={{ background: "#4ade80", color: "#000" }}
+                style={{ background: "var(--yellow)", color: "var(--black)" }}
               >
-                🗣️ Começar prática →
+                🎯 Fazer quiz →
               </button>
             </div>
           )}
@@ -907,7 +932,7 @@ export default function Home() {
             <div className="w-full px-4 py-3 rounded-xl text-sm" style={{ background: "rgba(74,222,128,0.08)", border: "1px solid rgba(74,222,128,0.2)" }}>
               <div className="flex items-center justify-between">
                 <span style={{ color: "#4ade80", fontWeight: 600 }}>✓ Fase 1 · Conversa inicial</span>
-                {trilhaQuizResult && <span style={{ color: "#4ade80", fontWeight: 700 }}>{trilhaQuizResult.score}/{trilhaQuizResult.total} no quiz</span>}
+                {score > 0 && quiz && <span style={{ color: "#4ade80", fontWeight: 700 }}>{score}/{quiz.questions.length} no quiz</span>}
               </div>
             </div>
             <div className="w-full px-4 py-3 rounded-xl text-sm" style={{ background: "rgba(74,222,128,0.08)", border: "1px solid rgba(74,222,128,0.2)" }}>
@@ -1020,8 +1045,8 @@ export default function Home() {
     const emoji = pct >= 80 ? "🏆" : pct >= 60 ? "💪" : "📚";
     const msg = pct >= 80 ? "Excelente! Você dominou essa conversa." : pct >= 60 ? "Bom trabalho! Continue praticando." : "Continue assim! Cada conversa te deixa melhor.";
     const scoreColor = pct >= 80 ? "#4ade80" : pct >= 60 ? "var(--yellow)" : "#f87171";
-    const trilhaChat1Passed = trilhaStep && trilhaPhase === "chat1" && pct >= 70;
-    const trilhaPassed = trilhaStep && trilhaPhase !== "chat1" && pct >= 70;
+    const trilhaChat1Passed = false; // quiz is now after flashcards; always proceed to chat2
+    const trilhaPassed = !!(trilhaStep && trilhaPhase !== "chat1" && pct >= 70);
 
     return (
       <div className="flex flex-col items-center justify-center px-4 pt-6 pb-8 min-h-screen" style={{ background: "var(--black)", fontFamily: "'Inter', sans-serif" }}>
@@ -1038,9 +1063,9 @@ export default function Home() {
             <div className="flex items-center gap-2 text-xs" style={{ color: "var(--gray)" }}>
               <span style={{ color: "#4ade80", fontWeight: 700 }}>✓ Fase 1</span>
               <span style={{ color: "var(--gray2)" }}>›</span>
-              <span style={trilhaChat1Passed ? { color: "var(--yellow)", fontWeight: 700 } : {}}>Fase 2 · Vocabulário</span>
+              <span style={{ color: "#4ade80", fontWeight: 700 }}>✓ Fase 2 · Vocabulário</span>
               <span style={{ color: "var(--gray2)" }}>›</span>
-              <span>Fase 3 · Prática</span>
+              <span style={{ color: "var(--yellow)", fontWeight: 700 }}>● Fase 3 · Prática</span>
             </div>
           )}
 
@@ -1064,34 +1089,20 @@ export default function Home() {
             })}
           </div>
 
-          {trilhaPassed && (
-            <div className="w-full px-4 py-3 rounded-xl text-center text-sm font-bold" style={{ background: "rgba(74,222,128,0.1)", border: "1px solid rgba(74,222,128,0.3)", color: "#4ade80" }}>
-              🏅 Etapa da Trilha concluída!
-            </div>
-          )}
-
-          {trilhaChat1Passed && (
+          {trilhaStep && (
             <div className="w-full px-4 py-3 rounded-xl text-center text-sm font-bold" style={{ background: "rgba(245,200,0,0.08)", border: "1px solid rgba(245,200,0,0.3)", color: "var(--yellow)" }}>
-              ✅ Fase 1 concluída! Agora revise o vocabulário desta conversa.
+              ✅ Quiz concluído! Agora é hora de praticar tudo em conversa.
             </div>
           )}
 
           <div className="flex gap-3 w-full mt-2">
-            {trilhaChat1Passed ? (
+            {trilhaStep ? (
               <button
-                onClick={proceedToFlashcards}
-                className="flex-1 py-3 rounded-xl font-bold text-sm"
-                style={{ background: "var(--yellow)", color: "var(--black)" }}
-              >
-                🃏 Revisar vocabulário →
-              </button>
-            ) : trilhaPassed ? (
-              <button
-                onClick={() => router.push("/app/trilha")}
+                onClick={startChat2}
                 className="flex-1 py-3 rounded-xl font-bold text-sm"
                 style={{ background: "#4ade80", color: "#000" }}
               >
-                Voltar à trilha →
+                🗣️ Ir para prática →
               </button>
             ) : (
               <>
@@ -1634,8 +1645,41 @@ export default function Home() {
         </div>
       )}
 
-      {/* ── Encerrar conversa ──────────────────────────────── */}
-      {messages.length >= 2 && !limitReached && trilhaPhase !== "chat2" && (
+      {/* ── Botões de ação ─────────────────────────────────── */}
+      {trilhaPhase === "chat1" && !limitReached && (
+        <div className="w-full max-w-2xl mb-2 flex flex-col gap-2">
+          <p className="text-center text-xs font-semibold" style={{ color: "var(--gray)" }}>
+            {trilhaMsgCount}/10 mensagens enviadas
+            {trilhaMsgCount < 10 ? " — continue conversando!" : " — pronto para avançar!"}
+          </p>
+          <button
+            onClick={proceedToFlashcards}
+            disabled={isLoading || trilhaMsgCount < 10}
+            className="w-full py-2.5 rounded-xl text-sm font-bold transition-all disabled:opacity-40"
+            style={{ background: trilhaMsgCount >= 10 ? "var(--yellow)" : "rgba(245,200,0,0.08)", border: "1px solid rgba(245,200,0,0.35)", color: trilhaMsgCount >= 10 ? "var(--black)" : "var(--yellow)" }}
+          >
+            {trilhaMsgCount >= 10 ? "🃏 Ir para vocabulário →" : "🔒 Ir para vocabulário (faltam " + (10 - trilhaMsgCount) + ")"}
+          </button>
+        </div>
+      )}
+      {trilhaPhase === "chat2" && !limitReached && (
+        <div className="w-full max-w-2xl mb-2 flex flex-col gap-2">
+          <p className="text-center text-xs font-semibold" style={{ color: "var(--gray)" }}>
+            {trilhaMsgCount}/5 mensagens enviadas
+            {trilhaMsgCount < 5 ? " — pratique mais um pouco!" : " — pronto para concluir!"}
+          </p>
+          <button
+            onClick={finalizePractice}
+            disabled={isLoading || trilhaMsgCount < 5}
+            className="w-full py-2.5 rounded-xl text-sm font-bold transition-all disabled:opacity-40"
+            style={{ background: trilhaMsgCount >= 5 ? "rgba(74,222,128,0.15)" : "rgba(74,222,128,0.06)", border: "1px solid rgba(74,222,128,0.4)", color: "#4ade80" }}
+          >
+            {trilhaMsgCount >= 5 ? "✅ Finalizar prática e concluir etapa" : "🔒 Finalizar prática (faltam " + (5 - trilhaMsgCount) + ")"}
+          </button>
+        </div>
+      )}
+      {/* ── Encerrar conversa (modo livre/temático) ────────── */}
+      {!trilhaStep && messages.length >= 2 && !limitReached && (
         <div className="w-full max-w-2xl mb-2 flex gap-2">
           <button
             onClick={() => endConversation("quiz")}
@@ -1652,19 +1696,6 @@ export default function Home() {
             style={{ background: "transparent", border: `1px solid ${isPro ? "rgba(255,255,255,0.15)" : "rgba(245,200,0,0.2)"}`, color: isPro ? "var(--white)" : "var(--yellow)" }}
           >
             {isPro ? "🃏 Criar flashcards" : "🔒 Criar flashcards"}
-          </button>
-        </div>
-      )}
-      {/* ── Finalizar prática (trilha chat2) ──────────────── */}
-      {trilhaPhase === "chat2" && messages.length >= 4 && !limitReached && (
-        <div className="w-full max-w-2xl mb-2">
-          <button
-            onClick={finalizePractice}
-            disabled={isLoading}
-            className="w-full py-2.5 rounded-xl text-sm font-bold transition-all disabled:opacity-40"
-            style={{ background: "rgba(74,222,128,0.12)", border: "1px solid rgba(74,222,128,0.4)", color: "#4ade80" }}
-          >
-            ✅ Finalizar prática e concluir etapa
           </button>
         </div>
       )}
