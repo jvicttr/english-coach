@@ -17,7 +17,14 @@ export default function OneSignalInit() {
             prompts: [
               {
                 type: "push",
-                autoPrompt: false,
+                autoPrompt: true,
+                timeDelay: 5,
+                pageViews: 1,
+                text: {
+                  actionMessage: "Quer receber lembretes diários para praticar inglês?",
+                  acceptButton: "Sim, quero!",
+                  cancelButton: "Agora não",
+                },
               },
             ],
           },
