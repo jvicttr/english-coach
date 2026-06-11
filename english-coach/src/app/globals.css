@@ -30,6 +30,11 @@ body {
   overflow-x: hidden;
 }
 
+@keyframes avatar-pulse {
+  0%, 100% { transform: scale(1); box-shadow: 0 0 0 2px #f5c800, 0 0 12px 4px rgba(245,200,0,0.5); }
+  50% { transform: scale(1.12); box-shadow: 0 0 0 3px #f5c800, 0 0 20px 8px rgba(245,200,0,0.35); }
+}
+
 /* Icon-only buttons that expand on hover */
 .icon-expand-btn {
   width: 36px;

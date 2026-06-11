@@ -605,11 +605,20 @@ export default function RolePlay() {
 
         {messages.map((msg, i) => (
           <div key={i} className={`mb-3 flex ${msg.role === "user" ? "justify-end" : "justify-start"} items-end gap-2`}>
-            {msg.role === "assistant" && (
-              <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 mb-0.5 overflow-hidden">
-                <Image src="/logo-jv.png" alt="JV" width={28} height={28} style={{ borderRadius: "6px" }} />
-              </div>
-            )}
+            {msg.role === "assistant" && (() => {
+              const isLastAssistant = i === messages.reduce<number>((last, m, idx) => m.role === "assistant" ? idx : last, -1);
+              const speaking = isSpeaking && isLastAssistant;
+              return (
+                <div className="w-7 h-7 shrink-0 mb-0.5" style={{
+                  borderRadius: "8px",
+                  overflow: "hidden",
+                  boxShadow: speaking ? "0 0 0 2px #f5c800, 0 0 12px 4px rgba(245,200,0,0.5)" : "none",
+                  animation: speaking ? "avatar-pulse 1s ease-in-out infinite" : "none",
+                }}>
+                  <Image src="/favicon.png" alt="JV" width={28} height={28} style={{ borderRadius: "6px", display: "block" }} />
+                </div>
+              );
+            })()}
             <div className="max-w-[82%] sm:max-w-[78%] px-3 sm:px-4 py-2.5 text-sm leading-relaxed"
               style={msg.role === "user"
                 ? { background: "var(--yellow)", color: "var(--black)", borderRadius: "18px 18px 4px 18px", fontWeight: 500 }
@@ -695,7 +704,7 @@ export default function RolePlay() {
         {isLoading && messages.length > 0 && (
           <div className="flex items-end gap-2 mb-3">
             <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 overflow-hidden">
-              <Image src="/logo-jv.png" alt="JV" width={28} height={28} style={{ borderRadius: "6px" }} />
+              <Image src="/favicon.png" alt="JV" width={28} height={28} style={{ borderRadius: "6px" }} />
             </div>
             <div className="px-4 py-3 text-sm" style={{ background: "var(--dark2)", borderRadius: "18px 18px 18px 4px", border: "1px solid #2a2a2a" }}>
               <span className="flex gap-1 items-center">

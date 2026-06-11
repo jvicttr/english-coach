@@ -10,6 +10,7 @@ type Flashcard = {
   translation: string;
   phonetic: string | null;
   example: string | null;
+  example_translation: string | null;
   topic: string | null;
   pack_id: string | null;
   pack_name: string | null;
@@ -37,6 +38,7 @@ export default function Flashcards() {
   const [sessionResults, setSessionResults] = useState({ easy: 0, hard: 0, miss: 0 });
   const [rating, setRating] = useState<string | null>(null);
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [showExampleTranslation, setShowExampleTranslation] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   function getAudio() {
@@ -107,6 +109,7 @@ export default function Flashcards() {
     setTimeout(() => {
       setRating(null);
       setFlipped(false);
+      setShowExampleTranslation(false);
       if (currentIndex + 1 >= activePack.cards.length) {
         setDone(true);
       } else {
@@ -270,13 +273,26 @@ export default function Flashcards() {
                 {card.example && (
                   <div style={{ marginTop: 12, padding: "10px 14px", background: "rgba(255,255,255,.04)", borderRadius: 10, border: "1px solid #2a2a2a", width: "100%" }}>
                     <p style={{ fontSize: "0.78rem", color: "rgba(255,255,255,.65)", lineHeight: 1.6, margin: "0 0 8px", fontStyle: "italic" }}>"{card.example}"</p>
-                    <button
-                      onClick={(e) => { e.stopPropagation(); speak(card.example!); }}
-                      disabled={isSpeaking}
-                      style={{ background: "transparent", border: "1px solid #3a3a3a", borderRadius: "50px", padding: "3px 12px", fontSize: "0.68rem", color: "var(--gray)", cursor: isSpeaking ? "default" : "pointer", opacity: isSpeaking ? 0.4 : 1 }}
-                    >
-                      🔊 Ouvir exemplo
-                    </button>
+                    {showExampleTranslation && card.example_translation && (
+                      <p style={{ fontSize: "0.72rem", color: "var(--gray)", lineHeight: 1.5, margin: "0 0 8px", fontStyle: "italic" }}>🇧🇷 {card.example_translation}</p>
+                    )}
+                    <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); speak(card.example!); }}
+                        disabled={isSpeaking}
+                        style={{ background: "transparent", border: "1px solid #3a3a3a", borderRadius: "50px", padding: "3px 12px", fontSize: "0.68rem", color: "var(--gray)", cursor: isSpeaking ? "default" : "pointer", opacity: isSpeaking ? 0.4 : 1 }}
+                      >
+                        🔊 Ouvir exemplo
+                      </button>
+                      {card.example_translation && !showExampleTranslation && (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setShowExampleTranslation(true); }}
+                          style={{ background: "transparent", border: "1px solid #3a3a3a", borderRadius: "50px", padding: "3px 12px", fontSize: "0.68rem", color: "var(--gray)", cursor: "pointer" }}
+                        >
+                          🇧🇷 Ver tradução
+                        </button>
+                      )}
+                    </div>
                   </div>
                 )}
               </>

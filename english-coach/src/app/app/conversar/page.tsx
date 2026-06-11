@@ -847,7 +847,7 @@ export default function Home() {
         <header className="w-full max-w-2xl mb-4 flex items-center justify-between gap-2" style={{ position: "relative" }}>
           <div className="flex items-center gap-2 shrink-0">
             <Image src="/favicon.png" alt="Fale Inglês JV" width={32} height={32} className="rounded-xl shrink-0" />
-            <span style={{ fontSize: "0.55rem", fontWeight: 800, color: "#000", background: "var(--yellow)", borderRadius: "50px", padding: "1px 6px", letterSpacing: "0.3px", lineHeight: 1.6 }}>3.0</span>
+            <span style={{ fontSize: "0.55rem", fontWeight: 800, color: "#000", background: "var(--yellow)", borderRadius: "50px", padding: "1px 6px", letterSpacing: "0.3px", lineHeight: 1.6 }}>3.1</span>
             <a href="/app" title="Início" style={{ background: "var(--dark2)", border: "1px solid #2a2a2a", borderRadius: "10px", height: "36px", width: 36, display: "flex", alignItems: "center", justifyContent: "center", textDecoration: "none", flexShrink: 0 }}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--gray)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9.5z"/>
@@ -1138,22 +1138,20 @@ export default function Home() {
 
         {messages.map((msg, i) => (
           <div key={i} className={`mb-3 flex ${msg.role === "user" ? "justify-end" : "justify-start"} items-end gap-2`}>
-            {msg.role === "assistant" && (
-              <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 mb-0.5 overflow-hidden" style={isSpeaking && i === messages.reduce<number>((last, m, idx) => m.role === "assistant" ? idx : last, -1) ? { background: "var(--yellow)" } : {}}>
-                {isSpeaking && i === messages.reduce<number>((last, m, idx) => m.role === "assistant" ? idx : last, -1) ? (
-                  <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M3 15 L8 10 L3 5" stroke="#000" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round" fill="none">
-                      <animate attributeName="opacity" values="1;0.15;1" dur="0.75s" repeatCount="indefinite" begin="0s" />
-                    </path>
-                    <path d="M10 15 L15 10 L10 5" stroke="#000" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round" fill="none">
-                      <animate attributeName="opacity" values="1;0.15;1" dur="0.75s" repeatCount="indefinite" begin="0.25s" />
-                    </path>
-                  </svg>
-                ) : (
-                  <Image src="/logo-jv.png" alt="JV" width={28} height={28} style={{ borderRadius: "6px" }} />
-                )}
-              </div>
-            )}
+            {msg.role === "assistant" && (() => {
+              const isLastAssistant = i === messages.reduce<number>((last, m, idx) => m.role === "assistant" ? idx : last, -1);
+              const speaking = isSpeaking && isLastAssistant;
+              return (
+                <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 mb-0.5 overflow-hidden" style={{
+                  borderRadius: "8px",
+                  boxShadow: speaking ? "0 0 0 2px #f5c800, 0 0 12px 4px rgba(245,200,0,0.5)" : "none",
+                  animation: speaking ? "avatar-pulse 1s ease-in-out infinite" : "none",
+                  flexShrink: 0,
+                }}>
+                  <Image src="/favicon.png" alt="JV" width={28} height={28} style={{ borderRadius: "6px", display: "block" }} />
+                </div>
+              );
+            })()}
             <div
               className="max-w-[82%] sm:max-w-[78%] px-3 sm:px-4 py-2.5 text-sm leading-relaxed"
               style={
@@ -1440,7 +1438,7 @@ export default function Home() {
               {isListening ? (
                 <rect x="6" y="6" width="12" height="12" rx="2" />
               ) : (
-                <path d="M12 1a4 4 0 0 1 4 4v6a4 4 0 0 1-8 0V5a4 4 0 0 1 4-4zm0 2a2 2 0 0 0-2 2v6a2 2 0 0 0 4 0V5a2 2 0 0 0-2-2zm-7 9h2a5 5 0 0 0 10 0h2a7 7 0 0 1-6 6.93V21h2v2H9v-2h2v-3.07A7 7 0 0 1 5 12z" />
+                <path d="M12 1a4 4 0 0 1 4 4v6a4 4 0 0 1-8 0V5a4 4 0 0 1 4-4zm0 2a2 2 0 0 0-2 2v6a2 2 0 0 0 4 0V5a2 2 0 0 0-2-2zm-7 9h2a5 5 0 0 0 10 0h2a7 7 0 0 1-6 6.93V21h2v2H9v-2h2v-3.17A7 7 0 0 1 5 12z" />
               )}
             </svg>
           )}

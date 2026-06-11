@@ -48,12 +48,13 @@ Return ONLY valid JSON, no markdown:
       "word": "the English word or phrase",
       "translation": "tradução em português brasileiro",
       "phonetic": "pronúncia informal adaptada ao português (ex: píkl)",
-      "example": "a short example sentence using the word"
+      "example": "a short example sentence using the word",
+      "example_translation": "tradução do exemplo em português brasileiro"
     }
   ]
 }`;
 
-  let cards: { word: string; translation: string; phonetic?: string; example?: string }[] = [];
+  let cards: { word: string; translation: string; phonetic?: string; example?: string; example_translation?: string }[] = [];
 
   try {
     const response = await client.messages.create({
@@ -82,6 +83,7 @@ Return ONLY valid JSON, no markdown:
       translation: c.translation,
       phonetic: c.phonetic ?? null,
       example: c.example ?? null,
+      example_translation: c.example_translation ?? null,
       topic: topic ?? null,
       pack_id: packId,
       pack_name: resolvedPackName,
