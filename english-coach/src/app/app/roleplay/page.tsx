@@ -75,6 +75,8 @@ export default function RolePlay() {
       const pro = d.plan === "pro";
       setIsPro(pro);
       if (!pro) router.replace("/planos");
+      if (d.level) setLevel(d.level as Level);
+      else if (localStorage.getItem("userLevel")) setLevel(localStorage.getItem("userLevel") as Level);
     });
   }, [router]);
 
@@ -285,7 +287,7 @@ export default function RolePlay() {
     if (mode === "quiz") {
       setScreen("loading-quiz");
       try {
-        const res = await fetch("/api/quiz", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ messages, level }) });
+        const res = await fetch("/api/quiz", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ messages, level, scenario: scenario?.name }) });
         const data = await res.json();
         if (data.quiz) {
           setQuiz(data.quiz);
@@ -306,7 +308,7 @@ export default function RolePlay() {
     } else {
       setScreen("loading-flashcards");
       try {
-        await fetch("/api/flashcards/generate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ messages, topic: scenario?.id, packName: scenario?.name ?? "Role-play" }) });
+        await fetch("/api/flashcards/generate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ messages, level, topic: scenario?.id, packName: scenario?.name ?? "Role-play" }) });
         router.push("/app/flashcards");
       } catch {
         setScreen("chat");

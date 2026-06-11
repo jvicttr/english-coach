@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   try {
-  const { messages, level } = await req.json();
+  const { messages, level, scenario } = await req.json();
 
   const conversationText = messages
     .map((m: { role: string; content: string }) => `${m.role === "user" ? "Student" : "Coach"}: ${m.content}`)
@@ -55,7 +55,7 @@ export async function POST(req: NextRequest) {
     messages: [
       {
         role: "user",
-        content: `Student level: ${level || "intermediate"}\n\nConversation:\n${conversationText}`,
+        content: `Student level: ${level || "intermediate"}${scenario ? `\nScenario: ${scenario}` : ""}\n\nConversation:\n${conversationText}`,
       },
     ],
   });
@@ -83,6 +83,7 @@ export async function POST(req: NextRequest) {
       questions: quiz.questions,
       score: null,
       completed_at: null,
+      source: scenario ? "roleplay" : "conversar",
     })
     .select("id")
     .single();
