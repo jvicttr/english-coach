@@ -76,19 +76,18 @@ export function getStartingLevel(userLevel: string): TrailLevel {
   return "A1";
 }
 
-export function isStepUnlocked(stepId: string, completedIds: Set<string>): boolean {
+export function isStepUnlocked(stepId: string, completedIds: Set<string>, startingLevel?: TrailLevel): boolean {
   const step = TRAIL_STEPS.find((s) => s.id === stepId);
   if (!step) return false;
   if (step.order === 1) {
-    // First step of a level — unlock if previous level is complete or it's the starting level
     const levelsOrder: TrailLevel[] = ["A1", "A2", "B1", "B2", "C1"];
     const levelIdx = levelsOrder.indexOf(step.level);
-    if (levelIdx === 0) return true;
+    // First level overall OR user's starting level — always unlocked
+    if (levelIdx === 0 || (startingLevel && step.level === startingLevel)) return true;
     const prevLevel = levelsOrder[levelIdx - 1];
     const prevLevelSteps = TRAIL_STEPS.filter((s) => s.level === prevLevel);
     return prevLevelSteps.every((s) => completedIds.has(s.id));
   }
-  // All other steps: previous step in same level must be completed
   const prev = TRAIL_STEPS.find((s) => s.level === step.level && s.order === step.order - 1);
   return prev ? completedIds.has(prev.id) : false;
 }

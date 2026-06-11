@@ -40,7 +40,7 @@ export default function TrilhaPage() {
 
   function getStepState(step: TrailStep): "completed" | "active" | "locked" {
     if (completedIds.has(step.id)) return "completed";
-    if (isStepUnlocked(step.id, completedIds)) return "active";
+    if (isStepUnlocked(step.id, completedIds, startingLevel)) return "active";
     return "locked";
   }
 
