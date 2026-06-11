@@ -22,7 +22,7 @@ type User = {
   createdAt: number;
 };
 
-const ADMIN_USER_ID = process.env.NEXT_PUBLIC_ADMIN_USER_ID;
+const ADMIN_USER_ID = "user_3EnQTOGCQm7ZbxdYwvLcwFolnIQ";
 
 export default function AdminPage() {
   const { user, isLoaded } = useUser();
