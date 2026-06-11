@@ -51,23 +51,25 @@ export default function Flashcards() {
   async function speak(text: string, lang: "en" | "pt" = "en") {
     if (isSpeaking) return;
     setIsSpeaking(true);
+    let url: string | null = null;
     try {
       const res = await fetch("/api/tts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text, speed: 0.9, lang }),
       });
-      if (!res.ok) return;
+      if (!res.ok) { setIsSpeaking(false); return; }
       const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const player = getAudio();
-      if (!player.paused) player.pause();
-      player.src = url;
-      player.onended = () => { setIsSpeaking(false); URL.revokeObjectURL(url); };
-      player.onerror = () => { setIsSpeaking(false); URL.revokeObjectURL(url); };
+      url = URL.createObjectURL(blob);
+      // Always create a fresh Audio element to avoid reuse conflicts
+      const player = new Audio(url);
+      player.onended = () => { setIsSpeaking(false); if (url) URL.revokeObjectURL(url); };
+      player.onerror = () => { setIsSpeaking(false); if (url) URL.revokeObjectURL(url); };
+      audioRef.current = player;
       await player.play();
     } catch {
       setIsSpeaking(false);
+      if (url) URL.revokeObjectURL(url);
     }
   }
 
