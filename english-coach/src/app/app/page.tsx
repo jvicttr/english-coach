@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { UserButton } from "@clerk/nextjs";
 import Image from "next/image";
+import OnboardingTour from "@/components/OnboardingTour";
 
 type QuizResult = {
   id: string;
@@ -105,6 +106,7 @@ export default function AppHome() {
 
   return (
     <div className="app-scroll" style={{ background: "var(--black)", fontFamily: "'Inter', sans-serif", paddingBottom: 70 }}>
+      <OnboardingTour />
       <style>{`@keyframes fadeUp { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }`}</style>
 
       {/* ── Header ─────────────────────────────────────────────────────────── */}
