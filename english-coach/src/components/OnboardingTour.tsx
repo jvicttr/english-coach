@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 
 const TOUR_KEY = "jvia_tour_done";
 
@@ -76,7 +77,7 @@ export default function OnboardingTour() {
   const current = STEPS[step];
   const isLast = step === STEPS.length - 1;
 
-  return (
+  return createPortal(
     <>
       <style>{`
         @keyframes tour-fade-in {
@@ -180,6 +181,7 @@ export default function OnboardingTour() {
           </button>
         )}
       </div>
-    </>
+    </>,
+    document.body
   );
 }
