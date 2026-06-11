@@ -42,8 +42,10 @@ export default function OnboardingTour() {
   const [step, setStep] = useState(0);
   const [visible, setVisible] = useState(false);
   const [animating, setAnimating] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
     if (!localStorage.getItem(TOUR_KEY)) {
       setTimeout(() => setVisible(true), 800);
     }
@@ -72,7 +74,7 @@ export default function OnboardingTour() {
     }, 200);
   }
 
-  if (!visible) return null;
+  if (!mounted || !visible) return null;
 
   const current = STEPS[step];
   const isLast = step === STEPS.length - 1;
