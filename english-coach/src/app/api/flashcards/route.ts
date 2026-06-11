@@ -104,8 +104,13 @@ export async function DELETE(req: NextRequest) {
   const { userId } = await auth();
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { id } = await req.json();
-  await supabase.from("flashcards").delete().eq("id", id).eq("user_id", userId);
+  const { id, pack_id } = await req.json();
+
+  if (pack_id) {
+    await supabase.from("flashcards").delete().eq("pack_id", pack_id).eq("user_id", userId);
+  } else if (id) {
+    await supabase.from("flashcards").delete().eq("id", id).eq("user_id", userId);
+  }
 
   return NextResponse.json({ ok: true });
 }

@@ -96,6 +96,17 @@ export default function Flashcards() {
     setDone(false);
   }
 
+  async function deletePack(pack: Pack, e: React.MouseEvent) {
+    e.stopPropagation();
+    if (!confirm(`Apagar o pack "${pack.pack_name}" e todas as suas palavras?`)) return;
+    await fetch("/api/flashcards", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ pack_id: pack.pack_id }),
+    });
+    setPacks((prev) => prev.filter((p) => p.pack_id !== pack.pack_id));
+  }
+
   async function rate(r: "easy" | "hard" | "miss") {
     if (!activePack) return;
     const card = activePack.cards[currentIndex];
@@ -349,8 +360,8 @@ export default function Flashcards() {
           const pendingInPack = pack.cards.filter((c) => c.next_review <= today).length;
           const dateLabel = new Date(pack.created_at).toLocaleDateString("pt-BR", { day: "numeric", month: "short", year: "numeric" });
           return (
+            <div key={pack.pack_id} style={{ position: "relative" }}>
             <button
-              key={pack.pack_id}
               onClick={() => startPack(pack)}
               style={{ background: "var(--dark1)", border: "1px solid #2a2a2a", borderRadius: 16, padding: "16px", textAlign: "left", cursor: "pointer", width: "100%", transition: "border-color .15s" }}
               onMouseEnter={(e) => (e.currentTarget.style.borderColor = "rgba(245,200,0,.35)")}
@@ -381,6 +392,16 @@ export default function Flashcards() {
                 )}
               </div>
             </button>
+            <button
+              onClick={(e) => deletePack(pack, e)}
+              title="Apagar pack"
+              style={{ position: "absolute", top: 10, right: 10, background: "transparent", border: "none", cursor: "pointer", padding: "4px 6px", borderRadius: 8, color: "var(--gray2)", fontSize: "0.85rem", lineHeight: 1, opacity: 0.6, transition: "opacity .15s, color .15s" }}
+              onMouseEnter={(e) => { e.currentTarget.style.opacity = "1"; e.currentTarget.style.color = "#f87171"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.opacity = "0.6"; e.currentTarget.style.color = "var(--gray2)"; }}
+            >
+              🗑
+            </button>
+            </div>
           );
         })}
       </div>
