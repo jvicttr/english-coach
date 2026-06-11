@@ -25,7 +25,15 @@ export default function TrilhaPage() {
     ]).then(([me, trilha]) => {
       if (me.plan !== "pro") { router.replace("/planos"); return; }
       setIsPro(true);
-      setUserLevel(me.level ?? localStorage.getItem("userLevel") ?? "beginner");
+      // Map english_level from profile to trail userLevel
+      const levelMap: Record<string, string> = {
+        iniciante: "beginner",
+        basico: "basic",
+        intermediario: "intermediate",
+        avancado: "advanced",
+      };
+      const mapped = me.englishLevel ? (levelMap[me.englishLevel] ?? "beginner") : "beginner";
+      setUserLevel(mapped);
       setProgress(trilha.completed ?? []);
       setLoading(false);
     });

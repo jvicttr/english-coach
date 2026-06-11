@@ -12,13 +12,14 @@ export async function GET() {
   if (!userId) return NextResponse.json({ plan: "free" });
 
   const [sub, user] = await Promise.all([
-    supabase.from("subscriptions").select("plan, level").eq("user_id", userId).single(),
+    supabase.from("subscriptions").select("plan, level, english_level").eq("user_id", userId).single(),
     currentUser(),
   ]);
 
   return NextResponse.json({
     plan: sub.data?.plan ?? "free",
     level: sub.data?.level ?? null,
+    englishLevel: sub.data?.english_level ?? null,
     firstName: user?.firstName ?? null,
   });
 }

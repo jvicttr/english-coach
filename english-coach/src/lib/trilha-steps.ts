@@ -73,6 +73,7 @@ export const TRAIL_STEPS: TrailStep[] = [
 export function getStartingLevel(userLevel: string): TrailLevel {
   if (userLevel === "advanced") return "B2";
   if (userLevel === "intermediate") return "B1";
+  if (userLevel === "basic") return "A2";
   return "A1";
 }
 
