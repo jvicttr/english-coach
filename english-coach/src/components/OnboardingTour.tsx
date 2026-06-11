@@ -112,7 +112,7 @@ export default function OnboardingTour() {
       <div
         className={`tour-card${animating ? " animating" : ""}`}
         style={{
-          position: "fixed", bottom: 90, left: "50%", transform: "translateX(-50%)",
+          position: "fixed", top: "50%", left: "50%", transform: "translate(-50%, -50%)",
           zIndex: 201, width: "calc(100% - 32px)", maxWidth: 400,
           background: "#141414", border: "1px solid #2a2a2a",
           borderRadius: 20, padding: "24px 20px 20px",
