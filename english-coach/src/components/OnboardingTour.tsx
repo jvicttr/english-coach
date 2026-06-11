@@ -109,11 +109,11 @@ export default function OnboardingTour() {
       />
 
       {/* Card */}
+      <div style={{ position: "fixed", top: "50%", left: "50%", transform: "translate(-50%, -50%)", zIndex: 201, width: "calc(100% - 32px)", maxWidth: 400 }}>
       <div
         className={`tour-card${animating ? " animating" : ""}`}
         style={{
-          position: "fixed", top: "50%", left: "50%", transform: "translate(-50%, -50%)",
-          zIndex: 201, width: "calc(100% - 32px)", maxWidth: 400,
+          width: "100%",
           background: "#141414", border: "1px solid #2a2a2a",
           borderRadius: 20, padding: "24px 20px 20px",
           boxShadow: "0 24px 64px rgba(0,0,0,0.6)",
@@ -182,6 +182,7 @@ export default function OnboardingTour() {
             Pular tour
           </button>
         )}
+      </div>
       </div>
     </>,
     document.body
