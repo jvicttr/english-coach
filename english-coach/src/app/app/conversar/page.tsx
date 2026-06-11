@@ -849,7 +849,7 @@ export default function Home() {
           )}
         </header>
 
-        <div className="w-full max-w-2xl flex-1">
+        <div className="w-full max-w-2xl flex-1 flex flex-col justify-center">
           <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "0.6rem" }}>
             {TOPICS.map((t) => (
               <button
