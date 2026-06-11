@@ -129,11 +129,18 @@ export default function Home() {
     setPortalLoading(true);
     try {
       const res = await fetch("/api/portal", { method: "POST" });
+      if (!res.ok) {
+        const text = await res.text();
+        let msg = `Erro ${res.status}`;
+        try { msg = JSON.parse(text).error ?? msg; } catch { /* not JSON */ }
+        alert(msg);
+        return;
+      }
       const data = await res.json();
       if (data.url) {
         window.location.href = data.url;
       } else {
-        alert("Erro: " + (data.error ?? "Sem URL retornada"));
+        alert(data.error ?? "Sem URL retornada pelo Stripe");
       }
     } catch (e) {
       alert("Erro ao abrir o portal: " + String(e));
