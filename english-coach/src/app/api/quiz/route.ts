@@ -2,6 +2,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { auth } from "@clerk/nextjs/server";
+import { grantXP } from "@/lib/xp";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -111,6 +112,9 @@ export async function PATCH(req: NextRequest) {
     .eq("user_id", userId);
 
   if (updateError) console.error("[quiz] update error:", updateError.message);
+
+  const total: number = answers?.length ?? 5;
+  grantXP(userId, { type: "quiz", score, total }).catch(() => {});
 
   return NextResponse.json({ ok: true });
 }

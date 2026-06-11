@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { auth } from "@clerk/nextjs/server";
+import { grantXP } from "@/lib/xp";
 
 const supabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SECRET_KEY!);
 
@@ -102,6 +103,8 @@ export async function PATCH(req: NextRequest) {
 
   const next_review = new Date(Date.now() + interval * 86400000).toISOString().split("T")[0];
   await supabase.from("flashcards").update({ interval, ease_factor, next_review }).eq("id", id);
+
+  grantXP(userId, { type: "flashcard" }).catch(() => {});
 
   return NextResponse.json({ ok: true, next_review });
 }

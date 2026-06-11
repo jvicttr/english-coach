@@ -2,6 +2,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { auth } from "@clerk/nextjs/server";
+import { grantXP } from "@/lib/xp";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -336,6 +337,11 @@ Never assume a topic. Follow the student's lead completely.`;
     .replace(/\[FIX\|(?:[^|]*\|){4}[^\]]*\]/g, "")
     .replace(/\[BR:([^\]]+)\]/g, "$1")
     .trim();
+
+  // Grant XP for the user's message (fire and forget, non-blocking)
+  if (!topicStart) {
+    grantXP(userId, { type: "message", detectedLevel: detectedLevel ?? undefined }).catch(() => {});
+  }
 
   return NextResponse.json({ reply, detectedLevel, translation, corrections });
 }

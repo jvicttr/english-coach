@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { createClient } from "@supabase/supabase-js";
 import { TRAIL_STEPS } from "@/lib/trilha-steps";
+import { grantXP } from "@/lib/xp";
 
 const supabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SECRET_KEY!);
 
@@ -32,6 +33,8 @@ export async function POST(req: NextRequest) {
       { user_id: userId, step_id: stepId, score, total, completed_at: new Date().toISOString() },
       { onConflict: "user_id,step_id" }
     );
+
+  grantXP(userId, { type: "trail_step", stepId }).catch(() => {});
 
   return NextResponse.json({ ok: true });
 }

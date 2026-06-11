@@ -309,6 +309,20 @@ export default function Progresso() {
           )}
         </div>
 
+        {/* Conquistas CTA */}
+        <a href="/app/conquistas" style={{ display: "block", textDecoration: "none", background: "linear-gradient(135deg, rgba(245,200,0,0.1) 0%, rgba(205,127,50,0.08) 100%)", border: "1px solid rgba(245,200,0,0.3)", borderRadius: 16, padding: "16px", cursor: "pointer" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <span style={{ fontSize: "1.8rem" }}>🏅</span>
+              <div>
+                <p style={{ fontWeight: 700, color: "#fff", fontSize: "0.9rem", margin: 0 }}>Conquistas & Ranking</p>
+                <p style={{ fontSize: "0.72rem", color: "var(--gray)", margin: "2px 0 0" }}>Badges, tiers e top 10 global</p>
+              </div>
+            </div>
+            <span style={{ fontSize: "0.8rem", color: "var(--yellow)", fontWeight: 700 }}>Ver →</span>
+          </div>
+        </a>
+
         {/* Flashcard stats */}
         {flashcards.length > 0 && (
           <div style={{ background: "var(--dark1)", border: "1px solid #1e1e1e", borderRadius: 16, padding: "16px" }}>
