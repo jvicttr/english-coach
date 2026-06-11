@@ -10,26 +10,17 @@ export default function OneSignalInit() {
     window.OneSignalDeferred.push(async function (OneSignal: OneSignalType) {
       await OneSignal.init({
         appId: "bd73670e-ac08-4c40-8519-2dc5bd677db7",
-        safari_web_id: "web.onesignal.auto.bd73670e-ac08-4c40-8519-2dc5bd677db7",
         notifyButton: { enable: false },
-        promptOptions: {
-          slidedown: {
-            prompts: [
-              {
-                type: "push",
-                autoPrompt: true,
-                timeDelay: 5,
-                pageViews: 1,
-                text: {
-                  actionMessage: "Quer receber lembretes diários para praticar inglês?",
-                  acceptButton: "Sim, quero!",
-                  cancelButton: "Agora não",
-                },
-              },
-            ],
-          },
-        },
+        allowLocalhostAsSecureOrigin: false,
       });
+
+      // Show push permission prompt after 5s if not yet decided
+      setTimeout(async () => {
+        const permission = OneSignal.Notifications?.permission;
+        if (!permission) {
+          await OneSignal.Slidedown?.promptPush();
+        }
+      }, 5000);
     });
 
     const script = document.createElement("script");
