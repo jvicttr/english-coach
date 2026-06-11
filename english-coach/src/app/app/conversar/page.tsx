@@ -25,7 +25,15 @@ type Quiz = {
   questions: QuizQuestion[];
 };
 
-type AppScreen = "chat" | "loading-quiz" | "loading-flashcards" | "quiz" | "result";
+type AppScreen = "chat" | "loading-quiz" | "loading-flashcards" | "quiz" | "result" | "trail-fc" | "trail-complete";
+
+type TrilhaFlashcard = {
+  word: string;
+  translation: string;
+  phonetic: string | null;
+  example: string | null;
+  example_translation: string | null;
+};
 
 type TopicDef = {
   id: string;
@@ -74,6 +82,11 @@ export default function Home() {
   const [portalLoading, setPortalLoading] = useState(false);
   const [topic, setTopic] = useState<TopicDef | null>(null);
   const [trilhaStep, setTrilhaStep] = useState<TrailStep | null>(null);
+  const [trilhaPhase, setTrilhaPhase] = useState<"chat1" | "chat2" | null>(null);
+  const [trilhaFlashcards, setTrilhaFlashcards] = useState<TrilhaFlashcard[]>([]);
+  const [fcIndex, setFcIndex] = useState(0);
+  const [fcFlipped, setFcFlipped] = useState(false);
+  const [trilhaQuizResult, setTrilhaQuizResult] = useState<{ score: number; total: number } | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Quiz state
@@ -119,11 +132,29 @@ export default function Home() {
       const pendingStep = localStorage.getItem("pendingTrilhaStep");
       if (pendingStep) {
         try {
-          const step: TrailStep = JSON.parse(pendingStep);
+          const parsed = JSON.parse(pendingStep);
           localStorage.removeItem("pendingTrilhaStep");
-          setTrilhaStep(step);
+          const phase: "chat1" | "chat2" = parsed.phase ?? "chat1";
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+          const { phase: _p, ...step } = parsed;
+          setTrilhaStep(step as TrailStep);
+          setTrilhaPhase(phase);
           const freeTopic = TOPICS.find((t) => t.id === "free")!;
           setTopic(freeTopic);
+          // Auto-start: AI opens the conversation
+          const ctx = phase === "chat2"
+            ? `${(step as TrailStep).context}\n\nPRACTICE SESSION — The student has already had an initial conversation on this topic and just reviewed the key vocabulary with flashcards. Now guide a warm follow-up practice where they naturally use the vocabulary they studied. Be encouraging.`
+            : (step as TrailStep).context;
+          setIsLoading(true);
+          fetch("/api/chat", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ messages: [], level: d.level ?? localStorage.getItem("userLevel") ?? null, topic: "free", topicStart: true, stepContext: ctx }),
+          }).then((r) => r.json()).then((chatData) => {
+            if (chatData.reply) {
+              setMessages([{ role: "assistant", content: chatData.reply, translation: chatData.translation ?? undefined }]);
+            }
+          }).finally(() => setIsLoading(false));
         } catch {}
       }
     });
@@ -426,10 +457,15 @@ export default function Home() {
     setInput("");
     setIsLoading(true);
     try {
+      const activeStepContext = trilhaStep
+        ? trilhaPhase === "chat2"
+          ? `${trilhaStep.context}\n\nPRACTICE SESSION — The student reviewed flashcards from the first conversation. Guide a natural follow-up practice where they use the vocabulary they studied.`
+          : trilhaStep.context
+        : undefined;
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: updatedMessages, level, topic: topic?.id ?? "free", stepContext: trilhaStep?.context }),
+        body: JSON.stringify({ messages: updatedMessages, level, topic: topic?.id ?? "free", stepContext: activeStepContext }),
       });
       if (!res.ok) {
         setMessages((prev) => [...prev, { role: "assistant", content: "Ops, tive um problema. Tente enviar de novo!" }]);
@@ -520,8 +556,13 @@ export default function Home() {
           body: JSON.stringify({ sessionId: quizSessionId, score: finalScore, answers }),
         });
       }
-      // Mark trilha step as complete if score >= 70%
-      if (trilhaStep && finalScore / (quiz?.questions.length ?? 1) >= 0.7) {
+      // Trilha chat1: if ≥70% save quiz result for later (step is marked complete after chat2)
+      if (trilhaStep && trilhaPhase === "chat1" && finalScore / (quiz?.questions.length ?? 1) >= 0.7) {
+        setTrilhaQuizResult({ score: finalScore, total: quiz?.questions.length ?? 0 });
+        // Don't mark complete yet — user still needs flashcards + chat2
+      }
+      // Non-trilha quiz: mark complete immediately (legacy behavior)
+      if (trilhaStep && trilhaPhase !== "chat1" && finalScore / (quiz?.questions.length ?? 1) >= 0.7) {
         await fetch("/api/trilha", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -542,8 +583,82 @@ export default function Home() {
     setShowExplanation(false);
     setScore(0);
     setScreen("chat");
-    setTopic(null); // back to topic selection
+    setTopic(null);
+    setTrilhaStep(null);
+    setTrilhaPhase(null);
+    setTrilhaFlashcards([]);
+    setTrilhaQuizResult(null);
+    setFcIndex(0);
+    setFcFlipped(false);
     setLimitReached(false);
+  }
+
+  async function proceedToFlashcards() {
+    if (!trilhaStep) return;
+    setScreen("loading-flashcards");
+    try {
+      const res = await fetch("/api/flashcards/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ messages, topic: "free", packName: trilhaStep.title }),
+      });
+      const data = await res.json();
+      if (data.cards && data.cards.length > 0) {
+        setTrilhaFlashcards(data.cards);
+        setFcIndex(0);
+        setFcFlipped(false);
+        setScreen("trail-fc");
+      } else {
+        // If flashcard generation fails, go straight to chat2
+        await startChat2();
+      }
+    } catch {
+      await startChat2();
+    }
+  }
+
+  async function startChat2() {
+    if (!trilhaStep) return;
+    setMessages([]);
+    setInput("");
+    setQuiz(null);
+    setQuizSessionId(null);
+    setAnswers([]);
+    setCurrentQ(0);
+    setShowExplanation(false);
+    setScore(0);
+    setTrilhaFlashcards([]);
+    setFcIndex(0);
+    setFcFlipped(false);
+    setTrilhaPhase("chat2");
+    setScreen("chat");
+    const ctx = `${trilhaStep.context}\n\nPRACTICE SESSION — The student has already had an initial conversation on this topic and just reviewed the key vocabulary with flashcards. Now guide a warm follow-up practice where they naturally use the vocabulary they studied. Be encouraging.`;
+    setIsLoading(true);
+    try {
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ messages: [], level, topic: "free", topicStart: true, stepContext: ctx }),
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data.reply) {
+        setMessages([{ role: "assistant", content: data.reply, translation: data.translation ?? undefined }]);
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  async function finalizePractice() {
+    if (!trilhaStep) return;
+    const result = trilhaQuizResult ?? { score: 5, total: 5 };
+    await fetch("/api/trilha", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ stepId: trilhaStep.id, score: result.score, total: result.total }),
+    });
+    setScreen("trail-complete");
   }
 
   async function startListening() {
@@ -660,6 +775,160 @@ export default function Home() {
     );
   }
 
+  // ── Trail Flashcard Review Screen ─────────────────────────────────────────
+  if (screen === "trail-fc" && trilhaFlashcards.length > 0) {
+    const card = trilhaFlashcards[fcIndex];
+    const isLast = fcIndex === trilhaFlashcards.length - 1;
+    const allDone = fcIndex >= trilhaFlashcards.length;
+
+    return (
+      <div className="flex flex-col items-center px-4 pt-6 pb-8 min-h-screen" style={{ background: "var(--black)", fontFamily: "'Inter', sans-serif" }}>
+        <div className="w-full max-w-lg">
+          {/* Header */}
+          <div className="flex items-center justify-between mb-2">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: "var(--yellow)" }}>Revisão de Vocabulário</p>
+              <h2 className="font-bold text-white text-base mt-0.5">{trilhaStep?.emoji} {trilhaStep?.title}</h2>
+            </div>
+            <span className="text-sm font-bold" style={{ color: "var(--gray)" }}>{Math.min(fcIndex + 1, trilhaFlashcards.length)}/{trilhaFlashcards.length}</span>
+          </div>
+
+          {/* Phase indicator */}
+          <div className="mb-5 flex items-center gap-2 text-xs" style={{ color: "var(--gray)" }}>
+            <span style={{ color: "#4ade80", fontWeight: 700 }}>✓ Fase 1</span>
+            <span style={{ color: "var(--gray2)" }}>›</span>
+            <span style={{ color: "var(--yellow)", fontWeight: 700 }}>● Fase 2 · Vocabulário</span>
+            <span style={{ color: "var(--gray2)" }}>›</span>
+            <span>Fase 3 · Prática</span>
+          </div>
+
+          {/* Progress bar */}
+          <div className="w-full h-1.5 rounded-full mb-6" style={{ background: "var(--dark2)" }}>
+            <div className="h-1.5 rounded-full transition-all duration-500" style={{ background: "var(--yellow)", width: `${(Math.min(fcIndex, trilhaFlashcards.length) / trilhaFlashcards.length) * 100}%` }} />
+          </div>
+
+          {!allDone ? (
+            <>
+              {/* Flip Card */}
+              <div
+                onClick={() => setFcFlipped((v) => !v)}
+                style={{ cursor: "pointer", perspective: "1000px", marginBottom: 24 }}
+              >
+                <div style={{
+                  position: "relative", minHeight: 220, transition: "transform 0.45s", transformStyle: "preserve-3d",
+                  transform: fcFlipped ? "rotateY(180deg)" : "rotateY(0deg)",
+                }}>
+                  {/* Front */}
+                  <div style={{
+                    position: "absolute", inset: 0, backfaceVisibility: "hidden", WebkitBackfaceVisibility: "hidden",
+                    background: "var(--dark1)", border: "1px solid #2a2a2a", borderRadius: 20,
+                    display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 28, gap: 10,
+                  }}>
+                    <p style={{ fontSize: "1.6rem", fontWeight: 800, color: "#fff", textAlign: "center" }}>{card.word}</p>
+                    {card.phonetic && <p style={{ fontSize: "0.8rem", color: "var(--gray)", fontStyle: "italic" }}>🗣️ {card.phonetic}</p>}
+                    <p style={{ fontSize: "0.72rem", color: "var(--gray2)", marginTop: 8 }}>Toque para ver a tradução</p>
+                  </div>
+                  {/* Back */}
+                  <div style={{
+                    position: "absolute", inset: 0, backfaceVisibility: "hidden", WebkitBackfaceVisibility: "hidden",
+                    transform: "rotateY(180deg)",
+                    background: "var(--dark1)", border: "1px solid rgba(245,200,0,0.3)", borderRadius: 20,
+                    display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 28, gap: 12,
+                  }}>
+                    <p style={{ fontSize: "1.2rem", fontWeight: 800, color: "var(--yellow)", textAlign: "center" }}>{card.translation}</p>
+                    {card.example && (
+                      <div style={{ textAlign: "center", marginTop: 4 }}>
+                        <p style={{ fontSize: "0.8rem", color: "var(--white)", fontStyle: "italic", lineHeight: 1.5 }}>&ldquo;{card.example}&rdquo;</p>
+                        {card.example_translation && <p style={{ fontSize: "0.72rem", color: "var(--gray)", marginTop: 4 }}>{card.example_translation}</p>}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Next button (only shown after flipping) */}
+              {fcFlipped && (
+                <button
+                  onClick={() => {
+                    if (isLast) {
+                      setFcIndex(trilhaFlashcards.length); // trigger allDone
+                    } else {
+                      setFcIndex((i) => i + 1);
+                      setFcFlipped(false);
+                    }
+                  }}
+                  className="w-full py-3 rounded-xl font-bold text-sm"
+                  style={{ background: "var(--yellow)", color: "var(--black)" }}
+                >
+                  {isLast ? "Concluir revisão →" : "Próxima palavra →"}
+                </button>
+              )}
+            </>
+          ) : (
+            /* All cards reviewed */
+            <div className="flex flex-col items-center text-center gap-5 mt-4">
+              <div style={{ fontSize: "3rem" }}>🎯</div>
+              <div>
+                <p className="font-black text-xl text-white">Vocabulário revisado!</p>
+                <p className="text-sm mt-2" style={{ color: "var(--gray)" }}>
+                  Agora vamos praticar tudo isso em uma conversa. Você já está mais preparado!
+                </p>
+              </div>
+              <button
+                onClick={startChat2}
+                className="w-full py-3 rounded-xl font-bold text-sm"
+                style={{ background: "#4ade80", color: "#000" }}
+              >
+                🗣️ Começar prática →
+              </button>
+            </div>
+          )}
+        </div>
+
+        <style>{`@keyframes flipIn{from{opacity:0;transform:rotateY(-20deg)}to{opacity:1;transform:rotateY(0)}}`}</style>
+      </div>
+    );
+  }
+
+  // ── Trail Complete Screen ─────────────────────────────────────────────────
+  if (screen === "trail-complete" && trilhaStep) {
+    return (
+      <div className="flex flex-col items-center justify-center px-4 pt-6 pb-8 min-h-screen" style={{ background: "var(--black)", fontFamily: "'Inter', sans-serif" }}>
+        <div className="w-full max-w-lg flex flex-col items-center text-center gap-5">
+          <div style={{ fontSize: "4rem" }}>🏆</div>
+          <div>
+            <p className="font-black text-2xl text-white">Etapa concluída!</p>
+            <p className="text-sm mt-2" style={{ color: "var(--yellow)", fontWeight: 700 }}>{trilhaStep.emoji} {trilhaStep.title}</p>
+          </div>
+          <p className="text-sm" style={{ color: "var(--gray)" }}>
+            Você completou as 3 fases desta etapa: conversa inicial, revisão de vocabulário e prática final. Excelente trabalho!
+          </p>
+          <div className="w-full flex flex-col gap-3 mt-2">
+            <div className="w-full px-4 py-3 rounded-xl text-sm" style={{ background: "rgba(74,222,128,0.08)", border: "1px solid rgba(74,222,128,0.2)" }}>
+              <div className="flex items-center justify-between">
+                <span style={{ color: "#4ade80", fontWeight: 600 }}>✓ Fase 1 · Conversa inicial</span>
+                {trilhaQuizResult && <span style={{ color: "#4ade80", fontWeight: 700 }}>{trilhaQuizResult.score}/{trilhaQuizResult.total} no quiz</span>}
+              </div>
+            </div>
+            <div className="w-full px-4 py-3 rounded-xl text-sm" style={{ background: "rgba(74,222,128,0.08)", border: "1px solid rgba(74,222,128,0.2)" }}>
+              <span style={{ color: "#4ade80", fontWeight: 600 }}>✓ Fase 2 · Revisão de vocabulário</span>
+            </div>
+            <div className="w-full px-4 py-3 rounded-xl text-sm" style={{ background: "rgba(74,222,128,0.08)", border: "1px solid rgba(74,222,128,0.2)" }}>
+              <span style={{ color: "#4ade80", fontWeight: 600 }}>✓ Fase 3 · Prática</span>
+            </div>
+          </div>
+          <button
+            onClick={() => router.push("/app/trilha")}
+            className="w-full py-3 rounded-xl font-bold text-sm mt-2"
+            style={{ background: "#4ade80", color: "#000" }}
+          >
+            Voltar à trilha →
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   // ── Quiz Screen ──────────────────────────────────────────────────────────
   if (screen === "quiz" && quiz) {
     const q = quiz.questions[currentQ];
@@ -751,7 +1020,8 @@ export default function Home() {
     const emoji = pct >= 80 ? "🏆" : pct >= 60 ? "💪" : "📚";
     const msg = pct >= 80 ? "Excelente! Você dominou essa conversa." : pct >= 60 ? "Bom trabalho! Continue praticando." : "Continue assim! Cada conversa te deixa melhor.";
     const scoreColor = pct >= 80 ? "#4ade80" : pct >= 60 ? "var(--yellow)" : "#f87171";
-    const trilhaPassed = trilhaStep && pct >= 70;
+    const trilhaChat1Passed = trilhaStep && trilhaPhase === "chat1" && pct >= 70;
+    const trilhaPassed = trilhaStep && trilhaPhase !== "chat1" && pct >= 70;
 
     return (
       <div className="flex flex-col items-center justify-center px-4 pt-6 pb-8 min-h-screen" style={{ background: "var(--black)", fontFamily: "'Inter', sans-serif" }}>
@@ -762,6 +1032,17 @@ export default function Home() {
             <p className="text-lg font-bold text-white mt-1">{score}/{total} corretas</p>
           </div>
           <p className="text-sm" style={{ color: "var(--gray)" }}>{msg}</p>
+
+          {/* Phase indicator for trail */}
+          {trilhaStep && (
+            <div className="flex items-center gap-2 text-xs" style={{ color: "var(--gray)" }}>
+              <span style={{ color: "#4ade80", fontWeight: 700 }}>✓ Fase 1</span>
+              <span style={{ color: "var(--gray2)" }}>›</span>
+              <span style={trilhaChat1Passed ? { color: "var(--yellow)", fontWeight: 700 } : {}}>Fase 2 · Vocabulário</span>
+              <span style={{ color: "var(--gray2)" }}>›</span>
+              <span>Fase 3 · Prática</span>
+            </div>
+          )}
 
           {/* Review answers */}
           <div className="w-full flex flex-col gap-2 mt-2">
@@ -789,8 +1070,22 @@ export default function Home() {
             </div>
           )}
 
+          {trilhaChat1Passed && (
+            <div className="w-full px-4 py-3 rounded-xl text-center text-sm font-bold" style={{ background: "rgba(245,200,0,0.08)", border: "1px solid rgba(245,200,0,0.3)", color: "var(--yellow)" }}>
+              ✅ Fase 1 concluída! Agora revise o vocabulário desta conversa.
+            </div>
+          )}
+
           <div className="flex gap-3 w-full mt-2">
-            {trilhaPassed ? (
+            {trilhaChat1Passed ? (
+              <button
+                onClick={proceedToFlashcards}
+                className="flex-1 py-3 rounded-xl font-bold text-sm"
+                style={{ background: "var(--yellow)", color: "var(--black)" }}
+              >
+                🃏 Revisar vocabulário →
+              </button>
+            ) : trilhaPassed ? (
               <button
                 onClick={() => router.push("/app/trilha")}
                 className="flex-1 py-3 rounded-xl font-bold text-sm"
@@ -1060,6 +1355,35 @@ export default function Home() {
         )}
       </header>
 
+      {/* ── Trilha phase banner ────────────────────────────── */}
+      {trilhaStep && trilhaPhase && (
+        <div className="w-full max-w-2xl mb-2 px-3 py-2 flex items-center justify-between gap-2" style={{ background: "rgba(245,200,0,0.06)", border: "1px solid rgba(245,200,0,0.2)", borderRadius: "10px" }}>
+          <div className="flex items-center gap-2">
+            <span style={{ fontSize: "1rem" }}>{trilhaStep.emoji}</span>
+            <span style={{ fontSize: "0.72rem", fontWeight: 700, color: "var(--yellow)" }}>{trilhaStep.title}</span>
+          </div>
+          <div className="flex items-center gap-1.5 text-xs" style={{ color: "var(--gray)" }}>
+            <span style={{ color: "#4ade80", fontWeight: 700 }}>✓1</span>
+            <span style={{ color: "var(--gray2)" }}>›</span>
+            {trilhaPhase === "chat1" ? (
+              <>
+                <span style={{ color: "var(--yellow)", fontWeight: 700 }}>●1</span>
+                <span style={{ color: "var(--gray2)" }}>›</span>
+                <span>2</span>
+                <span style={{ color: "var(--gray2)" }}>›</span>
+                <span>3</span>
+              </>
+            ) : (
+              <>
+                <span style={{ color: "#4ade80", fontWeight: 700 }}>✓2</span>
+                <span style={{ color: "var(--gray2)" }}>›</span>
+                <span style={{ color: "var(--yellow)", fontWeight: 700 }}>●3</span>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* ── Chat area ──────────────────────────────────────── */}
       <div
         className="w-full max-w-2xl flex-1 min-h-0 p-3 sm:p-4 mb-3 overflow-y-auto"
@@ -1079,7 +1403,7 @@ export default function Home() {
         )}
 
         {/* ── Free chat ready state ────────────────────────── */}
-        {messages.length === 0 && topic?.id === "free" && !isLoading && (
+        {messages.length === 0 && topic?.id === "free" && !isLoading && !trilhaStep && (
           <div className="flex flex-col items-center justify-center h-full text-center gap-3">
             <div className="text-3xl">💬</div>
             <div>
@@ -1311,7 +1635,7 @@ export default function Home() {
       )}
 
       {/* ── Encerrar conversa ──────────────────────────────── */}
-      {messages.length >= 2 && !limitReached && (
+      {messages.length >= 2 && !limitReached && trilhaPhase !== "chat2" && (
         <div className="w-full max-w-2xl mb-2 flex gap-2">
           <button
             onClick={() => endConversation("quiz")}
@@ -1328,6 +1652,19 @@ export default function Home() {
             style={{ background: "transparent", border: `1px solid ${isPro ? "rgba(255,255,255,0.15)" : "rgba(245,200,0,0.2)"}`, color: isPro ? "var(--white)" : "var(--yellow)" }}
           >
             {isPro ? "🃏 Criar flashcards" : "🔒 Criar flashcards"}
+          </button>
+        </div>
+      )}
+      {/* ── Finalizar prática (trilha chat2) ──────────────── */}
+      {trilhaPhase === "chat2" && messages.length >= 4 && !limitReached && (
+        <div className="w-full max-w-2xl mb-2">
+          <button
+            onClick={finalizePractice}
+            disabled={isLoading}
+            className="w-full py-2.5 rounded-xl text-sm font-bold transition-all disabled:opacity-40"
+            style={{ background: "rgba(74,222,128,0.12)", border: "1px solid rgba(74,222,128,0.4)", color: "#4ade80" }}
+          >
+            ✅ Finalizar prática e concluir etapa
           </button>
         </div>
       )}

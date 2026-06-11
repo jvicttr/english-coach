@@ -42,7 +42,7 @@ export default function TrilhaPage() {
   const completedIds = new Set(progress.map((p) => p.step_id));
 
   function startStep(step: TrailStep) {
-    localStorage.setItem("pendingTrilhaStep", JSON.stringify(step));
+    localStorage.setItem("pendingTrilhaStep", JSON.stringify({ ...step, phase: "chat1" }));
     router.push("/app/conversar");
   }
 
