@@ -120,7 +120,7 @@ export default function AdminPage() {
   }
 
   return (
-    <div style={{ minHeight: "100vh", background: "var(--black)", fontFamily: "'Inter', sans-serif", padding: "2rem 1.2rem" }}>
+    <div style={{ minHeight: "100vh", height: "100dvh", overflowY: "auto", background: "var(--black)", fontFamily: "'Inter', sans-serif", padding: "2rem 1.2rem" }}>
       <div style={{ maxWidth: 760, margin: "0 auto" }}>
 
         {/* Header */}
