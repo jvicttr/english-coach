@@ -39,6 +39,8 @@ export default function Flashcards() {
   const [rating, setRating] = useState<string | null>(null);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [showExampleTranslation, setShowExampleTranslation] = useState(false);
+  const [exampleTranslationText, setExampleTranslationText] = useState<string | null>(null);
+  const [loadingTranslation, setLoadingTranslation] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   function getAudio() {
@@ -96,6 +98,38 @@ export default function Flashcards() {
     setDone(false);
   }
 
+  async function fetchExampleTranslation(example: string, savedTranslation: string | null) {
+    if (savedTranslation) {
+      setExampleTranslationText(savedTranslation);
+      setShowExampleTranslation(true);
+      return;
+    }
+    setLoadingTranslation(true);
+    try {
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messages: [{ role: "user", content: `Translate this English sentence to Brazilian Portuguese. Reply with ONLY the translation, nothing else: "${example}"` }],
+          level: "intermediate",
+          topic: "free",
+        }),
+      });
+      const data = await res.json();
+      const raw: string = data.reply ?? "";
+      // Strip [PT:...] wrapper if present
+      const match = raw.match(/\[PT:\s*([\s\S]+?)\]/);
+      const translation = match ? match[1].trim() : raw.split("\n")[0].trim();
+      setExampleTranslationText(translation);
+      setShowExampleTranslation(true);
+    } catch {
+      setExampleTranslationText("(erro ao traduzir)");
+      setShowExampleTranslation(true);
+    } finally {
+      setLoadingTranslation(false);
+    }
+  }
+
   async function deletePack(pack: Pack, e: React.MouseEvent) {
     e.stopPropagation();
     if (!confirm(`Apagar o pack "${pack.pack_name}" e todas as suas palavras?`)) return;
@@ -121,6 +155,7 @@ export default function Flashcards() {
       setRating(null);
       setFlipped(false);
       setShowExampleTranslation(false);
+      setExampleTranslationText(null);
       if (currentIndex + 1 >= activePack.cards.length) {
         setDone(true);
       } else {
@@ -284,8 +319,8 @@ export default function Flashcards() {
                 {card.example && (
                   <div style={{ marginTop: 12, padding: "10px 14px", background: "rgba(255,255,255,.04)", borderRadius: 10, border: "1px solid #2a2a2a", width: "100%" }}>
                     <p style={{ fontSize: "0.78rem", color: "rgba(255,255,255,.65)", lineHeight: 1.6, margin: "0 0 8px", fontStyle: "italic" }}>"{card.example}"</p>
-                    {showExampleTranslation && card.example_translation && (
-                      <p style={{ fontSize: "0.72rem", color: "var(--gray)", lineHeight: 1.5, margin: "0 0 8px", fontStyle: "italic" }}>🇧🇷 {card.example_translation}</p>
+                    {showExampleTranslation && exampleTranslationText && (
+                      <p style={{ fontSize: "0.72rem", color: "var(--gray)", lineHeight: 1.5, margin: "0 0 8px", fontStyle: "italic" }}>🇧🇷 {exampleTranslationText}</p>
                     )}
                     <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                       <button
@@ -295,12 +330,13 @@ export default function Flashcards() {
                       >
                         🔊 Ouvir exemplo
                       </button>
-                      {card.example_translation && !showExampleTranslation && (
+                      {!showExampleTranslation && (
                         <button
-                          onClick={(e) => { e.stopPropagation(); setShowExampleTranslation(true); }}
-                          style={{ background: "transparent", border: "1px solid #3a3a3a", borderRadius: "50px", padding: "3px 12px", fontSize: "0.68rem", color: "var(--gray)", cursor: "pointer" }}
+                          onClick={(e) => { e.stopPropagation(); fetchExampleTranslation(card.example!, card.example_translation); }}
+                          disabled={loadingTranslation}
+                          style={{ background: "transparent", border: "1px solid #3a3a3a", borderRadius: "50px", padding: "3px 12px", fontSize: "0.68rem", color: "var(--gray)", cursor: loadingTranslation ? "default" : "pointer", opacity: loadingTranslation ? 0.5 : 1 }}
                         >
-                          🇧🇷 Ver tradução
+                          {loadingTranslation ? "..." : "🇧🇷 Ver tradução"}
                         </button>
                       )}
                     </div>
