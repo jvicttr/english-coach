@@ -18,7 +18,14 @@ export default function OneSignalInit() {
       setTimeout(async () => {
         const permission = OneSignal.Notifications?.permission;
         if (!permission) {
-          await OneSignal.Slidedown?.promptPush();
+          await OneSignal.Slidedown?.promptPush({
+            force: false,
+            slidedownPromptOptions: {
+              actionMessage: "Receba lembretes diários para praticar inglês!",
+              acceptButtonText: "Sim, quero!",
+              cancelButtonText: "Agora não",
+            },
+          });
         }
       }, 5000);
     });
