@@ -100,7 +100,7 @@ export default function Flashcards() {
     setDone(false);
   }
 
-  async function fetchExampleTranslation(example: string, savedTranslation: string | null) {
+  async function fetchExampleTranslation(cardId: string, example: string, savedTranslation: string | null) {
     if (savedTranslation) {
       setExampleTranslationText(savedTranslation);
       setShowExampleTranslation(true);
@@ -119,11 +119,23 @@ export default function Flashcards() {
       });
       const data = await res.json();
       const raw: string = data.reply ?? "";
-      // Strip [PT:...] wrapper if present
       const match = raw.match(/\[PT:\s*([\s\S]+?)\]/);
       const translation = match ? match[1].trim() : raw.split("\n")[0].trim();
       setExampleTranslationText(translation);
       setShowExampleTranslation(true);
+      // Persist to DB and update local state
+      fetch("/api/flashcards", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: cardId, example_translation: translation }),
+      });
+      setActivePack((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          cards: prev.cards.map((c) => c.id === cardId ? { ...c, example_translation: translation } : c),
+        };
+      });
     } catch {
       setExampleTranslationText("(erro ao traduzir)");
       setShowExampleTranslation(true);
@@ -334,7 +346,7 @@ export default function Flashcards() {
                       </button>
                       {!showExampleTranslation && (
                         <button
-                          onClick={(e) => { e.stopPropagation(); fetchExampleTranslation(card.example!, card.example_translation); }}
+                          onClick={(e) => { e.stopPropagation(); fetchExampleTranslation(card.id, card.example!, card.example_translation); }}
                           disabled={loadingTranslation}
                           style={{ background: "transparent", border: "1px solid #3a3a3a", borderRadius: "50px", padding: "3px 12px", fontSize: "0.68rem", color: "var(--gray)", cursor: loadingTranslation ? "default" : "pointer", opacity: loadingTranslation ? 0.5 : 1 }}
                         >

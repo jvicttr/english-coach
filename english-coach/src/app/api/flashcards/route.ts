@@ -71,7 +71,13 @@ export async function PATCH(req: NextRequest) {
   const { userId } = await auth();
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { id, rating } = await req.json(); // rating: "easy" | "hard" | "miss"
+  const { id, rating, example_translation } = await req.json();
+
+  // Persist example translation only
+  if (example_translation !== undefined) {
+    await supabase.from("flashcards").update({ example_translation }).eq("id", id).eq("user_id", userId);
+    return NextResponse.json({ ok: true });
+  }
 
   const { data: card } = await supabase
     .from("flashcards")
