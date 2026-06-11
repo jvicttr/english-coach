@@ -850,11 +850,6 @@ export default function Home() {
         </header>
 
         <div className="w-full max-w-2xl flex-1">
-          <div className="mb-5 text-center">
-            <Image src="/favicon.png" alt="Fale Inglês JV" width={48} height={48} className="rounded-2xl mx-auto mb-2" />
-            <p className="font-bold text-white text-sm mb-1">O que vamos praticar hoje?</p>
-            <p className="text-xs" style={{ color: "var(--gray)" }}>Escolha um tópico para começar</p>
-          </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "0.6rem" }}>
             {TOPICS.map((t) => (
               <button
