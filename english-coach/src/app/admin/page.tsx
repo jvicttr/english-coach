@@ -22,7 +22,7 @@ type User = {
   createdAt: number;
 };
 
-const ADMIN_USER_ID = "user_3EnQTOGCQm7ZbxdYwvLcwFolnIQ";
+const ADMIN_USER_ID = "user_3EzV0DXiskFt0wNSwNSXVHapiBC";
 
 export default function AdminPage() {
   const { user, isLoaded } = useUser();
