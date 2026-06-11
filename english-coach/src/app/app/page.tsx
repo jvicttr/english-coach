@@ -62,6 +62,28 @@ export default function AppHome() {
   const [userName, setUserName] = useState("");
   const [loading, setLoading] = useState(true);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [portalLoading, setPortalLoading] = useState(false);
+
+  async function openPortal() {
+    setPortalLoading(true);
+    try {
+      const res = await fetch("/api/portal", { method: "POST" });
+      if (!res.ok) {
+        const text = await res.text();
+        let msg = `Erro ${res.status}`;
+        try { msg = JSON.parse(text).error ?? msg; } catch { /* not JSON */ }
+        alert(msg);
+        return;
+      }
+      const data = await res.json();
+      if (data.url) window.location.href = data.url;
+      else alert(data.error ?? "Sem URL retornada pelo Stripe");
+    } catch (e) {
+      alert("Erro ao abrir o portal: " + String(e));
+    } finally {
+      setPortalLoading(false);
+    }
+  }
 
   useEffect(() => {
     const saved = localStorage.getItem("lastTopic");
@@ -136,9 +158,15 @@ export default function AppHome() {
         <>
           <div onClick={() => setMenuOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 90 }} />
           <div style={{ position: "fixed", top: 62, right: 16, background: "#1a1a1a", border: "1px solid #2a2a2a", borderRadius: 14, padding: "6px 0", zIndex: 95, minWidth: 200, boxShadow: "0 8px 32px rgba(0,0,0,.6)" }}>
+            <button onClick={() => { setMenuOpen(false); openPortal(); }} disabled={portalLoading} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", textDecoration: "none", color: "#fff", fontSize: "0.9rem", fontWeight: 600, background: "transparent", border: "none", cursor: "pointer", width: "100%" }}
+              onMouseEnter={(e) => (e.currentTarget.style.background = "#2a2a2a")}
+              onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+            >
+              <span style={{ fontSize: "1.1rem" }}>👤</span>
+              {portalLoading ? "Abrindo..." : "Portal do Aluno"}
+            </button>
             {[
-              { href: "/app/conta", icon: "👤", label: "Portal do Aluno" },
-              { href: "/app/historico", icon: "🏆", label: "Progresso" },
+              { href: "/app/progresso", icon: "🏆", label: "Progresso" },
               { href: "/app/resumo", icon: "📄", label: "Revisão de Aula" },
             ].map((item) => (
               <a key={item.href} href={item.href} onClick={() => setMenuOpen(false)} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", textDecoration: "none", color: "#fff", fontSize: "0.9rem", fontWeight: 600 }}
