@@ -393,7 +393,7 @@ export default function RolePlay() {
     <nav className="-mx-3 sm:mx-auto w-full sm:max-w-2xl mt-1" style={{ background: "#0d0d0d", borderTop: "1px solid #1e1e1e", display: "grid", gridTemplateColumns: "repeat(4,1fr)", paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
       {[
         { href: "/app", icon: "🏠", label: "Início", active: false },
-        { href: "/app/conversar", icon: "💬", label: "Conversar", active: false },
+        { href: "/app/trilha", icon: "🗺️", label: "Trilha", active: false },
         { href: "/app/flashcards", icon: "🃏", label: "Flashcards", active: false },
         { href: "/app/progresso", icon: "📊", label: "Progresso", active: false },
       ].map((item) => (

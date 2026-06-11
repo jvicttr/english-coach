@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { UserButton } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import type { TrailStep } from "@/lib/trilha-steps";
 
 type Correction = { wrong: string; right: string; phonetic: string; wrongSentence?: string; rightSentence?: string };
 type CorrectionList = Correction[];
@@ -72,6 +73,7 @@ export default function Home() {
   const [couponLoading, setCouponLoading] = useState(false);
   const [portalLoading, setPortalLoading] = useState(false);
   const [topic, setTopic] = useState<TopicDef | null>(null);
+  const [trilhaStep, setTrilhaStep] = useState<TrailStep | null>(null);
   const [installPrompt, setInstallPrompt] = useState<Event | null>(null);
   const [showInstallBanner, setShowInstallBanner] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
@@ -130,6 +132,17 @@ export default function Home() {
       if (!pro) {
         const coupon = localStorage.getItem("jv_coupon");
         if (coupon) setPendingCoupon(coupon);
+      }
+      // Check for pending trilha step
+      const pendingStep = localStorage.getItem("pendingTrilhaStep");
+      if (pendingStep) {
+        try {
+          const step: TrailStep = JSON.parse(pendingStep);
+          localStorage.removeItem("pendingTrilhaStep");
+          setTrilhaStep(step);
+          const freeTopic = TOPICS.find((t) => t.id === "free")!;
+          setTopic(freeTopic);
+        } catch {}
       }
     });
   }, [router]);
@@ -408,7 +421,7 @@ export default function Home() {
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: [], level, topic: t.id, topicStart: true }),
+        body: JSON.stringify({ messages: [], level, topic: t.id, topicStart: true, stepContext: trilhaStep?.context }),
       });
       if (!res.ok) return;
       const data = await res.json();
@@ -434,7 +447,7 @@ export default function Home() {
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: updatedMessages, level, topic: topic?.id ?? "free" }),
+        body: JSON.stringify({ messages: updatedMessages, level, topic: topic?.id ?? "free", stepContext: trilhaStep?.context }),
       });
       if (!res.ok) {
         setMessages((prev) => [...prev, { role: "assistant", content: "Ops, tive um problema. Tente enviar de novo!" }]);
@@ -523,6 +536,14 @@ export default function Home() {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ sessionId: quizSessionId, score: finalScore, answers }),
+        });
+      }
+      // Mark trilha step as complete if score >= 70%
+      if (trilhaStep && finalScore / (quiz?.questions.length ?? 1) >= 0.7) {
+        await fetch("/api/trilha", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ stepId: trilhaStep.id, score: finalScore, total: quiz?.questions.length ?? 0 }),
         });
       }
     }
@@ -748,6 +769,7 @@ export default function Home() {
     const emoji = pct >= 80 ? "🏆" : pct >= 60 ? "💪" : "📚";
     const msg = pct >= 80 ? "Excelente! Você dominou essa conversa." : pct >= 60 ? "Bom trabalho! Continue praticando." : "Continue assim! Cada conversa te deixa melhor.";
     const scoreColor = pct >= 80 ? "#4ade80" : pct >= 60 ? "var(--yellow)" : "#f87171";
+    const trilhaPassed = trilhaStep && pct >= 70;
 
     return (
       <div className="flex flex-col items-center justify-center px-4 pt-6 pb-8 min-h-screen" style={{ background: "var(--black)", fontFamily: "'Inter', sans-serif" }}>
@@ -779,21 +801,39 @@ export default function Home() {
             })}
           </div>
 
+          {trilhaPassed && (
+            <div className="w-full px-4 py-3 rounded-xl text-center text-sm font-bold" style={{ background: "rgba(74,222,128,0.1)", border: "1px solid rgba(74,222,128,0.3)", color: "#4ade80" }}>
+              🏅 Etapa da Trilha concluída!
+            </div>
+          )}
+
           <div className="flex gap-3 w-full mt-2">
-            <button
-              onClick={() => router.push("/app/progresso")}
-              className="flex-1 py-3 rounded-xl font-bold text-sm"
-              style={{ background: "var(--dark2)", color: "var(--gray)", border: "1px solid #2a2a2a" }}
-            >
-              Ver histórico
-            </button>
-            <button
-              onClick={restartChat}
-              className="flex-1 py-3 rounded-xl font-bold text-sm"
-              style={{ background: "var(--yellow)", color: "var(--black)" }}
-            >
-              Nova conversa
-            </button>
+            {trilhaPassed ? (
+              <button
+                onClick={() => router.push("/app/trilha")}
+                className="flex-1 py-3 rounded-xl font-bold text-sm"
+                style={{ background: "#4ade80", color: "#000" }}
+              >
+                Voltar à trilha →
+              </button>
+            ) : (
+              <>
+                <button
+                  onClick={() => router.push("/app/progresso")}
+                  className="flex-1 py-3 rounded-xl font-bold text-sm"
+                  style={{ background: "var(--dark2)", color: "var(--gray)", border: "1px solid #2a2a2a" }}
+                >
+                  Ver histórico
+                </button>
+                <button
+                  onClick={restartChat}
+                  className="flex-1 py-3 rounded-xl font-bold text-sm"
+                  style={{ background: "var(--yellow)", color: "var(--black)" }}
+                >
+                  Nova conversa
+                </button>
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -807,7 +847,7 @@ export default function Home() {
         <header className="w-full max-w-2xl mb-4 flex items-center justify-between gap-2" style={{ position: "relative" }}>
           <div className="flex items-center gap-2 shrink-0">
             <Image src="/favicon.png" alt="Fale Inglês JV" width={32} height={32} className="rounded-xl shrink-0" />
-            <span style={{ fontSize: "0.55rem", fontWeight: 800, color: "#000", background: "var(--yellow)", borderRadius: "50px", padding: "1px 6px", letterSpacing: "0.3px", lineHeight: 1.6 }}>2.0</span>
+            <span style={{ fontSize: "0.55rem", fontWeight: 800, color: "#000", background: "var(--yellow)", borderRadius: "50px", padding: "1px 6px", letterSpacing: "0.3px", lineHeight: 1.6 }}>3.0</span>
             <a href="/app" title="Início" style={{ background: "var(--dark2)", border: "1px solid #2a2a2a", borderRadius: "10px", height: "36px", width: 36, display: "flex", alignItems: "center", justifyContent: "center", textDecoration: "none", flexShrink: 0 }}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--gray)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9.5z"/>
@@ -888,7 +928,7 @@ export default function Home() {
         <nav className="-mx-3 sm:mx-auto w-full sm:max-w-2xl mt-4" style={{ background: "#0d0d0d", borderTop: "1px solid #1e1e1e", display: "grid", gridTemplateColumns: "repeat(4,1fr)", paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
           {[
             { href: "/app", icon: "🏠", label: "Início", active: false },
-            { href: "/app/conversar", icon: "💬", label: "Conversar", active: true },
+            { href: "/app/trilha", icon: "🗺️", label: "Trilha", active: false },
             { href: "/app/flashcards", icon: "🃏", label: "Flashcards", active: false },
             { href: "/app/progresso", icon: "📊", label: "Progresso", active: false },
           ].map((item) => (
@@ -1400,7 +1440,7 @@ export default function Home() {
               {isListening ? (
                 <rect x="6" y="6" width="12" height="12" rx="2" />
               ) : (
-                <path d="M12 1a4 4 0 0 1 4 4v6a4 4 0 0 1-8 0V5a4 4 0 0 1 4-4zm0 2a2 2 0 0 0-2 2v6a2 2 0 0 0 4 0V5a2 2 0 0 0-2-2zm-7 9h2a5 5 0 0 0 10 0h2a7 7 0 0 1-6 6.93V21h2v2H9v-2h2v-2.07A7 7 0 0 1 5 12z" />
+                <path d="M12 1a4 4 0 0 1 4 4v6a4 4 0 0 1-8 0V5a4 4 0 0 1 4-4zm0 2a2 2 0 0 0-2 2v6a2 2 0 0 0 4 0V5a2 2 0 0 0-2-2zm-7 9h2a5 5 0 0 0 10 0h2a7 7 0 0 1-6 6.93V21h2v2H9v-2h2v-3.07A7 7 0 0 1 5 12z" />
               )}
             </svg>
           )}
@@ -1434,7 +1474,7 @@ export default function Home() {
       <nav className="-mx-3 sm:mx-auto w-full sm:max-w-2xl mt-1" style={{ background: "#0d0d0d", borderTop: "1px solid #1e1e1e", display: "grid", gridTemplateColumns: "repeat(4,1fr)", paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
         {[
           { href: "/app", icon: "🏠", label: "Início", active: false },
-          { href: "/app/conversar", icon: "💬", label: "Conversar", active: true },
+          { href: "/app/trilha", icon: "🗺️", label: "Trilha", active: false },
           { href: "/app/flashcards", icon: "🃏", label: "Flashcards", active: false },
           { href: "/app/progresso", icon: "📊", label: "Progresso", active: false },
         ].map((item) => (

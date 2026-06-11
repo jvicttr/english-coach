@@ -150,7 +150,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const { messages, level, topic, topicStart, roleplay, scenario } = await req.json();
+  const { messages, level, topic, topicStart, roleplay, scenario, stepContext } = await req.json();
 
   // Role-play is Pro only
   if (roleplay && !isPro) {
@@ -280,11 +280,19 @@ Important roleplay rules:
 - If the student breaks character (asks a meta question), gently steer them back in character
 ${topicStart ? `- Start the conversation: open with the first line a ${sc.role} would say in this situation.` : ""}`;
   } else if (topic === "free" || !topic) {
-    systemFull += `\n\nTOPIC FOCUS — Free conversation.
+    if (stepContext) {
+      systemFull += `\n\nLEARNING PATH STEP — Guided conversation.
+The student is working through a structured learning trail. This session has a specific focus:
+${stepContext}
+
+Guide the conversation around this theme. Keep it natural and engaging, not like a drill. After 6-8 exchanges, wrap up naturally. The student needs to score ≥70% on the quiz to complete this step.`;
+    } else {
+      systemFull += `\n\nTOPIC FOCUS — Free conversation.
 The student chose open conversation — they can talk about literally anything they want.
 DO NOT introduce a specific topic or steer the conversation toward any particular subject.
 Just respond naturally to whatever the student says. If they say "hey" or something brief, respond warmly and leave the door open for them to lead — ask something like "What's on your mind?" or "How's it going?" Keep it open-ended and friendly.
 Never assume a topic. Follow the student's lead completely.`;
+    }
   } else if (topic && TOPIC_CONTEXTS[topic]) {
     systemFull += `\n\n${TOPIC_CONTEXTS[topic]}`;
   }

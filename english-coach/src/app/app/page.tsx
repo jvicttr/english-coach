@@ -117,7 +117,7 @@ export default function AppHome() {
           </a>
           <Image src="/favicon.png" alt="JV IA" width={28} height={28} style={{ borderRadius: 8 }} />
           <span style={{ fontWeight: 800, fontSize: "0.95rem", color: "#fff" }}>JV <span style={{ color: "var(--yellow)" }}>IA</span></span>
-          <span style={{ fontSize: "0.55rem", fontWeight: 800, color: "#000", background: "var(--yellow)", borderRadius: "50px", padding: "1px 6px", letterSpacing: "0.3px", lineHeight: 1.6 }}>2.0</span>
+          <span style={{ fontSize: "0.55rem", fontWeight: 800, color: "#000", background: "var(--yellow)", borderRadius: "50px", padding: "1px 6px", letterSpacing: "0.3px", lineHeight: 1.6 }}>3.0</span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
 
@@ -322,7 +322,7 @@ export default function AppHome() {
       <nav style={{ position: "fixed", bottom: 0, left: 0, right: 0, background: "#0d0d0d", borderTop: "1px solid #1e1e1e", display: "grid", gridTemplateColumns: "repeat(4,1fr)", paddingBottom: "env(safe-area-inset-bottom, 0px)", zIndex: 50 }}>
         {[
           { href: "/app", icon: "🏠", label: "Início", active: true },
-          { href: "/app/conversar", icon: "💬", label: "Conversar", active: false },
+          { href: "/app/trilha", icon: "🗺️", label: "Trilha", active: false },
           { href: "/app/flashcards", icon: "🃏", label: "Flashcards", active: false },
           { href: "/app/progresso", icon: "📊", label: "Progresso", active: false },
         ].map((item) => (

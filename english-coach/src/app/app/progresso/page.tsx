@@ -400,7 +400,7 @@ export default function Progresso() {
       <nav style={{ position: "fixed", bottom: 0, left: 0, right: 0, background: "#0d0d0d", borderTop: "1px solid #1e1e1e", display: "grid", gridTemplateColumns: "repeat(4,1fr)", paddingBottom: "env(safe-area-inset-bottom, 0px)", zIndex: 50 }}>
         {[
           { href: "/app", icon: "🏠", label: "Início", active: false },
-          { href: "/app/conversar", icon: "💬", label: "Conversar", active: false },
+          { href: "/app/trilha", icon: "🗺️", label: "Trilha", active: false },
           { href: "/app/flashcards", icon: "🃏", label: "Flashcards", active: false },
           { href: "/app/progresso", icon: "📊", label: "Progresso", active: true },
         ].map((item) => (
