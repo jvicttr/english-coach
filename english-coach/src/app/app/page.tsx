@@ -306,15 +306,6 @@ export default function AppHome() {
                 iconColor: "#fbbf24",
                 badge: null,
               },
-              {
-                href: "/app/conquistas",
-                emoji: "🏅",
-                title: "Conquistas",
-                desc: xpData ? `${xpData.badges.filter((b) => b.earned).length} badges · ${xpData.tier.label}` : "Badges e ranking",
-                iconBg: "rgba(205,127,50,.12)",
-                iconColor: "#cd7f32",
-                badge: null,
-              },
             ].map((card) => (
               <a key={card.title} href={card.href} style={{ background: "var(--dark1)", border: "1px solid #1e1e1e", borderRadius: 16, padding: "14px 14px 12px", textDecoration: "none", display: "flex", flexDirection: "column", gap: 8, transition: "border-color .2s" }}
                 onMouseEnter={(e) => (e.currentTarget.style.borderColor = "rgba(245,200,0,.2)")}
