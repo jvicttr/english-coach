@@ -929,16 +929,14 @@ export default function Home() {
             Você completou as 3 fases desta etapa: conversa inicial, revisão de vocabulário e prática final. Excelente trabalho!
           </p>
           <div className="w-full flex flex-col gap-3 mt-2">
-            <div className="w-full px-4 py-3 rounded-xl text-sm" style={{ background: "rgba(74,222,128,0.08)", border: "1px solid rgba(74,222,128,0.2)" }}>
-              <div className="flex items-center justify-between">
-                <span style={{ color: "#4ade80", fontWeight: 600 }}>✓ Fase 1 · Conversa inicial</span>
-                {score > 0 && quiz && <span style={{ color: "#4ade80", fontWeight: 700 }}>{score}/{quiz.questions.length} no quiz</span>}
-              </div>
+            <div className="w-full px-4 py-3 rounded-xl text-sm text-center" style={{ background: "rgba(74,222,128,0.08)", border: "1px solid rgba(74,222,128,0.2)" }}>
+              <span style={{ color: "#4ade80", fontWeight: 600 }}>✓ Fase 1 · Conversa inicial</span>
+              {score > 0 && quiz && <span style={{ color: "#4ade80", fontWeight: 700, marginLeft: "0.5rem" }}> · {score}/{quiz.questions.length} no quiz</span>}
             </div>
-            <div className="w-full px-4 py-3 rounded-xl text-sm" style={{ background: "rgba(74,222,128,0.08)", border: "1px solid rgba(74,222,128,0.2)" }}>
+            <div className="w-full px-4 py-3 rounded-xl text-sm text-center" style={{ background: "rgba(74,222,128,0.08)", border: "1px solid rgba(74,222,128,0.2)" }}>
               <span style={{ color: "#4ade80", fontWeight: 600 }}>✓ Fase 2 · Revisão de vocabulário</span>
             </div>
-            <div className="w-full px-4 py-3 rounded-xl text-sm" style={{ background: "rgba(74,222,128,0.08)", border: "1px solid rgba(74,222,128,0.2)" }}>
+            <div className="w-full px-4 py-3 rounded-xl text-sm text-center" style={{ background: "rgba(74,222,128,0.08)", border: "1px solid rgba(74,222,128,0.2)" }}>
               <span style={{ color: "#4ade80", fontWeight: 600 }}>✓ Fase 3 · Prática</span>
             </div>
           </div>
