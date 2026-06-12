@@ -13,6 +13,9 @@ type QuizResult = {
   created_at: string;
 };
 
+type TierInfo = { id: string; label: string; emoji: string; color: string; min: number; max: number };
+type XpData = { totalXp: number; tier: TierInfo; nextTier: TierInfo | null; badges: { earned: boolean }[] };
+
 type TopicDef = { id: string; emoji: string; label: string; desc: string; color: string };
 
 const DAYS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
@@ -65,6 +68,7 @@ export default function AppHome() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [portalLoading, setPortalLoading] = useState(false);
   const [showLevelSelect, setShowLevelSelect] = useState(false);
+  const [xpData, setXpData] = useState<XpData | null>(null);
 
   async function openPortal() {
     setPortalLoading(true);
@@ -96,12 +100,14 @@ export default function AppHome() {
       fetch("/api/flashcards").then((r) => r.json()),
       fetch("/api/me").then((r) => r.json()),
       fetch("/api/profile").then((r) => r.json()),
-    ]).then(([quizData, fcData, meData, profileData]) => {
+      fetch("/api/conquistas").then((r) => r.json()).catch(() => null),
+    ]).then(([quizData, fcData, meData, profileData, xp]) => {
       setResults(quizData.results ?? []);
       setFlashcardPending(fcData.pending ?? 0);
       setIsPro(meData.plan === "pro");
       setUserName(meData.firstName ?? "");
       if (!profileData.level) setShowLevelSelect(true);
+      if (xp?.totalXp !== undefined) setXpData(xp);
     });
   }, []);
 
@@ -216,6 +222,36 @@ export default function AppHome() {
             </div>
         </div>
 
+        {/* ── XP & Tier ─────────────────────────────────────────────────────── */}
+        {xpData && (
+          <a href="/app/conquistas" style={{ textDecoration: "none", display: "block" }}>
+            <div style={{ background: "var(--dark1)", border: `1px solid ${xpData.tier.color}35`, borderRadius: 16, padding: "12px 14px", display: "flex", alignItems: "center", gap: 12 }}>
+              <span style={{ fontSize: "1.6rem", lineHeight: 1 }}>{xpData.tier.emoji}</span>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 5 }}>
+                  <p style={{ fontSize: "0.75rem", fontWeight: 800, color: xpData.tier.color, margin: 0 }}>{xpData.tier.label} · {xpData.totalXp.toLocaleString("pt-BR")} XP</p>
+                  <p style={{ fontSize: "0.65rem", color: "var(--gray)", margin: 0 }}>
+                    {xpData.badges.filter((b) => b.earned).length}/{xpData.badges.length} badges 🏅
+                  </p>
+                </div>
+                {xpData.nextTier ? (
+                  <div style={{ height: 5, background: "#1f1f1f", borderRadius: 99, overflow: "hidden" }}>
+                    <div style={{ height: 5, background: xpData.tier.color, borderRadius: 99, width: `${Math.min(100, ((xpData.totalXp - xpData.tier.min) / (xpData.nextTier.min - xpData.tier.min)) * 100)}%`, transition: "width .8s ease" }} />
+                  </div>
+                ) : (
+                  <p style={{ fontSize: "0.65rem", color: xpData.tier.color, margin: 0, fontWeight: 700 }}>✨ Tier máximo!</p>
+                )}
+                {xpData.nextTier && (
+                  <p style={{ fontSize: "0.6rem", color: "var(--gray2)", margin: "3px 0 0" }}>
+                    faltam {(xpData.nextTier.min - xpData.totalXp).toLocaleString("pt-BR")} XP para {xpData.nextTier.emoji} {xpData.nextTier.label}
+                  </p>
+                )}
+              </div>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--gray)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            </div>
+          </a>
+        )}
+
         {/* ── Continue ───────────────────────────────────────────────────────── */}
         {lastTopic && (
           <a href="/app/conversar" style={{ background: "var(--yellow)", borderRadius: 16, padding: "14px 16px", display: "flex", alignItems: "center", justifyContent: "space-between", textDecoration: "none" }}>
@@ -268,6 +304,15 @@ export default function AppHome() {
                 desc: "Relatório semanal",
                 iconBg: "rgba(251,191,36,.12)",
                 iconColor: "#fbbf24",
+                badge: null,
+              },
+              {
+                href: "/app/conquistas",
+                emoji: "🏅",
+                title: "Conquistas",
+                desc: xpData ? `${xpData.badges.filter((b) => b.earned).length} badges · ${xpData.tier.label}` : "Badges e ranking",
+                iconBg: "rgba(205,127,50,.12)",
+                iconColor: "#cd7f32",
                 badge: null,
               },
             ].map((card) => (
