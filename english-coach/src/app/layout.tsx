@@ -9,8 +9,37 @@ const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 const caveat = Caveat({ subsets: ["latin"], variable: "--font-caveat", weight: ["700"] });
 
 export const metadata: Metadata = {
-  title: "Fale Inglês JV",
-  description: "Aprenda inglês online com o professor João Victor. Aulas personalizadas para todos os objetivos.",
+  title: {
+    default: "Fale Inglês JV — Aulas de inglês online com professor particular",
+    template: "%s | Fale Inglês JV",
+  },
+  description: "Aprenda inglês com o professor João Victor. Aulas particulares online, personalizadas para o seu nível e objetivo. Foco em conversação desde a primeira aula.",
+  metadataBase: new URL("https://faleinglesjv.com"),
+  alternates: {
+    canonical: "/",
+  },
+  openGraph: {
+    type: "website",
+    locale: "pt_BR",
+    url: "https://faleinglesjv.com",
+    siteName: "Fale Inglês JV",
+    title: "Fale Inglês JV — Aulas de inglês online com professor particular",
+    description: "Aprenda inglês com o professor João Victor. Aulas particulares online, personalizadas para o seu nível e objetivo.",
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "Fale Inglês JV",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Fale Inglês JV — Aulas de inglês online",
+    description: "Aprenda inglês com o professor João Victor. Foco em conversação desde a primeira aula.",
+    images: ["/og-image.png"],
+  },
   manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,
