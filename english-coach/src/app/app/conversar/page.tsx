@@ -88,6 +88,7 @@ export default function Home() {
   const [trilhaFlashcards, setTrilhaFlashcards] = useState<TrilhaFlashcard[]>([]);
   const [fcIndex, setFcIndex] = useState(0);
   const [fcFlipped, setFcFlipped] = useState(false);
+  const [fcShowTranslation, setFcShowTranslation] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Quiz state
@@ -589,6 +590,7 @@ export default function Home() {
     setTrilhaFlashcards([]);
     setFcIndex(0);
     setFcFlipped(false);
+    setFcShowTranslation(false);
     setLimitReached(false);
   }
 
@@ -655,6 +657,7 @@ export default function Home() {
     setTrilhaFlashcards([]);
     setFcIndex(0);
     setFcFlipped(false);
+    setFcShowTranslation(false);
     setTrilhaPhase("chat2");
     setTrilhaMsgCount(0);
     setScreen("chat");
@@ -850,8 +853,14 @@ export default function Home() {
                     display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 28, gap: 10,
                   }}>
                     <p style={{ fontSize: "1.6rem", fontWeight: 800, color: "#fff", textAlign: "center" }}>{card.word}</p>
-                    {card.phonetic && <p style={{ fontSize: "0.8rem", color: "var(--gray)", fontStyle: "italic" }}>🗣️ {card.phonetic}</p>}
-                    <p style={{ fontSize: "0.72rem", color: "var(--gray2)", marginTop: 8 }}>Toque para ver a tradução</p>
+                    {card.phonetic && <p style={{ fontSize: "0.8rem", color: "var(--gray)", fontStyle: "italic" }}>/{card.phonetic}/</p>}
+                    <button
+                      onClick={(e) => { e.stopPropagation(); speak(card.word); }}
+                      style={{ marginTop: 4, background: "rgba(245,200,0,0.1)", border: "1px solid rgba(245,200,0,0.3)", borderRadius: 10, padding: "6px 16px", color: "var(--yellow)", fontSize: "0.78rem", fontWeight: 600, cursor: "pointer" }}
+                    >
+                      🔊 Ouvir pronúncia
+                    </button>
+                    <p style={{ fontSize: "0.72rem", color: "var(--gray2)", marginTop: 4 }}>Toque no card para ver a tradução</p>
                   </div>
                   {/* Back */}
                   <div style={{
@@ -862,9 +871,25 @@ export default function Home() {
                   }}>
                     <p style={{ fontSize: "1.2rem", fontWeight: 800, color: "var(--yellow)", textAlign: "center" }}>{card.translation}</p>
                     {card.example && (
-                      <div style={{ textAlign: "center", marginTop: 4 }}>
+                      <div style={{ textAlign: "center", marginTop: 4, display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
                         <p style={{ fontSize: "0.8rem", color: "var(--white)", fontStyle: "italic", lineHeight: 1.5 }}>&ldquo;{card.example}&rdquo;</p>
-                        {card.example_translation && <p style={{ fontSize: "0.72rem", color: "var(--gray)", marginTop: 4 }}>{card.example_translation}</p>}
+                        <button
+                          onClick={(e) => { e.stopPropagation(); speak(card.example!); }}
+                          style={{ background: "rgba(245,200,0,0.1)", border: "1px solid rgba(245,200,0,0.3)", borderRadius: 10, padding: "5px 14px", color: "var(--yellow)", fontSize: "0.75rem", fontWeight: 600, cursor: "pointer" }}
+                        >
+                          🔊 Ouvir frase
+                        </button>
+                        {card.example_translation && (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setFcShowTranslation((v) => !v); }}
+                            style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.12)", borderRadius: 10, padding: "5px 14px", color: "var(--gray)", fontSize: "0.75rem", fontWeight: 500, cursor: "pointer" }}
+                          >
+                            {fcShowTranslation ? "🙈 Ocultar tradução" : "🌐 Ver tradução da frase"}
+                          </button>
+                        )}
+                        {fcShowTranslation && card.example_translation && (
+                          <p style={{ fontSize: "0.72rem", color: "var(--gray)", fontStyle: "normal" }}>{card.example_translation}</p>
+                        )}
                       </div>
                     )}
                   </div>
@@ -880,6 +905,7 @@ export default function Home() {
                     } else {
                       setFcIndex((i) => i + 1);
                       setFcFlipped(false);
+                      setFcShowTranslation(false);
                     }
                   }}
                   className="w-full py-3 rounded-xl font-bold text-sm"
