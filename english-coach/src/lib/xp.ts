@@ -1,5 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { TRAIL_STEPS } from "./trilha-steps";
+export { TIERS, getTier } from "./tiers";
+export type { Tier } from "./tiers";
 
 const supabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SECRET_KEY!);
 
@@ -37,15 +39,6 @@ export const BADGES: Badge[] = [
   { id: "level_advanced", emoji: "🚀", title: "Nível Avançado",     desc: "Atingiu o nível avançado detectado pelo coach", xpReward: 100 },
 ];
 
-export const TIERS = [
-  { id: "bronze", label: "Bronze", emoji: "🥉", color: "#cd7f32", min: 0,    max: 499  },
-  { id: "silver", label: "Prata",  emoji: "🥈", color: "#b0b0b0", min: 500,  max: 1999 },
-  { id: "gold",   label: "Ouro",   emoji: "🥇", color: "#F5C800", min: 2000, max: Infinity },
-] as const;
-
-export function getTier(xp: number) {
-  return TIERS.find((t) => xp >= t.min && xp <= t.max) ?? TIERS[0];
-}
 
 async function getCurrentStreak(userId: string): Promise<number> {
   const { data } = await supabase

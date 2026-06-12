@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { UserButton } from "@clerk/nextjs";
 import Image from "next/image";
-import { TIERS } from "@/lib/xp";
+import { TIERS, getTier as getTierFromXp } from "@/lib/tiers";
 
 type TierInfo = { id: string; label: string; emoji: string; color: string; min: number; max: number };
 
@@ -295,6 +295,3 @@ export default function ConquistasPage() {
   );
 }
 
-function getTierFromXp(xp: number) {
-  return TIERS.find((t) => xp >= t.min && xp <= t.max) ?? TIERS[0];
-}
