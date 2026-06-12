@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
       { onConflict: "user_id,step_id" }
     );
 
-  grantXP(userId, { type: "trail_step", stepId }).catch(() => {});
+  await grantXP(userId, { type: "trail_step", stepId }).catch(() => {});
 
   return NextResponse.json({ ok: true });
 }

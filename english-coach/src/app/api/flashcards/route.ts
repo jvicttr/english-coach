@@ -104,7 +104,7 @@ export async function PATCH(req: NextRequest) {
   const next_review = new Date(Date.now() + interval * 86400000).toISOString().split("T")[0];
   await supabase.from("flashcards").update({ interval, ease_factor, next_review }).eq("id", id);
 
-  grantXP(userId, { type: "flashcard" }).catch(() => {});
+  await grantXP(userId, { type: "flashcard" }).catch(() => {});
 
   return NextResponse.json({ ok: true, next_review });
 }

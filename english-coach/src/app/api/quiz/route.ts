@@ -114,7 +114,7 @@ export async function PATCH(req: NextRequest) {
   if (updateError) console.error("[quiz] update error:", updateError.message);
 
   const total: number = answers?.length ?? 5;
-  grantXP(userId, { type: "quiz", score, total }).catch(() => {});
+  await grantXP(userId, { type: "quiz", score, total }).catch(() => {});
 
   return NextResponse.json({ ok: true });
 }

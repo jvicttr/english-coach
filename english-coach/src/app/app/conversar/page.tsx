@@ -1673,32 +1673,32 @@ export default function Home() {
       {trilhaPhase === "chat1" && !limitReached && (
         <div className="w-full max-w-2xl mb-2 flex flex-col gap-2">
           <p className="text-center text-xs font-semibold" style={{ color: "var(--gray)" }}>
-            {trilhaMsgCount}/10 mensagens enviadas
-            {trilhaMsgCount < 10 ? " — continue conversando!" : " — pronto para avançar!"}
+            {trilhaMsgCount}/8 mensagens enviadas
+            {trilhaMsgCount < 8 ? " — continue conversando!" : " — pronto para avançar!"}
           </p>
           <button
             onClick={proceedToFlashcards}
-            disabled={isLoading || trilhaMsgCount < 10}
+            disabled={isLoading || trilhaMsgCount < 8}
             className="w-full py-2.5 rounded-xl text-sm font-bold transition-all disabled:opacity-40"
-            style={{ background: trilhaMsgCount >= 10 ? "var(--yellow)" : "rgba(245,200,0,0.08)", border: "1px solid rgba(245,200,0,0.35)", color: trilhaMsgCount >= 10 ? "var(--black)" : "var(--yellow)" }}
+            style={{ background: trilhaMsgCount >= 8 ? "var(--yellow)" : "rgba(245,200,0,0.08)", border: "1px solid rgba(245,200,0,0.35)", color: trilhaMsgCount >= 8 ? "var(--black)" : "var(--yellow)" }}
           >
-            {trilhaMsgCount >= 10 ? "🃏 Ir para vocabulário →" : "🔒 Ir para vocabulário (faltam " + (10 - trilhaMsgCount) + ")"}
+            {trilhaMsgCount >= 8 ? "🃏 Ir para vocabulário →" : "🔒 Ir para vocabulário (faltam " + (8 - trilhaMsgCount) + ")"}
           </button>
         </div>
       )}
       {trilhaPhase === "chat2" && !limitReached && (
         <div className="w-full max-w-2xl mb-2 flex flex-col gap-2">
           <p className="text-center text-xs font-semibold" style={{ color: "var(--gray)" }}>
-            {trilhaMsgCount}/5 mensagens enviadas
-            {trilhaMsgCount < 5 ? " — pratique mais um pouco!" : " — pronto para concluir!"}
+            {trilhaMsgCount}/4 mensagens enviadas
+            {trilhaMsgCount < 4 ? " — pratique mais um pouco!" : " — pronto para concluir!"}
           </p>
           <button
             onClick={finalizePractice}
-            disabled={isLoading || trilhaMsgCount < 5}
+            disabled={isLoading || trilhaMsgCount < 4}
             className="w-full py-2.5 rounded-xl text-sm font-bold transition-all disabled:opacity-40"
-            style={{ background: trilhaMsgCount >= 5 ? "rgba(74,222,128,0.15)" : "rgba(74,222,128,0.06)", border: "1px solid rgba(74,222,128,0.4)", color: "#4ade80" }}
+            style={{ background: trilhaMsgCount >= 4 ? "rgba(74,222,128,0.15)" : "rgba(74,222,128,0.06)", border: "1px solid rgba(74,222,128,0.4)", color: "#4ade80" }}
           >
-            {trilhaMsgCount >= 5 ? "✅ Finalizar prática e concluir etapa" : "🔒 Finalizar prática (faltam " + (5 - trilhaMsgCount) + ")"}
+            {trilhaMsgCount >= 4 ? "✅ Finalizar prática e concluir etapa" : "🔒 Finalizar prática (faltam " + (4 - trilhaMsgCount) + ")"}
           </button>
         </div>
       )}
