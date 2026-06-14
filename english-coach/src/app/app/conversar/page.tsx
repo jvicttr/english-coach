@@ -117,12 +117,14 @@ export default function Home() {
   // Save trilha chat1 progress to localStorage whenever messages change
   useEffect(() => {
     if (!trilhaStep || trilhaPhase !== "chat1" || messages.length === 0) return;
+    const key = `trilhaContinue_${trilhaStep.id}`;
+    const value = JSON.stringify({ messages, msgCount: trilhaMsgCount });
     try {
-      localStorage.setItem(
-        `trilhaContinue_${trilhaStep.id}`,
-        JSON.stringify({ messages, msgCount: trilhaMsgCount })
-      );
-    } catch {}
+      localStorage.setItem(key, value);
+      console.warn("[trilha-save] saved", key, "msgs:", messages.length, "count:", trilhaMsgCount);
+    } catch (e) {
+      console.warn("[trilha-save] FAILED", e);
+    }
   }, [messages, trilhaStep, trilhaPhase, trilhaMsgCount]);
 
   // Also save on page unload (e.g., navigating via browser back or home button)
@@ -176,16 +178,20 @@ export default function Home() {
           // Check for saved chat1 session (user left mid-conversation)
           const savedKey = `trilhaContinue_${(step as TrailStep).id}`;
           const savedSession = phase === "chat1" ? localStorage.getItem(savedKey) : null;
+          console.warn("[trilha-load] looking for", savedKey, "found:", !!savedSession);
           if (savedSession) {
             try {
               const { messages: savedMessages, msgCount: savedMsgCount } = JSON.parse(savedSession);
+              console.warn("[trilha-load] savedMessages:", savedMessages?.length, "savedMsgCount:", savedMsgCount);
               if (savedMessages?.length > 0) {
                 setMessages(savedMessages);
                 setTrilhaMsgCount(savedMsgCount ?? 0);
                 // Don't fetch a new opening — restore where they left off
                 return;
               }
-            } catch {}
+            } catch (e) {
+              console.warn("[trilha-load] parse error", e);
+            }
           }
 
           // Fresh start: AI opens the conversation

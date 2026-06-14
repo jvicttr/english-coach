@@ -17,7 +17,28 @@ export default function TrilhaPage() {
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<TrailStep | null>(null);
   const [isPro, setIsPro] = useState(false);
-  const [savedSessions, setSavedSessions] = useState<Set<string>>(new Set());
+  function scanSavedSessions(): Set<string> {
+    const sessions = new Set<string>();
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key?.startsWith("trilhaContinue_")) {
+        try {
+          const val = JSON.parse(localStorage.getItem(key)!);
+          if (val?.messages?.length > 0) sessions.add(key.replace("trilhaContinue_", ""));
+        } catch {}
+      }
+    }
+    return sessions;
+  }
+
+  const [savedSessions, setSavedSessions] = useState<Set<string>>(() =>
+    typeof window !== "undefined" ? scanSavedSessions() : new Set<string>()
+  );
+
+  // Rescan on every mount (handles Next.js router cache serving stale component)
+  useEffect(() => {
+    setSavedSessions(scanSavedSessions());
+  }, []);
 
   useEffect(() => {
     Promise.all([
@@ -36,21 +57,10 @@ export default function TrilhaPage() {
       const mapped = me.englishLevel ? (levelMap[me.englishLevel] ?? "beginner") : "beginner";
       setUserLevel(mapped);
       setProgress(trilha.completed ?? []);
+      // Rescan saved sessions now that we have fresh data
+      setSavedSessions(scanSavedSessions());
       setLoading(false);
     });
-
-    // Check which steps have saved chat1 sessions in localStorage
-    const sessions = new Set<string>();
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (key?.startsWith("trilhaContinue_")) {
-        try {
-          const val = JSON.parse(localStorage.getItem(key)!);
-          if (val?.messages?.length > 0) sessions.add(key.replace("trilhaContinue_", ""));
-        } catch {}
-      }
-    }
-    setSavedSessions(sessions);
   }, [router]);
 
   const completedIds = new Set(progress.map((p) => p.step_id));
