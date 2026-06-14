@@ -146,7 +146,23 @@ export default function Home() {
           setTrilhaPhase(phase);
           const freeTopic = TOPICS.find((t) => t.id === "free")!;
           setTopic(freeTopic);
-          // Auto-start: AI opens the conversation
+
+          // Check for saved chat1 session (user left mid-conversation)
+          const savedKey = `trilhaContinue_${(step as TrailStep).id}`;
+          const savedSession = phase === "chat1" ? localStorage.getItem(savedKey) : null;
+          if (savedSession) {
+            try {
+              const { messages: savedMessages, msgCount: savedMsgCount } = JSON.parse(savedSession);
+              if (savedMessages?.length > 0) {
+                setMessages(savedMessages);
+                setTrilhaMsgCount(savedMsgCount ?? 0);
+                // Don't fetch a new opening — restore where they left off
+                return;
+              }
+            } catch {}
+          }
+
+          // Fresh start: AI opens the conversation
           const ctx = phase === "chat2"
             ? `${(step as TrailStep).context}\n\nPRACTICE SESSION — The student has already had an initial conversation on this topic and just reviewed the key vocabulary with flashcards. Now guide a warm follow-up practice where they naturally use the vocabulary they studied. Be encouraging.`
             : (step as TrailStep).context;
@@ -496,7 +512,21 @@ export default function Home() {
           return next;
         });
       }
-      setMessages((prev) => [...prev, { role: "assistant", content: data.reply, translation: data.translation ?? undefined, corrections: newCorrections.length ? newCorrections : undefined }]);
+      setPendingSpeak(null); // clear stale pending audio from previous message
+      const newAssistantMsg = { role: "assistant" as const, content: data.reply, translation: data.translation ?? undefined, corrections: newCorrections.length ? newCorrections : undefined };
+      setMessages((prev) => {
+        const updated = [...prev, newAssistantMsg];
+        // Save trilha chat1 progress to localStorage after each exchange
+        if (trilhaStep && trilhaPhase === "chat1") {
+          try {
+            localStorage.setItem(
+              `trilhaContinue_${trilhaStep.id}`,
+              JSON.stringify({ messages: updated, msgCount: trilhaMsgCount + 1 })
+            );
+          } catch {}
+        }
+        return updated;
+      });
       if (data.detectedLevel) setLevel(data.detectedLevel as Level);
     } catch {
       setMessages((prev) => [...prev, { role: "assistant", content: "Erro de conexão. Verifique sua internet e tente novamente." }]);
@@ -592,6 +622,9 @@ export default function Home() {
   }
 
   function restartChat() {
+    if (trilhaStep && trilhaPhase === "chat1") {
+      try { localStorage.removeItem(`trilhaContinue_${trilhaStep.id}`); } catch {}
+    }
     setMessages([]);
     setInput("");
     setLevel(null);
@@ -617,6 +650,8 @@ export default function Home() {
 
   async function proceedToFlashcards() {
     if (!trilhaStep) return;
+    // Clear saved session — user completed chat1 and is moving forward
+    try { localStorage.removeItem(`trilhaContinue_${trilhaStep.id}`); } catch {}
     setTrilhaChat1Messages(messages); // save chat1 messages for quiz generation later
     setScreen("loading-flashcards");
     try {
