@@ -87,6 +87,12 @@ export default function Home() {
   const [trilhaChat1Messages, setTrilhaChat1Messages] = useState<Message[]>([]);
   const [trilhaFlashcards, setTrilhaFlashcards] = useState<TrilhaFlashcard[]>([]);
   const [trilhaQuizScore, setTrilhaQuizScore] = useState<{ score: number; total: number } | null>(null);
+  // Review mode navigation
+  const [reviewPhase, setReviewPhase] = useState<"chat" | "flashcards" | "quiz">("chat");
+  const [reviewFlashcards, setReviewFlashcards] = useState<TrilhaFlashcard[]>([]);
+  const [reviewQuiz, setReviewQuiz] = useState<{ quiz: Quiz; answers: (number | null)[]; score: number } | null>(null);
+  const [reviewFcIndex, setReviewFcIndex] = useState(0);
+  const [reviewFcFlipped, setReviewFcFlipped] = useState(false);
   const [fcIndex, setFcIndex] = useState(0);
   const [fcFlipped, setFcFlipped] = useState(false);
   const [fcShowTranslation, setFcShowTranslation] = useState(false);
@@ -181,22 +187,23 @@ export default function Home() {
           // Review mode: load saved conversation read-only, no new AI call
           if (phase === "review") {
             setIsLoading(true);
+            const stepId = (step as TrailStep).id;
+            // Load chat messages from Supabase
             try {
-              const sessionRes = await fetch(`/api/trilha-session?stepId=${(step as TrailStep).id}`);
+              const sessionRes = await fetch(`/api/trilha-session?stepId=${stepId}`);
               const sessionData = await sessionRes.json();
               if (sessionData.session?.messages?.length > 0) {
                 setMessages(sessionData.session.messages as Message[]);
-                setIsLoading(false);
-                return;
               }
             } catch {}
-            // Fallback: localStorage
+            // Load flashcards and quiz from localStorage
             try {
-              const local = localStorage.getItem(`trilhaContinue_${(step as TrailStep).id}`);
-              if (local) {
-                const { messages: localMsgs } = JSON.parse(local);
-                if (localMsgs?.length > 0) { setMessages(localMsgs as Message[]); setIsLoading(false); return; }
-              }
+              const fcRaw = localStorage.getItem(`trilhaReview_fc_${stepId}`);
+              if (fcRaw) setReviewFlashcards(JSON.parse(fcRaw));
+            } catch {}
+            try {
+              const qRaw = localStorage.getItem(`trilhaReview_quiz_${stepId}`);
+              if (qRaw) setReviewQuiz(JSON.parse(qRaw));
             } catch {}
             setIsLoading(false);
             return;
@@ -680,6 +687,8 @@ export default function Home() {
       // Trilha: save quiz score for use in finalizePractice (startChat2 resets score/quiz state)
       if (trilhaStep && trilhaPhase === "chat1") {
         setTrilhaQuizScore({ score: finalScore, total: quiz?.questions.length ?? 0 });
+        // Save for review mode
+        try { localStorage.setItem(`trilhaReview_quiz_${trilhaStep.id}`, JSON.stringify({ quiz, answers: [...answers, ...(answers[answers.length - 1] !== null ? [] : [])], score: finalScore })); } catch {}
       }
       // Non-trilha: mark step complete immediately if score ≥70%
       if (trilhaStep && trilhaPhase !== "chat1" && finalScore / (quiz?.questions.length ?? 1) >= 0.7) {
@@ -740,6 +749,8 @@ export default function Home() {
         setFcIndex(0);
         setFcFlipped(false);
         setScreen("trail-fc");
+        // Save for review mode
+        try { localStorage.setItem(`trilhaReview_fc_${trilhaStep.id}`, JSON.stringify(data.cards)); } catch {}
       } else {
         // Flashcard generation failed — go straight to quiz with saved messages
         await generateTrailQuiz(messages);
@@ -1530,29 +1541,123 @@ export default function Home() {
             <span style={{ fontSize: "0.72rem", fontWeight: 700, color: "var(--yellow)" }}>{trilhaStep.title}</span>
           </div>
           <div className="flex items-center gap-1.5 text-xs" style={{ color: "var(--gray)" }}>
-            <span style={{ color: "#4ade80", fontWeight: 700 }}>✓1</span>
-            <span style={{ color: "var(--gray2)" }}>›</span>
-            {trilhaPhase === "chat1" ? (
+            {trilhaPhase === "review" ? (
               <>
-                <span style={{ color: "var(--yellow)", fontWeight: 700 }}>●1</span>
-                <span style={{ color: "var(--gray2)" }}>›</span>
-                <span>2</span>
-                <span style={{ color: "var(--gray2)" }}>›</span>
-                <span>3</span>
+                {(["chat", "flashcards", "quiz"] as const).map((p, i) => {
+                  const label = ["1", "2", "3"][i];
+                  const hasData = p === "chat" ? messages.length > 0 : p === "flashcards" ? reviewFlashcards.length > 0 : !!reviewQuiz;
+                  const isActive = reviewPhase === p;
+                  return (
+                    <span key={p} style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                      {i > 0 && <span style={{ color: "var(--gray2)" }}>›</span>}
+                      <button
+                        onClick={() => hasData && setReviewPhase(p)}
+                        style={{ fontWeight: 700, color: isActive ? "var(--yellow)" : hasData ? "#4ade80" : "var(--gray2)", background: "none", border: "none", cursor: hasData ? "pointer" : "default", padding: "2px 4px", borderRadius: 4, fontSize: "0.75rem", textDecoration: isActive ? "underline" : "none" }}
+                      >
+                        {hasData ? "✓" : ""}{label}
+                      </button>
+                    </span>
+                  );
+                })}
               </>
             ) : (
               <>
-                <span style={{ color: "#4ade80", fontWeight: 700 }}>✓2</span>
+                <span style={{ color: "#4ade80", fontWeight: 700 }}>✓1</span>
                 <span style={{ color: "var(--gray2)" }}>›</span>
-                <span style={{ color: "var(--yellow)", fontWeight: 700 }}>●3</span>
+                {trilhaPhase === "chat1" ? (
+                  <>
+                    <span style={{ color: "var(--yellow)", fontWeight: 700 }}>●1</span>
+                    <span style={{ color: "var(--gray2)" }}>›</span>
+                    <span>2</span>
+                    <span style={{ color: "var(--gray2)" }}>›</span>
+                    <span>3</span>
+                  </>
+                ) : (
+                  <>
+                    <span style={{ color: "#4ade80", fontWeight: 700 }}>✓2</span>
+                    <span style={{ color: "var(--gray2)" }}>›</span>
+                    <span style={{ color: "var(--yellow)", fontWeight: 700 }}>●3</span>
+                  </>
+                )}
               </>
             )}
           </div>
         </div>
       )}
 
+      {/* ── Review: Flashcards ─────────────────────────────── */}
+      {trilhaPhase === "review" && reviewPhase === "flashcards" && (
+        <div className="w-full max-w-2xl flex-1 min-h-0 mb-3 overflow-y-auto flex flex-col gap-3 p-1">
+          {reviewFlashcards.length === 0 ? (
+            <div style={{ textAlign: "center", color: "var(--gray)", paddingTop: 40 }}>Flashcards não disponíveis neste dispositivo.</div>
+          ) : (
+            <>
+              <p style={{ fontSize: "0.7rem", color: "var(--gray)", textAlign: "center" }}>{reviewFcIndex + 1}/{reviewFlashcards.length}</p>
+              <div
+                onClick={() => setReviewFcFlipped(f => !f)}
+                style={{ background: "var(--dark1)", border: "1px solid #2a2a2a", borderRadius: 16, padding: "28px 20px", cursor: "pointer", textAlign: "center", minHeight: 160, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8 }}
+              >
+                {!reviewFcFlipped ? (
+                  <>
+                    <p style={{ fontSize: "1.4rem", fontWeight: 800, color: "#fff" }}>{reviewFlashcards[reviewFcIndex].word}</p>
+                    {reviewFlashcards[reviewFcIndex].phonetic && <p style={{ fontSize: "0.8rem", color: "var(--gray)" }}>{reviewFlashcards[reviewFcIndex].phonetic}</p>}
+                    <p style={{ fontSize: "0.7rem", color: "var(--gray2)", marginTop: 8 }}>Toque para ver a tradução</p>
+                  </>
+                ) : (
+                  <>
+                    <p style={{ fontSize: "1rem", fontWeight: 700, color: "var(--yellow)" }}>{reviewFlashcards[reviewFcIndex].translation}</p>
+                    {reviewFlashcards[reviewFcIndex].example && <p style={{ fontSize: "0.8rem", color: "var(--gray)", fontStyle: "italic", marginTop: 6 }}>{reviewFlashcards[reviewFcIndex].example}</p>}
+                  </>
+                )}
+              </div>
+              <div style={{ display: "flex", gap: 10 }}>
+                <button onClick={() => { setReviewFcIndex(i => Math.max(0, i - 1)); setReviewFcFlipped(false); }} disabled={reviewFcIndex === 0}
+                  style={{ flex: 1, padding: "10px", background: "var(--dark2)", border: "none", borderRadius: 12, color: "var(--gray)", fontWeight: 700, cursor: "pointer", opacity: reviewFcIndex === 0 ? 0.4 : 1 }}>← Anterior</button>
+                <button onClick={() => { setReviewFcIndex(i => Math.min(reviewFlashcards.length - 1, i + 1)); setReviewFcFlipped(false); }} disabled={reviewFcIndex === reviewFlashcards.length - 1}
+                  style={{ flex: 1, padding: "10px", background: "var(--dark2)", border: "none", borderRadius: 12, color: "var(--gray)", fontWeight: 700, cursor: "pointer", opacity: reviewFcIndex === reviewFlashcards.length - 1 ? 0.4 : 1 }}>Próximo →</button>
+              </div>
+            </>
+          )}
+        </div>
+      )}
+
+      {/* ── Review: Quiz ───────────────────────────────────── */}
+      {trilhaPhase === "review" && reviewPhase === "quiz" && (
+        <div className="w-full max-w-2xl flex-1 min-h-0 mb-3 overflow-y-auto flex flex-col gap-3 p-1">
+          {!reviewQuiz ? (
+            <div style={{ textAlign: "center", color: "var(--gray)", paddingTop: 40 }}>Quiz não disponível neste dispositivo.</div>
+          ) : (
+            <>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <p style={{ fontSize: "0.8rem", fontWeight: 700, color: "#fff" }}>{reviewQuiz.quiz.title}</p>
+                <span style={{ fontSize: "0.8rem", fontWeight: 800, color: reviewQuiz.score / reviewQuiz.quiz.questions.length >= 0.8 ? "#4ade80" : "var(--yellow)" }}>
+                  {reviewQuiz.score}/{reviewQuiz.quiz.questions.length} ✓
+                </span>
+              </div>
+              {reviewQuiz.quiz.questions.map((q, i) => {
+                const chosen = reviewQuiz.answers[i];
+                const correct = q.correct;
+                return (
+                  <div key={i} style={{ background: "var(--dark1)", border: `1px solid ${chosen === correct ? "rgba(74,222,128,0.2)" : "rgba(248,113,113,0.2)"}`, borderRadius: 12, padding: "12px 14px" }}>
+                    <p style={{ fontSize: "0.82rem", fontWeight: 600, color: "#fff", marginBottom: 8 }}>{i + 1}. {q.question}</p>
+                    {q.options.map((opt, oi) => (
+                      <div key={oi} style={{ fontSize: "0.78rem", padding: "5px 8px", borderRadius: 8, marginBottom: 4,
+                        background: oi === correct ? "rgba(74,222,128,0.1)" : oi === chosen && chosen !== correct ? "rgba(248,113,113,0.1)" : "transparent",
+                        color: oi === correct ? "#4ade80" : oi === chosen && chosen !== correct ? "#f87171" : "var(--gray)" }}>
+                        {oi === correct ? "✓ " : oi === chosen && chosen !== correct ? "✗ " : "  "}{opt}
+                      </div>
+                    ))}
+                    {q.explanation && <p style={{ fontSize: "0.7rem", color: "var(--gray2)", marginTop: 6, fontStyle: "italic" }}>{q.explanation}</p>}
+                  </div>
+                );
+              })}
+            </>
+          )}
+        </div>
+      )}
+
       {/* ── Chat area ──────────────────────────────────────── */}
-      <div
+      {(trilhaPhase !== "review" || reviewPhase === "chat") && <div
         className="w-full max-w-2xl flex-1 min-h-0 p-3 sm:p-4 mb-3 overflow-y-auto"
         style={{ background: "var(--dark1)", border: "1px solid #1f1f1f", borderRadius: "var(--radius)", boxShadow: "var(--shadow)" }}
       >
@@ -1747,7 +1852,7 @@ export default function Home() {
         )}
 
         <div ref={bottomRef} />
-      </div>
+      </div>}
 
       {/* ── Banner de desconto pendente ────────────────────── */}
       {pendingCoupon && !isPro && (
