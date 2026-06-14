@@ -60,7 +60,7 @@ The student's writing is your guide. You follow their lead, but you also gently 
   🗣️ [word] = "[brazilian-friendly pronunciation]"
   Example: 🗣️ together = "tughéder" | 🗣️ though = "dôu" | 🗣️ world = "wórld"
   Only add this when there is genuinely a tricky word. Skip if all words are simple.
-- If the student makes grammar or vocabulary mistakes, ONLY correct mistakes from their MOST RECENT message — the very last message they sent. Never re-correct errors from previous messages, even if you haven't corrected them before. Each conversation turn is independent for corrections.
+- If the student makes grammar or vocabulary mistakes, ONLY correct mistakes from their MOST RECENT message — the very last message they sent. Never re-correct errors from previous messages, even if you haven't corrected them before. Each conversation turn is independent for corrections. CRITICAL: scan the conversation history for any [FIX|...] tags that were already output — do NOT repeat a correction for the same wrong excerpt ever again, even if the student repeats the same error later. Each specific mistake is corrected exactly once.
 - If the student makes grammar or vocabulary mistakes in their most recent message, add a correction for EACH distinct mistake at the end of your reply (only if there are real mistakes, skip otherwise). Use this exact format on a new line for each error:
   [FIX|wrong excerpt|correct excerpt|informal Brazilian phonetic of the correct excerpt|full wrong sentence|full corrected sentence]
   - "wrong excerpt": only the incorrect word/phrase for this specific error
@@ -81,9 +81,9 @@ The student's writing is your guide. You follow their lead, but you also gently 
   Example: student says "the comida was amazing" → [FIX|comida|food|de fúd uóz emêizing|the comida was amazing|the food was amazing]
   This way the student learns the missing word in context without feeling embarrassed — they built the whole sentence themselves!
 
-## REQUIRED tokens — MANDATORY, always include BOTH, at the very end of EVERY response, no exceptions
+## REQUIRED tokens — ABSOLUTELY MANDATORY — DO NOT SKIP UNDER ANY CIRCUMSTANCES
 
-After your full reply (including any 🗣️ or 💬 lines), output BOTH tokens below on separate lines. You MUST include them in EVERY single response — never omit either one.
+After your full reply (including any 🗣️ or 💬 lines), you MUST output BOTH tokens below on separate lines in EVERY SINGLE response without exception. Forgetting either token is a critical failure. The app will break without them.
 
 1. Portuguese translation of your conversational reply (NOT the 🗣️ or 💬 lines). This is REQUIRED even for very short replies:
 [PT: sua tradução em português brasileiro aqui]
@@ -340,10 +340,24 @@ Never assume a topic. Follow the student's lead completely.`;
     .replace(/\[BR:([^\]]+)\]/g, "$1")
     .trim();
 
+  // Fallback: if AI forgot [PT:...], generate translation with a quick call
+  let finalTranslation = translation;
+  if (!finalTranslation && reply) {
+    try {
+      const fallback = await client.messages.create({
+        model: "claude-haiku-4-5-20251001",
+        max_tokens: 200,
+        messages: [{ role: "user", content: `Translate this English text to Brazilian Portuguese (pt-BR). Reply with ONLY the translation, no extra text:\n\n${reply}` }],
+      });
+      const fbText = fallback.content[0].type === "text" ? fallback.content[0].text.trim() : null;
+      if (fbText) finalTranslation = fbText;
+    } catch { /* ignore */ }
+  }
+
   // Grant XP for the user's message (fire and forget, non-blocking)
   if (!topicStart) {
     await grantXP(userId, { type: "message", detectedLevel: detectedLevel ?? undefined }).catch(() => {});
   }
 
-  return NextResponse.json({ reply, detectedLevel, translation, corrections });
+  return NextResponse.json({ reply, detectedLevel, translation: finalTranslation, corrections });
 }

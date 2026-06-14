@@ -90,6 +90,9 @@ export default function Home() {
   const [fcFlipped, setFcFlipped] = useState(false);
   const [fcShowTranslation, setFcShowTranslation] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [shownCorrections, setShownCorrections] = useState<Set<string>>(new Set());
+  // True if this page load started from a trilha step (skip topic selection screen)
+  const [hasPendingTrilha] = useState(() => typeof window !== "undefined" && !!localStorage.getItem("pendingTrilhaStep"));
 
   // Quiz state
   const [screen, setScreen] = useState<AppScreen>("chat");
@@ -480,7 +483,20 @@ export default function Home() {
         setMessages((prev) => [...prev, { role: "assistant", content: "Ops, não consegui responder. Tente de novo!" }]);
         return;
       }
-      setMessages((prev) => [...prev, { role: "assistant", content: data.reply, translation: data.translation ?? undefined, corrections: data.corrections?.length ? data.corrections : undefined }]);
+      const newCorrections = (data.corrections ?? []).filter(
+        (c: { wrongSentence?: string; wrong: string }) => {
+          const key = (c.wrongSentence ?? c.wrong).toLowerCase().trim();
+          return !shownCorrections.has(key);
+        }
+      );
+      if (newCorrections.length > 0) {
+        setShownCorrections((prev) => {
+          const next = new Set(prev);
+          newCorrections.forEach((c: { wrongSentence?: string; wrong: string }) => next.add((c.wrongSentence ?? c.wrong).toLowerCase().trim()));
+          return next;
+        });
+      }
+      setMessages((prev) => [...prev, { role: "assistant", content: data.reply, translation: data.translation ?? undefined, corrections: newCorrections.length ? newCorrections : undefined }]);
       if (data.detectedLevel) setLevel(data.detectedLevel as Level);
     } catch {
       setMessages((prev) => [...prev, { role: "assistant", content: "Erro de conexão. Verifique sua internet e tente novamente." }]);
@@ -592,6 +608,7 @@ export default function Home() {
     setFcFlipped(false);
     setFcShowTranslation(false);
     setLimitReached(false);
+    setShownCorrections(new Set());
   }
 
   async function proceedToFlashcards() {
@@ -1153,13 +1170,13 @@ export default function Home() {
   }
 
   // ── Topic Selection Screen ───────────────────────────────────────────────
-  if (!topic && !isLoading && messages.length === 0) {
+  if (!topic && !isLoading && messages.length === 0 && !hasPendingTrilha) {
     return (
       <div className="flex flex-col items-center px-3 pt-3 pb-4 sm:px-4 sm:pt-4 sm:pb-6" style={{ background: "var(--black)", fontFamily: "'Inter', sans-serif", minHeight: "100dvh" }}>
         <header className="w-full max-w-2xl mb-4 flex items-center justify-between gap-2" style={{ position: "relative" }}>
           <div className="flex items-center gap-2 shrink-0">
             <Image src="/favicon.png" alt="Fale Inglês JV" width={32} height={32} className="rounded-xl shrink-0" />
-            <span style={{ fontSize: "0.55rem", fontWeight: 800, color: "#000", background: "var(--yellow)", borderRadius: "50px", padding: "1px 6px", letterSpacing: "0.3px", lineHeight: 1.6 }}>4.1</span>
+            <span style={{ fontSize: "0.55rem", fontWeight: 800, color: "#000", background: "var(--yellow)", borderRadius: "50px", padding: "1px 6px", letterSpacing: "0.3px", lineHeight: 1.6 }}>4.2</span>
             <a href="/app" title="Início" style={{ background: "var(--dark2)", border: "1px solid #2a2a2a", borderRadius: "10px", height: "36px", width: 36, display: "flex", alignItems: "center", justifyContent: "center", textDecoration: "none", flexShrink: 0 }}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--gray)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9.5z"/>
@@ -1730,7 +1747,7 @@ export default function Home() {
         <div className="w-full max-w-2xl mb-3 px-4 py-5 flex flex-col items-center gap-3 text-center" style={{ background: "var(--dark2)", border: "1px solid rgba(245,200,0,.3)", borderRadius: "var(--radius)" }}>
           <div className="text-2xl">🎯</div>
           <div>
-            <p className="font-bold text-white text-sm">Você usou suas 10 mensagens de hoje</p>
+            <p className="font-bold text-white text-sm">Você usou suas 5 mensagens de hoje</p>
             <p className="text-xs mt-1" style={{ color: "var(--gray)" }}>Assine o JV IA por R$ 47/mês e pratique sem limites todos os dias.</p>
           </div>
           <a href="/planos" className="px-5 py-2 rounded-full text-sm font-bold transition-all" style={{ background: "var(--yellow)", color: "var(--black)" }}>
