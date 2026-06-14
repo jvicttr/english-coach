@@ -1365,7 +1365,7 @@ export default function Home() {
       <header className="w-full max-w-2xl mb-3 flex items-center justify-between gap-2" style={{ position: "relative" }}>
         {/* Esquerda: voltar ao tópico (ou logo) + casinha */}
         <div className="flex items-center gap-2 shrink-0">
-          {topic ? (
+          {topic && !trilhaStep ? (
             <button
               onClick={restartChat}
               style={{ background: "var(--dark2)", border: "1px solid #2a2a2a", borderRadius: "10px", height: "36px", padding: "0 10px", display: "flex", alignItems: "center", gap: "5px", fontSize: "0.75rem", fontWeight: 600, color: "var(--gray)", cursor: "pointer" }}
