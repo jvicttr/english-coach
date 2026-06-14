@@ -44,10 +44,10 @@ export default function TrilhaPage() {
     Promise.all([
       fetch("/api/me").then((r) => r.json()),
       fetch("/api/trilha").then((r) => r.json()),
-    ]).then(([me, trilha]) => {
+      fetch("/api/trilha-session").then((r) => r.json()),
+    ]).then(([me, trilha, sessionsData]) => {
       if (me.plan !== "pro") { router.replace("/planos"); return; }
       setIsPro(true);
-      // Map english_level from profile to trail userLevel
       const levelMap: Record<string, string> = {
         iniciante: "beginner",
         basico: "basic",
@@ -57,8 +57,12 @@ export default function TrilhaPage() {
       const mapped = me.englishLevel ? (levelMap[me.englishLevel] ?? "beginner") : "beginner";
       setUserLevel(mapped);
       setProgress(trilha.completed ?? []);
-      // Rescan saved sessions now that we have fresh data
-      setSavedSessions(scanSavedSessions());
+      // Merge Supabase sessions (cross-device) with localStorage (same-device cache)
+      const supabaseSessions = new Set<string>(
+        (sessionsData.sessions ?? []).map((s: { step_id: string }) => s.step_id)
+      );
+      const localSessions = scanSavedSessions();
+      setSavedSessions(new Set([...supabaseSessions, ...localSessions]));
       setLoading(false);
     });
   }, [router]);

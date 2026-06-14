@@ -114,17 +114,19 @@ export default function Home() {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // Save trilha chat1 progress to localStorage whenever messages change
+  // Save trilha chat1 progress whenever messages change (localStorage + Supabase for cross-device)
   useEffect(() => {
     if (!trilhaStep || trilhaPhase !== "chat1" || messages.length === 0) return;
-    const key = `trilhaContinue_${trilhaStep.id}`;
-    const value = JSON.stringify({ messages, msgCount: trilhaMsgCount });
+    // localStorage for instant same-device cache
     try {
-      localStorage.setItem(key, value);
-      console.warn("[trilha-save] saved", key, "msgs:", messages.length, "count:", trilhaMsgCount);
-    } catch (e) {
-      console.warn("[trilha-save] FAILED", e);
-    }
+      localStorage.setItem(`trilhaContinue_${trilhaStep.id}`, JSON.stringify({ messages, msgCount: trilhaMsgCount }));
+    } catch {}
+    // Supabase for cross-device sync (fire-and-forget)
+    fetch("/api/trilha-session", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ stepId: trilhaStep.id, messages, msgCount: trilhaMsgCount, phase: trilhaPhase }),
+    }).catch(() => {});
   }, [messages, trilhaStep, trilhaPhase, trilhaMsgCount]);
 
   // Also save on page unload (e.g., navigating via browser back or home button)
@@ -143,7 +145,7 @@ export default function Home() {
   }, [trilhaStep, trilhaPhase, messages, trilhaMsgCount]);
 
   useEffect(() => {
-    fetch("/api/me").then((r) => r.json()).then((d) => {
+    fetch("/api/me").then((r) => r.json()).then(async (d) => {
       const pro = d.plan === "pro";
       setIsPro(pro);
       localStorage.setItem("userPlan", d.plan ?? "free");
@@ -175,22 +177,35 @@ export default function Home() {
           const freeTopic = TOPICS.find((t) => t.id === "free")!;
           setTopic(freeTopic);
 
-          // Check for saved chat1 session (user left mid-conversation)
-          const savedKey = `trilhaContinue_${(step as TrailStep).id}`;
-          const savedSession = phase === "chat1" ? localStorage.getItem(savedKey) : null;
-          console.warn("[trilha-load] looking for", savedKey, "found:", !!savedSession);
-          if (savedSession) {
+          // Restore saved chat1 session — check Supabase first (cross-device), then localStorage
+          if (phase === "chat1") {
+            setIsLoading(true);
+            let savedMessages: unknown[] | null = null;
+            let savedMsgCount = 0;
+            // 1. Supabase (works across devices)
             try {
-              const { messages: savedMessages, msgCount: savedMsgCount } = JSON.parse(savedSession);
-              console.warn("[trilha-load] savedMessages:", savedMessages?.length, "savedMsgCount:", savedMsgCount);
-              if (savedMessages?.length > 0) {
-                setMessages(savedMessages);
-                setTrilhaMsgCount(savedMsgCount ?? 0);
-                // Don't fetch a new opening — restore where they left off
-                return;
+              const sessionRes = await fetch(`/api/trilha-session?stepId=${(step as TrailStep).id}`);
+              const sessionData = await sessionRes.json();
+              if (sessionData.session?.messages?.length > 0) {
+                savedMessages = sessionData.session.messages;
+                savedMsgCount = sessionData.session.msg_count ?? 0;
               }
-            } catch (e) {
-              console.warn("[trilha-load] parse error", e);
+            } catch {}
+            // 2. Fallback: localStorage (same-device cache)
+            if (!savedMessages?.length) {
+              try {
+                const local = localStorage.getItem(`trilhaContinue_${(step as TrailStep).id}`);
+                if (local) {
+                  const { messages: localMsgs, msgCount: localCount } = JSON.parse(local);
+                  if (localMsgs?.length > 0) { savedMessages = localMsgs; savedMsgCount = localCount ?? 0; }
+                }
+              } catch {}
+            }
+            if (savedMessages && savedMessages.length > 0) {
+              setMessages(savedMessages as Message[]);
+              setTrilhaMsgCount(savedMsgCount);
+              setIsLoading(false);
+              return;
             }
           }
 
@@ -198,7 +213,7 @@ export default function Home() {
           const ctx = phase === "chat2"
             ? `${(step as TrailStep).context}\n\nPRACTICE SESSION — The student has already had an initial conversation on this topic and just reviewed the key vocabulary with flashcards. Now guide a warm follow-up practice where they naturally use the vocabulary they studied. Be encouraging.`
             : (step as TrailStep).context;
-          setIsLoading(true);
+          if (phase !== "chat1") setIsLoading(true); // chat1 already set isLoading above
           const stepId = (step as TrailStep).id;
           fetch("/api/chat", {
             method: "POST",
@@ -652,6 +667,7 @@ export default function Home() {
   function restartChat() {
     if (trilhaStep && trilhaPhase === "chat1") {
       try { localStorage.removeItem(`trilhaContinue_${trilhaStep.id}`); } catch {}
+      fetch("/api/trilha-session", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ stepId: trilhaStep.id }) }).catch(() => {});
     }
     setMessages([]);
     setInput("");
@@ -680,6 +696,7 @@ export default function Home() {
     if (!trilhaStep) return;
     // Clear saved session — user completed chat1 and is moving forward
     try { localStorage.removeItem(`trilhaContinue_${trilhaStep.id}`); } catch {}
+    fetch("/api/trilha-session", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ stepId: trilhaStep.id }) }).catch(() => {});
     setTrilhaChat1Messages(messages); // save chat1 messages for quiz generation later
     setScreen("loading-flashcards");
     try {
