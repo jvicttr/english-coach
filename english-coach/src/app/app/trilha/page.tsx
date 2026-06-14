@@ -92,6 +92,17 @@ export default function TrilhaPage() {
       <style>{`
         @keyframes pulse-ring { 0%,100%{transform:scale(1);opacity:1} 50%{transform:scale(1.15);opacity:.6} }
         @keyframes bounce { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
+        .trilha-container { max-width: 640px; margin: 0 auto; padding: 24px 16px 0; }
+        .trilha-step-btn { min-width: 200px; max-width: 300px; }
+        .trilha-step-row { padding-left: var(--row-pl, 40px); padding-right: var(--row-pr, 0px); }
+        @media (min-width: 768px) {
+          .trilha-container { max-width: 860px; }
+          .trilha-step-btn { min-width: 280px; max-width: 420px; }
+        }
+        @media (min-width: 1280px) {
+          .trilha-container { max-width: 1000px; }
+          .trilha-step-btn { min-width: 320px; max-width: 500px; }
+        }
       `}</style>
 
       {/* Header */}
@@ -118,7 +129,7 @@ export default function TrilhaPage() {
         <div style={{ height: 3, background: "var(--yellow)", width: `${totalSteps > 0 ? (completedCount / totalSteps) * 100 : 0}%`, transition: "width .5s ease" }} />
       </div>
 
-      <div style={{ maxWidth: 640, margin: "0 auto", padding: "24px 16px 0" }}>
+      <div className="trilha-container">
         {visibleLevels.map((levelId, levelIdx) => {
           const info = LEVEL_INFO[levelId];
           const steps = TRAIL_STEPS.filter((s) => s.level === levelId);
@@ -160,6 +171,7 @@ export default function TrilhaPage() {
                             if (state === "locked") return;
                             setSelected(isSelected ? null : step);
                           }}
+                          className="trilha-step-btn"
                           style={{
                             display: "flex",
                             alignItems: "center",
@@ -170,8 +182,6 @@ export default function TrilhaPage() {
                             padding: "10px 14px",
                             cursor: state === "locked" ? "default" : "pointer",
                             opacity: state === "locked" ? 0.35 : 1,
-                            minWidth: 200,
-                            maxWidth: 300,
                             textAlign: "left",
                             transition: "all .15s",
                             animation: state === "active" && !isSelected ? "pulse-ring 2s ease-in-out infinite" : "none",

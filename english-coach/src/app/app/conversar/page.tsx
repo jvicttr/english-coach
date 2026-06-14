@@ -114,6 +114,32 @@ export default function Home() {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  // Save trilha chat1 progress to localStorage whenever messages change
+  useEffect(() => {
+    if (!trilhaStep || trilhaPhase !== "chat1" || messages.length === 0) return;
+    try {
+      localStorage.setItem(
+        `trilhaContinue_${trilhaStep.id}`,
+        JSON.stringify({ messages, msgCount: trilhaMsgCount })
+      );
+    } catch {}
+  }, [messages, trilhaStep, trilhaPhase, trilhaMsgCount]);
+
+  // Also save on page unload (e.g., navigating via browser back or home button)
+  useEffect(() => {
+    function handleUnload() {
+      if (!trilhaStep || trilhaPhase !== "chat1" || messages.length === 0) return;
+      try {
+        localStorage.setItem(
+          `trilhaContinue_${trilhaStep.id}`,
+          JSON.stringify({ messages, msgCount: trilhaMsgCount })
+        );
+      } catch {}
+    }
+    window.addEventListener("beforeunload", handleUnload);
+    return () => window.removeEventListener("beforeunload", handleUnload);
+  }, [trilhaStep, trilhaPhase, messages, trilhaMsgCount]);
+
   useEffect(() => {
     fetch("/api/me").then((r) => r.json()).then((d) => {
       const pro = d.plan === "pro";
@@ -167,13 +193,21 @@ export default function Home() {
             ? `${(step as TrailStep).context}\n\nPRACTICE SESSION — The student has already had an initial conversation on this topic and just reviewed the key vocabulary with flashcards. Now guide a warm follow-up practice where they naturally use the vocabulary they studied. Be encouraging.`
             : (step as TrailStep).context;
           setIsLoading(true);
+          const stepId = (step as TrailStep).id;
           fetch("/api/chat", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ messages: [], level: d.level ?? localStorage.getItem("userLevel") ?? null, topic: "free", topicStart: true, stepContext: ctx }),
           }).then((r) => r.json()).then((chatData) => {
             if (chatData.reply) {
-              setMessages([{ role: "assistant", content: chatData.reply, translation: chatData.translation ?? undefined }]);
+              const initialMsgs = [{ role: "assistant" as const, content: chatData.reply, translation: chatData.translation ?? undefined }];
+              setMessages(initialMsgs);
+              // Save even the initial AI message so the user can return and continue
+              if (phase === "chat1") {
+                try {
+                  localStorage.setItem(`trilhaContinue_${stepId}`, JSON.stringify({ messages: initialMsgs, msgCount: 0 }));
+                } catch {}
+              }
             }
           }).finally(() => setIsLoading(false));
         } catch {}
@@ -514,19 +548,7 @@ export default function Home() {
       }
       setPendingSpeak(null); // clear stale pending audio from previous message
       const newAssistantMsg = { role: "assistant" as const, content: data.reply, translation: data.translation ?? undefined, corrections: newCorrections.length ? newCorrections : undefined };
-      setMessages((prev) => {
-        const updated = [...prev, newAssistantMsg];
-        // Save trilha chat1 progress to localStorage after each exchange
-        if (trilhaStep && trilhaPhase === "chat1") {
-          try {
-            localStorage.setItem(
-              `trilhaContinue_${trilhaStep.id}`,
-              JSON.stringify({ messages: updated, msgCount: trilhaMsgCount + 1 })
-            );
-          } catch {}
-        }
-        return updated;
-      });
+      setMessages((prev) => [...prev, newAssistantMsg]);
       if (data.detectedLevel) setLevel(data.detectedLevel as Level);
     } catch {
       setMessages((prev) => [...prev, { role: "assistant", content: "Erro de conexão. Verifique sua internet e tente novamente." }]);
