@@ -1,10 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { UserButton } from "@clerk/nextjs";
 import Image from "next/image";
 import OnboardingTour from "@/components/OnboardingTour";
 import LevelSelect from "@/components/LevelSelect";
+import { TRAIL_STEPS, isStepUnlocked, getStartingLevel, type TrailStep } from "@/lib/trilha-steps";
 
 type QuizResult = {
   id: string;
@@ -60,6 +62,7 @@ function greeting(): string {
 }
 
 export default function AppHome() {
+  const router = useRouter();
   const [results, setResults] = useState<QuizResult[]>([]);
   const [flashcardPending, setFlashcardPending] = useState(0);
   const [lastTopic, setLastTopic] = useState<TopicDef | null>(null);
@@ -69,6 +72,7 @@ export default function AppHome() {
   const [portalLoading, setPortalLoading] = useState(false);
   const [showLevelSelect, setShowLevelSelect] = useState(false);
   const [xpData, setXpData] = useState<XpData | null>(null);
+  const [trilhaCta, setTrilhaCta] = useState<{ type: "continue" | "next"; step: TrailStep } | null>(null);
 
   async function openPortal() {
     setPortalLoading(true);
@@ -102,6 +106,24 @@ export default function AppHome() {
     fetch("/api/me").then((r) => r.json()).then((d) => {
       setIsPro(d.plan === "pro");
       setUserName(d.firstName ?? "");
+      if (d.plan === "pro") {
+        // Load trilha state to build smart CTA card
+        fetch("/api/trilha").then((r) => r.json()).then((trilha) => {
+          const completedIds = new Set<string>((trilha.completed ?? []).map((c: { step_id: string }) => c.step_id));
+          const activeSessions: string[] = trilha.activeSessions ?? [];
+          const levelMap: Record<string, string> = { iniciante: "beginner", basico: "basic", intermediario: "intermediate", avancado: "advanced" };
+          const userLevel = d.englishLevel ? (levelMap[d.englishLevel] ?? "beginner") : "beginner";
+          const startingLevel = getStartingLevel(userLevel);
+          // Priority 1: step with active in-progress session
+          if (activeSessions.length > 0) {
+            const step = TRAIL_STEPS.find((s) => s.id === activeSessions[0]);
+            if (step) { setTrilhaCta({ type: "continue", step }); return; }
+          }
+          // Priority 2: next unlocked step not yet completed
+          const nextStep = TRAIL_STEPS.find((s) => !completedIds.has(s.id) && isStepUnlocked(s.id, completedIds, startingLevel));
+          if (nextStep) setTrilhaCta({ type: "next", step: nextStep });
+        }).catch(() => {});
+      }
     }).catch(() => {});
     fetch("/api/profile").then((r) => r.json()).then((d) => {
       if (!d.level) setShowLevelSelect(true);
@@ -252,8 +274,30 @@ export default function AppHome() {
           </a>
         )}
 
-        {/* ── Continue ───────────────────────────────────────────────────────── */}
-        {lastTopic && (
+        {/* ── Trilha CTA (smart) ─────────────────────────────────────────────── */}
+        {trilhaCta ? (
+          <button
+            onClick={() => {
+              if (trilhaCta.type === "continue") {
+                localStorage.setItem("pendingTrilhaStep", JSON.stringify({ ...trilhaCta.step, phase: "chat1" }));
+                router.push("/app/conversar");
+              } else {
+                router.push("/app/trilha");
+              }
+            }}
+            style={{ background: "var(--yellow)", borderRadius: 16, padding: "14px 16px", display: "flex", alignItems: "center", justifyContent: "space-between", textDecoration: "none", width: "100%", border: "none", cursor: "pointer", textAlign: "left" }}
+          >
+            <div>
+              <p style={{ fontSize: "0.65rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: ".08em", color: "rgba(0,0,0,.5)", margin: 0 }}>
+                {trilhaCta.type === "continue" ? "▶ Continuar trilha" : "🗺️ Próximo tópico"}
+              </p>
+              <p style={{ fontSize: "1rem", fontWeight: 800, color: "#000", margin: "2px 0 0" }}>
+                {trilhaCta.step.emoji} {trilhaCta.step.title}
+              </p>
+            </div>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(0,0,0,.5)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          </button>
+        ) : lastTopic && (
           <a href="/app/conversar" style={{ background: "var(--yellow)", borderRadius: 16, padding: "14px 16px", display: "flex", alignItems: "center", justifyContent: "space-between", textDecoration: "none" }}>
             <div>
               <p style={{ fontSize: "0.65rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: ".08em", color: "rgba(0,0,0,.5)", margin: 0 }}>Continuar praticando</p>
