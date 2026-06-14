@@ -34,10 +34,18 @@ const LEVEL_LABEL: Record<string, string> = { beginner: "Básico", intermediate:
 const LEVEL_COLOR: Record<string, string> = { beginner: "#60a5fa", intermediate: "#F5C800", advanced: "#4ade80" };
 const DAY_LABEL = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 
+function toLocalDateStr(isoStr: string): string {
+  // Parse UTC timestamp and format in user's local timezone
+  return new Date(isoStr).toLocaleDateString("pt-BR");
+}
+
 function calcStreak(results: QuizResult[]): number {
   const completed = results.filter((r) => r.score != null);
   if (completed.length === 0) return 0;
-  const days = [...new Set(completed.map((r) => new Date(r.created_at).toLocaleDateString("pt-BR")))].sort((a, b) => {
+  // Use completed_at when available (when quiz was finished), fallback to created_at
+  const days = [...new Set(
+    completed.map((r) => toLocalDateStr(r.completed_at ?? r.created_at))
+  )].sort((a, b) => {
     const [da, ma, ya] = a.split("/").map(Number);
     const [db, mb, yb] = b.split("/").map(Number);
     return new Date(yb, mb - 1, db).getTime() - new Date(ya, ma - 1, da).getTime();
@@ -173,7 +181,7 @@ export default function Progresso() {
   const weekDays = getWeekDays();
   const weekScores = weekDays.map((day) => {
     const dayStr = day.toLocaleDateString("pt-BR");
-    const dayResults = completed.filter((r) => new Date(r.created_at).toLocaleDateString("pt-BR") === dayStr);
+    const dayResults = completed.filter((r) => toLocalDateStr(r.completed_at ?? r.created_at) === dayStr);
     if (dayResults.length === 0) return null;
     return Math.round(dayResults.reduce((acc, r) => acc + Math.round((r.score! / r.questions.length) * 100), 0) / dayResults.length);
   });

@@ -75,21 +75,34 @@ export async function POST(req: NextRequest) {
   }
 
   // Save session to Supabase (without answers yet)
-  const { data: saved, error: insertError } = await supabase
-    .from("quiz_results")
-    .insert({
-      user_id: userId,
-      title: quiz.title,
-      level: level || "intermediate",
-      questions: quiz.questions,
-      score: null,
-      completed_at: null,
-      source: scenario ? "roleplay" : "conversar",
-    })
-    .select("id")
-    .single();
+  const baseInsert = {
+    user_id: userId,
+    title: quiz.title,
+    level: level || "intermediate",
+    questions: quiz.questions,
+    score: null,
+    completed_at: null,
+  };
 
-  if (insertError) console.error("[quiz] insert error:", insertError.message);
+  let saved: { id: string } | null = null;
+  let insertError: { message: string } | null = null;
+
+  // Try with optional source column first; fall back without it if column doesn't exist
+  ({ data: saved, error: insertError } = await supabase
+    .from("quiz_results")
+    .insert({ ...baseInsert, source: scenario ? "roleplay" : "conversar" })
+    .select("id")
+    .single());
+
+  if (insertError) {
+    console.error("[quiz] insert error (with source):", insertError.message);
+    ({ data: saved, error: insertError } = await supabase
+      .from("quiz_results")
+      .insert(baseInsert)
+      .select("id")
+      .single());
+    if (insertError) console.error("[quiz] insert error (without source):", insertError.message);
+  }
 
   return NextResponse.json({ quiz, sessionId: saved?.id ?? null });
 
@@ -111,7 +124,10 @@ export async function PATCH(req: NextRequest) {
     .eq("id", sessionId)
     .eq("user_id", userId);
 
-  if (updateError) console.error("[quiz] update error:", updateError.message);
+  if (updateError) {
+    console.error("[quiz] update error:", updateError.message);
+    return NextResponse.json({ ok: false, error: updateError.message }, { status: 500 });
+  }
 
   const total: number = answers?.length ?? 5;
   await grantXP(userId, { type: "quiz", score, total }).catch(() => {});
