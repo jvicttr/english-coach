@@ -8,14 +8,17 @@ const supabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SE
 
 export async function GET() {
   const { userId } = await auth();
-  if (!userId) return NextResponse.json({ completed: [] });
+  if (!userId) return NextResponse.json({ completed: [], activeSessions: [] });
 
-  const { data } = await supabase
-    .from("learning_path_progress")
-    .select("step_id, score, total, completed_at")
-    .eq("user_id", userId);
+  const [{ data: completed }, { data: sessions }] = await Promise.all([
+    supabase.from("learning_path_progress").select("step_id, score, total, completed_at").eq("user_id", userId),
+    supabase.from("trilha_sessions").select("step_id").eq("user_id", userId),
+  ]);
 
-  return NextResponse.json({ completed: data ?? [] });
+  return NextResponse.json({
+    completed: completed ?? [],
+    activeSessions: (sessions ?? []).map((s) => s.step_id),
+  });
 }
 
 export async function POST(req: NextRequest) {
