@@ -235,12 +235,25 @@ export default function TrilhaPage() {
                           {(() => {
                             const hasSaved = savedSessions.has(step.id);
                             return (
-                              <button
-                                onClick={() => startStep(step)}
-                                style={{ width: "100%", padding: "12px", background: state === "completed" ? "var(--dark2)" : info.color, color: state === "completed" ? "var(--gray)" : "#000", border: "none", borderRadius: 12, fontSize: "0.85rem", fontWeight: 800, cursor: "pointer" }}
-                              >
-                                {state === "completed" ? "↺ Refazer etapa" : hasSaved ? "▶ Continuar de onde parou" : "▶ Começar conversa"}
-                              </button>
+                              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                                {state === "completed" && (
+                                  <button
+                                    onClick={() => {
+                                      localStorage.setItem("pendingTrilhaStep", JSON.stringify({ ...step, phase: "review" }));
+                                      router.push("/app/conversar");
+                                    }}
+                                    style={{ width: "100%", padding: "12px", background: "rgba(74,222,128,0.08)", color: "#4ade80", border: "1px solid rgba(74,222,128,0.25)", borderRadius: 12, fontSize: "0.85rem", fontWeight: 800, cursor: "pointer" }}
+                                  >
+                                    👁 Revisar conversa, flashcards e quiz
+                                  </button>
+                                )}
+                                <button
+                                  onClick={() => startStep(step)}
+                                  style={{ width: "100%", padding: "12px", background: state === "completed" ? "var(--dark2)" : info.color, color: state === "completed" ? "var(--gray)" : "#000", border: "none", borderRadius: 12, fontSize: "0.85rem", fontWeight: 800, cursor: "pointer" }}
+                                >
+                                  {state === "completed" ? "↺ Refazer etapa" : hasSaved ? "▶ Continuar de onde parou" : "▶ Começar conversa"}
+                                </button>
+                              </div>
                             );
                           })()}
                         </div>

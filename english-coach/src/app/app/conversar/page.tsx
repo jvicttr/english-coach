@@ -82,10 +82,11 @@ export default function Home() {
   const [portalLoading, setPortalLoading] = useState(false);
   const [topic, setTopic] = useState<TopicDef | null>(null);
   const [trilhaStep, setTrilhaStep] = useState<TrailStep | null>(null);
-  const [trilhaPhase, setTrilhaPhase] = useState<"chat1" | "chat2" | null>(null);
+  const [trilhaPhase, setTrilhaPhase] = useState<"chat1" | "chat2" | "review" | null>(null);
   const [trilhaMsgCount, setTrilhaMsgCount] = useState(0);
   const [trilhaChat1Messages, setTrilhaChat1Messages] = useState<Message[]>([]);
   const [trilhaFlashcards, setTrilhaFlashcards] = useState<TrilhaFlashcard[]>([]);
+  const [trilhaQuizScore, setTrilhaQuizScore] = useState<{ score: number; total: number } | null>(null);
   const [fcIndex, setFcIndex] = useState(0);
   const [fcFlipped, setFcFlipped] = useState(false);
   const [fcShowTranslation, setFcShowTranslation] = useState(false);
@@ -169,13 +170,37 @@ export default function Home() {
         try {
           const parsed = JSON.parse(pendingStep);
           localStorage.removeItem("pendingTrilhaStep");
-          const phase: "chat1" | "chat2" = parsed.phase ?? "chat1";
+          const phase: "chat1" | "chat2" | "review" = parsed.phase ?? "chat1";
           // eslint-disable-next-line @typescript-eslint/no-unused-vars
           const { phase: _p, ...step } = parsed;
           setTrilhaStep(step as TrailStep);
           setTrilhaPhase(phase);
           const freeTopic = TOPICS.find((t) => t.id === "free")!;
           setTopic(freeTopic);
+
+          // Review mode: load saved conversation read-only, no new AI call
+          if (phase === "review") {
+            setIsLoading(true);
+            try {
+              const sessionRes = await fetch(`/api/trilha-session?stepId=${(step as TrailStep).id}`);
+              const sessionData = await sessionRes.json();
+              if (sessionData.session?.messages?.length > 0) {
+                setMessages(sessionData.session.messages as Message[]);
+                setIsLoading(false);
+                return;
+              }
+            } catch {}
+            // Fallback: localStorage
+            try {
+              const local = localStorage.getItem(`trilhaContinue_${(step as TrailStep).id}`);
+              if (local) {
+                const { messages: localMsgs } = JSON.parse(local);
+                if (localMsgs?.length > 0) { setMessages(localMsgs as Message[]); setIsLoading(false); return; }
+              }
+            } catch {}
+            setIsLoading(false);
+            return;
+          }
 
           // Restore saved chat1 session — check Supabase first (cross-device), then localStorage
           if (phase === "chat1") {
@@ -652,7 +677,10 @@ export default function Home() {
           level,
         }),
       });
-      // Trilha: quiz score is saved but step is only marked complete after chat2 (via finalizePractice)
+      // Trilha: save quiz score for use in finalizePractice (startChat2 resets score/quiz state)
+      if (trilhaStep && trilhaPhase === "chat1") {
+        setTrilhaQuizScore({ score: finalScore, total: quiz?.questions.length ?? 0 });
+      }
       // Non-trilha: mark step complete immediately if score ≥70%
       if (trilhaStep && trilhaPhase !== "chat1" && finalScore / (quiz?.questions.length ?? 1) >= 0.7) {
         await fetch("/api/trilha", {
@@ -685,6 +713,7 @@ export default function Home() {
     setTrilhaMsgCount(0);
     setTrilhaChat1Messages([]);
     setTrilhaFlashcards([]);
+    setTrilhaQuizScore(null);
     setFcIndex(0);
     setFcFlipped(false);
     setFcShowTranslation(false);
@@ -782,10 +811,12 @@ export default function Home() {
 
   async function finalizePractice() {
     if (!trilhaStep) return;
+    const savedScore = trilhaQuizScore?.score ?? score;
+    const savedTotal = trilhaQuizScore?.total ?? quiz?.questions.length ?? 5;
     await fetch("/api/trilha", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ stepId: trilhaStep.id, score: score, total: quiz?.questions.length ?? 5 }),
+      body: JSON.stringify({ stepId: trilhaStep.id, score: savedScore, total: savedTotal }),
     });
     setScreen("trail-complete");
   }
@@ -1849,8 +1880,23 @@ export default function Home() {
         </div>
       )}
 
+      {/* ── Review mode banner ─────────────────────────────── */}
+      {trilhaPhase === "review" && (
+        <div className="w-full max-w-2xl mb-2 flex flex-col gap-2">
+          <div style={{ padding: "10px 14px", background: "rgba(74,222,128,0.08)", border: "1px solid rgba(74,222,128,0.25)", borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
+            <span style={{ fontSize: "0.8rem", color: "#4ade80", fontWeight: 600 }}>👁 Modo revisão — conversa salva</span>
+            <button
+              onClick={() => router.push("/app/trilha")}
+              style={{ fontSize: "0.75rem", fontWeight: 700, color: "var(--gray)", background: "var(--dark2)", border: "none", borderRadius: 8, padding: "6px 12px", cursor: "pointer" }}
+            >
+              ← Voltar à trilha
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* ── Input ──────────────────────────────────────────── */}
-      <div className="-mx-3 sm:mx-auto w-full sm:max-w-2xl flex gap-2 items-end px-3 sm:px-0 pb-1 sm:pb-0" style={{ background: "var(--black)" }}>
+      {trilhaPhase !== "review" && <div className="-mx-3 sm:mx-auto w-full sm:max-w-2xl flex gap-2 items-end px-3 sm:px-0 pb-1 sm:pb-0" style={{ background: "var(--black)" }}>
         <textarea
           value={input}
           onChange={(e) => setInput(e.target.value)}
@@ -1897,10 +1943,10 @@ export default function Home() {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19V5m-7 7 7-7 7 7" />
           </svg>
         </button>
-      </div>
+      </div>}
 
       {/* ── Status ─────────────────────────────────────────── */}
-      <div className="mt-1.5 h-3.5 text-[11px] text-center">
+      {trilhaPhase !== "review" && <div className="mt-1.5 h-3.5 text-[11px] text-center">
         {isListening
           ? <span style={{ color: "#ef4444" }}>● Gravando — toque em ⏹ para enviar</span>
           : isTranscribing
@@ -1909,7 +1955,7 @@ export default function Home() {
           ? <span style={{ color: "var(--yellow)" }}>● Coach falando...</span>
           : <span style={{ color: "var(--gray2)", opacity: 0.6 }}>● Toque em 🎙️ para gravar sua voz</span>
         }
-      </div>
+      </div>}
 
       {/* ── Bottom Nav ─────────────────────────────────────── */}
       <nav className="-mx-3 sm:mx-auto w-full sm:max-w-2xl mt-1" style={{ background: "#0d0d0d", borderTop: "1px solid #1e1e1e", display: "grid", gridTemplateColumns: "repeat(4,1fr)", paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
