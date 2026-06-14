@@ -72,7 +72,7 @@ export default function AppHome() {
   const [portalLoading, setPortalLoading] = useState(false);
   const [showLevelSelect, setShowLevelSelect] = useState(false);
   const [xpData, setXpData] = useState<XpData | null>(null);
-  const [trilhaCta, setTrilhaCta] = useState<{ type: "continue" | "next"; step: TrailStep } | null>(null);
+  const [trilhaCta, setTrilhaCta] = useState<{ type: "continue" | "next"; step: TrailStep } | null | undefined>(undefined);
 
   async function openPortal() {
     setPortalLoading(true);
@@ -139,9 +139,12 @@ export default function AppHome() {
           // Fallback: first unlocked incomplete step (for users who haven't completed anything)
           if (!nextStep) nextStep = TRAIL_STEPS.find((s) => !completedIds.has(s.id) && isStepUnlocked(s.id, completedIds, startingLevel));
           if (nextStep) setTrilhaCta({ type: "next", step: nextStep });
-        }).catch(() => {});
+          else setTrilhaCta(null);
+        }).catch(() => { setTrilhaCta(null); });
+      } else {
+        setTrilhaCta(null);
       }
-    }).catch(() => {});
+    }).catch(() => { setTrilhaCta(null); });
     fetch("/api/profile").then((r) => r.json()).then((d) => {
       if (!d.level) setShowLevelSelect(true);
     }).catch(() => {});
@@ -314,7 +317,7 @@ export default function AppHome() {
             </div>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(0,0,0,.5)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
           </button>
-        ) : lastTopic && (
+        ) : trilhaCta === null && lastTopic && (
           <a href="/app/conversar" style={{ background: "var(--yellow)", borderRadius: 16, padding: "14px 16px", display: "flex", alignItems: "center", justifyContent: "space-between", textDecoration: "none" }}>
             <div>
               <p style={{ fontSize: "0.65rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: ".08em", color: "rgba(0,0,0,.5)", margin: 0 }}>Continuar praticando</p>
