@@ -17,6 +17,7 @@ export default function TrilhaPage() {
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<TrailStep | null>(null);
   const [isPro, setIsPro] = useState(false);
+  const [savedSessions, setSavedSessions] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     Promise.all([
@@ -37,6 +38,19 @@ export default function TrilhaPage() {
       setProgress(trilha.completed ?? []);
       setLoading(false);
     });
+
+    // Check which steps have saved chat1 sessions in localStorage
+    const sessions = new Set<string>();
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key?.startsWith("trilhaContinue_")) {
+        try {
+          const val = JSON.parse(localStorage.getItem(key)!);
+          if (val?.messages?.length > 0) sessions.add(key.replace("trilhaContinue_", ""));
+        } catch {}
+      }
+    }
+    setSavedSessions(sessions);
   }, [router]);
 
   const completedIds = new Set(progress.map((p) => p.step_id));
@@ -104,7 +118,7 @@ export default function TrilhaPage() {
         <div style={{ height: 3, background: "var(--yellow)", width: `${totalSteps > 0 ? (completedCount / totalSteps) * 100 : 0}%`, transition: "width .5s ease" }} />
       </div>
 
-      <div style={{ maxWidth: 480, margin: "0 auto", padding: "24px 16px 0" }}>
+      <div style={{ maxWidth: 640, margin: "0 auto", padding: "24px 16px 0" }}>
         {visibleLevels.map((levelId, levelIdx) => {
           const info = LEVEL_INFO[levelId];
           const steps = TRAIL_STEPS.filter((s) => s.level === levelId);
@@ -157,7 +171,7 @@ export default function TrilhaPage() {
                             cursor: state === "locked" ? "default" : "pointer",
                             opacity: state === "locked" ? 0.35 : 1,
                             minWidth: 200,
-                            maxWidth: 240,
+                            maxWidth: 300,
                             textAlign: "left",
                             transition: "all .15s",
                             animation: state === "active" && !isSelected ? "pulse-ring 2s ease-in-out infinite" : "none",
@@ -197,12 +211,17 @@ export default function TrilhaPage() {
                               <span style={{ fontSize: "0.72rem", color: "#4ade80", fontWeight: 700 }}>{stepProgress.score}/{stepProgress.total} no quiz</span>
                             </div>
                           )}
-                          <button
-                            onClick={() => startStep(step)}
-                            style={{ width: "100%", padding: "12px", background: state === "completed" ? "var(--dark2)" : info.color, color: state === "completed" ? "var(--gray)" : "#000", border: "none", borderRadius: 12, fontSize: "0.85rem", fontWeight: 800, cursor: "pointer" }}
-                          >
-                            {state === "completed" ? "↺ Refazer etapa" : "▶ Começar conversa"}
-                          </button>
+                          {(() => {
+                            const hasSaved = savedSessions.has(step.id);
+                            return (
+                              <button
+                                onClick={() => startStep(step)}
+                                style={{ width: "100%", padding: "12px", background: state === "completed" ? "var(--dark2)" : info.color, color: state === "completed" ? "var(--gray)" : "#000", border: "none", borderRadius: 12, fontSize: "0.85rem", fontWeight: 800, cursor: "pointer" }}
+                              >
+                                {state === "completed" ? "↺ Refazer etapa" : hasSaved ? "▶ Continuar de onde parou" : "▶ Começar conversa"}
+                              </button>
+                            );
+                          })()}
                         </div>
                       )}
                     </div>
