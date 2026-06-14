@@ -95,20 +95,20 @@ export default function AppHome() {
     const saved = localStorage.getItem("lastTopic");
     if (saved) { try { setLastTopic(JSON.parse(saved)); } catch {} }
 
-    Promise.all([
-      fetch("/api/quiz-history").then((r) => r.json()),
-      fetch("/api/flashcards").then((r) => r.json()),
-      fetch("/api/me").then((r) => r.json()),
-      fetch("/api/profile").then((r) => r.json()),
-      fetch("/api/conquistas").then((r) => r.json()).catch(() => null),
-    ]).then(([quizData, fcData, meData, profileData, xp]) => {
-      setResults(quizData.results ?? []);
-      setFlashcardPending(fcData.pending ?? 0);
-      setIsPro(meData.plan === "pro");
-      setUserName(meData.firstName ?? "");
-      if (!profileData.level) setShowLevelSelect(true);
+    // Fetch all in parallel but update state independently so each section
+    // renders as soon as its own data arrives — no fetch blocks another.
+    fetch("/api/quiz-history").then((r) => r.json()).then((d) => setResults(d.results ?? [])).catch(() => {});
+    fetch("/api/flashcards").then((r) => r.json()).then((d) => setFlashcardPending(d.pending ?? 0)).catch(() => {});
+    fetch("/api/me").then((r) => r.json()).then((d) => {
+      setIsPro(d.plan === "pro");
+      setUserName(d.firstName ?? "");
+    }).catch(() => {});
+    fetch("/api/profile").then((r) => r.json()).then((d) => {
+      if (!d.level) setShowLevelSelect(true);
+    }).catch(() => {});
+    fetch("/api/conquistas").then((r) => r.json()).then((xp) => {
       if (xp?.totalXp !== undefined) setXpData(xp);
-    });
+    }).catch(() => {});
   }, []);
 
   const { streak, weekDays } = calcStreak(results);
