@@ -119,8 +119,25 @@ export default function AppHome() {
             const step = TRAIL_STEPS.find((s) => s.id === activeSessions[0]);
             if (step) { setTrilhaCta({ type: "continue", step }); return; }
           }
-          // Priority 2: next unlocked step not yet completed
-          const nextStep = TRAIL_STEPS.find((s) => !completedIds.has(s.id) && isStepUnlocked(s.id, completedIds, startingLevel));
+          // Priority 2: step right after the most recently completed one
+          const completedList: { step_id: string; completed_at: string }[] = trilha.completed ?? [];
+          let nextStep: TrailStep | undefined;
+          if (completedList.length > 0) {
+            // Sort by completed_at descending to find most recently completed
+            const sorted = [...completedList].sort((a, b) => b.completed_at.localeCompare(a.completed_at));
+            const lastCompletedId = sorted[0].step_id;
+            const lastIdx = TRAIL_STEPS.findIndex((s) => s.id === lastCompletedId);
+            // Walk forward from that position to find next incomplete unlocked step
+            for (let i = lastIdx + 1; i < TRAIL_STEPS.length; i++) {
+              const s = TRAIL_STEPS[i];
+              if (!completedIds.has(s.id) && isStepUnlocked(s.id, completedIds, startingLevel)) {
+                nextStep = s;
+                break;
+              }
+            }
+          }
+          // Fallback: first unlocked incomplete step (for users who haven't completed anything)
+          if (!nextStep) nextStep = TRAIL_STEPS.find((s) => !completedIds.has(s.id) && isStepUnlocked(s.id, completedIds, startingLevel));
           if (nextStep) setTrilhaCta({ type: "next", step: nextStep });
         }).catch(() => {});
       }
