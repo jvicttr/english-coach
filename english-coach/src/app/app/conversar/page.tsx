@@ -121,12 +121,12 @@ export default function Home() {
     try {
       localStorage.setItem(`trilhaContinue_${trilhaStep.id}`, JSON.stringify({ messages, msgCount: trilhaMsgCount }));
     } catch {}
-    // Supabase for cross-device sync
+    // Supabase for cross-device sync (fire-and-forget)
     fetch("/api/trilha-session", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ stepId: trilhaStep.id, messages, msgCount: trilhaMsgCount, phase: trilhaPhase }),
-    }).then(r => r.json()).then(d => console.warn("[trilha-save-supabase]", trilhaStep.id, d)).catch(e => console.warn("[trilha-save-supabase] ERRO", e));
+    }).catch(() => {});
   }, [messages, trilhaStep, trilhaPhase, trilhaMsgCount]);
 
   // Also save on page unload (e.g., navigating via browser back or home button)
@@ -186,12 +186,11 @@ export default function Home() {
             try {
               const sessionRes = await fetch(`/api/trilha-session?stepId=${(step as TrailStep).id}`);
               const sessionData = await sessionRes.json();
-              console.warn("[trilha-load-supabase]", (step as TrailStep).id, sessionData);
               if (sessionData.session?.messages?.length > 0) {
                 savedMessages = sessionData.session.messages;
                 savedMsgCount = sessionData.session.msg_count ?? 0;
               }
-            } catch (e) { console.warn("[trilha-load-supabase] ERRO", e); }
+            } catch {}
             // 2. Fallback: localStorage (same-device cache)
             if (!savedMessages?.length) {
               try {
