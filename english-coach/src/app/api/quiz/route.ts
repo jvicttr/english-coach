@@ -116,21 +116,46 @@ export async function PATCH(req: NextRequest) {
   const { userId } = await auth();
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { sessionId, score, answers } = await req.json();
+  const { sessionId, score, answers, quiz: quizData, level } = await req.json();
+  const total: number = answers?.length ?? 5;
 
-  const { error: updateError } = await supabase
-    .from("quiz_results")
-    .update({ score, answers, completed_at: new Date().toISOString() })
-    .eq("id", sessionId)
-    .eq("user_id", userId);
+  if (sessionId) {
+    // Happy path: update existing row
+    const { error: updateError } = await supabase
+      .from("quiz_results")
+      .update({ score, answers, completed_at: new Date().toISOString() })
+      .eq("id", sessionId)
+      .eq("user_id", userId);
 
-  if (updateError) {
-    console.error("[quiz] update error:", updateError.message);
-    return NextResponse.json({ ok: false, error: updateError.message }, { status: 500 });
+    if (updateError) {
+      console.error("[quiz] update error:", updateError.message);
+      // Fall through to insert as last resort
+    } else {
+      await grantXP(userId, { type: "quiz", score, total }).catch(() => {});
+      return NextResponse.json({ ok: true });
+    }
   }
 
-  const total: number = answers?.length ?? 5;
-  await grantXP(userId, { type: "quiz", score, total }).catch(() => {});
+  // Fallback: no sessionId (POST insert failed) or update failed — save as complete row now
+  if (quizData) {
+    const { error: insertError } = await supabase
+      .from("quiz_results")
+      .insert({
+        user_id: userId,
+        title: quizData.title ?? "Quiz",
+        level: level || "intermediate",
+        questions: quizData.questions ?? [],
+        score,
+        answers,
+        completed_at: new Date().toISOString(),
+      });
 
+    if (insertError) {
+      console.error("[quiz] fallback insert error:", insertError.message);
+      return NextResponse.json({ ok: false, error: insertError.message }, { status: 500 });
+    }
+  }
+
+  await grantXP(userId, { type: "quiz", score, total }).catch(() => {});
   return NextResponse.json({ ok: true });
 }

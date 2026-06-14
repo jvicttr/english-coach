@@ -567,14 +567,18 @@ export default function Home() {
       }, 0);
       setScore(finalScore);
       setScreen("result");
-      // Save to Supabase
-      if (quizSessionId) {
-        await fetch("/api/quiz", {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ sessionId: quizSessionId, score: finalScore, answers }),
-        });
-      }
+      // Save to Supabase — always send quiz data so server can insert if sessionId is missing
+      await fetch("/api/quiz", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          sessionId: quizSessionId,
+          score: finalScore,
+          answers,
+          quiz: quiz ? { title: quiz.title, questions: quiz.questions } : null,
+          level,
+        }),
+      });
       // Trilha: quiz score is saved but step is only marked complete after chat2 (via finalizePractice)
       // Non-trilha: mark step complete immediately if score ≥70%
       if (trilhaStep && trilhaPhase !== "chat1" && finalScore / (quiz?.questions.length ?? 1) >= 0.7) {
