@@ -41,3 +41,20 @@ export async function POST(req: NextRequest) {
 
   return NextResponse.json({ ok: true });
 }
+
+export async function DELETE(req: NextRequest) {
+  const { userId } = await auth();
+  if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const { stepId } = await req.json();
+  const validStep = TRAIL_STEPS.find((s) => s.id === stepId);
+  if (!validStep) return NextResponse.json({ error: "Invalid step" }, { status: 400 });
+
+  await supabase
+    .from("learning_path_progress")
+    .delete()
+    .eq("user_id", userId)
+    .eq("step_id", stepId);
+
+  return NextResponse.json({ ok: true });
+}

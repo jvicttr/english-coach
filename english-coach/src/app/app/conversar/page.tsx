@@ -822,8 +822,8 @@ export default function Home() {
 
   async function finalizePractice() {
     if (!trilhaStep) return;
-    let savedScore = trilhaQuizScore?.score ?? score;
-    let savedTotal = trilhaQuizScore?.total ?? quiz?.questions.length ?? 5;
+    let savedScore: number = trilhaQuizScore?.score ?? 0;
+    let savedTotal: number = trilhaQuizScore?.total ?? 0;
     // Fallback: if state was lost (navigation/refresh), recover from localStorage
     if (!trilhaQuizScore) {
       try {

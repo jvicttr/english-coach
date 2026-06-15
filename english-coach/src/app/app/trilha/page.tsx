@@ -210,7 +210,7 @@ export default function TrilhaPage() {
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <p style={{ fontSize: "0.8rem", fontWeight: 700, color: state === "locked" ? "#333" : "#fff", margin: 0, lineHeight: 1.2 }}>{step.title}</p>
                             <p style={{ fontSize: "0.65rem", color: state === "completed" ? "#4ade8099" : state === "active" ? info.color + "99" : "#333", margin: "2px 0 0", lineHeight: 1.3 }}>
-                              {state === "completed" && stepProgress ? `✓ ${Math.round((stepProgress.score / stepProgress.total) * 100)}%` : state === "active" ? "Disponível" : "Bloqueado"}
+                              {state === "completed" && stepProgress && stepProgress.total > 0 && stepProgress.score > 0 ? `✓ ${Math.round((stepProgress.score / stepProgress.total) * 100)}%` : state === "completed" ? "✓ Concluída" : state === "active" ? "Disponível" : "Bloqueado"}
                             </p>
                           </div>
                         </button>
@@ -229,7 +229,7 @@ export default function TrilhaPage() {
                           {state === "completed" && stepProgress && (
                             <div style={{ marginBottom: 10, padding: "8px 12px", background: "rgba(74,222,128,.08)", border: "1px solid rgba(74,222,128,.2)", borderRadius: 10, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                               <span style={{ fontSize: "0.72rem", color: "#4ade80", fontWeight: 600 }}>✓ Concluída</span>
-                              <span style={{ fontSize: "0.72rem", color: "#4ade80", fontWeight: 700 }}>{stepProgress.score}/{stepProgress.total} no quiz</span>
+                              {stepProgress.total > 0 && stepProgress.score > 0 && <span style={{ fontSize: "0.72rem", color: "#4ade80", fontWeight: 700 }}>{stepProgress.score}/{stepProgress.total} no quiz</span>}
                             </div>
                           )}
                           {(() => {
@@ -248,7 +248,13 @@ export default function TrilhaPage() {
                                   </button>
                                 )}
                                 <button
-                                  onClick={() => startStep(step)}
+                                  onClick={async () => {
+                                    if (state === "completed") {
+                                      // Clear old score so refazer saves a fresh result
+                                      await fetch("/api/trilha", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ stepId: step.id }) });
+                                    }
+                                    startStep(step);
+                                  }}
                                   style={{ width: "100%", padding: "12px", background: state === "completed" ? "var(--dark2)" : info.color, color: state === "completed" ? "var(--gray)" : "#000", border: "none", borderRadius: 12, fontSize: "0.85rem", fontWeight: 800, cursor: "pointer" }}
                                 >
                                   {state === "completed" ? "↺ Refazer etapa" : hasSaved ? "▶ Continuar de onde parou" : "▶ Começar conversa"}
