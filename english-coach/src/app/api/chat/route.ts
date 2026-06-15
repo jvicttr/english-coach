@@ -154,10 +154,10 @@ export async function POST(req: NextRequest) {
     );
   } else {
     // Pro users: track daily activity for streak (fire-and-forget)
-    supabase.from("usage").upsert(
+    void Promise.resolve(supabase.from("usage").upsert(
       { user_id: userId, date: today, count: 1 },
       { onConflict: "user_id,date" }
-    ).then(() => {}).catch(() => {});
+    )).catch(() => {});
   }
 
   const { messages, level, topic, topicStart, roleplay, scenario, stepContext } = await req.json();
