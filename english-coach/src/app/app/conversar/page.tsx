@@ -188,23 +188,39 @@ export default function Home() {
           if (phase === "review") {
             setIsLoading(true);
             const stepId = (step as TrailStep).id;
-            // Load chat messages from Supabase
+            // 1. Load chat: try localStorage first, then Supabase as fallback
+            let chatLoaded = false;
             try {
-              const sessionRes = await fetch(`/api/trilha-session?stepId=${stepId}`);
-              const sessionData = await sessionRes.json();
-              if (sessionData.session?.messages?.length > 0) {
-                setMessages(sessionData.session.messages as Message[]);
+              const chatRaw = localStorage.getItem(`trilhaReview_chat_${stepId}`);
+              if (chatRaw) {
+                const parsed = JSON.parse(chatRaw);
+                if (parsed?.length > 0) { setMessages(parsed); chatLoaded = true; }
               }
             } catch {}
-            // Load flashcards and quiz from localStorage
+            if (!chatLoaded) {
+              try {
+                const sessionRes = await fetch(`/api/trilha-session?stepId=${stepId}`);
+                const sessionData = await sessionRes.json();
+                if (sessionData.session?.messages?.length > 0) {
+                  setMessages(sessionData.session.messages as Message[]);
+                  chatLoaded = true;
+                }
+              } catch {}
+            }
+            // 2. Load flashcards and quiz from localStorage
+            let hasFc = false;
+            let hasQuiz = false;
             try {
               const fcRaw = localStorage.getItem(`trilhaReview_fc_${stepId}`);
-              if (fcRaw) setReviewFlashcards(JSON.parse(fcRaw));
+              if (fcRaw) { setReviewFlashcards(JSON.parse(fcRaw)); hasFc = true; }
             } catch {}
             try {
               const qRaw = localStorage.getItem(`trilhaReview_quiz_${stepId}`);
-              if (qRaw) setReviewQuiz(JSON.parse(qRaw));
+              if (qRaw) { setReviewQuiz(JSON.parse(qRaw)); hasQuiz = true; }
             } catch {}
+            // 3. Auto-navigate to first section with data
+            if (!chatLoaded && hasFc) setReviewPhase("flashcards");
+            else if (!chatLoaded && hasQuiz) setReviewPhase("quiz");
             setIsLoading(false);
             return;
           }
@@ -735,6 +751,8 @@ export default function Home() {
     // Clear saved session — user completed chat1 and is moving forward
     try { localStorage.removeItem(`trilhaContinue_${trilhaStep.id}`); } catch {}
     fetch("/api/trilha-session", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ stepId: trilhaStep.id }) }).catch(() => {});
+    // Save conversation for review mode before deleting session
+    try { localStorage.setItem(`trilhaReview_chat_${trilhaStep.id}`, JSON.stringify(messages)); } catch {}
     setTrilhaChat1Messages(messages); // save chat1 messages for quiz generation later
     setScreen("loading-flashcards");
     try {
@@ -1687,6 +1705,17 @@ export default function Home() {
               ))}
             </div>
             <p className="text-xs" style={{ color: "var(--gray)" }}>Preparando sua aula de {topic.label.toLowerCase()}...</p>
+          </div>
+        )}
+
+        {/* ── Review mode: no chat saved ──────────────────── */}
+        {messages.length === 0 && trilhaPhase === "review" && !isLoading && (
+          <div className="flex flex-col items-center justify-center h-full text-center gap-3">
+            <div className="text-3xl">💬</div>
+            <p className="text-sm font-semibold text-white">Conversa não disponível</p>
+            <p className="text-xs max-w-xs" style={{ color: "var(--gray)" }}>
+              A conversa deste dispositivo não foi salva. Use os botões acima para ver os flashcards ou quiz.
+            </p>
           </div>
         )}
 
