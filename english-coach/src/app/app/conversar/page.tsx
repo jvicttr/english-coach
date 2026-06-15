@@ -224,7 +224,24 @@ export default function Home() {
               const c2Raw = localStorage.getItem(`trilhaReview_chat2_${stepId}`);
               if (c2Raw) { const parsed = JSON.parse(c2Raw); if (parsed?.length > 0) { setReviewChat2Messages(parsed); hasChat2 = true; } }
             } catch {}
-            // 3. Auto-navigate to first section with data
+            // 3. Fallback: fetch flashcards and quiz from Supabase if localStorage is missing
+            if (!hasFc || !hasQuiz) {
+              try {
+                const supaRes = await fetch(`/api/trilha-review?stepId=${stepId}`);
+                const supaData = await supaRes.json();
+                if (!hasFc && supaData.flashcards?.length > 0) {
+                  setReviewFlashcards(supaData.flashcards);
+                  hasFc = true;
+                  try { localStorage.setItem(`trilhaReview_fc_${stepId}`, JSON.stringify(supaData.flashcards)); } catch {}
+                }
+                if (!hasQuiz && supaData.quiz) {
+                  setReviewQuiz(supaData.quiz);
+                  hasQuiz = true;
+                  try { localStorage.setItem(`trilhaReview_quiz_${stepId}`, JSON.stringify(supaData.quiz)); } catch {}
+                }
+              } catch {}
+            }
+            // 4. Auto-navigate to first section with data
             if (!chatLoaded && hasFc) setReviewPhase("flashcards");
             else if (!chatLoaded && hasQuiz) setReviewPhase("quiz");
             else if (!chatLoaded && hasChat2) setReviewPhase("chat2");
@@ -710,8 +727,12 @@ export default function Home() {
       // Trilha: save quiz score for use in finalizePractice (startChat2 resets score/quiz state)
       if (trilhaStep && trilhaPhase === "chat1") {
         setTrilhaQuizScore({ score: finalScore, total: quiz?.questions.length ?? 0 });
-        // Save for review mode
-        try { localStorage.setItem(`trilhaReview_quiz_${trilhaStep.id}`, JSON.stringify({ quiz, answers: [...answers, ...(answers[answers.length - 1] !== null ? [] : [])], score: finalScore })); } catch {}
+        // Save for review mode (localStorage + link quiz session to step in Supabase)
+        const reviewQuizData = { quiz, answers: [...answers], score: finalScore };
+        try { localStorage.setItem(`trilhaReview_quiz_${trilhaStep.id}`, JSON.stringify(reviewQuizData)); } catch {}
+        if (quizSessionId) {
+          fetch("/api/trilha-review", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ stepId: trilhaStep.id, quizSessionId }) }).catch(() => {});
+        }
       }
       // Non-trilha: mark step complete immediately if score ≥70%
       if (trilhaStep && trilhaPhase !== "chat1" && finalScore / (quiz?.questions.length ?? 1) >= 0.7) {

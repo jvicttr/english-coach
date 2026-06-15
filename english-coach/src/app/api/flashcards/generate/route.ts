@@ -74,8 +74,10 @@ Return ONLY valid JSON, no markdown:
     return NextResponse.json({ cards: [], error: "generation_failed" }, { status: 500 });
   }
 
+  let savedPackId: string | null = null;
   if (cards.length > 0) {
     const packId = crypto.randomUUID();
+    savedPackId = packId;
     const resolvedPackName = packName ?? topic ?? "Conversa livre";
     const rows = cards.map((c) => ({
       user_id: userId,
@@ -111,5 +113,5 @@ Return ONLY valid JSON, no markdown:
     }
   }
 
-  return NextResponse.json({ cards });
+  return NextResponse.json({ cards, packId: savedPackId });
 }
