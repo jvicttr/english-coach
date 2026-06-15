@@ -252,7 +252,7 @@ export default function AppHome() {
               <div>
                 <p style={{ fontSize: "0.65rem", color: "var(--gray)", margin: 0, fontWeight: 600 }}>Sequência atual</p>
                 <p style={{ fontSize: "0.9rem", fontWeight: 800, color: "#fff", margin: 0 }}>
-                  {streak > 0 ? `${streak} dia${streak !== 1 ? "s" : ""} seguidos` : "Pratique hoje para começar!"}
+                  {streak > 0 ? `${streak} dia${streak !== 1 ? "s seguidos" : " seguido"}` : "Pratique hoje para começar!"}
                 </p>
               </div>
             </div>
