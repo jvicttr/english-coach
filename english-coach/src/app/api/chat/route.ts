@@ -132,8 +132,9 @@ export async function POST(req: NextRequest) {
   const isPro = sub?.plan === "pro";
   const savedLevel = sub?.level ?? null;
 
+  const today = new Date().toISOString().split("T")[0];
+
   if (!isPro) {
-    const today = new Date().toISOString().split("T")[0];
     const { data: row } = await supabase
       .from("usage")
       .select("count")
@@ -151,6 +152,12 @@ export async function POST(req: NextRequest) {
       { user_id: userId, date: today, count: currentCount + 1 },
       { onConflict: "user_id,date" }
     );
+  } else {
+    // Pro users: track daily activity for streak (fire-and-forget)
+    supabase.from("usage").upsert(
+      { user_id: userId, date: today, count: 1 },
+      { onConflict: "user_id,date" }
+    ).then(() => {}).catch(() => {});
   }
 
   const { messages, level, topic, topicStart, roleplay, scenario, stepContext } = await req.json();

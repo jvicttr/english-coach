@@ -64,6 +64,7 @@ function greeting(): string {
 export default function AppHome() {
   const router = useRouter();
   const [results, setResults] = useState<QuizResult[]>([]);
+  const [streakData, setStreakData] = useState<{ streak: number; weekDays: boolean[] } | null>(null);
   const [flashcardPending, setFlashcardPending] = useState(0);
   const [lastTopic, setLastTopic] = useState<TopicDef | null>(null);
   const [isPro, setIsPro] = useState<boolean | null>(null); // null = still loading
@@ -102,6 +103,7 @@ export default function AppHome() {
     // Fetch all in parallel but update state independently so each section
     // renders as soon as its own data arrives — no fetch blocks another.
     fetch("/api/quiz-history").then((r) => r.json()).then((d) => setResults(d.results ?? [])).catch(() => {});
+    fetch("/api/streak").then((r) => r.json()).then((d) => setStreakData(d)).catch(() => {});
     fetch("/api/flashcards").then((r) => r.json()).then((d) => setFlashcardPending(d.pending ?? 0)).catch(() => {});
     fetch("/api/me").then((r) => r.json()).then((d) => {
       setIsPro(d.plan === "pro");
@@ -153,7 +155,9 @@ export default function AppHome() {
     }).catch(() => {});
   }, []);
 
-  const { streak, weekDays } = calcStreak(results);
+  const { streak: quizStreak, weekDays: quizWeekDays } = calcStreak(results);
+  const streak = streakData?.streak ?? quizStreak;
+  const weekDays = streakData?.weekDays ?? quizWeekDays;
   const todayIdx = (new Date().getDay() + 6) % 7; // 0=Mon
 
   return (
