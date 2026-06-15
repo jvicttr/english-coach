@@ -42,36 +42,27 @@ export async function GET(req: NextRequest) {
     flashcards = allCards.filter((c) => c.pack_id === firstPackId);
   }
 
-  // Fetch quiz: find by completion date (same day as step, or most recent overall)
+  // Fetch quiz: busca dentro de uma janela de 3 dias antes até o momento de conclusão da etapa
+  // Isso cobre casos em que o quiz foi feito um dia antes de finalizar o chat2
   let quiz = null;
   if (completedAt) {
-    const day = completedAt.split("T")[0];
+    const endDate = new Date(completedAt);
+    const startDate = new Date(completedAt);
+    startDate.setDate(startDate.getDate() - 3);
     const { data } = await supabase
       .from("quiz_results")
       .select("title, questions, answers, score")
       .eq("user_id", userId)
       .not("score", "is", null)
       .not("answers", "is", null)
-      .gte("completed_at", `${day}T00:00:00`)
-      .lte("completed_at", `${day}T23:59:59`)
+      .gte("completed_at", startDate.toISOString())
+      .lte("completed_at", endDate.toISOString())
       .order("completed_at", { ascending: false })
       .limit(1)
       .single();
     quiz = data;
   }
-  // Fallback: most recent completed quiz
-  if (!quiz) {
-    const { data } = await supabase
-      .from("quiz_results")
-      .select("title, questions, answers, score")
-      .eq("user_id", userId)
-      .not("score", "is", null)
-      .not("answers", "is", null)
-      .order("completed_at", { ascending: false })
-      .limit(1)
-      .single();
-    quiz = data;
-  }
+  // Sem fallback global — melhor não mostrar nada do que mostrar o quiz errado
 
   return NextResponse.json({
     flashcards: flashcards ?? [],

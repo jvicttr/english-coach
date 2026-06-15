@@ -1358,7 +1358,7 @@ export default function Home() {
         <header className="w-full max-w-2xl mb-4 flex items-center justify-between gap-2" style={{ position: "relative" }}>
           <div className="flex items-center gap-2 shrink-0">
             <Image src="/favicon.png" alt="Fale Inglês JV" width={32} height={32} className="rounded-xl shrink-0" />
-            <span style={{ fontSize: "0.55rem", fontWeight: 800, color: "#000", background: "var(--yellow)", borderRadius: "50px", padding: "1px 6px", letterSpacing: "0.3px", lineHeight: 1.6 }}>4.5</span>
+            <span style={{ fontSize: "0.55rem", fontWeight: 800, color: "#000", background: "var(--yellow)", borderRadius: "50px", padding: "1px 6px", letterSpacing: "0.3px", lineHeight: 1.6 }}>4.6</span>
             <a href="/app" title="Início" style={{ background: "var(--dark2)", border: "1px solid #2a2a2a", borderRadius: "10px", height: "36px", width: 36, display: "flex", alignItems: "center", justifyContent: "center", textDecoration: "none", flexShrink: 0 }}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--gray)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9.5z"/>
