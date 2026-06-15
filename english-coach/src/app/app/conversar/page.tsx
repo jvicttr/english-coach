@@ -88,9 +88,10 @@ export default function Home() {
   const [trilhaFlashcards, setTrilhaFlashcards] = useState<TrilhaFlashcard[]>([]);
   const [trilhaQuizScore, setTrilhaQuizScore] = useState<{ score: number; total: number } | null>(null);
   // Review mode navigation
-  const [reviewPhase, setReviewPhase] = useState<"chat" | "flashcards" | "quiz">("chat");
+  const [reviewPhase, setReviewPhase] = useState<"chat" | "flashcards" | "quiz" | "chat2">("chat");
   const [reviewFlashcards, setReviewFlashcards] = useState<TrilhaFlashcard[]>([]);
   const [reviewQuiz, setReviewQuiz] = useState<{ quiz: Quiz; answers: (number | null)[]; score: number } | null>(null);
+  const [reviewChat2Messages, setReviewChat2Messages] = useState<Message[]>([]);
   const [reviewFcIndex, setReviewFcIndex] = useState(0);
   const [reviewFcFlipped, setReviewFcFlipped] = useState(false);
   const [fcIndex, setFcIndex] = useState(0);
@@ -207,9 +208,10 @@ export default function Home() {
                 }
               } catch {}
             }
-            // 2. Load flashcards and quiz from localStorage
+            // 2. Load flashcards, quiz and chat2 from localStorage
             let hasFc = false;
             let hasQuiz = false;
+            let hasChat2 = false;
             try {
               const fcRaw = localStorage.getItem(`trilhaReview_fc_${stepId}`);
               if (fcRaw) { setReviewFlashcards(JSON.parse(fcRaw)); hasFc = true; }
@@ -218,9 +220,14 @@ export default function Home() {
               const qRaw = localStorage.getItem(`trilhaReview_quiz_${stepId}`);
               if (qRaw) { setReviewQuiz(JSON.parse(qRaw)); hasQuiz = true; }
             } catch {}
+            try {
+              const c2Raw = localStorage.getItem(`trilhaReview_chat2_${stepId}`);
+              if (c2Raw) { const parsed = JSON.parse(c2Raw); if (parsed?.length > 0) { setReviewChat2Messages(parsed); hasChat2 = true; } }
+            } catch {}
             // 3. Auto-navigate to first section with data
             if (!chatLoaded && hasFc) setReviewPhase("flashcards");
             else if (!chatLoaded && hasQuiz) setReviewPhase("quiz");
+            else if (!chatLoaded && hasChat2) setReviewPhase("chat2");
             setIsLoading(false);
             return;
           }
@@ -853,6 +860,8 @@ export default function Home() {
         }
       } catch {}
     }
+    // Save chat2 messages for review mode
+    try { localStorage.setItem(`trilhaReview_chat2_${trilhaStep.id}`, JSON.stringify(messages)); } catch {}
     await fetch("/api/trilha", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -1577,9 +1586,9 @@ export default function Home() {
           <div className="flex items-center gap-1.5 text-xs" style={{ color: "var(--gray)" }}>
             {trilhaPhase === "review" ? (
               <>
-                {(["chat", "flashcards", "quiz"] as const).map((p, i) => {
-                  const label = ["1", "2", "3"][i];
-                  const hasData = p === "chat" ? messages.length > 0 : p === "flashcards" ? reviewFlashcards.length > 0 : !!reviewQuiz;
+                {(["chat", "flashcards", "quiz", "chat2"] as const).map((p, i) => {
+                  const label = ["1", "2", "3", "4"][i];
+                  const hasData = p === "chat" ? messages.length > 0 : p === "flashcards" ? reviewFlashcards.length > 0 : p === "quiz" ? !!reviewQuiz : reviewChat2Messages.length > 0;
                   const isActive = reviewPhase === p;
                   return (
                     <span key={p} style={{ display: "flex", alignItems: "center", gap: 4 }}>
@@ -1686,6 +1695,25 @@ export default function Home() {
                 );
               })}
             </>
+          )}
+        </div>
+      )}
+
+      {/* ── Review: Chat2 (prática de vocabulário) ──────────── */}
+      {trilhaPhase === "review" && reviewPhase === "chat2" && (
+        <div className="w-full max-w-2xl flex-1 min-h-0 mb-3 overflow-y-auto p-3 sm:p-4"
+          style={{ background: "var(--dark1)", border: "1px solid #1f1f1f", borderRadius: "var(--radius)" }}>
+          {reviewChat2Messages.length === 0 ? (
+            <div style={{ textAlign: "center", color: "var(--gray)", paddingTop: 40 }}>Prática não disponível neste dispositivo.</div>
+          ) : (
+            reviewChat2Messages.map((msg, i) => (
+              <div key={i} className={`mb-3 flex ${msg.role === "user" ? "justify-end" : "justify-start"} items-end gap-2`}>
+                {msg.role === "assistant" && <div style={{ width: 28, height: 28, borderRadius: "50%", background: "var(--yellow)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.75rem", flexShrink: 0 }}>🎓</div>}
+                <div style={{ maxWidth: "80%", padding: "10px 13px", borderRadius: msg.role === "user" ? "18px 18px 4px 18px" : "18px 18px 18px 4px", background: msg.role === "user" ? "var(--yellow)" : "var(--dark2)", color: msg.role === "user" ? "#000" : "#fff", fontSize: "0.85rem", lineHeight: 1.5 }}>
+                  {msg.content}
+                </div>
+              </div>
+            ))
           )}
         </div>
       )}
