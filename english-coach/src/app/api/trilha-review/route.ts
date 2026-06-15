@@ -1,4 +1,5 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { auth } from "@clerk/nextjs/server";
 import { TRAIL_STEPS } from "@/lib/trilha-steps";
@@ -18,13 +19,12 @@ export async function GET(req: NextRequest) {
   // Get step completion date from learning_path_progress
   const { data: progress } = await supabase
     .from("learning_path_progress")
-    .select("completed_at, quiz_session_id")
+    .select("completed_at")
     .eq("user_id", userId)
     .eq("step_id", stepId)
     .single();
 
   const completedAt = progress?.completed_at as string | undefined;
-  const quizSessionId = progress?.quiz_session_id as string | undefined;
 
   // Fetch flashcards by pack_name matching step title (most recent pack)
   const { data: allCards } = await supabase
@@ -42,18 +42,9 @@ export async function GET(req: NextRequest) {
     flashcards = allCards.filter((c) => c.pack_id === firstPackId);
   }
 
-  // Fetch quiz: prefer by quiz_session_id, else by completion date window
+  // Fetch quiz: find by completion date (same day as step, or most recent overall)
   let quiz = null;
-  if (quizSessionId) {
-    const { data } = await supabase
-      .from("quiz_results")
-      .select("title, questions, answers, score")
-      .eq("id", quizSessionId)
-      .eq("user_id", userId)
-      .single();
-    quiz = data;
-  } else if (completedAt) {
-    // Fallback: find quiz completed on the same day as the step
+  if (completedAt) {
     const day = completedAt.split("T")[0];
     const { data } = await supabase
       .from("quiz_results")
@@ -68,6 +59,19 @@ export async function GET(req: NextRequest) {
       .single();
     quiz = data;
   }
+  // Fallback: most recent completed quiz
+  if (!quiz) {
+    const { data } = await supabase
+      .from("quiz_results")
+      .select("title, questions, answers, score")
+      .eq("user_id", userId)
+      .not("score", "is", null)
+      .not("answers", "is", null)
+      .order("completed_at", { ascending: false })
+      .limit(1)
+      .single();
+    quiz = data;
+  }
 
   return NextResponse.json({
     flashcards: flashcards ?? [],
@@ -75,19 +79,3 @@ export async function GET(req: NextRequest) {
   });
 }
 
-// PATCH: save quiz_session_id to learning_path_progress for future lookups
-export async function PATCH(req: NextRequest) {
-  const { userId } = await auth();
-  if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-  const { stepId, quizSessionId } = await req.json();
-  if (!stepId || !quizSessionId) return NextResponse.json({ error: "Missing fields" }, { status: 400 });
-
-  await supabase
-    .from("learning_path_progress")
-    .update({ quiz_session_id: quizSessionId })
-    .eq("user_id", userId)
-    .eq("step_id", stepId);
-
-  return NextResponse.json({ ok: true });
-}

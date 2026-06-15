@@ -730,9 +730,6 @@ export default function Home() {
         // Save for review mode (localStorage + link quiz session to step in Supabase)
         const reviewQuizData = { quiz, answers: [...answers], score: finalScore };
         try { localStorage.setItem(`trilhaReview_quiz_${trilhaStep.id}`, JSON.stringify(reviewQuizData)); } catch {}
-        if (quizSessionId) {
-          fetch("/api/trilha-review", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ stepId: trilhaStep.id, quizSessionId }) }).catch(() => {});
-        }
       }
       // Non-trilha: mark step complete immediately if score ≥70%
       if (trilhaStep && trilhaPhase !== "chat1" && finalScore / (quiz?.questions.length ?? 1) >= 0.7) {
