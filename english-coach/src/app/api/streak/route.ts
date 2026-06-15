@@ -4,23 +4,24 @@ import { auth } from "@clerk/nextjs/server";
 
 const supabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SECRET_KEY!);
 
+const pad = (n: number) => String(n).padStart(2, "0");
+const fmt = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+
 export async function GET() {
   const { userId } = await auth();
   if (!userId) return NextResponse.json({ streak: 0, weekDays: [] });
 
-  const { data } = await supabase
-    .from("usage")
-    .select("date")
-    .eq("user_id", userId)
-    .order("date", { ascending: false })
-    .limit(60);
+  // Merge activity from usage table AND quiz_results (completed quizzes)
+  const [{ data: usageData }, { data: quizData }] = await Promise.all([
+    supabase.from("usage").select("date").eq("user_id", userId).order("date", { ascending: false }).limit(60),
+    supabase.from("quiz_results").select("created_at").eq("user_id", userId).not("score", "is", null).order("created_at", { ascending: false }).limit(100),
+  ]);
 
-  const dates = (data ?? []).map((r: { date: string }) => r.date);
-  const dateSet = new Set(dates);
+  const dateSet = new Set<string>();
+  for (const r of usageData ?? []) dateSet.add(r.date);
+  for (const r of quizData ?? []) dateSet.add((r.created_at as string).split("T")[0]);
 
   const today = new Date();
-  const pad = (n: number) => String(n).padStart(2, "0");
-  const fmt = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 
   // Streak: count consecutive days ending today or yesterday
   let streak = 0;
@@ -29,12 +30,14 @@ export async function GET() {
     streak++;
     check.setDate(check.getDate() - 1);
   }
-  // If today not practiced yet, also accept streak ending yesterday
+  // If today not practiced yet, accept streak ending yesterday
   if (streak === 0) {
-    check.setDate(check.getDate() - 1); // back to yesterday
-    while (dateSet.has(fmt(check))) {
+    const yest = new Date(today);
+    yest.setDate(today.getDate() - 1);
+    const check2 = new Date(yest);
+    while (dateSet.has(fmt(check2))) {
       streak++;
-      check.setDate(check.getDate() - 1);
+      check2.setDate(check2.getDate() - 1);
     }
   }
 

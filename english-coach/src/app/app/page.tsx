@@ -246,7 +246,7 @@ export default function AppHome() {
         </div>
 
         {/* ── Streak ─────────────────────────────────────────────────────────── */}
-        <div style={{ background: "var(--dark1)", border: "1px solid #1e1e1e", borderRadius: 16, padding: "12px 14px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <a href="/app/progresso" style={{ background: "var(--dark1)", border: "1px solid #1e1e1e", borderRadius: 16, padding: "12px 14px", display: "flex", alignItems: "center", justifyContent: "space-between", textDecoration: "none", cursor: "pointer" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
               <span style={{ fontSize: "1.4rem" }}>🔥</span>
               <div>
@@ -266,7 +266,7 @@ export default function AppHome() {
                 );
               })}
             </div>
-        </div>
+        </a>
 
         {/* ── XP & Tier ─────────────────────────────────────────────────────── */}
         {xpData && (
