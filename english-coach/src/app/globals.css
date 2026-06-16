@@ -83,6 +83,31 @@ body {
 }
 
 /* ═══════════════════════════════════════════
+   CLERK — forçar texto branco no UserProfile
+═══════════════════════════════════════════ */
+[data-clerk-component] *,
+.cl-userProfile-root *,
+.cl-profileSection *,
+.cl-profilePage *,
+.cl-rootBox * {
+  color: #ffffff !important;
+}
+.cl-profileSectionTitleText,
+.cl-profileSectionTitle,
+.cl-profileSectionContent__profile,
+.cl-profileSectionContent__emailAddresses,
+.cl-profileSectionContent__connectedAccounts,
+.cl-profileSectionContent__password,
+.cl-userPreviewMainIdentifier,
+.cl-userPreviewSecondaryIdentifier,
+.cl-accordionTriggerButton,
+.cl-navbarButton,
+.cl-menuItem,
+.cl-internal-b3fm57 {
+  color: #ffffff !important;
+}
+
+/* ═══════════════════════════════════════════
    LANDING PAGE
 ═══════════════════════════════════════════ */
 .landing { font-family: 'Inter', sans-serif; color: var(--white); background: var(--black); overflow-x: hidden; }
