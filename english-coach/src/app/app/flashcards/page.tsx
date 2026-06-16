@@ -17,6 +17,8 @@ type Flashcard = {
   pack_name: string | null;
   next_review: string;
   created_at: string;
+  ease_factor: number | null;
+  interval: number | null;
 };
 
 type Pack = {
