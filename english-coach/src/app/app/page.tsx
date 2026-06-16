@@ -8,51 +8,12 @@ import OnboardingTour from "@/components/OnboardingTour";
 import LevelSelect from "@/components/LevelSelect";
 import { TRAIL_STEPS, isStepUnlocked, getStartingLevel, type TrailStep } from "@/lib/trilha-steps";
 
-type QuizResult = {
-  id: string;
-  score: number | null;
-  questions: unknown[];
-  created_at: string;
-};
-
 type TierInfo = { id: string; label: string; emoji: string; color: string; min: number; max: number };
 type XpData = { totalXp: number; tier: TierInfo; nextTier: TierInfo | null; badges: { earned: boolean }[] };
 
 type TopicDef = { id: string; emoji: string; label: string; desc: string; color: string };
 
 const DAYS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
-
-function calcStreak(results: QuizResult[]): { streak: number; weekDays: boolean[] } {
-  const completed = results.filter((r) => r.score != null);
-  const today = new Date();
-
-  // Week row — Mon to Sun
-  const monday = new Date(today);
-  monday.setDate(today.getDate() - ((today.getDay() + 6) % 7));
-  const weekDays = Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(monday);
-    d.setDate(monday.getDate() + i);
-    return completed.some((r) => new Date(r.created_at).toLocaleDateString("pt-BR") === d.toLocaleDateString("pt-BR"));
-  });
-
-  if (completed.length === 0) return { streak: 0, weekDays };
-  const days = [...new Set(completed.map((r) => new Date(r.created_at).toLocaleDateString("pt-BR")))].sort((a, b) => {
-    const [da, ma, ya] = a.split("/").map(Number);
-    const [db, mb, yb] = b.split("/").map(Number);
-    return new Date(yb, mb - 1, db).getTime() - new Date(ya, ma - 1, da).getTime();
-  });
-  const todayStr = today.toLocaleDateString("pt-BR");
-  const yesterdayStr = new Date(Date.now() - 86400000).toLocaleDateString("pt-BR");
-  if (days[0] !== todayStr && days[0] !== yesterdayStr) return { streak: 0, weekDays };
-  let streak = 1;
-  for (let i = 1; i < days.length; i++) {
-    const [dp, mp, yp] = days[i - 1].split("/").map(Number);
-    const [dc, mc, yc] = days[i].split("/").map(Number);
-    if (Math.round((new Date(yp, mp - 1, dp).getTime() - new Date(yc, mc - 1, dc).getTime()) / 86400000) === 1) streak++;
-    else break;
-  }
-  return { streak, weekDays };
-}
 
 function greeting(): string {
   const h = new Date().getHours();
@@ -63,7 +24,6 @@ function greeting(): string {
 
 export default function AppHome() {
   const router = useRouter();
-  const [results, setResults] = useState<QuizResult[]>([]);
   const [streakData, setStreakData] = useState<{ streak: number; weekDays: boolean[] } | null>(null);
   const [flashcardPending, setFlashcardPending] = useState(0);
   const [lastTopic, setLastTopic] = useState<TopicDef | null>(null);
@@ -100,64 +60,42 @@ export default function AppHome() {
     const saved = localStorage.getItem("lastTopic");
     if (saved) { try { setLastTopic(JSON.parse(saved)); } catch {} }
 
-    // Fetch all in parallel but update state independently so each section
-    // renders as soon as its own data arrives — no fetch blocks another.
-    fetch("/api/quiz-history").then((r) => r.json()).then((d) => setResults(d.results ?? [])).catch(() => {});
-    fetch("/api/streak").then((r) => r.json()).then((d) => setStreakData(d)).catch(() => {});
-    fetch("/api/flashcards").then((r) => r.json()).then((d) => setFlashcardPending(d.pending ?? 0)).catch(() => {});
-    fetch("/api/me").then((r) => r.json()).then((d) => {
-      setIsPro(d.plan === "pro");
+    fetch("/api/home").then((r) => r.json()).then((d) => {
       setUserName(d.firstName ?? "");
-      if (d.plan === "pro") {
-        // Load trilha state to build smart CTA card
-        fetch("/api/trilha").then((r) => r.json()).then((trilha) => {
-          const completedIds = new Set<string>((trilha.completed ?? []).map((c: { step_id: string }) => c.step_id));
-          const activeSessions: string[] = trilha.activeSessions ?? [];
-          const levelMap: Record<string, string> = { iniciante: "beginner", basico: "basic", intermediario: "intermediate", avancado: "advanced" };
-          const userLevel = d.englishLevel ? (levelMap[d.englishLevel] ?? "beginner") : "beginner";
-          const startingLevel = getStartingLevel(userLevel);
-          // Priority 1: step with active in-progress session
-          if (activeSessions.length > 0) {
-            const step = TRAIL_STEPS.find((s) => s.id === activeSessions[0]);
-            if (step) { setTrilhaCta({ type: "continue", step }); return; }
-          }
-          // Priority 2: step right after the most recently completed one
-          const completedList: { step_id: string; completed_at: string }[] = trilha.completed ?? [];
-          let nextStep: TrailStep | undefined;
-          if (completedList.length > 0) {
-            // Sort by completed_at descending to find most recently completed
-            const sorted = [...completedList].sort((a, b) => b.completed_at.localeCompare(a.completed_at));
-            const lastCompletedId = sorted[0].step_id;
-            const lastIdx = TRAIL_STEPS.findIndex((s) => s.id === lastCompletedId);
-            // Walk forward from that position to find next incomplete unlocked step
-            for (let i = lastIdx + 1; i < TRAIL_STEPS.length; i++) {
-              const s = TRAIL_STEPS[i];
-              if (!completedIds.has(s.id) && isStepUnlocked(s.id, completedIds, startingLevel)) {
-                nextStep = s;
-                break;
-              }
-            }
-          }
-          // Fallback: first unlocked incomplete step (for users who haven't completed anything)
-          if (!nextStep) nextStep = TRAIL_STEPS.find((s) => !completedIds.has(s.id) && isStepUnlocked(s.id, completedIds, startingLevel));
-          if (nextStep) setTrilhaCta({ type: "next", step: nextStep });
-          else setTrilhaCta(null);
-        }).catch(() => { setTrilhaCta(null); });
-      } else {
-        setTrilhaCta(null);
+      setIsPro(d.isPro ?? false);
+      setStreakData({ streak: d.streak ?? 0, weekDays: d.weekDays ?? [] });
+      setFlashcardPending(d.flashcardPending ?? 0);
+      if (!d.hasLevel) setShowLevelSelect(true);
+      if (d.totalXp !== undefined) setXpData({ totalXp: d.totalXp, tier: d.tier, nextTier: d.nextTier, badges: d.badges });
+
+      // Compute trilha CTA from returned data
+      const completedList: { step_id: string; completed_at: string }[] = d.trilhaCompleted ?? [];
+      const completedIds = new Set<string>(completedList.map((c) => c.step_id));
+      const activeSessions: string[] = d.trilhaActiveSessions ?? [];
+      const levelMap: Record<string, string> = { iniciante: "beginner", basico: "basic", intermediario: "intermediate", avancado: "advanced" };
+      const userLevel = d.englishLevel ? (levelMap[d.englishLevel] ?? "beginner") : "beginner";
+      const startingLevel = getStartingLevel(userLevel);
+
+      if (activeSessions.length > 0) {
+        const step = TRAIL_STEPS.find((s) => s.id === activeSessions[0]);
+        if (step) { setTrilhaCta({ type: "continue", step }); return; }
       }
-    }).catch(() => { setTrilhaCta(null); });
-    fetch("/api/profile").then((r) => r.json()).then((d) => {
-      if (!d.level) setShowLevelSelect(true);
-    }).catch(() => {});
-    fetch("/api/conquistas").then((r) => r.json()).then((xp) => {
-      if (xp?.totalXp !== undefined) setXpData(xp);
-    }).catch(() => {});
+      let nextStep: TrailStep | undefined;
+      if (completedList.length > 0) {
+        const sorted = [...completedList].sort((a, b) => b.completed_at.localeCompare(a.completed_at));
+        const lastIdx = TRAIL_STEPS.findIndex((s) => s.id === sorted[0].step_id);
+        for (let i = lastIdx + 1; i < TRAIL_STEPS.length; i++) {
+          const s = TRAIL_STEPS[i];
+          if (!completedIds.has(s.id) && isStepUnlocked(s.id, completedIds, startingLevel)) { nextStep = s; break; }
+        }
+      }
+      if (!nextStep) nextStep = TRAIL_STEPS.find((s) => !completedIds.has(s.id) && isStepUnlocked(s.id, completedIds, startingLevel));
+      setTrilhaCta(nextStep ? { type: "next", step: nextStep } : null);
+    }).catch(() => { setIsPro(false); setTrilhaCta(null); });
   }, []);
 
-  const { streak: quizStreak, weekDays: quizWeekDays } = calcStreak(results);
-  const streak = streakData?.streak ?? quizStreak;
-  const weekDays = streakData?.weekDays ?? quizWeekDays;
+  const streak = streakData?.streak ?? 0;
+  const weekDays = streakData?.weekDays ?? [];
   const todayIdx = (new Date().getDay() + 6) % 7; // 0=Mon
 
   return (
@@ -412,7 +350,7 @@ export default function AppHome() {
         )}
 
         {/* ── No-content CTA ─────────────────────────────────────────────────── */}
-        {isPro !== null && results.length === 0 && !lastTopic && (
+        {isPro !== null && streak === 0 && !lastTopic && (
           <div style={{ background: "var(--dark1)", border: "1px solid #1e1e1e", borderRadius: 16, padding: "20px 16px", textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
             <div style={{ fontSize: "2rem" }}>👋</div>
             <p style={{ fontWeight: 700, color: "#fff", fontSize: "0.95rem", margin: 0 }}>Boas-vindas ao JV IA!</p>

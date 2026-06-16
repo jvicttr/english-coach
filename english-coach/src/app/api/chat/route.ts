@@ -323,14 +323,16 @@ Never assume a topic. Follow the student's lead completely.`;
   });
 
   const raw = response.content[0].type === "text" ? response.content[0].text.trim() : "";
-  const levelMatch = raw.match(/\[LEVEL:(beginner|intermediate|advanced)\]/);
+  // Strip [BR:word] tags first so nested brackets don't break [PT:...] and [FIX|...] parsing
+  const rawNoBR = raw.replace(/\[BR:([^\]]+)\]/g, "$1");
+  const levelMatch = rawNoBR.match(/\[LEVEL:(beginner|intermediate|advanced)\]/);
   const detectedLevel = levelMatch?.[1] ?? null;
-  const translationMatch = raw.match(/\[PT:\s*([\s\S]*?)(?:\]|\[LEVEL:|$)/);
+  const translationMatch = rawNoBR.match(/\[PT:\s*([\s\S]*?)(?:\]|\[LEVEL:|$)/);
   const translation = translationMatch?.[1]?.trim() ?? null;
   const fixRegex = /\[FIX\|([^|]+)\|([^|]+)\|([^|]+)\|([^|]+)\|([^\]]+)\]/g;
   const corrections: { wrong: string; right: string; phonetic: string; wrongSentence: string; rightSentence: string }[] = [];
   let fixMatch;
-  while ((fixMatch = fixRegex.exec(raw)) !== null) {
+  while ((fixMatch = fixRegex.exec(rawNoBR)) !== null) {
     corrections.push({
       wrong: fixMatch[1].trim(),
       right: fixMatch[2].trim(),
@@ -340,11 +342,10 @@ Never assume a topic. Follow the student's lead completely.`;
     });
   }
 
-  const reply = raw
+  const reply = rawNoBR
     .replace(/\[LEVEL:(beginner|intermediate|advanced)\]/, "")
     .replace(/\[PT:[\s\S]*?\]/, "")
     .replace(/\[FIX\|(?:[^|]*\|){4}[^\]]*\]/g, "")
-    .replace(/\[BR:([^\]]+)\]/g, "$1")
     .trim();
 
   // Fallback: if AI forgot [PT:...], generate translation with a quick call
