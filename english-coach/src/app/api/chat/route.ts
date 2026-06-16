@@ -362,6 +362,13 @@ Never assume a topic. Follow the student's lead completely.`;
     } catch { /* ignore */ }
   }
 
+  // Persist detected level to DB so it survives across devices/sessions
+  if (detectedLevel && detectedLevel !== savedLevel) {
+    void Promise.resolve(
+      supabase.from("subscriptions").upsert({ user_id: userId, level: detectedLevel }, { onConflict: "user_id" })
+    ).catch(() => {});
+  }
+
   // Grant XP for the user's message (fire and forget, non-blocking)
   if (!topicStart) {
     await grantXP(userId, { type: "message", detectedLevel: detectedLevel ?? undefined }).catch(() => {});
