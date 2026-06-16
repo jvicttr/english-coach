@@ -54,6 +54,18 @@ const TOPICS: TopicDef[] = [
   { id: "daily",   emoji: "🏠", label: "Rotina & Cotidiano",   desc: "Manhã, trabalho, fim de semana",       color: "#fbbf24" },
 ];
 
+// Re-injects [FIX|...] tags into assistant messages so the AI sees its own
+// past corrections in history and doesn't repeat them.
+function withFixTags(msgs: Message[]): { role: string; content: string }[] {
+  return msgs.map((m) => {
+    if (m.role !== "assistant" || !m.corrections?.length) return { role: m.role, content: m.content };
+    const tags = m.corrections
+      .map((c) => `[FIX|${c.wrong}|${c.right}|${c.phonetic}|${c.wrongSentence ?? ""}|${c.rightSentence ?? ""}]`)
+      .join("\n");
+    return { role: m.role, content: `${m.content}\n${tags}` };
+  });
+}
+
 const LEVEL_LABEL: Record<NonNullable<Level>, string> = {
   beginner: "Básico",
   intermediate: "Intermediário",
@@ -614,7 +626,7 @@ export default function Home() {
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: updatedMessages, level, topic: topic?.id ?? "free", stepContext: activeStepContext }),
+        body: JSON.stringify({ messages: withFixTags(updatedMessages), level, topic: topic?.id ?? "free", stepContext: activeStepContext }),
       });
       if (!res.ok) {
         setMessages((prev) => [...prev, { role: "assistant", content: "Ops, tive um problema. Tente enviar de novo!" }]);
