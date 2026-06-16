@@ -779,7 +779,7 @@ export default function RolePlay() {
           : <span style={{ color: "var(--gray2)", opacity: 0.6 }}>● Toque em 🎙️ para gravar sua voz</span>}
       </div>
 
-      <BottomNav />
+      <BottomNavFlex />
     </div>
   );
 }
