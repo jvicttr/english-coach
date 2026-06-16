@@ -112,16 +112,19 @@ export default function Progresso() {
   const [showAllFlashcards, setShowAllFlashcards] = useState(false);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [realStreak, setRealStreak] = useState<number | null>(null);
 
   useEffect(() => {
     Promise.all([
       fetch("/api/quiz-history").then((r) => r.json()),
       fetch("/api/flashcards").then((r) => (r.ok ? r.json() : { cards: [] })),
       fetch("/api/trilha").then((r) => r.json()),
-    ]).then(([quizData, fcData, trilhaData]) => {
+      fetch("/api/streak").then((r) => r.json()),
+    ]).then(([quizData, fcData, trilhaData, streakData]) => {
       setResults(quizData.results ?? []);
       setFlashcards(fcData.cards ?? []);
       setTrilhaProgress(trilhaData.completed ?? []);
+      setRealStreak(streakData.streak ?? 0);
       setLoading(false);
     });
   }, []);
@@ -140,7 +143,7 @@ export default function Progresso() {
 
   const completed = results.filter((r) => r.score != null && r.questions?.length);
   const scores = completed.map((r) => Math.round((r.score! / r.questions.length) * 100));
-  const streak = calcStreak(results);
+  const streak = realStreak ?? calcStreak(results);
   const avgScore = scores.length ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : 0;
   const bestScore = scores.length ? Math.max(...scores) : null;
   const last10 = [...scores].reverse().slice(-10);
