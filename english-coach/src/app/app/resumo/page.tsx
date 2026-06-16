@@ -23,7 +23,6 @@ export default function ResumoAula() {
   const [lessonContext, setLessonContext] = useState<string | null>(null);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [expandedTranslations, setExpandedTranslations] = useState<Set<number>>(new Set());
   const bottomRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -153,10 +152,6 @@ export default function ResumoAula() {
       }
       setScreen("result");
     }
-  }
-
-  function toggleTranslation(i: number) {
-    setExpandedTranslations((prev) => { const next = new Set(prev); next.has(i) ? next.delete(i) : next.add(i); return next; });
   }
 
   function resetChat() {
@@ -392,14 +387,6 @@ export default function ResumoAula() {
             )}
             <div style={{ maxWidth: "80%", padding: "10px 13px", borderRadius: msg.role === "user" ? "18px 18px 4px 18px" : "18px 18px 18px 4px", background: msg.role === "user" ? "var(--yellow)" : "var(--dark2)", color: msg.role === "user" ? "#000" : "#fff", fontSize: ".875rem", lineHeight: 1.6 }}>
               <p style={{ whiteSpace: "pre-wrap" }}>{msg.content}</p>
-              {msg.role === "assistant" && msg.translation && msg.translation !== "—" && (
-                <div style={{ marginTop: 8, borderTop: "1px solid #3a3a3a", paddingTop: 6 }}>
-                  <button onClick={() => toggleTranslation(i)} style={{ background: "transparent", border: "none", color: "var(--gray)", fontSize: ".72rem", cursor: "pointer", padding: 0 }}>
-                    {expandedTranslations.has(i) ? "▲ Ocultar tradução" : "▼ Ver tradução"}
-                  </button>
-                  {expandedTranslations.has(i) && <p style={{ color: "var(--gray)", fontSize: ".78rem", marginTop: 4, fontStyle: "italic", lineHeight: 1.5 }}>{msg.translation}</p>}
-                </div>
-              )}
             </div>
           </div>
         ))}
