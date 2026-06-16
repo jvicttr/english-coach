@@ -11,19 +11,46 @@ const supabase = createClient(
   process.env.SUPABASE_SECRET_KEY!
 );
 
-const QUIZ_PROMPT = `You are an English teacher creating a short review quiz based on a real conversation a student just had.
+const LEVEL_QUIZ_GUIDE: Record<string, string> = {
+  beginner: `The student is a BEGINNER. Quiz rules for this level:
+- Focus on basic vocabulary and simple present/past tense only
+- Questions should test recognition ("Which word means...?", "Complete the sentence: I ___ to school")
+- Options must use only high-frequency everyday words — no idioms, no phrasal verbs
+- Wrong options should be plausible but clearly different (avoid trick questions)
+- Keep questions short and direct — no complex grammar in the question itself
+- Prefer translation-type questions ("Como se diz X em inglês?") and simple gap-fills`,
 
-Analyze the conversation and create exactly 5 multiple-choice questions that review:
-- Grammar structures the student used (correctly or incorrectly)
-- Vocabulary that appeared in the conversation
-- Phrases or expressions from the conversation
+  intermediate: `The student is INTERMEDIATE. Quiz rules for this level:
+- Mix grammar questions (tense choice, prepositions, articles) with vocabulary and phrases
+- Include 1-2 phrasal verb or common expression questions from the conversation
+- Wrong options should be plausibly confusing (e.g. "go" vs "went" vs "gone" vs "going")
+- Questions can test understanding of context ("In this sentence, 'get along' means...?")
+- Avoid trivial single-word questions — prefer phrases and expressions
+- Difficulty: challenging but achievable for someone who communicates clearly despite some errors`,
 
-Rules:
-- Each question must be directly related to something from THIS conversation
+  advanced: `The student is ADVANCED. Quiz rules for this level:
+- Focus on nuance, idioms, collocations, and sophisticated vocabulary
+- Test subtle grammar (conditionals, perfect aspects, passive voice usage, modal nuances)
+- Wrong options must be near-synonyms or plausible near-correct forms (no obvious distractors)
+- Include at least 2 questions about idiomatic expressions or register (formal vs casual)
+- Can test word choice precision: "Which word fits best here and why?"
+- Difficulty: would challenge a near-native speaker — no easy questions`,
+};
+
+function buildQuizPrompt(level: string): string {
+  const guide = LEVEL_QUIZ_GUIDE[level] ?? LEVEL_QUIZ_GUIDE.intermediate;
+  return `You are an English teacher creating a short review quiz based on a real conversation a student just had.
+
+Analyze the conversation and create exactly 5 multiple-choice questions that review grammar, vocabulary, and expressions from this specific conversation.
+
+${guide}
+
+Rules for all levels:
+- Each question must be directly tied to something from THIS conversation — no generic grammar drills
 - 4 options each (A, B, C, D), only one correct
 - Questions in Portuguese, options in English
-- Difficulty should match the student's level
-- Focus on the most useful/common structures
+- Never repeat the same structure across all 5 questions — vary question types
+- The explanation must clearly say WHY the correct answer is right (in pt-BR)
 
 Return ONLY valid JSON in this exact format, no markdown, no explanation:
 {
@@ -37,6 +64,7 @@ Return ONLY valid JSON in this exact format, no markdown, no explanation:
     }
   ]
 }`;
+}
 
 export async function POST(req: NextRequest) {
   const { userId } = await auth();
@@ -49,14 +77,15 @@ export async function POST(req: NextRequest) {
     .map((m: { role: string; content: string }) => `${m.role === "user" ? "Student" : "Coach"}: ${m.content}`)
     .join("\n");
 
+  const resolvedLevel = level || "intermediate";
   const response = await client.messages.create({
     model: "claude-sonnet-4-6",
     max_tokens: 1200,
-    system: QUIZ_PROMPT,
+    system: buildQuizPrompt(resolvedLevel),
     messages: [
       {
         role: "user",
-        content: `Student level: ${level || "intermediate"}${scenario ? `\nScenario: ${scenario}` : ""}\n\nConversation:\n${conversationText}`,
+        content: `Student level: ${resolvedLevel}${scenario ? `\nScenario: ${scenario}` : ""}\n\nConversation:\n${conversationText}`,
       },
     ],
   });

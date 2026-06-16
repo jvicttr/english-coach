@@ -291,7 +291,19 @@ Important roleplay rules:
 ${topicStart ? `- Start the conversation: open with the first line a ${sc.role} would say in this situation.` : ""}
 
 Level adaptation for this roleplay (student is ${effectiveLevel}):
-${effectiveLevel === "beginner" ? "- Speak very slowly and simply. Use only the most common words. Repeat or rephrase anything complex. Be extra patient and encouraging. If the student makes a basic error, gently model the correct form in your reply." : ""}${effectiveLevel === "intermediate" ? "- Use natural everyday language at a moderate pace. Include some phrasal verbs and common expressions. Leave room for the student to struggle a little — that's learning." : ""}${effectiveLevel === "advanced" ? "- Speak naturally at full pace. Use idioms, contractions, and colloquialisms freely. React with nuance. Challenge the student with more complex vocabulary when the moment fits." : ""}`;
+${effectiveLevel === "beginner" ? `- Use only very short sentences (max 8 words). Stick to the 500 most common English words — no idioms, no phrasal verbs, no complex structures.
+- Speak slowly: pause after key information (name, floor, price) so the student can process.
+- If the student says something unclear, ask one simple clarifying question ("Sorry, what name?").
+- Model the correct form naturally if they make a basic error: if they say "I want room", you respond "Of course! One room for you…" (echoing the correct version without pointing it out).
+- Celebrate small wins with brief warmth: "Perfect!", "Great!" — but keep replies short.` : ""}${effectiveLevel === "intermediate" ? `- Use natural conversational language with moderate complexity. Short to medium sentences.
+- Include occasional phrasal verbs and common expressions ("fill out this form", "let me check that for you", "coming right up").
+- Introduce one slightly unfamiliar word per exchange and use context to make it clear.
+- If the student struggles to express something, acknowledge the meaning and move on — don't over-correct.
+- Add mild realistic complications (a form to fill out, a question about preferences, a brief hold) to push them to produce more language.` : ""}${effectiveLevel === "advanced" ? `- Speak at full native pace. Use contractions, elision, natural fillers ("Let me see…", "Right, so…"), idioms, and colloquialisms freely.
+- Introduce nuance and subtext: be politely firm when declining, subtly upsell when appropriate, express mild frustration professionally.
+- Use complex sentence structures: conditionals, passive voice, reported speech ("I've been told that…", "That would've been included if…").
+- Push the student by reacting to their word choices: if they say something imprecise, naturally use the more precise term in your reply.
+- Add professional complications that require the student to negotiate or problem-solve in English.` : ""}`;
   } else if (topic === "free" || !topic) {
     if (stepContext) {
       systemFull += `\n\nLEARNING PATH STEP — Guided conversation.
