@@ -11,9 +11,12 @@ export async function GET() {
   const { userId } = await auth();
   if (!userId) return NextResponse.json({ plan: "free" });
 
-  const [sub, user] = await Promise.all([
+  const today = new Date().toISOString().split("T")[0];
+
+  const [sub, user, usage] = await Promise.all([
     supabase.from("subscriptions").select("plan, level, english_level").eq("user_id", userId).single(),
     currentUser(),
+    supabase.from("usage").select("count").eq("user_id", userId).eq("date", today).single(),
   ]);
 
   return NextResponse.json({
@@ -21,5 +24,6 @@ export async function GET() {
     level: sub.data?.level ?? null,
     englishLevel: sub.data?.english_level ?? null,
     firstName: user?.firstName ?? null,
+    messagesUsed: usage.data?.count ?? 0,
   });
 }

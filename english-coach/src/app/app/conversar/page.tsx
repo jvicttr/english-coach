@@ -86,6 +86,7 @@ export default function Home() {
   const [micError, setMicError] = useState("");
   const [pendingSpeak, setPendingSpeak] = useState<string | null>(null);
   const [limitReached, setLimitReached] = useState(false);
+  const [messagesUsed, setMessagesUsed] = useState(0);
   const [isPro, setIsPro] = useState(() => {
     if (typeof window === "undefined") return false;
     return localStorage.getItem("userPlan") === "pro";
@@ -198,6 +199,7 @@ export default function Home() {
       const pro = d.plan === "pro";
       setIsPro(pro);
       localStorage.setItem("userPlan", d.plan ?? "free");
+      if (!pro && typeof d.messagesUsed === "number") setMessagesUsed(d.messagesUsed);
       // Load saved level
       if (d.level) {
         setLevel(d.level as Level);
@@ -663,6 +665,7 @@ export default function Home() {
       }
       const data = await res.json();
       if (data.limitReached) { setLimitReached(true); setMessages((prev) => prev.slice(0, -1)); return; }
+      if (!isPro) setMessagesUsed((n) => Math.min(n + 1, 5));
       if (!data.reply) {
         setMessages((prev) => [...prev, { role: "assistant", content: "Ops, não consegui responder. Tente de novo!" }]);
         return;
@@ -2089,7 +2092,18 @@ export default function Home() {
         </div>
       )}
 
-      {/* ── Banner instalar PWA ───────────────────────────── */}
+      {/* ── Contador free tier ────────────────────────────── */}
+      {!isPro && !limitReached && messagesUsed > 0 && (
+        <div style={{ width: "100%", maxWidth: 672, display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 6, marginBottom: 4, paddingRight: 2 }}>
+          {[1,2,3,4,5].map((i) => (
+            <div key={i} style={{ width: 28, height: 5, borderRadius: 3, background: i <= messagesUsed ? (messagesUsed >= 4 ? "#f87171" : messagesUsed >= 3 ? "var(--yellow)" : "#4ade80") : "rgba(255,255,255,0.1)", transition: "background 0.3s" }} />
+          ))}
+          <span style={{ fontSize: "0.68rem", fontWeight: 700, color: messagesUsed >= 4 ? "#f87171" : "var(--gray2)", marginLeft: 4 }}>
+            {5 - messagesUsed} msg{5 - messagesUsed !== 1 ? "s" : ""} restante{5 - messagesUsed !== 1 ? "s" : ""}
+          </span>
+        </div>
+      )}
+
       {/* ── Limite diário ─────────────────────────────────── */}
       {limitReached && (
         <div className="w-full max-w-2xl mb-3 px-4 py-5 flex flex-col items-center gap-3 text-center" style={{ background: "var(--dark2)", border: "1px solid rgba(245,200,0,.3)", borderRadius: "var(--radius)" }}>
