@@ -27,6 +27,17 @@ export default function OneSignalInit() {
             },
           });
         }
+        // Save player ID after prompt (whether accepted or not, ID is available)
+        try {
+          const playerId = await OneSignal.User?.PushSubscription?.id;
+          if (playerId) {
+            fetch("/api/onesignal/register", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ playerId }),
+            }).catch(() => {});
+          }
+        } catch { /* ignore */ }
       }, 5000);
     });
 

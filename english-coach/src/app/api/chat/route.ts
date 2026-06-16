@@ -288,7 +288,10 @@ Important roleplay rules:
 - Keep replies short and natural (1-3 sentences of dialogue), like a real conversation
 - Still output the [PT:...] translation, [LEVEL:...] tag, and [FIX|...] correction when applicable
 - If the student breaks character (asks a meta question), gently steer them back in character
-${topicStart ? `- Start the conversation: open with the first line a ${sc.role} would say in this situation.` : ""}`;
+${topicStart ? `- Start the conversation: open with the first line a ${sc.role} would say in this situation.` : ""}
+
+Level adaptation for this roleplay (student is ${effectiveLevel}):
+${effectiveLevel === "beginner" ? "- Speak very slowly and simply. Use only the most common words. Repeat or rephrase anything complex. Be extra patient and encouraging. If the student makes a basic error, gently model the correct form in your reply." : ""}${effectiveLevel === "intermediate" ? "- Use natural everyday language at a moderate pace. Include some phrasal verbs and common expressions. Leave room for the student to struggle a little — that's learning." : ""}${effectiveLevel === "advanced" ? "- Speak naturally at full pace. Use idioms, contractions, and colloquialisms freely. React with nuance. Challenge the student with more complex vocabulary when the moment fits." : ""}`;
   } else if (topic === "free" || !topic) {
     if (stepContext) {
       systemFull += `\n\nLEARNING PATH STEP — Guided conversation.

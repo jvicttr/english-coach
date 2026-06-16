@@ -88,7 +88,14 @@ export default function Flashcards() {
   }, [router]);
 
   function startPack(pack: Pack) {
-    setActivePack(pack);
+    // Sort: hardest cards first (lowest ease_factor = most missed), then by next_review ascending
+    const sorted = [...pack.cards].sort((a, b) => {
+      const aHard = (a.ease_factor ?? 2.5) < 1.6 ? 0 : 1;
+      const bHard = (b.ease_factor ?? 2.5) < 1.6 ? 0 : 1;
+      if (aHard !== bHard) return aHard - bHard;
+      return (a.ease_factor ?? 2.5) - (b.ease_factor ?? 2.5);
+    });
+    setActivePack({ ...pack, cards: sorted });
     setCurrentIndex(0);
     setFlipped(false);
     setDone(false);
@@ -394,6 +401,7 @@ export default function Flashcards() {
 
         {packs.map((pack) => {
           const pendingInPack = pack.cards.filter((c) => c.next_review <= today).length;
+          const hardInPack = pack.cards.filter((c) => (c.ease_factor ?? 2.5) < 1.6).length;
           const dateLabel = new Date(pack.created_at).toLocaleDateString("pt-BR", { day: "numeric", month: "short", year: "numeric" });
           return (
             <div key={pack.pack_id} style={{ position: "relative" }}>
@@ -415,6 +423,11 @@ export default function Flashcards() {
                   {pendingInPack > 0 && (
                     <span style={{ fontSize: "0.65rem", fontWeight: 700, color: "#f97316", background: "rgba(249,115,22,.12)", border: "1px solid rgba(249,115,22,.25)", borderRadius: 8, padding: "2px 7px" }}>
                       {pendingInPack} p/ revisar
+                    </span>
+                  )}
+                  {hardInPack > 0 && (
+                    <span style={{ fontSize: "0.65rem", fontWeight: 700, color: "#f87171", background: "rgba(248,113,113,.1)", border: "1px solid rgba(248,113,113,.2)", borderRadius: 8, padding: "2px 7px" }}>
+                      {hardInPack} difícil{hardInPack !== 1 ? "is" : ""}
                     </span>
                   )}
                 </div>

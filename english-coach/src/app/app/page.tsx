@@ -35,6 +35,7 @@ export default function AppHome() {
   const [showLevelSelect, setShowLevelSelect] = useState(false);
   const [xpData, setXpData] = useState<XpData | null>(null);
   const [trilhaCta, setTrilhaCta] = useState<{ type: "continue" | "next"; step: TrailStep } | null | undefined>(undefined);
+  const [recommendation, setRecommendation] = useState<{ packName: string; hardCount: number } | null>(null);
 
   async function openPortal() {
     setPortalLoading(true);
@@ -66,6 +67,7 @@ export default function AppHome() {
       setIsPro(d.isPro ?? false);
       setStreakData({ streak: d.streak ?? 0, weekDays: d.weekDays ?? [] });
       setFlashcardPending(d.flashcardPending ?? 0);
+      if (d.recommendation) setRecommendation(d.recommendation);
       if (!d.hasLevel) setShowLevelSelect(true);
       if (d.totalXp !== undefined) setXpData({ totalXp: d.totalXp, tier: d.tier, nextTier: d.nextTier, badges: d.badges });
 
@@ -114,7 +116,7 @@ export default function AppHome() {
           </a>
           <Image src="/favicon.png" alt="JV IA" width={28} height={28} style={{ borderRadius: 8 }} />
           <span style={{ fontWeight: 800, fontSize: "0.95rem", color: "#fff" }}>JV <span style={{ color: "var(--yellow)" }}>IA</span></span>
-          <span style={{ fontSize: "0.55rem", fontWeight: 800, color: "#000", background: "var(--yellow)", borderRadius: "50px", padding: "1px 6px", letterSpacing: "0.3px", lineHeight: 1.6 }}>5.0</span>
+          <span style={{ fontSize: "0.55rem", fontWeight: 800, color: "#000", background: "var(--yellow)", borderRadius: "50px", padding: "1px 6px", letterSpacing: "0.3px", lineHeight: 1.6 }}>6.0</span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
 
@@ -216,6 +218,28 @@ export default function AppHome() {
                   })}
             </div>
         </a>
+
+        {/* ── Streak warning ─────────────────────────────────────────────────── */}
+        {isPro !== null && streak > 0 && !weekDays[todayIdx] && (
+          <a href="/app/conversar" style={{ background: "rgba(245,200,0,.06)", border: "1px solid rgba(245,200,0,.3)", borderRadius: 14, padding: "10px 14px", display: "flex", alignItems: "center", gap: 10, textDecoration: "none" }}>
+            <span style={{ fontSize: "1.3rem" }}>⚡</span>
+            <div style={{ flex: 1 }}>
+              <p style={{ fontSize: "0.78rem", fontWeight: 800, color: "var(--yellow)", margin: 0 }}>Sua sequência de {streak} dia{streak !== 1 ? "s" : ""} está em risco!</p>
+              <p style={{ fontSize: "0.68rem", color: "rgba(245,200,0,.65)", margin: "1px 0 0" }}>Pratique agora para não perder →</p>
+            </div>
+          </a>
+        )}
+
+        {/* ── Recommendation ─────────────────────────────────────────────────── */}
+        {isPro !== null && recommendation && (
+          <a href="/app/flashcards" style={{ background: "rgba(248,113,113,.06)", border: "1px solid rgba(248,113,113,.25)", borderRadius: 14, padding: "10px 14px", display: "flex", alignItems: "center", gap: 10, textDecoration: "none" }}>
+            <span style={{ fontSize: "1.3rem" }}>🎯</span>
+            <div style={{ flex: 1 }}>
+              <p style={{ fontSize: "0.78rem", fontWeight: 800, color: "#f87171", margin: 0 }}>Você tem dificuldade em "{recommendation.packName}"</p>
+              <p style={{ fontSize: "0.68rem", color: "rgba(248,113,113,.65)", margin: "1px 0 0" }}>{recommendation.hardCount} palavras difíceis — revisar agora →</p>
+            </div>
+          </a>
+        )}
 
         {/* ── XP & Tier ─────────────────────────────────────────────────────── */}
         {isPro === null ? (

@@ -7,6 +7,20 @@ import { BottomNavFixed } from "@/components/BottomNav";
 import Image from "next/image";
 import { TRAIL_STEPS, LEVEL_INFO, isStepUnlocked, getStartingLevel, type TrailLevel, type TrailStep } from "@/lib/trilha-steps";
 
+function getPrerequisiteTitle(step: TrailStep): string | null {
+  if (step.order > 1) {
+    const prev = TRAIL_STEPS.find((s) => s.level === step.level && s.order === step.order - 1);
+    return prev ? prev.title : null;
+  }
+  const levelsOrder: TrailLevel[] = ["A1", "A2", "B1", "B2", "C1"];
+  const levelIdx = levelsOrder.indexOf(step.level);
+  if (levelIdx <= 0) return null;
+  const prevLevel = levelsOrder[levelIdx - 1];
+  const prevLevelSteps = TRAIL_STEPS.filter((s) => s.level === prevLevel);
+  const lastStep = prevLevelSteps[prevLevelSteps.length - 1];
+  return lastStep ? `todas as etapas de ${LEVEL_INFO[prevLevel]?.label ?? prevLevel}` : null;
+}
+
 const LEVELS_ORDER: TrailLevel[] = ["A1", "A2", "B1", "B2", "C1"];
 
 type Progress = { step_id: string; score: number; total: number }[];
@@ -211,7 +225,11 @@ export default function TrilhaPage() {
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <p style={{ fontSize: "0.8rem", fontWeight: 700, color: state === "locked" ? "#333" : "#fff", margin: 0, lineHeight: 1.2 }}>{step.title}</p>
                             <p style={{ fontSize: "0.65rem", color: state === "completed" ? "#4ade8099" : state === "active" ? info.color + "99" : "#333", margin: "2px 0 0", lineHeight: 1.3 }}>
-                              {state === "completed" && stepProgress && stepProgress.total > 0 && stepProgress.score > 0 ? `✓ ${Math.round((stepProgress.score / stepProgress.total) * 100)}%` : state === "completed" ? "✓ Concluída" : state === "active" ? "Disponível" : "Bloqueado"}
+                              {state === "completed" && stepProgress && stepProgress.total > 0 && stepProgress.score > 0
+                              ? `✓ ${Math.round((stepProgress.score / stepProgress.total) * 100)}%`
+                              : state === "completed" ? "✓ Concluída"
+                              : state === "active" ? "Disponível"
+                              : (() => { const req = getPrerequisiteTitle(step); return req ? `Complete "${req}" primeiro` : "Bloqueado"; })()}
                             </p>
                           </div>
                         </button>

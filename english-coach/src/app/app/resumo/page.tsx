@@ -312,6 +312,12 @@ export default function ResumoAula() {
           <a href="/app" title="Início" style={{ background: "var(--dark2)", border: "1px solid #2a2a2a", borderRadius: 10, height: 36, width: 36, display: "flex", alignItems: "center", justifyContent: "center", textDecoration: "none", flexShrink: 0 }}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--gray)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9.5z"/><path d="M9 21V12h6v9"/></svg>
           </a>
+          {fileName && messages.length > 0 && (
+            <div style={{ display: "flex", alignItems: "center", gap: 5, background: "rgba(245,200,0,.1)", border: "1px solid rgba(245,200,0,.25)", borderRadius: 8, padding: "4px 10px", maxWidth: 140, overflow: "hidden" }}>
+              <span style={{ fontSize: ".75rem" }}>📄</span>
+              <span style={{ fontSize: ".68rem", fontWeight: 600, color: "var(--yellow)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{fileName}</span>
+            </div>
+          )}
         </div>
 
         <div className="flex items-center gap-2 shrink-0">

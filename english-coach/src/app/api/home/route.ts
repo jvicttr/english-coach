@@ -43,6 +43,7 @@ export async function GET() {
     { data: trilhaCompleted },
     { data: trilhaSessions },
     { data: flashcards },
+    { data: hardCards },
   ] = await Promise.all([
     currentUser(),
     supabase.from("subscriptions").select("plan, level, english_level").eq("user_id", userId).single(),
@@ -53,6 +54,7 @@ export async function GET() {
     supabase.from("learning_path_progress").select("step_id, completed_at").eq("user_id", userId),
     supabase.from("trilha_sessions").select("step_id").eq("user_id", userId),
     supabase.from("flashcards").select("next_review").eq("user_id", userId).lte("next_review", today),
+    supabase.from("flashcards").select("pack_id, pack_name, ease_factor").eq("user_id", userId).lt("ease_factor", 1.6),
   ]);
 
   const isPro = sub?.plan === "pro";
@@ -62,6 +64,20 @@ export async function GET() {
   for (const r of usageData ?? []) dateSet.add(r.date);
   for (const r of quizData ?? []) dateSet.add((r.created_at as string).split("T")[0]);
   const { streak, weekDays } = calcStreak(dateSet);
+
+  // Recommendation — find the pack with the most hard cards (ease_factor < 1.6)
+  let recommendation: { packName: string; hardCount: number } | null = null;
+  if (isPro && hardCards && hardCards.length > 0) {
+    const packCounts = new Map<string, { name: string; count: number }>();
+    for (const c of hardCards as { pack_id: string; pack_name: string }[]) {
+      const key = c.pack_id ?? "__legacy__";
+      const existing = packCounts.get(key);
+      if (existing) existing.count++;
+      else packCounts.set(key, { name: c.pack_name ?? "Flashcards", count: 1 });
+    }
+    const [, top] = [...packCounts.entries()].sort((a, b) => b[1].count - a[1].count)[0] ?? [];
+    if (top && top.count >= 2) recommendation = { packName: top.name, hardCount: top.count };
+  }
 
   // XP
   const totalXp = xpRow?.total_xp ?? 0;
@@ -89,5 +105,6 @@ export async function GET() {
     trilhaActiveSessions: (trilhaSessions ?? []).map((s: { step_id: string }) => s.step_id),
     // Flashcards
     flashcardPending: isPro ? (flashcards?.length ?? 0) : 0,
+    recommendation,
   });
 }
