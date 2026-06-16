@@ -461,7 +461,7 @@ export default function Flashcards() {
           );
         })}
       </div>
-      <BottomNav />
+      <BottomNavFixed />
     </div>
   );
 }
