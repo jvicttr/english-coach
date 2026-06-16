@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 type Message = { role: "user" | "assistant"; content: string; translation?: string };
 type QuizQuestion = { question: string; options: string[]; correct: number; explanation: string };
 type Quiz = { title: string; questions: QuizQuestion[] };
-type Screen = "chat" | "loading-quiz" | "quiz" | "result";
+type Screen = "chat" | "loading-quiz" | "loading-flashcards" | "quiz" | "result";
 
 export default function ResumoAula() {
   const router = useRouter();
@@ -97,6 +97,22 @@ export default function ResumoAula() {
       setMessages((prev) => [...prev, { role: "assistant", content: "Ops, tive um problema. Tente novamente!" }]);
     } finally {
       setIsLoading(false);
+    }
+  }
+
+  async function generateFlashcards() {
+    setScreen("loading-flashcards");
+    try {
+      const packName = fileName ? fileName.replace(/\.pdf$/i, "") : "Revisão de Aula";
+      await fetch("/api/flashcards/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ messages, packName }),
+      });
+      router.push("/app/flashcards");
+    } catch {
+      setScreen("chat");
+      setError("Erro ao gerar os flashcards. Tente novamente.");
     }
   }
 
@@ -203,6 +219,20 @@ export default function ResumoAula() {
             Ver planos →
           </a>
         </div>
+      </div>
+    );
+  }
+
+  // ── Loading Flashcards Screen ─────────────────────────────────────────────
+  if (screen === "loading-flashcards") {
+    return (
+      <div style={{ minHeight: "100vh", background: "var(--black)", fontFamily: "'Inter', sans-serif", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "1rem" }}>
+        <div style={{ display: "flex", gap: "6px" }}>
+          {[0, 150, 300].map((d) => (
+            <span key={d} style={{ width: "10px", height: "10px", borderRadius: "50%", background: "var(--yellow)", display: "inline-block", animation: "bounce 0.8s infinite", animationDelay: `${d}ms` }} />
+          ))}
+        </div>
+        <p style={{ color: "var(--gray)", fontSize: ".9rem" }}>Criando seus flashcards...</p>
       </div>
     );
   }
@@ -344,11 +374,18 @@ export default function ResumoAula() {
             </button>
           )}
           <button
+            onClick={generateFlashcards}
+            disabled={messages.length < 2}
+            style={{ background: "var(--dark2)", color: messages.length >= 2 ? "#fff" : "var(--gray)", border: "1px solid #2a2a2a", borderRadius: "10px", height: "36px", padding: "0 14px", fontSize: ".75rem", fontWeight: 700, cursor: messages.length >= 2 ? "pointer" : "default", whiteSpace: "nowrap", transition: "all .2s", opacity: messages.length >= 2 ? 1 : 0.5 }}
+          >
+            🃏 Flashcards
+          </button>
+          <button
             onClick={generateQuiz}
             disabled={messages.length < 2}
             style={{ background: messages.length >= 2 ? "var(--yellow)" : "var(--dark2)", color: messages.length >= 2 ? "var(--black)" : "var(--gray)", border: messages.length >= 2 ? "none" : "1px solid #2a2a2a", borderRadius: "10px", height: "36px", padding: "0 14px", fontSize: ".75rem", fontWeight: 700, cursor: messages.length >= 2 ? "pointer" : "default", whiteSpace: "nowrap", transition: "all .2s" }}
           >
-            🎯 Fazer quiz
+            🎯 Quiz
           </button>
         </div>
       </header>
