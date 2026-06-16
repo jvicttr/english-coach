@@ -7,6 +7,7 @@ const NAV_ITEMS = [
   { href: "/app/trilha", icon: "🗺️", label: "Trilha" },
   { href: "/app/flashcards", icon: "🃏", label: "Flashcards" },
   { href: "/app/progresso", icon: "📊", label: "Progresso" },
+  { href: "/app/perfil", icon: "👤", label: "Perfil" },
 ];
 
 function NavItems() {
@@ -30,7 +31,7 @@ function NavItems() {
   );
 }
 
-const NAV_STYLE = { background: "#0d0d0d", borderTop: "1px solid #1e1e1e", display: "grid", gridTemplateColumns: "repeat(4,1fr)", paddingBottom: "env(safe-area-inset-bottom, 0px)" } as const;
+const NAV_STYLE = { background: "#0d0d0d", borderTop: "1px solid #1e1e1e", display: "grid", gridTemplateColumns: "repeat(5,1fr)", paddingBottom: "env(safe-area-inset-bottom, 0px)" } as const;
 
 export function BottomNavFixed() {
   return (
