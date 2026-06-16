@@ -78,7 +78,9 @@ Return ONLY valid JSON, no markdown:
   if (cards.length > 0) {
     const packId = crypto.randomUUID();
     savedPackId = packId;
-    const resolvedPackName = packName ?? topic ?? "Conversa livre";
+    const baseName = packName ?? topic ?? "Conversa livre";
+    const dateTag = new Date().toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
+    const resolvedPackName = `${baseName} · ${dateTag}`;
     const rows = cards.map((c) => ({
       user_id: userId,
       word: c.word,
