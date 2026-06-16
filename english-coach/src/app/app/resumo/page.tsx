@@ -6,15 +6,16 @@ import { useRouter } from "next/navigation";
 type Message = { role: "user" | "assistant"; content: string; translation?: string };
 type QuizQuestion = { question: string; options: string[]; correct: number; explanation: string };
 type Quiz = { title: string; questions: QuizQuestion[] };
-type Screen = "upload" | "loading-pdf" | "chat" | "loading-quiz" | "quiz" | "result";
+type Screen = "chat" | "loading-quiz" | "quiz" | "result";
 
 export default function ResumoAula() {
   const router = useRouter();
   const [isPro, setIsPro] = useState<boolean | null>(null);
-  const [screen, setScreen] = useState<Screen>("upload");
+  const [screen, setScreen] = useState<Screen>("chat");
   const [dragging, setDragging] = useState(false);
   const [fileName, setFileName] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [loadingPdf, setLoadingPdf] = useState(false);
 
   // Chat state
   const [messages, setMessages] = useState<Message[]>([]);
@@ -48,7 +49,7 @@ export default function ResumoAula() {
     if (file.type !== "application/pdf") { setError("Por favor, envie um arquivo PDF."); return; }
     setFileName(file.name);
     setError(null);
-    setScreen("loading-pdf");
+    setLoadingPdf(true);
 
     try {
       const buffer = await file.arrayBuffer();
@@ -67,10 +68,11 @@ export default function ResumoAula() {
 
       setLessonContext(data.lessonContext);
       setMessages([{ role: "assistant", content: data.reply, translation: data.translation ?? undefined }]);
-      setScreen("chat");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Erro inesperado. Tente novamente.");
-      setScreen("upload");
+      setFileName(null);
+    } finally {
+      setLoadingPdf(false);
     }
   }
 
@@ -160,6 +162,15 @@ export default function ResumoAula() {
     });
   }
 
+  function resetChat() {
+    setMessages([]);
+    setLessonContext(null);
+    setFileName(null);
+    setQuiz(null);
+    setError(null);
+    setScreen("chat");
+  }
+
   // ── Pro gate ──────────────────────────────────────────────────────────────
   if (isPro === null) {
     return (
@@ -196,60 +207,6 @@ export default function ResumoAula() {
     );
   }
 
-  // ── Upload Screen ─────────────────────────────────────────────────────────
-  if (screen === "upload") {
-    return (
-      <div style={{ minHeight: "100vh", background: "var(--black)", fontFamily: "'Inter', sans-serif", display: "flex", flexDirection: "column" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "10px", padding: "14px 20px", borderBottom: "1px solid #1e1e1e" }}>
-          <button onClick={() => router.push("/app")} style={{ background: "var(--dark2)", border: "1px solid #2a2a2a", borderRadius: "10px", height: "36px", padding: "0 12px", fontSize: ".8rem", fontWeight: 600, color: "var(--gray)", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}>
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M9 2L4 7L9 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-            Voltar
-          </button>
-          <span style={{ fontWeight: 700, fontSize: ".95rem", color: "#fff" }}>📄 Revisão de Aula</span>
-        </div>
-
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "2rem 1.25rem" }}>
-          <div style={{ width: "100%", maxWidth: 480 }}>
-            <h1 style={{ fontSize: "1.4rem", fontWeight: 800, color: "#fff", marginBottom: ".5rem" }}>Revisar minha aula</h1>
-            <p style={{ color: "var(--gray)", marginBottom: "2rem", lineHeight: 1.6 }}>
-              Envie o PDF da sua aula. O JV IA vai explicar o que foi estudado e você pode tirar dúvidas, praticar e fazer um quiz no final.
-            </p>
-
-            <div
-              onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
-              onDragLeave={() => setDragging(false)}
-              onDrop={(e) => { e.preventDefault(); setDragging(false); const f = e.dataTransfer.files?.[0]; if (f) processFile(f); }}
-              onClick={() => fileInputRef.current?.click()}
-              style={{ border: `2px dashed ${dragging ? "var(--yellow)" : "#2a2a2a"}`, borderRadius: "20px", padding: "3rem 2rem", textAlign: "center", cursor: "pointer", transition: "border-color .2s, background .2s", background: dragging ? "rgba(245,200,0,.04)" : "transparent" }}
-            >
-              <div style={{ fontSize: "2.5rem", marginBottom: ".75rem" }}>📎</div>
-              <p style={{ fontWeight: 700, color: "#fff", marginBottom: ".4rem" }}>Clique ou arraste o PDF aqui</p>
-              <p style={{ color: "var(--gray)", fontSize: ".85rem" }}>Somente arquivos .pdf</p>
-              <input ref={fileInputRef} type="file" accept="application/pdf" onChange={(e) => { const f = e.target.files?.[0]; if (f) processFile(f); }} style={{ display: "none" }} />
-            </div>
-
-            {error && <p style={{ color: "#f87171", marginTop: "1rem", fontSize: ".875rem" }}>{error}</p>}
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // ── Loading PDF Screen ────────────────────────────────────────────────────
-  if (screen === "loading-pdf") {
-    return (
-      <div style={{ minHeight: "100vh", background: "var(--black)", fontFamily: "'Inter', sans-serif", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "1rem" }}>
-        <div style={{ display: "flex", gap: "6px" }}>
-          {[0, 150, 300].map((d) => (
-            <span key={d} style={{ width: "10px", height: "10px", borderRadius: "50%", background: "var(--yellow)", display: "inline-block", animation: "bounce 0.8s infinite", animationDelay: `${d}ms` }} />
-          ))}
-        </div>
-        <p style={{ color: "var(--gray)", fontSize: ".9rem" }}>Analisando <strong style={{ color: "#fff" }}>{fileName}</strong>…</p>
-        <p style={{ color: "var(--gray)", fontSize: ".8rem" }}>Isso pode levar alguns segundos.</p>
-      </div>
-    );
-  }
-
   // ── Loading Quiz Screen ───────────────────────────────────────────────────
   if (screen === "loading-quiz") {
     return (
@@ -280,15 +237,12 @@ export default function ResumoAula() {
             </div>
             <span style={{ fontSize: ".875rem", fontWeight: 700, color: "var(--gray)" }}>{currentQ + 1}/{total}</span>
           </div>
-
           <div style={{ width: "100%", height: "6px", borderRadius: "99px", background: "var(--dark2)", marginBottom: "1.5rem" }}>
             <div style={{ height: "6px", borderRadius: "99px", background: "var(--yellow)", width: `${(currentQ / total) * 100}%`, transition: "width .5s" }} />
           </div>
-
           <div style={{ padding: "1rem 1.25rem", borderRadius: "16px", background: "var(--dark1)", border: "1px solid #1f1f1f", marginBottom: "1.25rem" }}>
             <p style={{ color: "#fff", fontSize: ".9rem", lineHeight: 1.6, fontWeight: 500 }}>{q.question}</p>
           </div>
-
           <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginBottom: "1.25rem" }}>
             {q.options.map((opt, i) => {
               let bg = "var(--dark1)", border = "1px solid #2a2a2a", color = "#fff";
@@ -304,14 +258,12 @@ export default function ResumoAula() {
               );
             })}
           </div>
-
           {showExplanation && (
             <div style={{ padding: ".875rem 1rem", borderRadius: "12px", marginBottom: "1rem", background: chosen === q.correct ? "rgba(74,222,128,.08)" : "rgba(248,113,113,.08)", border: chosen === q.correct ? "1px solid rgba(74,222,128,.25)" : "1px solid rgba(248,113,113,.25)" }}>
               <p style={{ fontWeight: 700, marginBottom: ".25rem", color: chosen === q.correct ? "#4ade80" : "#f87171" }}>{chosen === q.correct ? "✓ Correto!" : "✗ Quase lá!"}</p>
               <p style={{ color: "var(--gray)", fontSize: ".85rem" }}>{q.explanation}</p>
             </div>
           )}
-
           {chosen !== null && (
             <button onClick={nextQuestion} style={{ width: "100%", padding: ".875rem", borderRadius: "12px", background: "var(--yellow)", color: "var(--black)", fontWeight: 700, fontSize: ".9rem", border: "none", cursor: "pointer" }}>
               {currentQ + 1 < total ? "Próxima →" : "Ver resultado →"}
@@ -339,7 +291,6 @@ export default function ResumoAula() {
             <p style={{ fontSize: "1.1rem", fontWeight: 700, color: "#fff", marginTop: "4px" }}>{score}/{total} corretas</p>
           </div>
           <p style={{ color: "var(--gray)", fontSize: ".875rem" }}>{msg}</p>
-
           <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: "8px", marginTop: ".5rem" }}>
             {quiz.questions.map((q, i) => {
               const correct = answers[i] === q.correct;
@@ -356,12 +307,11 @@ export default function ResumoAula() {
               );
             })}
           </div>
-
           <div style={{ display: "flex", gap: "10px", width: "100%", marginTop: ".5rem" }}>
             <button onClick={() => router.push("/app/progresso")} style={{ flex: 1, padding: ".875rem", borderRadius: "12px", background: "var(--dark2)", color: "var(--gray)", fontWeight: 700, fontSize: ".875rem", border: "1px solid #2a2a2a", cursor: "pointer" }}>
               Ver progresso
             </button>
-            <button onClick={() => { setScreen("upload"); setMessages([]); setLessonContext(null); setFileName(null); setQuiz(null); }} style={{ flex: 1, padding: ".875rem", borderRadius: "12px", background: "var(--yellow)", color: "var(--black)", fontWeight: 700, fontSize: ".875rem", border: "none", cursor: "pointer" }}>
+            <button onClick={resetChat} style={{ flex: 1, padding: ".875rem", borderRadius: "12px", background: "var(--yellow)", color: "var(--black)", fontWeight: 700, fontSize: ".875rem", border: "none", cursor: "pointer" }}>
               Nova aula
             </button>
           </div>
@@ -370,33 +320,85 @@ export default function ResumoAula() {
     );
   }
 
-  // ── Chat Screen ───────────────────────────────────────────────────────────
+  // ── Chat Screen (with inline upload empty state) ───────────────────────────
   return (
     <div style={{ background: "var(--black)", fontFamily: "'Inter', sans-serif", height: "100dvh", display: "flex", flexDirection: "column", overflow: "hidden" }}>
-      {/* Header */}
+      {/* Header — same style as conversar */}
       <header style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 16px", borderBottom: "1px solid #1e1e1e", flexShrink: 0, gap: "10px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <button onClick={() => { setScreen("upload"); setMessages([]); setLessonContext(null); setFileName(null); }} style={{ background: "var(--dark2)", border: "1px solid #2a2a2a", borderRadius: "10px", height: "36px", padding: "0 10px", display: "flex", alignItems: "center", gap: "5px", fontSize: ".75rem", fontWeight: 600, color: "var(--gray)", cursor: "pointer" }}>
+          <button onClick={() => router.push("/app")} style={{ background: "var(--dark2)", border: "1px solid #2a2a2a", borderRadius: "10px", height: "36px", padding: "0 10px", display: "flex", alignItems: "center", gap: "5px", fontSize: ".75rem", fontWeight: 600, color: "var(--gray)", cursor: "pointer" }}>
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M9 2L4 7L9 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-            <span style={{ display: "none" }} className="sm:inline">Nova aula</span>
           </button>
           <div>
-            <p style={{ fontSize: ".7rem", color: "var(--gray)", marginBottom: "1px" }}>Revisão</p>
-            <p style={{ fontSize: ".8rem", fontWeight: 700, color: "#fff", maxWidth: "180px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>📎 {fileName}</p>
+            <p style={{ fontSize: ".7rem", color: "var(--gray)", marginBottom: "1px" }}>Revisão de Aula</p>
+            <p style={{ fontSize: ".8rem", fontWeight: 700, color: "#fff" }}>
+              {fileName ? `📎 ${fileName}` : "📄 Envie seu PDF"}
+            </p>
           </div>
         </div>
 
-        <button
-          onClick={generateQuiz}
-          disabled={messages.length < 2}
-          style={{ background: messages.length >= 2 ? "var(--yellow)" : "var(--dark2)", color: messages.length >= 2 ? "var(--black)" : "var(--gray)", border: messages.length >= 2 ? "none" : "1px solid #2a2a2a", borderRadius: "10px", height: "36px", padding: "0 14px", fontSize: ".75rem", fontWeight: 700, cursor: messages.length >= 2 ? "pointer" : "default", whiteSpace: "nowrap", transition: "all .2s" }}
-        >
-          🎯 Fazer quiz
-        </button>
+        <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+          {messages.length > 0 && (
+            <button onClick={resetChat} style={{ background: "var(--dark2)", border: "1px solid #2a2a2a", borderRadius: "10px", height: "36px", padding: "0 12px", fontSize: ".75rem", fontWeight: 600, color: "var(--gray)", cursor: "pointer" }}>
+              Nova aula
+            </button>
+          )}
+          <button
+            onClick={generateQuiz}
+            disabled={messages.length < 2}
+            style={{ background: messages.length >= 2 ? "var(--yellow)" : "var(--dark2)", color: messages.length >= 2 ? "var(--black)" : "var(--gray)", border: messages.length >= 2 ? "none" : "1px solid #2a2a2a", borderRadius: "10px", height: "36px", padding: "0 14px", fontSize: ".75rem", fontWeight: 700, cursor: messages.length >= 2 ? "pointer" : "default", whiteSpace: "nowrap", transition: "all .2s" }}
+          >
+            🎯 Fazer quiz
+          </button>
+        </div>
       </header>
 
-      {/* Messages */}
-      <div style={{ flex: 1, overflowY: "auto", padding: "16px", display: "flex", flexDirection: "column", gap: "12px" }}>
+      {/* Messages area */}
+      <div
+        style={{ flex: 1, overflowY: "auto", padding: "16px", display: "flex", flexDirection: "column", gap: "12px" }}
+        onDragOver={(e) => { e.preventDefault(); if (!messages.length) setDragging(true); }}
+        onDragLeave={() => setDragging(false)}
+        onDrop={(e) => { e.preventDefault(); setDragging(false); const f = e.dataTransfer.files?.[0]; if (f && !messages.length) processFile(f); }}
+      >
+        {/* Empty state — PDF upload centered in chat area */}
+        {messages.length === 0 && !loadingPdf && (
+          <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100%" }}>
+            <div style={{ width: "100%", maxWidth: 420, textAlign: "center" }}>
+              <div
+                onClick={() => fileInputRef.current?.click()}
+                style={{
+                  border: `2px dashed ${dragging ? "var(--yellow)" : "#2a2a2a"}`,
+                  borderRadius: "20px",
+                  padding: "3rem 2rem",
+                  cursor: "pointer",
+                  transition: "border-color .2s, background .2s",
+                  background: dragging ? "rgba(245,200,0,.04)" : "transparent",
+                }}
+              >
+                <div style={{ fontSize: "2.5rem", marginBottom: ".75rem" }}>📎</div>
+                <p style={{ fontWeight: 700, color: "#fff", marginBottom: ".4rem", fontSize: ".95rem" }}>Clique ou arraste o PDF da aula aqui</p>
+                <p style={{ color: "var(--gray)", fontSize: ".82rem" }}>O JV IA vai resumir a aula e você pode tirar dúvidas</p>
+                <input ref={fileInputRef} type="file" accept="application/pdf" onChange={(e) => { const f = e.target.files?.[0]; if (f) processFile(f); }} style={{ display: "none" }} />
+              </div>
+              {error && <p style={{ color: "#f87171", marginTop: "1rem", fontSize: ".85rem" }}>{error}</p>}
+            </div>
+          </div>
+        )}
+
+        {/* Loading PDF inline */}
+        {loadingPdf && (
+          <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "12px", minHeight: "100%" }}>
+            <div style={{ display: "flex", gap: "6px" }}>
+              {[0, 150, 300].map((d) => (
+                <span key={d} style={{ width: "10px", height: "10px", borderRadius: "50%", background: "var(--yellow)", display: "inline-block", animation: "bounce 0.8s infinite", animationDelay: `${d}ms` }} />
+              ))}
+            </div>
+            <p style={{ color: "var(--gray)", fontSize: ".9rem" }}>Analisando <strong style={{ color: "#fff" }}>{fileName}</strong>…</p>
+            <p style={{ color: "var(--gray)", fontSize: ".78rem" }}>Isso pode levar alguns segundos.</p>
+          </div>
+        )}
+
+        {/* Chat messages */}
         {messages.map((msg, i) => (
           <div key={i} style={{ display: "flex", justifyContent: msg.role === "user" ? "flex-end" : "flex-start" }}>
             <div style={{ maxWidth: "85%", background: msg.role === "user" ? "var(--yellow)" : "var(--dark1)", color: msg.role === "user" ? "var(--black)" : "#fff", borderRadius: msg.role === "user" ? "18px 18px 4px 18px" : "18px 18px 18px 4px", padding: ".75rem 1rem", fontSize: ".875rem", lineHeight: 1.6, border: msg.role === "assistant" ? "1px solid #1f1f1f" : "none" }}>
@@ -429,23 +431,23 @@ export default function ResumoAula() {
 
       {/* Input */}
       <div style={{ padding: "10px 16px 16px", borderTop: "1px solid #1e1e1e", flexShrink: 0 }}>
-        {error && <p style={{ color: "#f87171", fontSize: ".78rem", marginBottom: "6px" }}>{error}</p>}
+        {error && messages.length > 0 && <p style={{ color: "#f87171", fontSize: ".78rem", marginBottom: "6px" }}>{error}</p>}
         <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
           <input
             ref={inputRef}
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
-            placeholder="Pergunte sobre a aula..."
-            disabled={isLoading}
-            style={{ flex: 1, background: "var(--dark1)", border: "1px solid #2a2a2a", borderRadius: "14px", padding: ".75rem 1rem", fontSize: ".9rem", color: "#fff", outline: "none", fontFamily: "'Inter', sans-serif" }}
+            placeholder={messages.length === 0 ? "Envie o PDF acima para começar..." : "Pergunte sobre a aula..."}
+            disabled={isLoading || messages.length === 0}
+            style={{ flex: 1, background: "var(--dark1)", border: "1px solid #2a2a2a", borderRadius: "14px", padding: ".75rem 1rem", fontSize: ".9rem", color: "#fff", outline: "none", fontFamily: "'Inter', sans-serif", opacity: messages.length === 0 ? 0.4 : 1 }}
           />
           <button
             onClick={sendMessage}
-            disabled={isLoading || !input.trim()}
-            style={{ width: "44px", height: "44px", borderRadius: "12px", background: input.trim() && !isLoading ? "var(--yellow)" : "var(--dark2)", border: "none", cursor: input.trim() && !isLoading ? "pointer" : "default", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "background .15s" }}
+            disabled={isLoading || !input.trim() || messages.length === 0}
+            style={{ width: "44px", height: "44px", borderRadius: "12px", background: input.trim() && !isLoading && messages.length > 0 ? "var(--yellow)" : "var(--dark2)", border: "none", cursor: input.trim() && !isLoading && messages.length > 0 ? "pointer" : "default", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "background .15s" }}
           >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M22 2L11 13" stroke={input.trim() && !isLoading ? "var(--black)" : "var(--gray)"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M22 2L15 22L11 13L2 9L22 2Z" stroke={input.trim() && !isLoading ? "var(--black)" : "var(--gray)"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M22 2L11 13" stroke={input.trim() && !isLoading && messages.length > 0 ? "var(--black)" : "var(--gray)"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M22 2L15 22L11 13L2 9L22 2Z" stroke={input.trim() && !isLoading && messages.length > 0 ? "var(--black)" : "var(--gray)"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
           </button>
         </div>
       </div>
