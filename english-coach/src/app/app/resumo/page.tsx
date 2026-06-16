@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { UserButton } from "@clerk/nextjs";
 
 type Message = { role: "user" | "assistant"; content: string; translation?: string };
 type QuizQuestion = { question: string; options: string[]; correct: number; explanation: string };
@@ -16,18 +17,16 @@ export default function ResumoAula() {
   const [fileName, setFileName] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loadingPdf, setLoadingPdf] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  // Chat state
   const [messages, setMessages] = useState<Message[]>([]);
   const [lessonContext, setLessonContext] = useState<string | null>(null);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [expandedTranslations, setExpandedTranslations] = useState<Set<number>>(new Set());
   const bottomRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Quiz state
   const [quiz, setQuiz] = useState<Quiz | null>(null);
   const [quizSessionId, setQuizSessionId] = useState<string | null>(null);
   const [answers, setAnswers] = useState<(number | null)[]>([]);
@@ -36,9 +35,7 @@ export default function ResumoAula() {
   const [score, setScore] = useState(0);
 
   useEffect(() => {
-    fetch("/api/me").then((r) => r.json()).then((d) => {
-      setIsPro(d.plan === "pro");
-    }).catch(() => setIsPro(false));
+    fetch("/api/me").then((r) => r.json()).then((d) => setIsPro(d.plan === "pro")).catch(() => setIsPro(false));
   }, []);
 
   useEffect(() => {
@@ -50,14 +47,12 @@ export default function ResumoAula() {
     setFileName(file.name);
     setError(null);
     setLoadingPdf(true);
-
     try {
       const buffer = await file.arrayBuffer();
       const bytes = new Uint8Array(buffer);
       let binary = "";
       for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
       const base64 = btoa(binary);
-
       const res = await fetch("/api/resumo-chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -65,7 +60,6 @@ export default function ResumoAula() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Erro ao processar o PDF");
-
       setLessonContext(data.lessonContext);
       setMessages([{ role: "assistant", content: data.reply, translation: data.translation ?? undefined }]);
     } catch (e) {
@@ -83,7 +77,6 @@ export default function ResumoAula() {
     setMessages(updated);
     setInput("");
     setIsLoading(true);
-
     try {
       const res = await fetch("/api/resumo-chat", {
         method: "POST",
@@ -145,135 +138,78 @@ export default function ResumoAula() {
 
   function selectAnswer(i: number) {
     if (answers[currentQ] !== null) return;
-    const updated = [...answers];
-    updated[currentQ] = i;
-    setAnswers(updated);
-    setShowExplanation(true);
+    const updated = [...answers]; updated[currentQ] = i;
+    setAnswers(updated); setShowExplanation(true);
   }
 
   async function nextQuestion() {
     const total = quiz!.questions.length;
-    if (currentQ + 1 < total) {
-      setCurrentQ((q) => q + 1);
-      setShowExplanation(false);
-    } else {
+    if (currentQ + 1 < total) { setCurrentQ((q) => q + 1); setShowExplanation(false); }
+    else {
       const finalScore = answers.reduce<number>((acc, a, i) => acc + (a === quiz!.questions[i].correct ? 1 : 0), 0);
       setScore(finalScore);
       if (quizSessionId) {
-        await fetch("/api/quiz", {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ sessionId: quizSessionId, score: finalScore, answers }),
-        });
+        await fetch("/api/quiz", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ sessionId: quizSessionId, score: finalScore, answers }) });
       }
       setScreen("result");
     }
   }
 
   function toggleTranslation(i: number) {
-    setExpandedTranslations((prev) => {
-      const next = new Set(prev);
-      next.has(i) ? next.delete(i) : next.add(i);
-      return next;
-    });
+    setExpandedTranslations((prev) => { const next = new Set(prev); next.has(i) ? next.delete(i) : next.add(i); return next; });
   }
 
   function resetChat() {
-    setMessages([]);
-    setLessonContext(null);
-    setFileName(null);
-    setQuiz(null);
-    setError(null);
-    setScreen("chat");
+    setMessages([]); setLessonContext(null); setFileName(null);
+    setQuiz(null); setError(null); setScreen("chat");
   }
 
-  // ── Pro gate ──────────────────────────────────────────────────────────────
-  if (isPro === null) {
-    return (
-      <div style={{ minHeight: "100vh", background: "var(--black)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <div style={{ display: "flex", gap: "6px" }}>
-          {[0, 150, 300].map((d) => (
-            <span key={d} style={{ width: "10px", height: "10px", borderRadius: "50%", background: "var(--yellow)", display: "inline-block", animation: "bounce 0.8s infinite", animationDelay: `${d}ms` }} />
-          ))}
-        </div>
-      </div>
-    );
-  }
+  // ── Pro gate ─────────────────────────────────────────────────────────────
+  if (isPro === null) return (
+    <div style={{ minHeight: "100vh", background: "var(--black)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <div style={{ display: "flex", gap: 6 }}>{[0,150,300].map((d) => <span key={d} style={{ width: 10, height: 10, borderRadius: "50%", background: "var(--yellow)", display: "inline-block", animation: "bounce 0.8s infinite", animationDelay: `${d}ms` }} />)}</div>
+    </div>
+  );
 
-  if (isPro === false) {
-    return (
-      <div style={{ minHeight: "100vh", background: "var(--black)", fontFamily: "'Inter', sans-serif", display: "flex", flexDirection: "column" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "10px", padding: "14px 20px", borderBottom: "1px solid #1e1e1e" }}>
-          <button onClick={() => router.push("/app")} style={{ background: "var(--dark2)", border: "1px solid #2a2a2a", borderRadius: "10px", height: "36px", padding: "0 12px", fontSize: ".8rem", fontWeight: 600, color: "var(--gray)", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}>
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M9 2L4 7L9 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-            Voltar
-          </button>
-        </div>
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "2rem 1.5rem", textAlign: "center" }}>
-          <div style={{ fontSize: "3rem", marginBottom: "1rem" }}>🔒</div>
-          <h2 style={{ fontSize: "1.3rem", fontWeight: 800, color: "#fff", marginBottom: ".5rem" }}>Recurso exclusivo do Combo</h2>
-          <p style={{ color: "var(--gray)", lineHeight: 1.6, maxWidth: 380, marginBottom: "1.75rem" }}>
-            A Revisão de Aula está disponível somente para assinantes do combo <strong style={{ color: "#fff" }}>Aulas ao vivo + JV IA</strong>. Assine e pratique inglês todos os dias com suporte completo.
-          </p>
-          <a href="/planos" style={{ background: "var(--yellow)", color: "var(--black)", fontWeight: 700, fontSize: ".95rem", padding: ".75rem 2rem", borderRadius: "50px", textDecoration: "none" }}>
-            Ver planos →
-          </a>
-        </div>
-      </div>
-    );
-  }
+  if (isPro === false) return (
+    <div style={{ minHeight: "100vh", background: "var(--black)", fontFamily: "'Inter', sans-serif", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "2rem 1.5rem", textAlign: "center" }}>
+      <div style={{ fontSize: "3rem", marginBottom: "1rem" }}>🔒</div>
+      <h2 style={{ fontSize: "1.3rem", fontWeight: 800, color: "#fff", marginBottom: ".5rem" }}>Recurso exclusivo do Combo</h2>
+      <p style={{ color: "var(--gray)", lineHeight: 1.6, maxWidth: 380, marginBottom: "1.75rem" }}>
+        A Revisão de Aula está disponível somente para assinantes do combo <strong style={{ color: "#fff" }}>Aulas ao vivo + JV IA</strong>.
+      </p>
+      <a href="/planos" style={{ background: "var(--yellow)", color: "var(--black)", fontWeight: 700, fontSize: ".95rem", padding: ".75rem 2rem", borderRadius: "50px", textDecoration: "none" }}>Ver planos →</a>
+    </div>
+  );
 
-  // ── Loading Flashcards Screen ─────────────────────────────────────────────
-  if (screen === "loading-flashcards") {
-    return (
-      <div style={{ minHeight: "100vh", background: "var(--black)", fontFamily: "'Inter', sans-serif", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "1rem" }}>
-        <div style={{ display: "flex", gap: "6px" }}>
-          {[0, 150, 300].map((d) => (
-            <span key={d} style={{ width: "10px", height: "10px", borderRadius: "50%", background: "var(--yellow)", display: "inline-block", animation: "bounce 0.8s infinite", animationDelay: `${d}ms` }} />
-          ))}
-        </div>
-        <p style={{ color: "var(--gray)", fontSize: ".9rem" }}>Criando seus flashcards...</p>
-      </div>
-    );
-  }
-
-  // ── Loading Quiz Screen ───────────────────────────────────────────────────
-  if (screen === "loading-quiz") {
-    return (
-      <div style={{ minHeight: "100vh", background: "var(--black)", fontFamily: "'Inter', sans-serif", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "1rem" }}>
-        <div style={{ display: "flex", gap: "6px" }}>
-          {[0, 150, 300].map((d) => (
-            <span key={d} style={{ width: "10px", height: "10px", borderRadius: "50%", background: "var(--yellow)", display: "inline-block", animation: "bounce 0.8s infinite", animationDelay: `${d}ms` }} />
-          ))}
-        </div>
-        <p style={{ color: "var(--gray)", fontSize: ".9rem" }}>Gerando seu quiz personalizado...</p>
-      </div>
-    );
-  }
+  // ── Loading screens ───────────────────────────────────────────────────────
+  if (screen === "loading-flashcards" || screen === "loading-quiz") return (
+    <div style={{ minHeight: "100vh", background: "var(--black)", fontFamily: "'Inter', sans-serif", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "1rem" }}>
+      <div style={{ display: "flex", gap: 6 }}>{[0,150,300].map((d) => <span key={d} style={{ width: 10, height: 10, borderRadius: "50%", background: "var(--yellow)", display: "inline-block", animation: "bounce 0.8s infinite", animationDelay: `${d}ms` }} />)}</div>
+      <p style={{ color: "var(--gray)", fontSize: ".9rem" }}>{screen === "loading-flashcards" ? "Criando seus flashcards..." : "Gerando seu quiz personalizado..."}</p>
+    </div>
+  );
 
   // ── Quiz Screen ───────────────────────────────────────────────────────────
   if (screen === "quiz" && quiz) {
-    const q = quiz.questions[currentQ];
-    const chosen = answers[currentQ];
-    const total = quiz.questions.length;
-
+    const q = quiz.questions[currentQ]; const chosen = answers[currentQ]; const total = quiz.questions.length;
     return (
-      <div style={{ minHeight: "100vh", background: "var(--black)", fontFamily: "'Inter', sans-serif", display: "flex", flexDirection: "column", alignItems: "center", padding: "1.5rem 1rem 3rem" }}>
-        <div style={{ width: "100%", maxWidth: 520 }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1.5rem" }}>
+      <div className="flex flex-col items-center px-4 pt-6 pb-8 min-h-screen" style={{ background: "var(--black)", fontFamily: "'Inter', sans-serif" }}>
+        <div className="w-full max-w-lg">
+          <div className="flex items-center justify-between mb-6">
             <div>
-              <p style={{ fontSize: ".72rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: ".08em", color: "var(--yellow)" }}>Quiz</p>
-              <h2 style={{ fontWeight: 700, color: "#fff", fontSize: "1rem", marginTop: "2px" }}>{quiz.title}</h2>
+              <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: "var(--yellow)" }}>Quiz · Revisão de Aula</p>
+              <h2 className="font-bold text-white text-base mt-0.5">{quiz.title}</h2>
             </div>
-            <span style={{ fontSize: ".875rem", fontWeight: 700, color: "var(--gray)" }}>{currentQ + 1}/{total}</span>
+            <span className="text-sm font-bold" style={{ color: "var(--gray)" }}>{currentQ + 1}/{total}</span>
           </div>
-          <div style={{ width: "100%", height: "6px", borderRadius: "99px", background: "var(--dark2)", marginBottom: "1.5rem" }}>
-            <div style={{ height: "6px", borderRadius: "99px", background: "var(--yellow)", width: `${(currentQ / total) * 100}%`, transition: "width .5s" }} />
+          <div className="w-full h-1.5 rounded-full mb-6" style={{ background: "var(--dark2)" }}>
+            <div className="h-1.5 rounded-full transition-all duration-500" style={{ background: "var(--yellow)", width: `${(currentQ / total) * 100}%` }} />
           </div>
-          <div style={{ padding: "1rem 1.25rem", borderRadius: "16px", background: "var(--dark1)", border: "1px solid #1f1f1f", marginBottom: "1.25rem" }}>
-            <p style={{ color: "#fff", fontSize: ".9rem", lineHeight: 1.6, fontWeight: 500 }}>{q.question}</p>
+          <div className="mb-5 px-4 py-4 rounded-2xl" style={{ background: "var(--dark1)", border: "1px solid #1f1f1f" }}>
+            <p className="text-white text-sm leading-relaxed font-medium">{q.question}</p>
           </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginBottom: "1.25rem" }}>
+          <div className="flex flex-col gap-3 mb-5">
             {q.options.map((opt, i) => {
               let bg = "var(--dark1)", border = "1px solid #2a2a2a", color = "#fff";
               if (chosen !== null) {
@@ -282,20 +218,20 @@ export default function ResumoAula() {
                 else { color = "var(--gray)"; }
               }
               return (
-                <button key={i} onClick={() => selectAnswer(i)} disabled={chosen !== null} style={{ background: bg, border, color, borderRadius: "12px", padding: ".75rem 1rem", fontSize: ".875rem", fontWeight: 500, textAlign: "left", cursor: chosen !== null ? "default" : "pointer", transition: "all .15s" }}>
-                  <span style={{ fontWeight: 700, opacity: .5, marginRight: "8px" }}>{["A","B","C","D"][i]}</span>{opt}
+                <button key={i} onClick={() => selectAnswer(i)} disabled={chosen !== null} style={{ background: bg, border, color, borderRadius: 12, padding: ".75rem 1rem", fontSize: ".875rem", fontWeight: 500, textAlign: "left", cursor: chosen !== null ? "default" : "pointer", transition: "all .15s" }}>
+                  <span style={{ fontWeight: 700, opacity: .5, marginRight: 8 }}>{["A","B","C","D"][i]}</span>{opt}
                 </button>
               );
             })}
           </div>
           {showExplanation && (
-            <div style={{ padding: ".875rem 1rem", borderRadius: "12px", marginBottom: "1rem", background: chosen === q.correct ? "rgba(74,222,128,.08)" : "rgba(248,113,113,.08)", border: chosen === q.correct ? "1px solid rgba(74,222,128,.25)" : "1px solid rgba(248,113,113,.25)" }}>
+            <div style={{ padding: ".875rem 1rem", borderRadius: 12, marginBottom: "1rem", background: chosen === q.correct ? "rgba(74,222,128,.08)" : "rgba(248,113,113,.08)", border: chosen === q.correct ? "1px solid rgba(74,222,128,.25)" : "1px solid rgba(248,113,113,.25)" }}>
               <p style={{ fontWeight: 700, marginBottom: ".25rem", color: chosen === q.correct ? "#4ade80" : "#f87171" }}>{chosen === q.correct ? "✓ Correto!" : "✗ Quase lá!"}</p>
               <p style={{ color: "var(--gray)", fontSize: ".85rem" }}>{q.explanation}</p>
             </div>
           )}
           {chosen !== null && (
-            <button onClick={nextQuestion} style={{ width: "100%", padding: ".875rem", borderRadius: "12px", background: "var(--yellow)", color: "var(--black)", fontWeight: 700, fontSize: ".9rem", border: "none", cursor: "pointer" }}>
+            <button onClick={nextQuestion} style={{ width: "100%", padding: ".875rem", borderRadius: 12, background: "var(--yellow)", color: "var(--black)", fontWeight: 700, fontSize: ".9rem", border: "none", cursor: "pointer" }}>
               {currentQ + 1 < total ? "Próxima →" : "Ver resultado →"}
             </button>
           )}
@@ -311,143 +247,157 @@ export default function ResumoAula() {
     const emoji = pct >= 80 ? "🏆" : pct >= 60 ? "💪" : "📚";
     const msg = pct >= 80 ? "Excelente! Você dominou o conteúdo dessa aula." : pct >= 60 ? "Bom trabalho! Continue revisando." : "Continue assim! Cada revisão te deixa mais próximo da fluência.";
     const scoreColor = pct >= 80 ? "#4ade80" : pct >= 60 ? "var(--yellow)" : "#f87171";
-
     return (
-      <div style={{ minHeight: "100vh", background: "var(--black)", fontFamily: "'Inter', sans-serif", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "1.5rem 1rem 3rem" }}>
-        <div style={{ width: "100%", maxWidth: 520, display: "flex", flexDirection: "column", alignItems: "center", gap: "1.25rem", textAlign: "center" }}>
+      <div className="flex flex-col items-center justify-center px-4 py-10 min-h-screen" style={{ background: "var(--black)", fontFamily: "'Inter', sans-serif" }}>
+        <div className="w-full max-w-lg flex flex-col items-center gap-5 text-center">
           <div style={{ fontSize: "3rem" }}>{emoji}</div>
           <div>
             <p style={{ fontSize: "3rem", fontWeight: 900, color: scoreColor }}>{pct}%</p>
-            <p style={{ fontSize: "1.1rem", fontWeight: 700, color: "#fff", marginTop: "4px" }}>{score}/{total} corretas</p>
+            <p style={{ fontSize: "1.1rem", fontWeight: 700, color: "#fff", marginTop: 4 }}>{score}/{total} corretas</p>
           </div>
           <p style={{ color: "var(--gray)", fontSize: ".875rem" }}>{msg}</p>
-          <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: "8px", marginTop: ".5rem" }}>
+          <div className="w-full flex flex-col gap-2 mt-1">
             {quiz.questions.map((q, i) => {
               const correct = answers[i] === q.correct;
               return (
-                <div key={i} style={{ textAlign: "left", padding: ".875rem 1rem", borderRadius: "12px", background: "var(--dark1)", border: `1px solid ${correct ? "rgba(74,222,128,.2)" : "rgba(248,113,113,.2)"}` }}>
-                  <div style={{ display: "flex", gap: "8px", alignItems: "flex-start" }}>
+                <div key={i} style={{ textAlign: "left", padding: ".875rem 1rem", borderRadius: 12, background: "var(--dark1)", border: `1px solid ${correct ? "rgba(74,222,128,.2)" : "rgba(248,113,113,.2)"}` }}>
+                  <div style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
                     <span style={{ color: correct ? "#4ade80" : "#f87171", fontWeight: 700 }}>{correct ? "✓" : "✗"}</span>
                     <div>
                       <p style={{ fontWeight: 500, color: "#fff", fontSize: ".875rem" }}>{q.question}</p>
-                      <p style={{ fontSize: ".78rem", color: "var(--gray)", marginTop: "2px" }}>Correto: <span style={{ color: "#4ade80" }}>{q.options[q.correct]}</span></p>
+                      <p style={{ fontSize: ".78rem", color: "var(--gray)", marginTop: 2 }}>Correto: <span style={{ color: "#4ade80" }}>{q.options[q.correct]}</span></p>
                     </div>
                   </div>
                 </div>
               );
             })}
           </div>
-          <div style={{ display: "flex", gap: "10px", width: "100%", marginTop: ".5rem" }}>
-            <button onClick={() => router.push("/app/progresso")} style={{ flex: 1, padding: ".875rem", borderRadius: "12px", background: "var(--dark2)", color: "var(--gray)", fontWeight: 700, fontSize: ".875rem", border: "1px solid #2a2a2a", cursor: "pointer" }}>
-              Ver progresso
-            </button>
-            <button onClick={resetChat} style={{ flex: 1, padding: ".875rem", borderRadius: "12px", background: "var(--yellow)", color: "var(--black)", fontWeight: 700, fontSize: ".875rem", border: "none", cursor: "pointer" }}>
-              Nova aula
-            </button>
+          <div style={{ display: "flex", gap: 10, width: "100%", marginTop: ".5rem" }}>
+            <button onClick={() => router.push("/app/progresso")} style={{ flex: 1, padding: ".875rem", borderRadius: 12, background: "var(--dark2)", color: "var(--gray)", fontWeight: 700, fontSize: ".875rem", border: "1px solid #2a2a2a", cursor: "pointer" }}>Ver progresso</button>
+            <button onClick={resetChat} style={{ flex: 1, padding: ".875rem", borderRadius: 12, background: "var(--yellow)", color: "var(--black)", fontWeight: 700, fontSize: ".875rem", border: "none", cursor: "pointer" }}>Nova aula</button>
           </div>
         </div>
       </div>
     );
   }
 
-  // ── Chat Screen (with inline upload empty state) ───────────────────────────
+  // ── Main Chat Layout — same shell as conversar ────────────────────────────
   return (
-    <div style={{ background: "var(--black)", fontFamily: "'Inter', sans-serif", height: "100dvh", display: "flex", flexDirection: "column", overflow: "hidden" }}>
-      {/* Header — same style as conversar */}
-      <header style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 16px", borderBottom: "1px solid #1e1e1e", flexShrink: 0, gap: "10px" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <button onClick={() => router.push("/app")} style={{ background: "var(--dark2)", border: "1px solid #2a2a2a", borderRadius: "10px", height: "36px", padding: "0 10px", display: "flex", alignItems: "center", gap: "5px", fontSize: ".75rem", fontWeight: 600, color: "var(--gray)", cursor: "pointer" }}>
+    <div
+      className="flex flex-col items-center px-3 pt-3 pb-4 sm:px-4 sm:pt-4 sm:pb-6"
+      style={{ background: "var(--black)", fontFamily: "'Inter', sans-serif", height: "100dvh", overflow: "hidden" }}
+    >
+      {/* ── Header ─────────────────────────────────────────────────────────── */}
+      <header className="w-full max-w-2xl mb-3 flex items-center justify-between gap-2" style={{ position: "relative" }}>
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            onClick={() => router.push("/app")}
+            style={{ background: "var(--dark2)", border: "1px solid #2a2a2a", borderRadius: 10, height: 36, padding: "0 10px", display: "flex", alignItems: "center", gap: 5, fontSize: ".75rem", fontWeight: 600, color: "var(--gray)", cursor: "pointer" }}
+          >
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M9 2L4 7L9 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            <span className="hidden sm:inline">Início</span>
           </button>
-          <div>
-            <p style={{ fontSize: ".7rem", color: "var(--gray)", marginBottom: "1px" }}>Revisão de Aula</p>
-            <p style={{ fontSize: ".8rem", fontWeight: 700, color: "#fff" }}>
-              {fileName ? `📎 ${fileName}` : "📄 Envie seu PDF"}
-            </p>
+          <a href="/app" title="Início" style={{ background: "var(--dark2)", border: "1px solid #2a2a2a", borderRadius: 10, height: 36, width: 36, display: "flex", alignItems: "center", justifyContent: "center", textDecoration: "none", flexShrink: 0 }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--gray)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9.5z"/><path d="M9 21V12h6v9"/></svg>
+          </a>
+        </div>
+
+        <div className="flex items-center gap-2 shrink-0">
+          {messages.length >= 2 && (
+            <>
+              <button onClick={generateFlashcards} className="hidden sm:flex items-center" style={{ background: "var(--dark2)", border: "1px solid #2a2a2a", borderRadius: 10, height: 36, padding: "0 14px", fontSize: ".75rem", fontWeight: 700, color: "#fff", cursor: "pointer", gap: 6, whiteSpace: "nowrap" }}>
+                🃏 Flashcards
+              </button>
+              <button onClick={generateQuiz} style={{ background: "var(--yellow)", border: "none", borderRadius: 10, height: 36, padding: "0 14px", fontSize: ".75rem", fontWeight: 700, color: "var(--black)", cursor: "pointer", whiteSpace: "nowrap" }}>
+                🎯 Quiz
+              </button>
+            </>
+          )}
+
+          <a href="/planos" style={{ fontSize: ".78rem", fontWeight: 700, color: "var(--yellow)", border: "1px solid rgba(245,200,0,.35)", borderRadius: "50px", padding: ".3rem .8rem", textDecoration: "none", whiteSpace: "nowrap" }}>
+            Planos
+          </a>
+
+          <button onClick={() => setMobileMenuOpen((v) => !v)} className="flex sm:hidden" style={{ background: "var(--dark2)", border: "1px solid #2a2a2a", borderRadius: 10, height: 36, width: 36, alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }}>
+            {mobileMenuOpen
+              ? <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--gray)" strokeWidth="2.5" strokeLinecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+              : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--gray)" strokeWidth="2.5" strokeLinecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+            }
+          </button>
+
+          <div style={{ position: "relative", display: "inline-flex", flexShrink: 0 }}>
+            <UserButton />
+            <span style={{ position: "absolute", bottom: -4, left: "50%", transform: "translateX(-50%)", fontSize: "0.52rem", fontWeight: 800, background: "linear-gradient(135deg,#f5c800,#e0a800)", color: "#000", padding: "1px 5px", borderRadius: "50px", whiteSpace: "nowrap", lineHeight: 1.4, pointerEvents: "none" }}>PRO</span>
           </div>
         </div>
 
-        <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-          {messages.length > 0 && (
-            <button onClick={resetChat} style={{ background: "var(--dark2)", border: "1px solid #2a2a2a", borderRadius: "10px", height: "36px", padding: "0 12px", fontSize: ".75rem", fontWeight: 600, color: "var(--gray)", cursor: "pointer" }}>
-              Nova aula
-            </button>
-          )}
-          <button
-            onClick={generateFlashcards}
-            disabled={messages.length < 2}
-            style={{ background: "var(--dark2)", color: messages.length >= 2 ? "#fff" : "var(--gray)", border: "1px solid #2a2a2a", borderRadius: "10px", height: "36px", padding: "0 14px", fontSize: ".75rem", fontWeight: 700, cursor: messages.length >= 2 ? "pointer" : "default", whiteSpace: "nowrap", transition: "all .2s", opacity: messages.length >= 2 ? 1 : 0.5 }}
-          >
-            🃏 Flashcards
-          </button>
-          <button
-            onClick={generateQuiz}
-            disabled={messages.length < 2}
-            style={{ background: messages.length >= 2 ? "var(--yellow)" : "var(--dark2)", color: messages.length >= 2 ? "var(--black)" : "var(--gray)", border: messages.length >= 2 ? "none" : "1px solid #2a2a2a", borderRadius: "10px", height: "36px", padding: "0 14px", fontSize: ".75rem", fontWeight: 700, cursor: messages.length >= 2 ? "pointer" : "default", whiteSpace: "nowrap", transition: "all .2s" }}
-          >
-            🎯 Quiz
-          </button>
-        </div>
+        {/* Mobile dropdown */}
+        {mobileMenuOpen && (
+          <div className="flex sm:hidden" style={{ position: "absolute", top: "calc(100% + 8px)", right: 0, background: "var(--dark1)", border: "1px solid #2a2a2a", borderRadius: 14, padding: ".5rem", flexDirection: "column", gap: ".35rem", zIndex: 50, minWidth: 200, boxShadow: "0 8px 32px rgba(0,0,0,.5)" }}>
+            {messages.length >= 2 && (
+              <button onClick={() => { generateFlashcards(); setMobileMenuOpen(false); }} style={{ background: "transparent", border: "none", borderRadius: 10, height: 42, display: "flex", alignItems: "center", gap: 10, padding: "0 12px", cursor: "pointer", width: "100%" }}>
+                <span style={{ fontSize: "1rem", width: 24, textAlign: "center" }}>🃏</span>
+                <span style={{ fontSize: ".85rem", fontWeight: 600, color: "var(--gray)" }}>Criar Flashcards</span>
+              </button>
+            )}
+            {messages.length > 0 && (
+              <button onClick={() => { resetChat(); setMobileMenuOpen(false); }} style={{ background: "transparent", border: "none", borderRadius: 10, height: 42, display: "flex", alignItems: "center", gap: 10, padding: "0 12px", cursor: "pointer", width: "100%" }}>
+                <span style={{ fontSize: "1rem", width: 24, textAlign: "center" }}>📄</span>
+                <span style={{ fontSize: ".85rem", fontWeight: 600, color: "var(--gray)" }}>Nova aula</span>
+              </button>
+            )}
+          </div>
+        )}
       </header>
 
-      {/* Messages area */}
+      {/* ── Chat area ──────────────────────────────────────────────────────── */}
       <div
-        style={{ flex: 1, overflowY: "auto", padding: "16px", display: "flex", flexDirection: "column", gap: "12px" }}
+        className="w-full max-w-2xl flex-1 min-h-0 p-3 sm:p-4 mb-3 overflow-y-auto"
+        style={{ background: "var(--dark1)", border: "1px solid #1f1f1f", borderRadius: "var(--radius, 20px)", boxShadow: "var(--shadow)" }}
         onDragOver={(e) => { e.preventDefault(); if (!messages.length) setDragging(true); }}
         onDragLeave={() => setDragging(false)}
         onDrop={(e) => { e.preventDefault(); setDragging(false); const f = e.dataTransfer.files?.[0]; if (f && !messages.length) processFile(f); }}
       >
-        {/* Empty state — PDF upload centered in chat area */}
+        {/* Empty state — PDF upload */}
         {messages.length === 0 && !loadingPdf && (
-          <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100%" }}>
-            <div style={{ width: "100%", maxWidth: 420, textAlign: "center" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%" }}>
+            <div style={{ textAlign: "center", width: "100%", maxWidth: 380 }}>
               <div
                 onClick={() => fileInputRef.current?.click()}
-                style={{
-                  border: `2px dashed ${dragging ? "var(--yellow)" : "#2a2a2a"}`,
-                  borderRadius: "20px",
-                  padding: "3rem 2rem",
-                  cursor: "pointer",
-                  transition: "border-color .2s, background .2s",
-                  background: dragging ? "rgba(245,200,0,.04)" : "transparent",
-                }}
+                style={{ border: `2px dashed ${dragging ? "var(--yellow)" : "#2a2a2a"}`, borderRadius: 18, padding: "2.5rem 1.5rem", cursor: "pointer", transition: "border-color .2s, background .2s", background: dragging ? "rgba(245,200,0,.04)" : "transparent" }}
               >
-                <div style={{ fontSize: "2.5rem", marginBottom: ".75rem" }}>📎</div>
-                <p style={{ fontWeight: 700, color: "#fff", marginBottom: ".4rem", fontSize: ".95rem" }}>Clique ou arraste o PDF da aula aqui</p>
-                <p style={{ color: "var(--gray)", fontSize: ".82rem" }}>O JV IA vai resumir a aula e você pode tirar dúvidas</p>
+                <div style={{ fontSize: "2rem", marginBottom: ".6rem" }}>📎</div>
+                <p style={{ fontWeight: 700, color: "#fff", marginBottom: ".35rem", fontSize: ".9rem" }}>Clique ou arraste o PDF da aula aqui</p>
+                <p style={{ color: "var(--gray)", fontSize: ".78rem" }}>O JV IA vai resumir a aula e você pode tirar dúvidas</p>
                 <input ref={fileInputRef} type="file" accept="application/pdf" onChange={(e) => { const f = e.target.files?.[0]; if (f) processFile(f); }} style={{ display: "none" }} />
               </div>
-              {error && <p style={{ color: "#f87171", marginTop: "1rem", fontSize: ".85rem" }}>{error}</p>}
+              {error && <p style={{ color: "#f87171", marginTop: ".75rem", fontSize: ".82rem" }}>{error}</p>}
             </div>
           </div>
         )}
 
-        {/* Loading PDF inline */}
+        {/* Loading PDF */}
         {loadingPdf && (
-          <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "12px", minHeight: "100%" }}>
-            <div style={{ display: "flex", gap: "6px" }}>
-              {[0, 150, 300].map((d) => (
-                <span key={d} style={{ width: "10px", height: "10px", borderRadius: "50%", background: "var(--yellow)", display: "inline-block", animation: "bounce 0.8s infinite", animationDelay: `${d}ms` }} />
-              ))}
-            </div>
-            <p style={{ color: "var(--gray)", fontSize: ".9rem" }}>Analisando <strong style={{ color: "#fff" }}>{fileName}</strong>…</p>
-            <p style={{ color: "var(--gray)", fontSize: ".78rem" }}>Isso pode levar alguns segundos.</p>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", gap: 12 }}>
+            <div style={{ display: "flex", gap: 6 }}>{[0,150,300].map((d) => <span key={d} style={{ width: 9, height: 9, borderRadius: "50%", background: "var(--yellow)", display: "inline-block", animation: "bounce 0.8s infinite", animationDelay: `${d}ms` }} />)}</div>
+            <p style={{ color: "var(--gray)", fontSize: ".88rem" }}>Analisando <strong style={{ color: "#fff" }}>{fileName}</strong>…</p>
           </div>
         )}
 
-        {/* Chat messages */}
+        {/* Messages */}
         {messages.map((msg, i) => (
-          <div key={i} style={{ display: "flex", justifyContent: msg.role === "user" ? "flex-end" : "flex-start" }}>
-            <div style={{ maxWidth: "85%", background: msg.role === "user" ? "var(--yellow)" : "var(--dark1)", color: msg.role === "user" ? "var(--black)" : "#fff", borderRadius: msg.role === "user" ? "18px 18px 4px 18px" : "18px 18px 18px 4px", padding: ".75rem 1rem", fontSize: ".875rem", lineHeight: 1.6, border: msg.role === "assistant" ? "1px solid #1f1f1f" : "none" }}>
+          <div key={i} className={`mb-3 flex ${msg.role === "user" ? "justify-end" : "justify-start"} items-end gap-2`}>
+            {msg.role === "assistant" && (
+              <div style={{ width: 28, height: 28, borderRadius: "50%", background: "var(--yellow)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: ".75rem", flexShrink: 0 }}>🎓</div>
+            )}
+            <div style={{ maxWidth: "80%", padding: "10px 13px", borderRadius: msg.role === "user" ? "18px 18px 4px 18px" : "18px 18px 18px 4px", background: msg.role === "user" ? "var(--yellow)" : "var(--dark2)", color: msg.role === "user" ? "#000" : "#fff", fontSize: ".875rem", lineHeight: 1.6 }}>
               <p style={{ whiteSpace: "pre-wrap" }}>{msg.content}</p>
               {msg.role === "assistant" && msg.translation && msg.translation !== "—" && (
-                <div style={{ marginTop: "8px", borderTop: "1px solid #2a2a2a", paddingTop: "6px" }}>
+                <div style={{ marginTop: 8, borderTop: "1px solid #3a3a3a", paddingTop: 6 }}>
                   <button onClick={() => toggleTranslation(i)} style={{ background: "transparent", border: "none", color: "var(--gray)", fontSize: ".72rem", cursor: "pointer", padding: 0 }}>
                     {expandedTranslations.has(i) ? "▲ Ocultar tradução" : "▼ Ver tradução"}
                   </button>
-                  {expandedTranslations.has(i) && (
-                    <p style={{ color: "var(--gray)", fontSize: ".78rem", marginTop: "4px", fontStyle: "italic", lineHeight: 1.5 }}>{msg.translation}</p>
-                  )}
+                  {expandedTranslations.has(i) && <p style={{ color: "var(--gray)", fontSize: ".78rem", marginTop: 4, fontStyle: "italic", lineHeight: 1.5 }}>{msg.translation}</p>}
                 </div>
               )}
             </div>
@@ -455,39 +405,49 @@ export default function ResumoAula() {
         ))}
 
         {isLoading && (
-          <div style={{ display: "flex", justifyContent: "flex-start" }}>
-            <div style={{ background: "var(--dark1)", border: "1px solid #1f1f1f", borderRadius: "18px 18px 18px 4px", padding: ".75rem 1rem", display: "flex", gap: "5px", alignItems: "center" }}>
-              {[0, 150, 300].map((d) => (
-                <span key={d} style={{ width: "7px", height: "7px", borderRadius: "50%", background: "var(--yellow)", display: "inline-block", animation: "bounce 0.8s infinite", animationDelay: `${d}ms` }} />
-              ))}
+          <div className="flex justify-start mb-3">
+            <div style={{ width: 28, height: 28, borderRadius: "50%", background: "var(--yellow)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: ".75rem", flexShrink: 0, marginRight: 8 }}>🎓</div>
+            <div style={{ background: "var(--dark2)", borderRadius: "18px 18px 18px 4px", padding: "10px 13px", display: "flex", gap: 5, alignItems: "center" }}>
+              {[0,150,300].map((d) => <span key={d} style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--yellow)", display: "inline-block", animation: "bounce 0.8s infinite", animationDelay: `${d}ms` }} />)}
             </div>
           </div>
         )}
         <div ref={bottomRef} />
       </div>
 
-      {/* Input */}
-      <div style={{ padding: "10px 16px 16px", borderTop: "1px solid #1e1e1e", flexShrink: 0 }}>
-        {error && messages.length > 0 && <p style={{ color: "#f87171", fontSize: ".78rem", marginBottom: "6px" }}>{error}</p>}
-        <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-          <input
-            ref={inputRef}
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
-            placeholder={messages.length === 0 ? "Envie o PDF acima para começar..." : "Pergunte sobre a aula..."}
-            disabled={isLoading || messages.length === 0}
-            style={{ flex: 1, background: "var(--dark1)", border: "1px solid #2a2a2a", borderRadius: "14px", padding: ".75rem 1rem", fontSize: ".9rem", color: "#fff", outline: "none", fontFamily: "'Inter', sans-serif", opacity: messages.length === 0 ? 0.4 : 1 }}
-          />
-          <button
-            onClick={sendMessage}
-            disabled={isLoading || !input.trim() || messages.length === 0}
-            style={{ width: "44px", height: "44px", borderRadius: "12px", background: input.trim() && !isLoading && messages.length > 0 ? "var(--yellow)" : "var(--dark2)", border: "none", cursor: input.trim() && !isLoading && messages.length > 0 ? "pointer" : "default", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "background .15s" }}
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M22 2L11 13" stroke={input.trim() && !isLoading && messages.length > 0 ? "var(--black)" : "var(--gray)"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M22 2L15 22L11 13L2 9L22 2Z" stroke={input.trim() && !isLoading && messages.length > 0 ? "var(--black)" : "var(--gray)"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-          </button>
-        </div>
+      {/* ── Input ──────────────────────────────────────────────────────────── */}
+      <div className="w-full max-w-2xl flex gap-2 items-center">
+        <input
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
+          placeholder={messages.length === 0 ? "Envie o PDF acima para começar..." : "Pergunte sobre a aula..."}
+          disabled={isLoading || messages.length === 0}
+          style={{ flex: 1, background: "#1a1a1a", border: "1px solid #2a2a2a", borderRadius: 14, padding: ".75rem 1rem", fontSize: ".9rem", color: "#fff", outline: "none", fontFamily: "'Inter', sans-serif", opacity: messages.length === 0 ? 0.5 : 1 }}
+        />
+        <button
+          onClick={sendMessage}
+          disabled={isLoading || !input.trim() || messages.length === 0}
+          style={{ width: 44, height: 44, borderRadius: 12, background: input.trim() && !isLoading && messages.length > 0 ? "var(--yellow)" : "#1a1a1a", border: "none", cursor: input.trim() && !isLoading && messages.length > 0 ? "pointer" : "default", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "background .15s" }}
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M22 2L11 13" stroke={input.trim() && !isLoading && messages.length > 0 ? "var(--black)" : "var(--gray)"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M22 2L15 22L11 13L2 9L22 2Z" stroke={input.trim() && !isLoading && messages.length > 0 ? "var(--black)" : "var(--gray)"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+        </button>
       </div>
+
+      {/* ── Bottom Nav ─────────────────────────────────────────────────────── */}
+      <nav className="-mx-3 sm:mx-auto w-full sm:max-w-2xl mt-4" style={{ background: "#0d0d0d", borderTop: "1px solid #1e1e1e", display: "grid", gridTemplateColumns: "repeat(4,1fr)", paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
+        {[
+          { href: "/app", icon: "🏠", label: "Início" },
+          { href: "/app/trilha", icon: "🗺️", label: "Trilha" },
+          { href: "/app/flashcards", icon: "🃏", label: "Flashcards" },
+          { href: "/app/progresso", icon: "📊", label: "Progresso" },
+        ].map((item) => (
+          <a key={item.href} href={item.href} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2, padding: "8px 0 10px", textDecoration: "none" }}>
+            <span style={{ fontSize: "1.1rem" }}>{item.icon}</span>
+            <span style={{ fontSize: "0.6rem", fontWeight: 700, color: "#444" }}>{item.label}</span>
+          </a>
+        ))}
+      </nav>
     </div>
   );
 }
