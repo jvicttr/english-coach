@@ -67,7 +67,7 @@ export default function AdminPage() {
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
-    fetch("/api/admin/users")
+    fetch("/api/admin/users", { cache: "no-store" })
       .then((r) => {
         if (r.status === 403) throw new Error("Acesso negado.");
         return r.json();
