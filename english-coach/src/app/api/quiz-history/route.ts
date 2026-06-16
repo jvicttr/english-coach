@@ -15,6 +15,7 @@ export async function GET() {
     .from("quiz_results")
     .select("id, title, level, score, questions, answers, completed_at, created_at")
     .eq("user_id", userId)
+    .not("score", "is", null)
     .order("created_at", { ascending: false })
     .limit(50);
 

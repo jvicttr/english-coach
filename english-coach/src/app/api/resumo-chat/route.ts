@@ -95,7 +95,8 @@ export async function POST(req: NextRequest) {
 
   const raw = response.content[0].type === "text" ? response.content[0].text.trim() : "";
   const translationMatch = raw.match(/\[PT:\s*([\s\S]*?)(?:\]|$)/);
-  const translation = translationMatch?.[1]?.trim() ?? null;
+  const rawTranslation = translationMatch?.[1]?.trim() ?? null;
+  const translation = rawTranslation === "—" || rawTranslation === "" ? null : rawTranslation;
   const reply = raw.replace(/\[PT:[\s\S]*?\]/, "").replace(/\[BR:([^\]]+)\]/g, "$1").trim();
 
   return NextResponse.json({ reply, translation });

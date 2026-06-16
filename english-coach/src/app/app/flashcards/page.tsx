@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { UserButton } from "@clerk/nextjs";
+import { BottomNavFixed } from "@/components/BottomNav";
 
 type Flashcard = {
   id: string;
@@ -178,21 +179,6 @@ export default function Flashcards() {
     }, 400);
   }
 
-  const BottomNav = () => (
-    <nav style={{ position: "fixed", bottom: 0, left: 0, right: 0, background: "#0d0d0d", borderTop: "1px solid #1e1e1e", display: "grid", gridTemplateColumns: "repeat(4,1fr)", paddingBottom: "env(safe-area-inset-bottom, 0px)", zIndex: 50 }}>
-      {[
-        { href: "/app", icon: "🏠", label: "Início", active: false },
-        { href: "/app/trilha", icon: "🗺️", label: "Trilha", active: false },
-        { href: "/app/flashcards", icon: "🃏", label: "Flashcards", active: true },
-        { href: "/app/progresso", icon: "📊", label: "Progresso", active: false },
-      ].map((item) => (
-        <a key={item.href} href={item.href} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2, padding: "8px 0 10px", textDecoration: "none" }}>
-          <span style={{ fontSize: "1.1rem" }}>{item.icon}</span>
-          <span style={{ fontSize: "0.6rem", fontWeight: 700, color: item.active ? "var(--yellow)" : "#444" }}>{item.label}</span>
-        </a>
-      ))}
-    </nav>
-  );
 
   const Header = ({ onBack, title, right }: { onBack?: () => void; title: string; right?: React.ReactNode }) => (
     <header style={{ padding: "16px 16px 12px", display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid #1e1e1e" }}>
@@ -238,7 +224,7 @@ export default function Flashcards() {
             Começar uma conversa
           </a>
         </div>
-        <BottomNav />
+        <BottomNavFixed />
       </div>
     );
   }
@@ -271,7 +257,7 @@ export default function Flashcards() {
             Ver todos os packs
           </button>
         </div>
-        <BottomNav />
+        <BottomNavFixed />
       </div>
     );
   }
@@ -379,7 +365,7 @@ export default function Flashcards() {
           )}
           {!flipped && <p style={{ fontSize: "0.75rem", color: "var(--gray2)", marginTop: -8 }}>Tente lembrar a tradução antes de virar</p>}
         </div>
-        <BottomNav />
+        <BottomNavFixed />
       </div>
     );
   }

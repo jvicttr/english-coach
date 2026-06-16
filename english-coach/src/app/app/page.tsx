@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { UserButton } from "@clerk/nextjs";
+import { BottomNavFixed } from "@/components/BottomNav";
 import Image from "next/image";
 import OnboardingTour from "@/components/OnboardingTour";
 import LevelSelect from "@/components/LevelSelect";
@@ -398,20 +399,7 @@ export default function AppHome() {
         )}
       </div>
 
-      {/* ── Bottom Nav ─────────────────────────────────────────────────────── */}
-      <nav style={{ position: "fixed", bottom: 0, left: 0, right: 0, background: "#0d0d0d", borderTop: "1px solid #1e1e1e", display: "grid", gridTemplateColumns: "repeat(4,1fr)", paddingBottom: "env(safe-area-inset-bottom, 0px)", zIndex: 50 }}>
-        {[
-          { href: "/app", icon: "🏠", label: "Início", active: true },
-          { href: "/app/trilha", icon: "🗺️", label: "Trilha", active: false },
-          { href: "/app/flashcards", icon: "🃏", label: "Flashcards", active: false },
-          { href: "/app/progresso", icon: "📊", label: "Progresso", active: false },
-        ].map((item) => (
-          <a key={item.href} href={item.href} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2, padding: "8px 0 10px", textDecoration: "none" }}>
-            <span style={{ fontSize: "1.1rem" }}>{item.icon}</span>
-            <span style={{ fontSize: "0.6rem", fontWeight: 700, color: item.active ? "var(--yellow)" : "#444" }}>{item.label}</span>
-          </a>
-        ))}
-      </nav>
+      <BottomNavFixed />
     </div>
     </>
   );

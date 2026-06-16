@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { UserButton } from "@clerk/nextjs";
+import { BottomNavFlex } from "@/components/BottomNav";
 
 type Message = { role: "user" | "assistant"; content: string; translation?: string };
 type QuizQuestion = { question: string; options: string[]; correct: number; explanation: string };
@@ -40,6 +41,22 @@ export default function ResumoAula() {
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isLoading]);
+
+  // Auto-save quiz on tab close or navigation away
+  const quizSaveRef = useRef({ screen, quizSessionId, quiz, answers });
+  useEffect(() => { quizSaveRef.current = { screen, quizSessionId, quiz, answers }; });
+  useEffect(() => {
+    const save = () => {
+      const s = quizSaveRef.current;
+      if (s.screen !== "quiz" || !s.quizSessionId || !s.quiz) return;
+      const answered = s.answers.filter((a) => a !== null).length;
+      if (answered === 0) return;
+      const partialScore = s.answers.reduce<number>((acc, a, i) => acc + (a !== null && a === s.quiz!.questions[i].correct ? 1 : 0), 0);
+      navigator.sendBeacon("/api/quiz-abandon", new Blob([JSON.stringify({ sessionId: s.quizSessionId, score: partialScore, answers: s.answers })], { type: "application/json" }));
+    };
+    window.addEventListener("beforeunload", save);
+    return () => { window.removeEventListener("beforeunload", save); save(); };
+  }, []);
 
   async function processFile(file: File) {
     if (file.type !== "application/pdf") { setError("Por favor, envie um arquivo PDF."); return; }
@@ -421,20 +438,7 @@ export default function ResumoAula() {
         </button>
       </div>
 
-      {/* ── Bottom Nav ─────────────────────────────────────────────────────── */}
-      <nav className="-mx-3 sm:mx-auto w-full sm:max-w-2xl mt-4" style={{ background: "#0d0d0d", borderTop: "1px solid #1e1e1e", display: "grid", gridTemplateColumns: "repeat(4,1fr)", paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
-        {[
-          { href: "/app", icon: "🏠", label: "Início" },
-          { href: "/app/trilha", icon: "🗺️", label: "Trilha" },
-          { href: "/app/flashcards", icon: "🃏", label: "Flashcards" },
-          { href: "/app/progresso", icon: "📊", label: "Progresso" },
-        ].map((item) => (
-          <a key={item.href} href={item.href} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2, padding: "8px 0 10px", textDecoration: "none" }}>
-            <span style={{ fontSize: "1.1rem" }}>{item.icon}</span>
-            <span style={{ fontSize: "0.6rem", fontWeight: 700, color: "#444" }}>{item.label}</span>
-          </a>
-        ))}
-      </nav>
+      <BottomNavFlex className="-mx-3 sm:mx-auto w-full sm:max-w-2xl mt-4" />
     </div>
   );
 }

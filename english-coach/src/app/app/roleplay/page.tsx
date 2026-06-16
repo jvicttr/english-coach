@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { UserButton } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import { BottomNavFlex } from "@/components/BottomNav";
 
 type Correction = { wrong: string; right: string; phonetic: string; wrongSentence?: string; rightSentence?: string };
 type CorrectionList = Correction[];
@@ -65,6 +66,22 @@ export default function RolePlay() {
   const autoStopTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const recognitionRef = useRef<AnySpeechRecognition>(null);
+
+  // Auto-save quiz on tab close or navigation away
+  const quizSaveRef = useRef({ screen, quizSessionId, quiz, answers });
+  useEffect(() => { quizSaveRef.current = { screen, quizSessionId, quiz, answers }; });
+  useEffect(() => {
+    const save = () => {
+      const s = quizSaveRef.current;
+      if (s.screen !== "quiz" || !s.quizSessionId || !s.quiz) return;
+      const answered = s.answers.filter((a) => a !== null).length;
+      if (answered === 0) return;
+      const partialScore = s.answers.reduce<number>((acc, a, i) => acc + (a !== null && a === s.quiz!.questions[i].correct ? 1 : 0), 0);
+      navigator.sendBeacon("/api/quiz-abandon", new Blob([JSON.stringify({ sessionId: s.quizSessionId, score: partialScore, answers: s.answers })], { type: "application/json" }));
+    };
+    window.addEventListener("beforeunload", save);
+    return () => { window.removeEventListener("beforeunload", save); save(); };
+  }, []);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -389,21 +406,6 @@ export default function RolePlay() {
     setIsListening(false);
   }
 
-  const BottomNav = () => (
-    <nav className="-mx-3 sm:mx-auto w-full sm:max-w-2xl mt-1" style={{ background: "#0d0d0d", borderTop: "1px solid #1e1e1e", display: "grid", gridTemplateColumns: "repeat(4,1fr)", paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
-      {[
-        { href: "/app", icon: "🏠", label: "Início", active: false },
-        { href: "/app/trilha", icon: "🗺️", label: "Trilha", active: false },
-        { href: "/app/flashcards", icon: "🃏", label: "Flashcards", active: false },
-        { href: "/app/progresso", icon: "📊", label: "Progresso", active: false },
-      ].map((item) => (
-        <a key={item.href} href={item.href} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2, padding: "8px 0 10px", textDecoration: "none" }}>
-          <span style={{ fontSize: "1.1rem" }}>{item.icon}</span>
-          <span style={{ fontSize: "0.6rem", fontWeight: 700, color: item.active ? "var(--yellow)" : "#444" }}>{item.label}</span>
-        </a>
-      ))}
-    </nav>
-  );
 
   // ── Loading Quiz ─────────────────────────────────────────────────────────
   if (screen === "loading-quiz") {
@@ -563,7 +565,7 @@ export default function RolePlay() {
           </div>
         </div>
 
-        <BottomNav />
+        <BottomNavFlex />
       </div>
     );
   }
