@@ -3,14 +3,11 @@ import Stripe from "stripe";
 import { createClient } from "@supabase/supabase-js";
 
 async function notifyWhatsApp(message: string) {
-  const apiKey = process.env.CALLMEBOT_API_KEY;
-  if (!apiKey) return;
-  const phone = "5561995691219";
   const encoded = encodeURIComponent(message);
   try {
-    await fetch(`https://api.callmebot.com/whatsapp.php?phone=${phone}&text=${encoded}&apikey=${apiKey}`);
+    await fetch(`https://api.callmebot.com/text.php?user=@jvicttr&text=${encoded}`);
   } catch (e) {
-    console.error("[whatsapp notify]", e);
+    console.error("[telegram notify]", e);
   }
 }
 
