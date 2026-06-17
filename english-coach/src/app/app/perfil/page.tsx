@@ -168,10 +168,43 @@ export default function PerfilPage() {
           </a>
         )}
 
+        {/* Gerenciar assinatura (pro only) */}
+        {plan === "pro" && <ManageSubscriptionButton />}
+
       </div>
 
       <BottomNavFixed />
     </div>
+  );
+}
+
+function ManageSubscriptionButton() {
+  const [loading, setLoading] = useState(false);
+
+  async function handleClick() {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/portal", { method: "POST" });
+      const data = await res.json();
+      if (data.url) window.location.href = data.url;
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <button
+      onClick={handleClick}
+      disabled={loading}
+      style={{ background: "var(--dark2)", border: "1px solid #2a2a2a", borderRadius: 16, padding: "16px 18px", display: "flex", alignItems: "center", gap: 14, width: "100%", cursor: "pointer", opacity: loading ? 0.6 : 1 }}
+    >
+      <span style={{ fontSize: "1.4rem" }}>💳</span>
+      <div style={{ flex: 1, textAlign: "left" }}>
+        <p style={{ fontSize: "0.85rem", fontWeight: 800, color: "var(--white)", margin: 0 }}>Gerenciar assinatura</p>
+        <p style={{ fontSize: "0.7rem", color: "var(--gray2)", margin: "2px 0 0" }}>Cancelar, trocar método de pagamento e mais</p>
+      </div>
+      <span style={{ fontSize: "0.85rem", color: "var(--gray2)" }}>{loading ? "..." : "→"}</span>
+    </button>
   );
 }
 
