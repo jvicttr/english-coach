@@ -9,14 +9,16 @@ const supabase = createClient(
 
 export const dynamic = "force-dynamic";
 
-export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { userId } = await auth();
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const { id } = await params;
 
   const { data, error } = await supabase
     .from("lesson_reviews")
     .select("*")
-    .eq("id", params.id)
+    .eq("id", id)
     .eq("user_id", userId)
     .single();
 
