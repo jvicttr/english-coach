@@ -24,8 +24,14 @@ export default function ResumoAula() {
   const [lessonContext, setLessonContext] = useState<string | null>(null);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isListening, setIsListening] = useState(false);
+  const [isTranscribing, setIsTranscribing] = useState(false);
+  const [micError, setMicError] = useState("");
   const bottomRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const autoStopTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [quiz, setQuiz] = useState<Quiz | null>(null);
   const [quizSessionId, setQuizSessionId] = useState<string | null>(null);
@@ -169,6 +175,105 @@ export default function ResumoAula() {
       }
       setScreen("result");
     }
+  }
+
+  async function startListening() {
+    setMicError("");
+    let stream: MediaStream;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({
+        audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+      });
+    } catch {
+      setMicError("Permissão de microfone negada. Clique no cadeado na barra de endereço e permita o microfone.");
+      return;
+    }
+
+    audioChunksRef.current = [];
+
+    const mimeType = [
+      "audio/webm;codecs=opus",
+      "audio/webm",
+      "audio/ogg;codecs=opus",
+      "audio/mp4",
+    ].find((m) => MediaRecorder.isTypeSupported(m)) ?? "";
+
+    const recorder = new MediaRecorder(
+      stream,
+      mimeType ? { mimeType, audioBitsPerSecond: 128000 } : {}
+    );
+
+    recorder.ondataavailable = (e) => {
+      if (e.data.size > 0) audioChunksRef.current.push(e.data);
+    };
+
+    recorder.onstop = async () => {
+      if (autoStopTimerRef.current) clearTimeout(autoStopTimerRef.current);
+      stream.getTracks().forEach((t) => t.stop());
+
+      const finalMime = recorder.mimeType || mimeType || "audio/webm";
+      const blob = new Blob(audioChunksRef.current, { type: finalMime });
+
+      if (blob.size < 1000) {
+        setMicError("Nenhuma fala detectada. Fale mais perto do microfone e tente novamente.");
+        return;
+      }
+
+      setIsTranscribing(true);
+      try {
+        const ext = finalMime.includes("mp4") ? "mp4" : finalMime.includes("ogg") ? "ogg" : "webm";
+        const file = new File([blob], `recording.${ext}`, { type: finalMime });
+        const form = new FormData();
+        form.append("audio", file);
+
+        const res = await fetch("/api/transcribe", { method: "POST", body: form });
+        const data = await res.json();
+        setIsTranscribing(false);
+
+        if (data.transcript?.trim()) {
+          setInput(data.transcript);
+          const transcript = data.transcript.trim();
+          const userMsg: Message = { role: "user", content: transcript };
+          const updated = [...messages, userMsg];
+          setMessages(updated);
+          setInput("");
+          setIsLoading(true);
+          try {
+            const chatRes = await fetch("/api/resumo-chat", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ messages: updated, lessonContext }),
+            });
+            const chatData = await chatRes.json();
+            if (!chatRes.ok) throw new Error(chatData.error ?? "Erro");
+            setMessages((prev) => [...prev, { role: "assistant", content: chatData.reply, translation: chatData.translation ?? undefined }]);
+          } catch {
+            setMessages((prev) => [...prev, { role: "assistant", content: "Ops, tive um problema. Tente novamente!" }]);
+          } finally {
+            setIsLoading(false);
+          }
+        } else if (data.error) {
+          setMicError(`Erro na transcrição: ${data.error}`);
+        } else {
+          setMicError("Não entendi o áudio. Fale mais perto do microfone e tente novamente.");
+        }
+      } catch (err) {
+        setIsTranscribing(false);
+        setMicError(`Erro ao transcrever: ${String(err)}`);
+      }
+    };
+
+    mediaRecorderRef.current = recorder;
+    recorder.start();
+    setIsListening(true);
+    autoStopTimerRef.current = setTimeout(() => stopListening(), 60000);
+  }
+
+  function stopListening() {
+    if (autoStopTimerRef.current) clearTimeout(autoStopTimerRef.current);
+    const rec = mediaRecorderRef.current;
+    if (rec && rec.state === "recording") rec.stop();
+    setIsListening(false);
   }
 
   function resetChat() {
@@ -426,22 +531,49 @@ export default function ResumoAula() {
       </div>
 
       {/* ── Input ──────────────────────────────────────────────────────────── */}
-      <div className="w-full max-w-2xl flex gap-2 items-center">
-        <input
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
-          placeholder={messages.length === 0 ? "Envie o PDF acima para começar..." : "Pergunte sobre a aula..."}
-          disabled={isLoading || messages.length === 0}
-          style={{ flex: 1, background: "#1a1a1a", border: "1px solid #2a2a2a", borderRadius: 14, padding: ".75rem 1rem", fontSize: ".9rem", color: "#fff", outline: "none", fontFamily: "'Inter', sans-serif", opacity: messages.length === 0 ? 0.5 : 1 }}
-        />
-        <button
-          onClick={sendMessage}
-          disabled={isLoading || !input.trim() || messages.length === 0}
-          style={{ width: 44, height: 44, borderRadius: 12, background: input.trim() && !isLoading && messages.length > 0 ? "var(--yellow)" : "#1a1a1a", border: "none", cursor: input.trim() && !isLoading && messages.length > 0 ? "pointer" : "default", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "background .15s" }}
-        >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M22 2L11 13" stroke={input.trim() && !isLoading && messages.length > 0 ? "var(--black)" : "var(--gray)"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M22 2L15 22L11 13L2 9L22 2Z" stroke={input.trim() && !isLoading && messages.length > 0 ? "var(--black)" : "var(--gray)"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-        </button>
+      <div className="w-full max-w-2xl flex flex-col gap-1">
+        {micError && (
+          <p style={{ color: "#f87171", fontSize: ".78rem", padding: "0 4px" }}>{micError}</p>
+        )}
+        <div className="flex gap-2 items-center">
+          <input
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
+            placeholder={messages.length === 0 ? "Envie o PDF acima para começar..." : isListening ? "Gravando..." : isTranscribing ? "Transcrevendo..." : "Pergunte sobre a aula..."}
+            disabled={isLoading || messages.length === 0 || isListening || isTranscribing}
+            style={{ flex: 1, background: "#1a1a1a", border: "1px solid #2a2a2a", borderRadius: 14, padding: ".75rem 1rem", fontSize: ".9rem", color: "#fff", outline: "none", fontFamily: "'Inter', sans-serif", opacity: messages.length === 0 ? 0.5 : 1 }}
+          />
+          {/* Mic button */}
+          {messages.length > 0 && (
+            <button
+              onClick={() => { setMicError(""); isListening ? stopListening() : startListening(); }}
+              disabled={isLoading || isTranscribing || messages.length === 0}
+              title={isListening ? "Parar gravação" : "Gravar áudio"}
+              style={{
+                width: 44, height: 44, borderRadius: 12, border: "none", cursor: isLoading || isTranscribing ? "default" : "pointer",
+                display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "background .15s",
+                background: isListening ? "#f87171" : isTranscribing ? "var(--dark2)" : "var(--dark2)",
+                animation: "none",
+              }}
+            >
+              {isTranscribing ? (
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--gray)" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+              ) : isListening ? (
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="#fff"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>
+              ) : (
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--gray)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a3 3 0 0 1 3 3v7a3 3 0 0 1-6 0V5a3 3 0 0 1 3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+              )}
+            </button>
+          )}
+          <button
+            onClick={sendMessage}
+            disabled={isLoading || !input.trim() || messages.length === 0}
+            style={{ width: 44, height: 44, borderRadius: 12, background: input.trim() && !isLoading && messages.length > 0 ? "var(--yellow)" : "#1a1a1a", border: "none", cursor: input.trim() && !isLoading && messages.length > 0 ? "pointer" : "default", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "background .15s" }}
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M22 2L11 13" stroke={input.trim() && !isLoading && messages.length > 0 ? "var(--black)" : "var(--gray)"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M22 2L15 22L11 13L2 9L22 2Z" stroke={input.trim() && !isLoading && messages.length > 0 ? "var(--black)" : "var(--gray)"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+          </button>
+        </div>
       </div>
 
       <BottomNavFlex className="-mx-3 sm:mx-auto w-full sm:max-w-2xl mt-4" />
