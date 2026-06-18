@@ -545,27 +545,26 @@ export default function ResumoAula() {
             style={{ flex: 1, background: "#1a1a1a", border: "1px solid #2a2a2a", borderRadius: 14, padding: ".75rem 1rem", fontSize: ".9rem", color: "#fff", outline: "none", fontFamily: "'Inter', sans-serif", opacity: messages.length === 0 ? 0.5 : 1 }}
           />
           {/* Mic button */}
-          {messages.length > 0 && (
-            <button
-              onClick={() => { setMicError(""); isListening ? stopListening() : startListening(); }}
-              disabled={isLoading || isTranscribing || messages.length === 0}
-              title={isListening ? "Parar gravação" : "Gravar áudio"}
-              style={{
-                width: 44, height: 44, borderRadius: 12, border: "none", cursor: isLoading || isTranscribing ? "default" : "pointer",
-                display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "background .15s",
-                background: isListening ? "#f87171" : isTranscribing ? "var(--dark2)" : "var(--dark2)",
-                animation: "none",
-              }}
-            >
-              {isTranscribing ? (
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--gray)" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
-              ) : isListening ? (
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="#fff"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>
-              ) : (
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--gray)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a3 3 0 0 1 3 3v7a3 3 0 0 1-6 0V5a3 3 0 0 1 3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
-              )}
-            </button>
-          )}
+          <button
+            onClick={() => { if (messages.length === 0) return; setMicError(""); isListening ? stopListening() : startListening(); }}
+            disabled={isLoading || isTranscribing}
+            title={messages.length === 0 ? "Envie o PDF primeiro" : isListening ? "Parar gravação" : "Gravar áudio"}
+            style={{
+              width: 44, height: 44, borderRadius: 12, border: "none",
+              cursor: messages.length === 0 || isLoading || isTranscribing ? "default" : "pointer",
+              display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "background .15s",
+              background: isListening ? "#f87171" : "var(--dark2)",
+              opacity: messages.length === 0 ? 0.4 : 1,
+            }}
+          >
+            {isTranscribing ? (
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--gray)" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+            ) : isListening ? (
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="#fff"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>
+            ) : (
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={messages.length === 0 ? "var(--gray)" : "var(--gray)"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a3 3 0 0 1 3 3v7a3 3 0 0 1-6 0V5a3 3 0 0 1 3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+            )}
+          </button>
           <button
             onClick={sendMessage}
             disabled={isLoading || !input.trim() || messages.length === 0}
