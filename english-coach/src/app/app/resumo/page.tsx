@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { UserButton } from "@clerk/nextjs";
 import { BottomNavFlex } from "@/components/BottomNav";
@@ -9,10 +9,25 @@ type Message = { role: "user" | "assistant"; content: string; translation?: stri
 type QuizQuestion = { question: string; options: string[]; correct: number; explanation: string };
 type Quiz = { title: string; questions: QuizQuestion[] };
 type Screen = "chat" | "loading-quiz" | "loading-flashcards" | "quiz" | "result";
+type View = "chat" | "history" | "history-detail";
+
+type ReviewSummary = {
+  id: string;
+  file_name: string | null;
+  message_count: number;
+  created_at: string;
+  updated_at: string;
+};
+
+type ReviewDetail = ReviewSummary & {
+  messages: Message[];
+  lesson_context: string | null;
+};
 
 export default function ResumoAula() {
   const router = useRouter();
   const [isPro, setIsPro] = useState<boolean | null>(null);
+  const [view, setView] = useState<View>("chat");
   const [screen, setScreen] = useState<Screen>("chat");
   const [dragging, setDragging] = useState(false);
   const [fileName, setFileName] = useState<string | null>(null);
@@ -27,6 +42,18 @@ export default function ResumoAula() {
   const [isListening, setIsListening] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [micError, setMicError] = useState("");
+
+  // Persistence
+  const [reviewId, setReviewId] = useState<string | null>(null);
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // History
+  const [reviews, setReviews] = useState<ReviewSummary[]>([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
+  const [historyDetail, setHistoryDetail] = useState<ReviewDetail | null>(null);
+  const [loadingDetail, setLoadingDetail] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
   const bottomRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -48,7 +75,7 @@ export default function ResumoAula() {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isLoading]);
 
-  // Auto-save quiz on tab close or navigation away
+  // Auto-save quiz on tab close
   const quizSaveRef = useRef({ screen, quizSessionId, quiz, answers });
   useEffect(() => { quizSaveRef.current = { screen, quizSessionId, quiz, answers }; });
   useEffect(() => {
@@ -64,11 +91,69 @@ export default function ResumoAula() {
     return () => { window.removeEventListener("beforeunload", save); save(); };
   }, []);
 
+  // Debounced save to DB whenever messages change
+  const saveReview = useCallback((msgs: Message[], ctx: string | null, name: string | null, id: string | null) => {
+    if (msgs.length === 0 || !ctx) return;
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    saveTimerRef.current = setTimeout(async () => {
+      try {
+        const res = await fetch("/api/lesson-reviews", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id, file_name: name, lesson_context: ctx, messages: msgs }),
+        });
+        const data = await res.json();
+        if (data.id && !id) setReviewId(data.id);
+      } catch {}
+    }, 1500);
+  }, []);
+
+  useEffect(() => {
+    saveReview(messages, lessonContext, fileName, reviewId);
+  }, [messages]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  async function loadHistory() {
+    setLoadingHistory(true);
+    try {
+      const res = await fetch("/api/lesson-reviews");
+      const data = await res.json();
+      setReviews(data.reviews ?? []);
+    } catch {}
+    setLoadingHistory(false);
+  }
+
+  async function openHistoryDetail(id: string) {
+    setLoadingDetail(true);
+    setHistoryDetail(null);
+    setView("history-detail");
+    try {
+      const res = await fetch(`/api/lesson-reviews/${id}`);
+      const data = await res.json();
+      setHistoryDetail(data.review ?? null);
+    } catch {}
+    setLoadingDetail(false);
+  }
+
+  async function deleteReview(id: string) {
+    setDeletingId(id);
+    try {
+      await fetch("/api/lesson-reviews", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id }),
+      });
+      setReviews((prev) => prev.filter((r) => r.id !== id));
+      if (historyDetail?.id === id) { setHistoryDetail(null); setView("history"); }
+    } catch {}
+    setDeletingId(null);
+  }
+
   async function processFile(file: File) {
     if (file.type !== "application/pdf") { setError("Por favor, envie um arquivo PDF."); return; }
     setFileName(file.name);
     setError(null);
     setLoadingPdf(true);
+    setReviewId(null);
     try {
       const buffer = await file.arrayBuffer();
       const bytes = new Uint8Array(buffer);
@@ -190,48 +275,27 @@ export default function ResumoAula() {
     }
 
     audioChunksRef.current = [];
+    const mimeType = ["audio/webm;codecs=opus","audio/webm","audio/ogg;codecs=opus","audio/mp4"].find((m) => MediaRecorder.isTypeSupported(m)) ?? "";
+    const recorder = new MediaRecorder(stream, mimeType ? { mimeType, audioBitsPerSecond: 128000 } : {});
 
-    const mimeType = [
-      "audio/webm;codecs=opus",
-      "audio/webm",
-      "audio/ogg;codecs=opus",
-      "audio/mp4",
-    ].find((m) => MediaRecorder.isTypeSupported(m)) ?? "";
-
-    const recorder = new MediaRecorder(
-      stream,
-      mimeType ? { mimeType, audioBitsPerSecond: 128000 } : {}
-    );
-
-    recorder.ondataavailable = (e) => {
-      if (e.data.size > 0) audioChunksRef.current.push(e.data);
-    };
+    recorder.ondataavailable = (e) => { if (e.data.size > 0) audioChunksRef.current.push(e.data); };
 
     recorder.onstop = async () => {
       if (autoStopTimerRef.current) clearTimeout(autoStopTimerRef.current);
       stream.getTracks().forEach((t) => t.stop());
-
       const finalMime = recorder.mimeType || mimeType || "audio/webm";
       const blob = new Blob(audioChunksRef.current, { type: finalMime });
-
-      if (blob.size < 1000) {
-        setMicError("Nenhuma fala detectada. Fale mais perto do microfone e tente novamente.");
-        return;
-      }
-
+      if (blob.size < 1000) { setMicError("Nenhuma fala detectada. Fale mais perto do microfone e tente novamente."); return; }
       setIsTranscribing(true);
       try {
         const ext = finalMime.includes("mp4") ? "mp4" : finalMime.includes("ogg") ? "ogg" : "webm";
         const file = new File([blob], `recording.${ext}`, { type: finalMime });
         const form = new FormData();
         form.append("audio", file);
-
         const res = await fetch("/api/transcribe", { method: "POST", body: form });
         const data = await res.json();
         setIsTranscribing(false);
-
         if (data.transcript?.trim()) {
-          setInput(data.transcript);
           const transcript = data.transcript.trim();
           const userMsg: Message = { role: "user", content: transcript };
           const updated = [...messages, userMsg];
@@ -278,7 +342,12 @@ export default function ResumoAula() {
 
   function resetChat() {
     setMessages([]); setLessonContext(null); setFileName(null);
-    setQuiz(null); setError(null); setScreen("chat");
+    setQuiz(null); setError(null); setScreen("chat"); setReviewId(null);
+  }
+
+  function formatDate(iso: string) {
+    const d = new Date(iso);
+    return d.toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "numeric" });
   }
 
   // ── Pro gate ─────────────────────────────────────────────────────────────
@@ -398,7 +467,143 @@ export default function ResumoAula() {
     );
   }
 
-  // ── Main Chat Layout — same shell as conversar ────────────────────────────
+  // ── History Detail View ───────────────────────────────────────────────────
+  if (view === "history-detail") {
+    return (
+      <div className="flex flex-col items-center px-3 pt-3 pb-4 sm:px-4 sm:pt-4 sm:pb-6" style={{ background: "var(--black)", fontFamily: "'Inter', sans-serif", height: "100dvh", overflow: "hidden" }}>
+        <header className="w-full max-w-2xl mb-3 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <button onClick={() => { setView("history"); setHistoryDetail(null); }} style={{ background: "var(--dark2)", border: "1px solid #2a2a2a", borderRadius: 10, height: 36, padding: "0 10px", display: "flex", alignItems: "center", gap: 5, fontSize: ".75rem", fontWeight: 600, color: "var(--gray)", cursor: "pointer" }}>
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M9 2L4 7L9 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              Histórico
+            </button>
+            {historyDetail?.file_name && (
+              <div style={{ display: "flex", alignItems: "center", gap: 5, background: "rgba(245,200,0,.1)", border: "1px solid rgba(245,200,0,.25)", borderRadius: 8, padding: "4px 10px", maxWidth: 180, overflow: "hidden" }}>
+                <span style={{ fontSize: ".75rem" }}>📄</span>
+                <span style={{ fontSize: ".68rem", fontWeight: 600, color: "var(--yellow)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{historyDetail.file_name}</span>
+              </div>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            {historyDetail && (
+              <span style={{ fontSize: ".72rem", color: "var(--gray)" }}>{formatDate(historyDetail.updated_at)}</span>
+            )}
+            <div style={{ position: "relative", display: "inline-flex", flexShrink: 0 }}>
+              <UserButton />
+              <span style={{ position: "absolute", bottom: -4, left: "50%", transform: "translateX(-50%)", fontSize: "0.52rem", fontWeight: 800, background: "linear-gradient(135deg,#f5c800,#e0a800)", color: "#000", padding: "1px 5px", borderRadius: "50px", whiteSpace: "nowrap", lineHeight: 1.4, pointerEvents: "none" }}>PRO</span>
+            </div>
+          </div>
+        </header>
+
+        <div className="w-full max-w-2xl flex-1 min-h-0 p-3 sm:p-4 mb-3 overflow-y-auto" style={{ background: "var(--dark1)", border: "1px solid #1f1f1f", borderRadius: "var(--radius, 20px)" }}>
+          {loadingDetail && (
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", gap: 12 }}>
+              <div style={{ display: "flex", gap: 6 }}>{[0,150,300].map((d) => <span key={d} style={{ width: 9, height: 9, borderRadius: "50%", background: "var(--yellow)", display: "inline-block", animation: "bounce 0.8s infinite", animationDelay: `${d}ms` }} />)}</div>
+              <p style={{ color: "var(--gray)", fontSize: ".85rem" }}>Carregando revisão…</p>
+            </div>
+          )}
+          {!loadingDetail && historyDetail && historyDetail.messages.map((msg, i) => (
+            <div key={i} className={`mb-3 flex ${msg.role === "user" ? "justify-end" : "justify-start"} items-end gap-2`}>
+              {msg.role === "assistant" && (
+                <div style={{ width: 28, height: 28, borderRadius: "50%", background: "var(--yellow)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: ".75rem", flexShrink: 0 }}>🎓</div>
+              )}
+              <div style={{ maxWidth: "80%", padding: "10px 13px", borderRadius: msg.role === "user" ? "18px 18px 4px 18px" : "18px 18px 18px 4px", background: msg.role === "user" ? "var(--yellow)" : "var(--dark2)", color: msg.role === "user" ? "#000" : "#fff", fontSize: ".875rem", lineHeight: 1.6 }}>
+                <p style={{ whiteSpace: "pre-wrap" }}>{msg.content}</p>
+              </div>
+            </div>
+          ))}
+          {!loadingDetail && !historyDetail && (
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%" }}>
+              <p style={{ color: "var(--gray)" }}>Não foi possível carregar esta revisão.</p>
+            </div>
+          )}
+        </div>
+
+        <BottomNavFlex className="-mx-3 sm:mx-auto w-full sm:max-w-2xl mt-4" />
+      </div>
+    );
+  }
+
+  // ── History List View ─────────────────────────────────────────────────────
+  if (view === "history") {
+    return (
+      <div className="flex flex-col items-center px-3 pt-3 pb-4 sm:px-4 sm:pt-4 sm:pb-6" style={{ background: "var(--black)", fontFamily: "'Inter', sans-serif", height: "100dvh", overflow: "hidden" }}>
+        <header className="w-full max-w-2xl mb-3 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <button onClick={() => setView("chat")} style={{ background: "var(--dark2)", border: "1px solid #2a2a2a", borderRadius: 10, height: 36, padding: "0 10px", display: "flex", alignItems: "center", gap: 5, fontSize: ".75rem", fontWeight: 600, color: "var(--gray)", cursor: "pointer" }}>
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M9 2L4 7L9 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              Voltar
+            </button>
+            <h1 style={{ fontSize: ".9rem", fontWeight: 800, color: "#fff" }}>Histórico de revisões</h1>
+          </div>
+          <div style={{ position: "relative", display: "inline-flex", flexShrink: 0 }}>
+            <UserButton />
+            <span style={{ position: "absolute", bottom: -4, left: "50%", transform: "translateX(-50%)", fontSize: "0.52rem", fontWeight: 800, background: "linear-gradient(135deg,#f5c800,#e0a800)", color: "#000", padding: "1px 5px", borderRadius: "50px", whiteSpace: "nowrap", lineHeight: 1.4, pointerEvents: "none" }}>PRO</span>
+          </div>
+        </header>
+
+        <div className="w-full max-w-2xl flex-1 min-h-0 overflow-y-auto" style={{ borderRadius: "var(--radius, 20px)" }}>
+          {loadingHistory && (
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: 200, gap: 12 }}>
+              <div style={{ display: "flex", gap: 6 }}>{[0,150,300].map((d) => <span key={d} style={{ width: 9, height: 9, borderRadius: "50%", background: "var(--yellow)", display: "inline-block", animation: "bounce 0.8s infinite", animationDelay: `${d}ms` }} />)}</div>
+            </div>
+          )}
+
+          {!loadingHistory && reviews.length === 0 && (
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: 280, gap: 12, textAlign: "center" }}>
+              <div style={{ fontSize: "2.5rem" }}>📂</div>
+              <p style={{ fontWeight: 700, color: "#fff", fontSize: ".9rem" }}>Nenhuma revisão salva ainda</p>
+              <p style={{ color: "var(--gray)", fontSize: ".8rem", maxWidth: 260 }}>Envie o PDF de uma aula e converse com o JV IA — a revisão fica salva automaticamente.</p>
+              <button onClick={() => setView("chat")} style={{ marginTop: 8, background: "var(--yellow)", color: "var(--black)", fontWeight: 700, fontSize: ".85rem", padding: ".65rem 1.5rem", borderRadius: 50, border: "none", cursor: "pointer" }}>
+                Iniciar revisão →
+              </button>
+            </div>
+          )}
+
+          {!loadingHistory && reviews.length > 0 && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              {reviews.map((r) => (
+                <div
+                  key={r.id}
+                  style={{ background: "var(--dark1)", border: "1px solid #1f1f1f", borderRadius: 16, padding: "14px 16px", display: "flex", alignItems: "center", gap: 12 }}
+                >
+                  <div
+                    onClick={() => openHistoryDetail(r.id)}
+                    style={{ flex: 1, cursor: "pointer", minWidth: 0 }}
+                  >
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                      <span style={{ fontSize: "1rem" }}>📄</span>
+                      <p style={{ fontWeight: 700, color: "#fff", fontSize: ".875rem", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                        {r.file_name ? r.file_name.replace(/\.pdf$/i, "") : "Aula sem título"}
+                      </p>
+                    </div>
+                    <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+                      <span style={{ fontSize: ".72rem", color: "var(--gray)" }}>{formatDate(r.updated_at)}</span>
+                      <span style={{ fontSize: ".72rem", color: "var(--gray)", background: "var(--dark2)", borderRadius: 6, padding: "1px 7px" }}>
+                        {r.message_count} mensagem{r.message_count !== 1 ? "s" : ""}
+                      </span>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => deleteReview(r.id)}
+                    disabled={deletingId === r.id}
+                    title="Excluir revisão"
+                    style={{ width: 32, height: 32, borderRadius: 8, background: "transparent", border: "1px solid #2a2a2a", cursor: deletingId === r.id ? "default" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, opacity: deletingId === r.id ? 0.4 : 1 }}
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#f87171" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <BottomNavFlex className="-mx-3 sm:mx-auto w-full sm:max-w-2xl mt-4" />
+      </div>
+    );
+  }
+
+  // ── Main Chat Layout ──────────────────────────────────────────────────────
   return (
     <div
       className="flex flex-col items-center px-3 pt-3 pb-4 sm:px-4 sm:pt-4 sm:pb-6"
@@ -414,11 +619,16 @@ export default function ResumoAula() {
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M9 2L4 7L9 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
             <span className="hidden sm:inline">Início</span>
           </button>
-          <a href="/app" title="Início" style={{ background: "var(--dark2)", border: "1px solid #2a2a2a", borderRadius: 10, height: 36, width: 36, display: "flex", alignItems: "center", justifyContent: "center", textDecoration: "none", flexShrink: 0 }}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--gray)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9.5z"/><path d="M9 21V12h6v9"/></svg>
-          </a>
+          {/* Histórico button */}
+          <button
+            onClick={() => { setView("history"); loadHistory(); }}
+            style={{ background: "var(--dark2)", border: "1px solid #2a2a2a", borderRadius: 10, height: 36, padding: "0 10px", display: "flex", alignItems: "center", gap: 5, fontSize: ".75rem", fontWeight: 600, color: "var(--gray)", cursor: "pointer" }}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            <span>Histórico</span>
+          </button>
           {fileName && messages.length > 0 && (
-            <div style={{ display: "flex", alignItems: "center", gap: 5, background: "rgba(245,200,0,.1)", border: "1px solid rgba(245,200,0,.25)", borderRadius: 8, padding: "4px 10px", maxWidth: 140, overflow: "hidden" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 5, background: "rgba(245,200,0,.1)", border: "1px solid rgba(245,200,0,.25)", borderRadius: 8, padding: "4px 10px", maxWidth: 130, overflow: "hidden" }}>
               <span style={{ fontSize: ".75rem" }}>📄</span>
               <span style={{ fontSize: ".68rem", fontWeight: 600, color: "var(--yellow)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{fileName}</span>
             </div>
@@ -437,10 +647,6 @@ export default function ResumoAula() {
             </>
           )}
 
-          <a href="/planos" style={{ fontSize: ".78rem", fontWeight: 700, color: "var(--yellow)", border: "1px solid rgba(245,200,0,.35)", borderRadius: "50px", padding: ".3rem .8rem", textDecoration: "none", whiteSpace: "nowrap" }}>
-            Planos
-          </a>
-
           <button onClick={() => setMobileMenuOpen((v) => !v)} className="flex sm:hidden" style={{ background: "var(--dark2)", border: "1px solid #2a2a2a", borderRadius: 10, height: 36, width: 36, alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }}>
             {mobileMenuOpen
               ? <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--gray)" strokeWidth="2.5" strokeLinecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
@@ -457,6 +663,10 @@ export default function ResumoAula() {
         {/* Mobile dropdown */}
         {mobileMenuOpen && (
           <div className="flex sm:hidden" style={{ position: "absolute", top: "calc(100% + 8px)", right: 0, background: "var(--dark1)", border: "1px solid #2a2a2a", borderRadius: 14, padding: ".5rem", flexDirection: "column", gap: ".35rem", zIndex: 50, minWidth: 200, boxShadow: "0 8px 32px rgba(0,0,0,.5)" }}>
+            <button onClick={() => { setView("history"); loadHistory(); setMobileMenuOpen(false); }} style={{ background: "transparent", border: "none", borderRadius: 10, height: 42, display: "flex", alignItems: "center", gap: 10, padding: "0 12px", cursor: "pointer", width: "100%" }}>
+              <span style={{ fontSize: "1rem", width: 24, textAlign: "center" }}>🕐</span>
+              <span style={{ fontSize: ".85rem", fontWeight: 600, color: "var(--gray)" }}>Histórico</span>
+            </button>
             {messages.length >= 2 && (
               <button onClick={() => { generateFlashcards(); setMobileMenuOpen(false); }} style={{ background: "transparent", border: "none", borderRadius: 10, height: 42, display: "flex", alignItems: "center", gap: 10, padding: "0 12px", cursor: "pointer", width: "100%" }}>
                 <span style={{ fontSize: "1rem", width: 24, textAlign: "center" }}>🃏</span>
@@ -562,7 +772,7 @@ export default function ResumoAula() {
             ) : isListening ? (
               <svg width="16" height="16" viewBox="0 0 24 24" fill="#fff"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>
             ) : (
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={messages.length === 0 ? "var(--gray)" : "var(--gray)"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a3 3 0 0 1 3 3v7a3 3 0 0 1-6 0V5a3 3 0 0 1 3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--gray)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a3 3 0 0 1 3 3v7a3 3 0 0 1-6 0V5a3 3 0 0 1 3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
             )}
           </button>
           <button
