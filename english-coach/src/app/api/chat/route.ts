@@ -90,7 +90,7 @@ Guide the conversation around this theme. Keep it natural and engaging, not like
 
   const response = await client.messages.create({
     model: "claude-sonnet-4-6",
-    max_tokens: 900,
+    max_tokens: 1800,
     system: systemFull,
     messages: baseMessages,
   });
@@ -126,8 +126,8 @@ Guide the conversation around this theme. Keep it natural and engaging, not like
     try {
       const fallback = await client.messages.create({
         model: "claude-haiku-4-5-20251001",
-        max_tokens: 200,
-        messages: [{ role: "user", content: `Translate this English text to Brazilian Portuguese (pt-BR). Reply with ONLY the translation, no extra text:\n\n${reply}` }],
+        max_tokens: 1000,
+        messages: [{ role: "user", content: `Translate this English text to Brazilian Portuguese (pt-BR). Translate EVERYTHING — every sentence, including any pitch, summary, or example. Reply with ONLY the translation, no extra text:\n\n${reply}` }],
       });
       const fbText = fallback.content[0].type === "text" ? fallback.content[0].text.trim() : null;
       if (fbText) finalTranslation = fbText;
