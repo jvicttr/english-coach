@@ -110,12 +110,12 @@ function MixDemo() {
   }, []);
 
   return (
-    <div ref={ref} style={{ background:"#111", border:"1px solid rgba(245,200,0,.2)", borderRadius:20, padding:"1.4rem 1.2rem", maxWidth:500, width:"100%", boxShadow:"0 24px 80px rgba(0,0,0,.6)", fontFamily:"'Inter',sans-serif" }}>
+    <div ref={ref} style={{ background:"#111", border:"1px solid rgba(245,200,0,.2)", borderRadius:20, padding:"1.4rem 1.2rem", maxWidth:500, width:"100%", boxShadow:"0 24px 80px rgba(0,0,0,.6)", fontFamily:"'Inter',sans-serif", display:"flex", flexDirection:"column" }}>
       <div style={{ display:"flex", alignItems:"center", gap:".5rem", marginBottom:"1rem", fontSize:".75rem", color:"var(--gray)", fontWeight:600 }}>
         <span style={{ width:8, height:8, borderRadius:"50%", background:"#4ade80", display:"inline-block" }} />
         JV IA — detectando português automaticamente
       </div>
-      <div style={{ display:"flex", flexDirection:"column", gap:".75rem" }}>
+      <div style={{ display:"flex", flexDirection:"column", gap:".75rem", overflow:"visible" }}>
         {MIX_DEMO_STEPS.map((msg, i) => (
           <div key={i} style={{
             opacity: visible.includes(i) ? 1 : 0,
