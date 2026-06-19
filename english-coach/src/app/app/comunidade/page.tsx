@@ -182,9 +182,6 @@ function ReplyComposer({ postId, user, onDone }: { postId: string; user: ReturnT
           )}
           {error && <p style={{ fontSize: "0.7rem", color: "#f87171", margin: "4px 0" }}>{error}</p>}
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 6 }}>
-            <button onClick={() => { if (!recording && !audioBlob) startRec(); }} disabled={recording || !!audioBlob} style={{ background: "none", border: "none", cursor: "pointer", opacity: audioBlob ? 0.4 : 1, display: "flex", alignItems: "center", color: "var(--gray)" }}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
-            </button>
             <button onClick={() => fileInputRef.current?.click()} disabled={!!imageFile} style={{ background: "none", border: "none", cursor: "pointer", opacity: imageFile ? 0.4 : 1, display: "flex", alignItems: "center", color: "var(--gray)" }}>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
             </button>
