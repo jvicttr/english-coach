@@ -201,7 +201,7 @@ export default function Progresso() {
   }
 
   return (
-    <div style={{ background: "var(--black)", minHeight: "100dvh", fontFamily: "'Inter', sans-serif", paddingTop: 65, paddingBottom: 100 }}>
+    <div className="app-scroll" style={{ background: "var(--black)", fontFamily: "'Inter', sans-serif", paddingTop: 65, paddingBottom: 100 }}>
       <div style={{ padding: "10px 16px", borderBottom: "1px solid #1e1e1e" }}>
         <span style={{ fontWeight: 800, color: "#fff", fontSize: "0.95rem" }}>📊 Meu Progresso</span>
       </div>

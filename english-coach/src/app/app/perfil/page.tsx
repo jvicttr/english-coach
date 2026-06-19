@@ -61,7 +61,7 @@ export default function PerfilPage() {
     : 100;
 
   return (
-    <div style={{ background: "var(--black)", minHeight: "100dvh", fontFamily: "'Inter', sans-serif", display: "flex", flexDirection: "column", alignItems: "center", paddingTop: 65, paddingBottom: 80 }}>
+    <div className="app-scroll" style={{ background: "var(--black)", fontFamily: "'Inter', sans-serif", display: "flex", flexDirection: "column", alignItems: "center", paddingTop: 65, paddingBottom: 80 }}>
       <div style={{ width: "100%", padding: "10px 16px", borderBottom: "1px solid #1e1e1e" }}>
         <span style={{ fontSize: "1rem", fontWeight: 800, color: "var(--white)" }}>👤 Perfil</span>
       </div>
