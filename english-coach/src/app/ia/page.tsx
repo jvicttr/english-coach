@@ -321,7 +321,7 @@ export default function IALanding() {
         .topic-chip { background:#1a1a1a; border:1px solid #2a2a2a; border-radius:50px; padding:.45rem 1rem; font-size:.82rem; color:#ccc; display:flex; align-items:center; gap:.4rem; transition:all .2s; cursor:default; }
         .topic-chip:hover { border-color:rgba(245,200,0,.4); color:#fff; background:rgba(245,200,0,.05); }
         .step-line { position:absolute; top:50%; left:100%; width:2rem; height:1px; background:rgba(245,200,0,.2); }
-        section { padding: 5rem 1.25rem; }
+        section { padding: 3.5rem 1.25rem; }
         .section-inner { max-width:1100px; margin:0 auto; }
         .section-label { display:inline-block; background:rgba(245,200,0,.12); color:var(--yellow); font-size:.72rem; font-weight:700; text-transform:uppercase; letter-spacing:.1em; padding:.3rem .9rem; border-radius:50px; margin-bottom:1rem; }
         h2.big { font-size:clamp(1.8rem,4vw,2.8rem); font-weight:900; color:#fff; line-height:1.1; letter-spacing:-.5px; }
@@ -342,11 +342,11 @@ export default function IALanding() {
       </nav>
 
       {/* ── HERO ────────────────────────────────────────────────── */}
-      <section style={{ minHeight:"100vh", paddingTop:100, paddingBottom:60, display:"flex", alignItems:"center", background:"var(--black)", position:"relative", overflow:"hidden" }}>
+      <section style={{ minHeight:"90vh", paddingTop:90, paddingBottom:50, display:"flex", alignItems:"center", background:"var(--black)", position:"relative", overflow:"hidden" }}>
         <div style={{ position:"absolute", top:-60, right:-80, width:500, height:500, borderRadius:"50%", background:"radial-gradient(circle,rgba(245,200,0,.08) 0%,transparent 70%)", pointerEvents:"none" }} />
         <div style={{ position:"absolute", bottom:-40, left:-60, width:350, height:350, borderRadius:"50%", background:"radial-gradient(circle,rgba(245,200,0,.05) 0%,transparent 70%)", pointerEvents:"none" }} />
 
-        <div className="section-inner" style={{ width:"100%", display:"grid", gridTemplateColumns:"1fr", gap:"3rem", alignItems:"center" }}>
+        <div className="section-inner" style={{ width:"100%", display:"grid", gridTemplateColumns:"1fr", gap:"2.5rem", alignItems:"center" }}>
           <div className="anim">
             <div className="section-label">Praticado por alunos da Fale Inglês JV</div>
             <h1 style={{ fontSize:"clamp(2.2rem,5vw,3.8rem)", fontWeight:900, color:"#fff", lineHeight:1.05, letterSpacing:"-.5px", marginBottom:"1.25rem" }}>
@@ -397,12 +397,12 @@ export default function IALanding() {
       {/* ── FUNCIONALIDADES ─────────────────────────────────────── */}
       <section id="funcionalidades" style={{ background:"var(--black)" }}>
         <div className="section-inner">
-          <div className="anim" style={{ marginBottom:"3rem" }}>
+          <div className="anim" style={{ marginBottom:"2.5rem" }}>
             <div className="section-label">Funcionalidades</div>
             <h2 className="big">Tudo que você precisa para <em>evoluir de verdade</em></h2>
             <p className="subtitle">Do chat inteligente ao quiz personalizado — cada detalhe foi pensado para transformar a prática em fluência.</p>
           </div>
-          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))", gap:"1.1rem" }}>
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(260px,1fr))", gap:"1rem" }}>
             {FEATURES.map((f, i) => (
               <div key={i} className={`feature-card anim anim-delay-${(i % 4) + 1}`}>
                 <div style={{ fontSize:"1.8rem", marginBottom:".75rem" }}>{f.icon}</div>
@@ -419,7 +419,7 @@ export default function IALanding() {
 
       {/* ── MISTURE PORTUGUÊS E INGLÊS ──────────────────────────── */}
       <section style={{ background:"#0d0d0d", borderTop:"1px solid #1a1a1a" }}>
-        <div className="section-inner" style={{ display:"grid", gridTemplateColumns:"1fr", gap:"3rem", alignItems:"center" }}>
+        <div className="section-inner" style={{ display:"grid", gridTemplateColumns:"1fr", gap:"2.5rem", alignItems:"center" }}>
           <div className="anim">
             <div className="section-label">Funcionalidade exclusiva</div>
             <h2 className="big">Misture português<br /><em>e inglês à vontade</em></h2>
@@ -446,7 +446,7 @@ export default function IALanding() {
       {/* ── COMO FUNCIONA ───────────────────────────────────────── */}
       <section id="como-funciona" style={{ background:"#0d0d0d", borderTop:"1px solid #1a1a1a" }}>
         <div className="section-inner">
-          <div className="anim" style={{ marginBottom:"3rem" }}>
+          <div className="anim" style={{ marginBottom:"2.5rem" }}>
             <div className="section-label">Como funciona</div>
             <h2 className="big">Em 5 passos você <em>já está praticando</em></h2>
             <p className="subtitle">Simples, rápido e sem configuração. Abriu, escolheu o tema, começou a conversar.</p>
@@ -469,7 +469,7 @@ export default function IALanding() {
 
       {/* ── QUIZ DEMO ───────────────────────────────────────────── */}
       <section style={{ background:"var(--black)" }}>
-        <div className="section-inner" style={{ display:"grid", gridTemplateColumns:"1fr", gap:"3rem", alignItems:"center" }}>
+        <div className="section-inner" style={{ display:"grid", gridTemplateColumns:"1fr", gap:"2.5rem", alignItems:"center" }}>
           <div className="anim">
             <div className="section-label">Quiz personalizado</div>
             <h2 className="big">Teste o que você aprendeu<br /><em>em cada conversa</em></h2>
@@ -490,7 +490,7 @@ export default function IALanding() {
 
       {/* ── REVISÃO DE AULA ─────────────────────────────────────── */}
       <section style={{ background:"#0d0d0d", borderTop:"1px solid #1a1a1a" }}>
-        <div className="section-inner" style={{ display:"grid", gridTemplateColumns:"1fr", gap:"3rem", alignItems:"center" }}>
+        <div className="section-inner" style={{ display:"grid", gridTemplateColumns:"1fr", gap:"2.5rem", alignItems:"center" }}>
           <div className="anim anim-delay-1" style={{ display:"flex", justifyContent:"center", order:2 }}>
             {/* PDF mockup */}
             <div style={{ background:"#111", border:"1px solid #1e1e1e", borderRadius:20, padding:"1.5rem", maxWidth:380, width:"100%", boxShadow:"0 24px 80px rgba(0,0,0,.6)", fontFamily:"'Inter',sans-serif" }}>
@@ -537,7 +537,7 @@ export default function IALanding() {
             <h2 className="big">Para quem quer <em>resultado de verdade</em></h2>
             <p className="subtitle" style={{ margin:"auto" }}>Não importa o seu nível — o JV IA se adapta e te desafia no ritmo certo.</p>
           </div>
-          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(240px,1fr))", gap:"1rem" }}>
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(220px,1fr))", gap:"0.95rem" }}>
             {[
               { emoji:"📅", title:"Alunos das aulas ao vivo", desc:"Pratique nos dias entre as aulas e chegue ao próximo encontro mais preparado." },
               { emoji:"⏱️", title:"Quem tem pouco tempo", desc:"10 minutos de conversa por dia já fazem diferença. Sem hora marcada, sem compromisso." },
