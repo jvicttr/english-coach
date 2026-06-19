@@ -189,6 +189,7 @@ export default function LandingPage() {
             <li><a href="#como-funciona" onClick={() => setMenuOpen(false)}>Como funciona</a></li>
             <li><a href="#depoimentos" onClick={() => setMenuOpen(false)}>Depoimentos</a></li>
             <li><a href="#faq" onClick={() => setMenuOpen(false)}>FAQ</a></li>
+            <li><a href="/ia" onClick={() => setMenuOpen(false)}>Saiba mais</a></li>
             <li><a href="/app" onClick={() => setMenuOpen(false)}>JV IA</a></li>
           </ul>
           <a className="nav-cta nav-cta-style" href={WPP} target="_blank" rel="noopener noreferrer">
