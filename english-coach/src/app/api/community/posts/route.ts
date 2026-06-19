@@ -50,7 +50,7 @@ export async function POST(req: NextRequest) {
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await req.json();
-  const { content = "", audioUrl = null, imageUrl = null, validateOnly = false, parentId = null } = body;
+  const { content = "", audioUrl = null, imageUrl = null, transcript = null, validateOnly = false, parentId = null } = body;
 
   if (!content.trim() && !audioUrl && !imageUrl) {
     return NextResponse.json({ error: "Empty post" }, { status: 400 });
@@ -88,7 +88,7 @@ export async function POST(req: NextRequest) {
 
   const { data: post, error } = await supabase
     .from("community_posts")
-    .insert({ user_id: userId, display_name: displayName, avatar_url: avatarUrl, content: content.trim(), audio_url: audioUrl, image_url: imageUrl, parent_id: parentId ?? null })
+    .insert({ user_id: userId, display_name: displayName, avatar_url: avatarUrl, content: content.trim(), audio_url: audioUrl, image_url: imageUrl, transcript: transcript ?? null, parent_id: parentId ?? null })
     .select()
     .single();
 

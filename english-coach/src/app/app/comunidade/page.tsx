@@ -13,6 +13,7 @@ type Post = {
   content: string;
   audio_url: string | null;
   image_url: string | null;
+  transcript: string | null;
   created_at: string;
   reply_count?: number;
   community_reactions: Reaction[];
@@ -77,6 +78,7 @@ function ReplyComposer({ postId, user, onDone }: { postId: string; user: ReturnT
     setPosting(true); setError("");
     try {
       let uploadedAudio: string | null = null;
+      let audioTranscript: string | null = null;
       if (audioBlob) {
         const tf = new FormData();
         tf.append("audio", new File([audioBlob], "audio.webm", { type: "audio/webm" }));
@@ -90,10 +92,11 @@ function ReplyComposer({ postId, user, onDone }: { postId: string; user: ReturnT
         uf.append("file", new File([audioBlob], "audio.webm", { type: "audio/webm" })); uf.append("type", "audio");
         const ur = await fetch("/api/community/upload", { method: "POST", body: uf });
         uploadedAudio = (await ur.json()).url;
+        audioTranscript = td.text;
       }
       const res = await fetch("/api/community/posts", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ content: text.trim(), audioUrl: uploadedAudio, parentId: postId }),
+        body: JSON.stringify({ content: text.trim(), audioUrl: uploadedAudio, transcript: audioTranscript, parentId: postId }),
       });
       const data = await res.json();
       if (!res.ok) { setError(data.error === "not_english" ? "Please write in English! 🇺🇸" : "Something went wrong."); return; }
@@ -164,6 +167,19 @@ function PostCard({ post, myId, user, router, isReply = false, onReaction, onDel
   const [loadingReplies, setLoadingReplies] = useState(false);
   const [replyCount, setReplyCount] = useState(post.reply_count ?? 0);
   const [deleting, setDeleting] = useState(false);
+  const [translation, setTranslation] = useState<string | null>(null);
+  const [translating, setTranslating] = useState(false);
+  const [showTranslation, setShowTranslation] = useState(false);
+
+  async function fetchTranslation(text: string) {
+    if (translation) { setShowTranslation(true); return; }
+    setTranslating(true);
+    const res = await fetch("/api/community/translate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text }) });
+    const data = await res.json();
+    setTranslation(data.translation ?? null);
+    setShowTranslation(true);
+    setTranslating(false);
+  }
 
   async function deletePost() {
     if (!confirm("Delete this post?")) return;
@@ -219,7 +235,28 @@ function PostCard({ post, myId, user, router, isReply = false, onReaction, onDel
       </div>
 
       {post.image_url && <img src={post.image_url} alt="post" style={{ width: "100%", maxHeight: 280, objectFit: "cover", borderRadius: 10, marginBottom: 10 }} />}
-      {post.audio_url && <div style={{ background: "#0d0d0d", borderRadius: 10, padding: "8px 12px", marginBottom: 10 }}><audio src={post.audio_url} controls style={{ width: "100%", height: 32 }} /></div>}
+      {post.audio_url && (
+        <div style={{ background: "#0d0d0d", borderRadius: 10, padding: "8px 12px", marginBottom: 10 }}>
+          <audio src={post.audio_url} controls style={{ width: "100%", height: 32 }} />
+          {post.transcript && (
+            <div style={{ marginTop: 8 }}>
+              <p style={{ fontSize: "0.78rem", color: "#ccc", lineHeight: 1.5, margin: 0, fontStyle: "italic" }}>"{post.transcript}"</p>
+              <div style={{ marginTop: 6 }}>
+                {showTranslation && translation ? (
+                  <div style={{ display: "flex", alignItems: "flex-start", gap: 6 }}>
+                    <p style={{ fontSize: "0.75rem", color: "var(--gray)", lineHeight: 1.5, margin: 0 }}>🇧🇷 {translation}</p>
+                    <button onClick={() => setShowTranslation(false)} style={{ background: "none", border: "none", color: "#555", fontSize: "0.65rem", cursor: "pointer", flexShrink: 0, padding: 0 }}>ocultar</button>
+                  </div>
+                ) : (
+                  <button onClick={() => fetchTranslation(post.transcript!)} disabled={translating} style={{ background: "transparent", border: "1px solid #3a3a3a", borderRadius: 50, padding: "2px 10px", fontSize: "0.7rem", color: "var(--gray)", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 4 }}>
+                    {translating ? "…" : "🇧🇷 Ver tradução"}
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
       {post.content && <p style={{ fontSize: isReply ? "0.85rem" : "0.9rem", color: "#fff", lineHeight: 1.6, marginBottom: 12, whiteSpace: "pre-wrap" }}>{post.content}</p>}
 
       {/* Actions */}
@@ -347,6 +384,7 @@ export default function ComunidadePage() {
     try {
       let uploadedAudioUrl: string | null = null;
       let uploadedImageUrl: string | null = null;
+      let audioTranscript: string | null = null;
 
       if (audioBlob) {
         const tf = new FormData();
@@ -359,6 +397,7 @@ export default function ComunidadePage() {
         const uf = new FormData();
         uf.append("file", new File([audioBlob], "audio.webm", { type: "audio/webm" })); uf.append("type", "audio");
         uploadedAudioUrl = (await (await fetch("/api/community/upload", { method: "POST", body: uf })).json()).url;
+        audioTranscript = td.text;
       }
 
       if (imageFile) {
@@ -371,7 +410,7 @@ export default function ComunidadePage() {
 
       const res = await fetch("/api/community/posts", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ content: postText.trim(), audioUrl: uploadedAudioUrl, imageUrl: uploadedImageUrl }),
+        body: JSON.stringify({ content: postText.trim(), audioUrl: uploadedAudioUrl, imageUrl: uploadedImageUrl, transcript: audioTranscript }),
       });
       const data = await res.json();
       if (!res.ok) {
