@@ -54,12 +54,6 @@ const FEATURES = [
     desc: "O JV IA detecta se você é iniciante, intermediário ou avançado pela sua forma de escrever e adapta o vocabulário e as respostas sem você precisar configurar nada.",
     badge: null,
   },
-  {
-    icon: "👥",
-    title: "Comunidade de alunos",
-    desc: "Conecte com outros alunos, compartilhe posts em inglês e receba feedback. Edite seus posts, use emojis e engaje em discussões reais — aprenda praticando com a comunidade.",
-    badge: null,
-  },
 ];
 
 const TOPICS = [
@@ -240,6 +234,49 @@ function ChatMockup() {
         <div style={{ width: 36, height: 36, borderRadius: 10, background: "var(--yellow)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 2a3 3 0 0 1 3 3v6a3 3 0 0 1-6 0V5a3 3 0 0 1 3-3z" fill="#000"/><path d="M19 10a7 7 0 0 1-14 0" stroke="#000" strokeWidth="2" strokeLinecap="round"/></svg>
         </div>
+      </div>
+    </div>
+  );
+}
+
+function CommunityMockup() {
+  return (
+    <div style={{ background: "#111", border: "1px solid #1e1e1e", borderRadius: "20px", overflow: "hidden", maxWidth: 420, width: "100%", boxShadow: "0 24px 80px rgba(0,0,0,.6)", fontFamily: "'Inter',sans-serif" }}>
+      {/* header */}
+      <div style={{ background: "#0a0a0a", padding: "12px 16px", borderBottom: "1px solid #1e1e1e", display: "flex", alignItems: "center", gap: 10 }}>
+        <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#f87171" }} />
+        <div style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--yellow)" }} />
+        <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#4ade80" }} />
+        <span style={{ marginLeft: 8, fontSize: ".75rem", color: "var(--gray)", fontFamily: "'Inter',sans-serif" }}>Comunidade - Feed</span>
+      </div>
+      {/* posts */}
+      <div style={{ padding: "12px", display: "flex", flexDirection: "column", gap: 12, minHeight: 320 }}>
+        {[
+          { author: "Sarah M.", avatar: "S", content: "Just finished my first conversation with JV IA! 🎉 So much better than just reading grammar rules. The corrections really make sense now.", likes: 24, replies: 3, timestamp: "2h ago" },
+          { author: "Pedro L.", avatar: "P", content: "Consegui fazer uma frase inteira sem pedir ajuda! 'I went to the beach yesterday and had the best time with my friends' 🌊", likes: 18, replies: 5, timestamp: "4h ago", highlighted: true },
+          { author: "Emma K.", avatar: "E", content: "The emoji feature is fun! 😄 Made my post more expressive. English is not just about words, it's about expression!", likes: 31, replies: 7, timestamp: "6h ago" },
+        ].map((post, i) => (
+          <div key={i} style={{ borderBottom: i < 2 ? "1px solid #1a1a1a" : "none", paddingBottom: 12 }}>
+            <div style={{ display: "flex", gap: ".65rem", marginBottom: ".5rem" }}>
+              <div style={{ width: 32, height: 32, borderRadius: "50%", background: "var(--yellow)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: ".8rem", fontWeight: 700, color: "#000", flexShrink: 0 }}>
+                {post.avatar}
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: ".5rem" }}>
+                  <p style={{ fontSize: ".82rem", fontWeight: 700, color: "#fff", margin: 0 }}>{post.author}</p>
+                  <p style={{ fontSize: ".7rem", color: "var(--gray)", margin: 0 }}>{post.timestamp}</p>
+                </div>
+                <p style={{ fontSize: ".8rem", color: "rgba(255,255,255,.75)", lineHeight: 1.5, margin: ".4rem 0 0", wordBreak: "break-word" }}>
+                  {post.content}
+                </p>
+                <div style={{ display: "flex", gap: "1rem", marginTop: ".6rem", fontSize: ".7rem", color: "var(--gray)" }}>
+                  <span>👍 {post.likes}</span>
+                  <span>💬 {post.replies}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -558,6 +595,27 @@ export default function IALanding() {
                 <p style={{ fontSize:".85rem", color:"rgba(255,255,255,.5)", lineHeight:1.6 }}>{card.desc}</p>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── COMUNIDADE ──────────────────────────────────────────── */}
+      <section style={{ background:"var(--black)" }}>
+        <div className="section-inner" style={{ display:"grid", gridTemplateColumns:"1fr", gap:"2.5rem", alignItems:"center" }}>
+          <div className="anim">
+            <div className="section-label">Comunidade</div>
+            <h2 className="big">Aprenda e pratique<br /><em>com outros alunos</em></h2>
+            <p className="subtitle">Compartilhe seus posts em inglês, receba feedback real de outros alunos e professores, edite suas mensagens com emojis — tudo em um ambiente colaborativo e sem julgamentos.</p>
+            <ul style={{ marginTop:"1.5rem", display:"flex", flexDirection:"column", gap:".75rem" }}>
+              {["Compartilhe posts e converse em inglês com a comunidade", "Edite seus posts e use emojis para expressar melhor", "Receba feedback e aprenda com outros alunos no mesmo nível", "Acompanhe a evolução da comunidade com discussões reais"].map((item, i) => (
+                <li key={i} style={{ display:"flex", gap:".75rem", alignItems:"flex-start", fontSize:".9rem", color:"rgba(255,255,255,.65)" }}>
+                  <span style={{ color:"var(--yellow)", fontWeight:700, flexShrink:0 }}>✓</span> {item}
+                </li>
+              ))}
+            </ul>
+          </div>
+          <div className="anim anim-delay-2" style={{ display:"flex", justifyContent:"center" }}>
+            <CommunityMockup />
           </div>
         </div>
       </section>
