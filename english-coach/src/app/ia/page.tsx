@@ -99,21 +99,22 @@ function MixDemo() {
         <span style={{ width:8, height:8, borderRadius:"50%", background:"#4ade80", display:"inline-block" }} />
         JV IA — detectando português automaticamente
       </div>
-      <div style={{ display:"flex", flexDirection:"column", gap:"1rem", overflow:"visible", minHeight:200 }}>
+      <div style={{ display:"flex", flexDirection:"column", gap:"1rem", overflow:"visible", minHeight:200, alignItems:"center", textAlign:"center" }}>
         {MIX_DEMO_STEPS.map((msg, i) => (
           <div key={i} style={{
             opacity: visible.includes(i) ? 1 : 0,
-            transform: visible.includes(i) ? "translateY(0)" : "translateY(8px)",
-            transition: "opacity .45s ease, transform .45s ease",
-            display:"flex", justifyContent: msg.role === "user" ? "flex-end" : "flex-start",
+            transform: visible.includes(i) ? "translateY(0)" : "translateY(12px)",
+            transition: "opacity .5s cubic-bezier(0.34, 1.56, 0.64, 1), transform .5s cubic-bezier(0.34, 1.56, 0.64, 1)",
+            display:"flex", justifyContent: "center", width: "100%",
           }}>
             <div style={{
-              maxWidth:"88%", padding:".65rem .9rem",
+              maxWidth:"90%", padding:".7rem 1rem",
               borderRadius: msg.role === "user" ? "14px 14px 2px 14px" : "14px 14px 14px 2px",
               background: msg.role === "user" ? "var(--yellow)" : "#1a1a1a",
               color: msg.role === "user" ? "#000" : "#fff",
               border: msg.role === "ai" ? "1px solid #2a2a2a" : "none",
               fontSize:".82rem", lineHeight:1.55,
+              textAlign: "left",
             }}>
               {(msg.text as MixPart[]).map((part, j) =>
                 typeof part === "string" ? (
