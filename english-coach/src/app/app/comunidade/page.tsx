@@ -21,6 +21,14 @@ type Post = {
 
 const EMOJIS_REACT = ["❤️"];
 
+function renderWithMentions(text: string): React.ReactNode[] {
+  return text.split(/(@\w+)/g).map((part, i) =>
+    /^@\w/.test(part)
+      ? <span key={i} style={{ color: "var(--yellow)", fontWeight: 700 }}>{part}</span>
+      : part
+  );
+}
+
 function getSupportedMime() {
   const types = ["audio/webm;codecs=opus", "audio/webm", "audio/mp4", "audio/ogg"];
   return types.find(t => typeof MediaRecorder !== "undefined" && MediaRecorder.isTypeSupported(t)) ?? "";
@@ -383,7 +391,7 @@ function PostCard({ post, myId, user, router, isReply = false, onReaction, onDel
         </div>
       ) : (
         <>
-          {currentContent && <p style={{ fontSize: isReply ? "0.85rem" : "0.9rem", color: "#fff", lineHeight: 1.6, marginBottom: 12, whiteSpace: "pre-wrap" }}>{currentContent}</p>}
+          {currentContent && <p style={{ fontSize: isReply ? "0.85rem" : "0.9rem", color: "#fff", lineHeight: 1.6, marginBottom: 12, whiteSpace: "pre-wrap" }}>{renderWithMentions(currentContent)}</p>}
           {currentContent && (
             <div style={{ marginBottom: 12 }}>
               {showTranslation ? (
@@ -467,6 +475,9 @@ export default function ComunidadePage() {
   const [showUsersModal, setShowUsersModal] = useState(false);
   const [users, setUsers] = useState<Array<{ id: string; name: string; email: string; image: string | null }>>([]);
   const [usersLoading, setUsersLoading] = useState(false);
+  const [mentionOpen, setMentionOpen] = useState(false);
+  const [mentionQuery, setMentionQuery] = useState("");
+  const [mentionAllUsers, setMentionAllUsers] = useState<Array<{ id: string; name: string; image_url: string | null }>>([]);
   const [postText, setPostText] = useState("");
   const [posting, setPosting] = useState(false);
   const [postError, setPostError] = useState("");
@@ -598,6 +609,45 @@ export default function ComunidadePage() {
     setShowEmojiPicker(false);
     if (timerRef.current) clearInterval(timerRef.current);
   }
+
+  async function fetchMentionUsers() {
+    try {
+      const res = await fetch("/api/users");
+      const data = await res.json();
+      setMentionAllUsers(data.users || []);
+    } catch {}
+  }
+
+  function handlePostChange(e: React.ChangeEvent<HTMLTextAreaElement>) {
+    const val = e.target.value;
+    setPostText(val);
+    setPostError("");
+    const cursor = e.target.selectionStart ?? val.length;
+    const match = val.slice(0, cursor).match(/@(\w*)$/);
+    if (match) {
+      setMentionQuery(match[1].toLowerCase());
+      setMentionOpen(true);
+      if (mentionAllUsers.length === 0) fetchMentionUsers();
+    } else {
+      setMentionOpen(false);
+    }
+  }
+
+  function insertMention(u: { name: string }) {
+    const ta = textareaRef.current;
+    const cursor = ta?.selectionStart ?? postText.length;
+    const before = postText.slice(0, cursor);
+    const atIdx = before.lastIndexOf("@");
+    const firstName = u.name.split(" ")[0];
+    const newText = before.slice(0, atIdx) + `@${firstName} ` + postText.slice(cursor);
+    setPostText(newText);
+    setMentionOpen(false);
+    setTimeout(() => ta?.focus(), 0);
+  }
+
+  const filteredMentions = mentionAllUsers
+    .filter(u => u.name.toLowerCase().includes(mentionQuery))
+    .slice(0, 5);
 
   function insertEmoji(e: string) {
     const ta = textareaRef.current;
@@ -756,11 +806,30 @@ export default function ComunidadePage() {
                     </div>
                   )}
                   {!recording && (
-                    <textarea ref={textareaRef} value={postText} onChange={e => { setPostText(e.target.value); setPostError(""); }}
-                      placeholder={audioBlob ? "Add a caption in English... (optional)" : "Write in English… 🇺🇸"}
-                      maxLength={280} rows={3}
-                      style={{ width: "100%", background: "transparent", border: "none", outline: "none", fontSize: "0.9rem", color: "#fff", resize: "none", fontFamily: "'Inter', sans-serif", lineHeight: 1.6, boxSizing: "border-box", padding: 0 }}
-                    />
+                    <div style={{ position: "relative" }}>
+                      {mentionOpen && filteredMentions.length > 0 && (
+                        <div style={{ position: "absolute", bottom: "calc(100% + 4px)", left: 0, right: 0, background: "#1a1a1a", border: "1px solid #2a2a2a", borderRadius: 12, overflow: "hidden", zIndex: 50, boxShadow: "0 -8px 24px rgba(0,0,0,0.5)" }}>
+                          {filteredMentions.map(u => (
+                            <button key={u.id} onMouseDown={e => { e.preventDefault(); insertMention(u); }}
+                              style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", background: "transparent", border: "none", borderBottom: "1px solid #1e1e1e", cursor: "pointer", width: "100%", textAlign: "left" }}
+                              onMouseEnter={e => (e.currentTarget.style.background = "#2a2a2a")}
+                              onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
+                            >
+                              <div style={{ width: 28, height: 28, borderRadius: "50%", overflow: "hidden", background: "#2a2a2a", flexShrink: 0 }}>
+                                {u.image_url ? <img src={u.image_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <span style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", fontSize: "0.8rem" }}>👤</span>}
+                              </div>
+                              <span style={{ fontSize: "0.85rem", color: "var(--yellow)", fontWeight: 700 }}>@{u.name.split(" ")[0]}</span>
+                              <span style={{ fontSize: "0.75rem", color: "var(--gray)" }}>{u.name}</span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                      <textarea ref={textareaRef} value={postText} onChange={handlePostChange}
+                        placeholder={audioBlob ? "Add a caption in English... (optional)" : "Write in English… 🇺🇸"}
+                        maxLength={280} rows={3}
+                        style={{ width: "100%", background: "transparent", border: "none", outline: "none", fontSize: "0.9rem", color: "#fff", resize: "none", fontFamily: "'Inter', sans-serif", lineHeight: 1.6, boxSizing: "border-box", padding: 0 }}
+                      />
+                    </div>
                   )}
                   {showEmojiPicker && (
                     <div style={{ display: "flex", flexWrap: "wrap", gap: 4, background: "#0d0d0d", borderRadius: 10, padding: "8px 10px", marginBottom: 8 }}>

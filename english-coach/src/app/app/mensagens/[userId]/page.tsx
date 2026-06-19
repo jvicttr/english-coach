@@ -12,6 +12,14 @@ function avatarColor(name: string) {
   for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
   return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
 }
+function renderWithMentions(text: string): React.ReactNode[] {
+  return text.split(/(@\w+)/g).map((part, i) =>
+    /^@\w/.test(part)
+      ? <span key={i} style={{ color: "var(--yellow)", fontWeight: 700 }}>{part}</span>
+      : part
+  );
+}
+
 function UserAvatar({ src, name, size = 32 }: { src: string; name: string; size?: number }) {
   const [err, setErr] = useState(false);
   const initial = (name || "?")[0].toUpperCase();
@@ -44,6 +52,9 @@ export default function ChatPage() {
   const [otherUserImage, setOtherUserImage] = useState("");
   const [showEmoji, setShowEmoji] = useState(false);
   const [recording, setRecording] = useState(false);
+  const [mentionOpen, setMentionOpen] = useState(false);
+  const [mentionQuery, setMentionQuery] = useState("");
+  const [allUsers, setAllUsers] = useState<Array<{ id: string; name: string; image_url: string | null }>>([]);
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [recSeconds, setRecSeconds] = useState(0);
@@ -76,6 +87,7 @@ export default function ChatPage() {
       const usersData = await usersRes.json();
       const foundUser = usersData.users?.find((u: any) => u.id === otherUserId);
       if (foundUser) { setOtherUserName(foundUser.name); setOtherUserImage(foundUser.image_url || ""); }
+      setAllUsers(usersData.users || []);
       if (startData.conversationId) {
         setConversationId(startData.conversationId);
         loadMessages(startData.conversationId);
@@ -159,6 +171,35 @@ export default function ChatPage() {
     e.target.value = "";
   }
 
+  function handleInputChange(e: React.ChangeEvent<HTMLTextAreaElement>) {
+    const val = e.target.value;
+    setInput(val);
+    const cursor = e.target.selectionStart ?? val.length;
+    const match = val.slice(0, cursor).match(/@(\w*)$/);
+    if (match) {
+      setMentionQuery(match[1].toLowerCase());
+      setMentionOpen(true);
+    } else {
+      setMentionOpen(false);
+    }
+  }
+
+  function insertMention(u: { name: string }) {
+    const ta = textareaRef.current;
+    const cursor = ta?.selectionStart ?? input.length;
+    const before = input.slice(0, cursor);
+    const atIdx = before.lastIndexOf("@");
+    const firstName = u.name.split(" ")[0];
+    const newText = before.slice(0, atIdx) + `@${firstName} ` + input.slice(cursor);
+    setInput(newText);
+    setMentionOpen(false);
+    setTimeout(() => ta?.focus(), 0);
+  }
+
+  const filteredMentions = allUsers
+    .filter(u => u.name.toLowerCase().includes(mentionQuery))
+    .slice(0, 5);
+
   function insertEmoji(e: string) {
     setInput(prev => prev + e);
     setShowEmoji(false);
@@ -201,7 +242,7 @@ export default function ChatPage() {
                 : { background: "var(--dark2)", color: "var(--white)", borderRadius: "18px 18px 18px 4px", border: "1px solid #2a2a2a" }
               }
             >
-              {msg.content && <p style={{ margin: "0 0 4px 0" }}>{msg.content}</p>}
+              {msg.content && <p style={{ margin: "0 0 4px 0" }}>{renderWithMentions(msg.content)}</p>}
               {msg.image_url && <img src={msg.image_url} alt="" style={{ maxWidth: "100%", borderRadius: 8, marginBottom: 4 }} />}
               {msg.audio_url && <audio src={msg.audio_url} controls style={{ width: "100%", marginBottom: 4 }} />}
               <div style={{ fontSize: "0.62rem", opacity: 0.6 }}>
@@ -247,18 +288,37 @@ export default function ChatPage() {
         <input ref={fileInputRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handleImage} />
 
         {/* Textarea */}
-        <textarea
-          ref={textareaRef}
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(input); } }}
-          placeholder="Digite aqui..."
-          rows={1}
-          className="flex-1 resize-none outline-none"
-          style={{ background: "var(--dark1)", color: "var(--white)", border: "1px solid #2a2a2a", borderRadius: "var(--radius)", padding: "12px 16px", fontFamily: "'Inter', sans-serif", fontSize: "16px" }}
-          onFocus={(e) => (e.currentTarget.style.borderColor = "var(--yellow)")}
-          onBlur={(e) => (e.currentTarget.style.borderColor = "#2a2a2a")}
-        />
+        <div className="flex-1" style={{ position: "relative" }}>
+          {mentionOpen && filteredMentions.length > 0 && (
+            <div style={{ position: "absolute", bottom: "calc(100% + 6px)", left: 0, right: 0, background: "#1a1a1a", border: "1px solid #2a2a2a", borderRadius: 12, overflow: "hidden", zIndex: 50, boxShadow: "0 -8px 24px rgba(0,0,0,0.5)" }}>
+              {filteredMentions.map(u => (
+                <button key={u.id} onMouseDown={e => { e.preventDefault(); insertMention(u); }}
+                  style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", background: "transparent", border: "none", borderBottom: "1px solid #1e1e1e", cursor: "pointer", width: "100%", textAlign: "left" }}
+                  onMouseEnter={e => (e.currentTarget.style.background = "#2a2a2a")}
+                  onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
+                >
+                  <div style={{ width: 28, height: 28, borderRadius: "50%", overflow: "hidden", background: "#2a2a2a", flexShrink: 0 }}>
+                    {u.image_url ? <img src={u.image_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <span style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", fontSize: "0.8rem" }}>👤</span>}
+                  </div>
+                  <span style={{ fontSize: "0.85rem", color: "var(--yellow)", fontWeight: 700 }}>@{u.name.split(" ")[0]}</span>
+                  <span style={{ fontSize: "0.75rem", color: "var(--gray)" }}>{u.name}</span>
+                </button>
+              ))}
+            </div>
+          )}
+          <textarea
+            ref={textareaRef}
+            value={input}
+            onChange={handleInputChange}
+            onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(input); } }}
+            placeholder="Digite aqui..."
+            rows={1}
+            className="w-full resize-none outline-none"
+            style={{ background: "var(--dark1)", color: "var(--white)", border: "1px solid #2a2a2a", borderRadius: "var(--radius)", padding: "12px 16px", fontFamily: "'Inter', sans-serif", fontSize: "16px" }}
+            onFocus={(e) => (e.currentTarget.style.borderColor = "var(--yellow)")}
+            onBlur={(e) => (e.currentTarget.style.borderColor = "#2a2a2a")}
+          />
+        </div>
 
         {/* Mic btn */}
         <button
