@@ -634,7 +634,7 @@ export default function ComunidadePage() {
               <span>{imageFile ? "Photo ✓" : "Photo"}</span>
             </button>
             <input ref={imageInputRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handleImageSelect} />
-            <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 10 }}>
+            <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", justifyContent: "flex-end" }}>
               {composerOpen ? (
                 <>
                   <button onClick={() => setShowEmojiPicker(v => !v)} style={{ background: showEmojiPicker ? "rgba(245,200,0,.1)" : "none", border: "none", fontSize: "1.1rem", cursor: "pointer", padding: "2px 6px", borderRadius: 8 }} title="Add emoji">😊</button>
