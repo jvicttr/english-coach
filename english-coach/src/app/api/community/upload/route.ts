@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
 
   if (!file || !type) return NextResponse.json({ error: "Missing file" }, { status: 400 });
 
-  const ext = type === "audio" ? "webm" : file.name.split(".").pop() ?? "jpg";
+  const ext = file.name.includes(".") ? file.name.split(".").pop()! : (type === "audio" ? "webm" : "jpg");
   const path = `${type}/${userId}-${Date.now()}.${ext}`;
 
   const buffer = Buffer.from(await file.arrayBuffer());
