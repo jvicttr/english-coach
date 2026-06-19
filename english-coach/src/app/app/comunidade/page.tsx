@@ -659,7 +659,7 @@ export default function ComunidadePage() {
           <div style={{
             fontSize: "1.2rem",
             transition: "transform 0.2s",
-            transform: `rotate(${pullProgress > 80 ? 180 : 0}deg) scaleY(${Math.min(pullProgress / 80, 1)})`
+            transform: pullProgress > 80 ? "rotate(180deg)" : "rotate(0deg)"
           }}>
             ↓
           </div>
