@@ -435,7 +435,7 @@ export default function ResumoAula() {
     const msg = pct >= 80 ? "Excelente! Você dominou o conteúdo dessa aula." : pct >= 60 ? "Bom trabalho! Continue revisando." : "Continue assim! Cada revisão te deixa mais próximo da fluência.";
     const scoreColor = pct >= 80 ? "#4ade80" : pct >= 60 ? "var(--yellow)" : "#f87171";
     return (
-      <div className="flex flex-col items-center justify-center px-4 py-10 min-h-screen" style={{ background: "var(--black)", fontFamily: "'Inter', sans-serif" }}>
+      <div className="flex flex-col items-center px-4 overflow-y-auto" style={{ background: "var(--black)", fontFamily: "'Inter', sans-serif", minHeight: "100dvh", paddingTop: 80, paddingBottom: 80 }}>
         <div className="w-full max-w-lg flex flex-col items-center gap-5 text-center">
           <div style={{ fontSize: "3rem" }}>{emoji}</div>
           <div>
