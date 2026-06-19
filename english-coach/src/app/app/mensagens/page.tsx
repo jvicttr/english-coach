@@ -10,19 +10,13 @@ function avatarColor(name: string) {
   for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
   return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
 }
-// Avatar padrão do Clerk (sem foto real) tem esse padrão na URL
-function isClerkDefault(url: string | null): boolean {
-  if (!url) return false;
-  return url.includes("img.clerk.com") && url.includes("eyJ0eXBlIjoiZGVmYXVsdCI");
-}
 function UserAvatar({ src, name, size = 40, online }: { src: string | null; name: string; size?: number; online?: boolean }) {
   const [err, setErr] = useState(false);
   const initial = (name || "?")[0].toUpperCase();
-  const realSrc = isClerkDefault(src) ? null : src;
   return (
-    <div style={{ width: size, height: size, borderRadius: "50%", background: (!realSrc || err) ? avatarColor(name) : "#2a2a2a", display: "flex", alignItems: "center", justifyContent: "center", position: "relative", flexShrink: 0, overflow: "hidden" }}>
-      {realSrc && !err
-        ? <img src={realSrc} alt={name} style={{ width: "100%", height: "100%", objectFit: "cover" }} onError={() => setErr(true)} />
+    <div style={{ width: size, height: size, borderRadius: "50%", background: (!src || err) ? avatarColor(name) : "transparent", display: "flex", alignItems: "center", justifyContent: "center", position: "relative", flexShrink: 0, overflow: "hidden" }}>
+      {src && !err
+        ? <img src={src} alt={name} style={{ width: "100%", height: "100%", objectFit: "cover" }} onError={() => setErr(true)} />
         : <span style={{ fontSize: size * 0.42, fontWeight: 700, color: "#fff", lineHeight: 1 }}>{initial}</span>
       }
       {online && <div style={{ position: "absolute", bottom: 0, right: 0, width: size * 0.3, height: size * 0.3, background: "#22c55e", borderRadius: "50%", border: "2px solid var(--black)" }} />}

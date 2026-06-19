@@ -47,19 +47,11 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    // Filtra URLs do Clerk CDN (avatar padrão) — mantém só fotos reais de provedores externos
-    function realPhoto(url: string | null | undefined): string | null {
-      if (!url) return null;
-      if (url.includes("img.clerk.com")) return null;
-      if (url.includes("images.clerk.dev")) return null;
-      return url;
-    }
-
     const formattedUsers = (users || []).map((u) => ({
       id: u.id,
       email: u.email,
       name: u.name || u.email,
-      image_url: realPhoto(postAvatarMap[u.id]) || realPhoto(u.image_url) || null,
+      image_url: postAvatarMap[u.id] || u.image_url || null,
     }));
 
     return NextResponse.json({ users: formattedUsers });
