@@ -54,6 +54,12 @@ const FEATURES = [
     desc: "O JV IA detecta se você é iniciante, intermediário ou avançado pela sua forma de escrever e adapta o vocabulário e as respostas sem você precisar configurar nada.",
     badge: null,
   },
+  {
+    icon: "👥",
+    title: "Comunidade de alunos",
+    desc: "Conecte com outros alunos, compartilhe posts em inglês e receba feedback. Edite seus posts, use emojis e engaje em discussões reais — aprenda praticando com a comunidade.",
+    badge: null,
+  },
 ];
 
 const TOPICS = [
