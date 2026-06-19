@@ -909,37 +909,39 @@ export default function ComunidadePage() {
         💬
       </button>
 
-      {/* Modal de usuários */}
+      {/* Painel lateral de usuários */}
       {showUsersModal && (
-        <div
-          onClick={() => setShowUsersModal(false)}
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background: "rgba(0,0,0,0.7)",
-            display: "flex",
-            alignItems: "flex-end",
-            zIndex: 100,
-          }}
-        >
+        <>
           <div
-            onClick={(e) => e.stopPropagation()}
+            onClick={() => setShowUsersModal(false)}
             style={{
+              position: "fixed",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              background: "rgba(0,0,0,0.5)",
+              zIndex: 90,
+            }}
+          />
+          <div
+            style={{
+              position: "fixed",
+              top: 0,
+              right: 0,
               width: "100%",
-              maxHeight: "80vh",
+              maxWidth: "350px",
+              height: "100vh",
               background: "var(--black)",
-              borderRadius: "20px 20px 0 0",
-              padding: "20px",
-              overflowY: "auto",
+              borderLeft: "1px solid #1e1e1e",
+              zIndex: 100,
               display: "flex",
               flexDirection: "column",
+              animation: "slideIn 0.3s ease-out",
             }}
           >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
-              <h2 style={{ margin: 0, color: "#fff", fontSize: "1.1rem", fontWeight: 700 }}>Iniciar conversa</h2>
+            <div style={{ padding: "16px", borderBottom: "1px solid #1e1e1e", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <h2 style={{ margin: 0, color: "#fff", fontSize: "1rem", fontWeight: 700 }}>Iniciar conversa</h2>
               <button
                 onClick={() => setShowUsersModal(false)}
                 style={{
@@ -948,74 +950,83 @@ export default function ComunidadePage() {
                   color: "#999",
                   fontSize: "1.5rem",
                   cursor: "pointer",
+                  width: "32px",
+                  height: "32px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
                 }}
               >
                 ✕
               </button>
             </div>
 
-            {usersLoading ? (
-              <div style={{ textAlign: "center", color: "#666", padding: "20px" }}>Carregando usuários...</div>
-            ) : users.length === 0 ? (
-              <div style={{ textAlign: "center", color: "#666", padding: "20px" }}>Nenhum usuário disponível</div>
-            ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                {users.map((u) => (
-                  <button
-                    key={u.id}
-                    onClick={() => startChat(u.id)}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "12px",
-                      padding: "12px",
-                      background: "#0d0d0d",
-                      border: "1px solid #2a2a2a",
-                      borderRadius: "12px",
-                      cursor: "pointer",
-                      transition: "all 0.15s",
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.background = "rgba(245,200,0,.1)";
-                      e.currentTarget.style.borderColor = "rgba(245,200,0,.3)";
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.background = "#0d0d0d";
-                      e.currentTarget.style.borderColor = "#2a2a2a";
-                    }}
-                  >
-                    <div
+            <div style={{ flex: 1, overflowY: "auto", padding: "12px" }}>
+              {usersLoading ? (
+                <div style={{ textAlign: "center", color: "#666", paddingTop: "40px" }}>Carregando usuários...</div>
+              ) : users.length === 0 ? (
+                <div style={{ textAlign: "center", color: "#666", paddingTop: "40px" }}>Nenhum usuário disponível</div>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                  {users.map((u) => (
+                    <button
+                      key={u.id}
+                      onClick={() => startChat(u.id)}
                       style={{
-                        width: "40px",
-                        height: "40px",
-                        borderRadius: "50%",
-                        background: u.image ? `url(${u.image})` : "var(--yellow)",
-                        backgroundSize: "cover",
-                        backgroundPosition: "center",
                         display: "flex",
                         alignItems: "center",
-                        justifyContent: "center",
-                        fontSize: "1.2rem",
-                        flexShrink: 0,
+                        gap: "12px",
+                        padding: "12px",
+                        background: "transparent",
+                        border: "1px solid transparent",
+                        borderRadius: "12px",
+                        cursor: "pointer",
+                        transition: "all 0.15s",
+                        textAlign: "left",
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = "rgba(245,200,0,.08)";
+                        e.currentTarget.style.borderColor = "rgba(245,200,0,.2)";
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = "transparent";
+                        e.currentTarget.style.borderColor = "transparent";
                       }}
                     >
-                      {!u.image && "👤"}
-                    </div>
-                    <div style={{ textAlign: "left", flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: "0.9rem", fontWeight: 600, color: "#fff" }}>{u.name}</div>
-                      <div style={{ fontSize: "0.75rem", color: "#666" }}>{u.email}</div>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            )}
+                      <div
+                        style={{
+                          width: "40px",
+                          height: "40px",
+                          borderRadius: "50%",
+                          background: u.image ? `url(${u.image})` : "var(--yellow)",
+                          backgroundSize: "cover",
+                          backgroundPosition: "center",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          fontSize: "1.2rem",
+                          flexShrink: 0,
+                        }}
+                      >
+                        {!u.image && "👤"}
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: "0.9rem", fontWeight: 600, color: "#fff" }}>{u.name}</div>
+                        <div style={{ fontSize: "0.75rem", color: "#666" }}>{u.email}</div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
-        </div>
+        </>
       )}
 
       <style>{`
         @keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
         @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}
+        @keyframes slideIn{from{transform:translateX(100%)}to{transform:translateX(0)}}
       `}</style>
     </div>
   );
