@@ -12,10 +12,14 @@ export async function GET(req: NextRequest) {
   try {
     // Buscar usuários do Clerk usando SDK
     const clerkUsers = await clerkClient.users.getUserList({ limit: 500 });
+    console.log("Clerk users:", clerkUsers);
+    console.log("Type:", typeof clerkUsers);
+    console.log("Length:", clerkUsers?.length);
 
     // Sincronizar cada usuário
     let synced = 0;
-    for (const user of clerkUsers || []) {
+    const usersArray = Array.isArray(clerkUsers) ? clerkUsers : clerkUsers?.data || [];
+    for (const user of usersArray) {
       const email = user.emailAddresses?.[0]?.emailAddress || user.username || user.id;
       const name = user.firstName ? `${user.firstName} ${user.lastName || ""}`.trim() : user.username || user.id;
 
@@ -29,7 +33,7 @@ export async function GET(req: NextRequest) {
       synced++;
     }
 
-    return NextResponse.json({ synced, total: clerkUsers?.length || 0 });
+    return NextResponse.json({ synced, total: usersArray.length });
   } catch (error) {
     console.error("Erro ao sincronizar usuários:", error);
     return NextResponse.json({ error: "Server error", details: String(error) }, { status: 500 });
