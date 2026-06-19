@@ -76,10 +76,8 @@ const HOW_STEPS = [
 ];
 
 const MIX_DEMO_STEPS = [
-  { role: "user",  text: ["I went to the ", { word: "supermercado", en: "supermarket" }, " yesterday and forgot to buy the ", { word: "leite", en: "milk" }, "."] },
-  { role: "coach", text: ["Perfect! Quick translation: ", { highlight: "supermercado" }, " = supermarket, ", { highlight: "leite" }, " = milk. Great natural mixing! 💪"] },
-  { role: "user",  text: ["I need to go back. It was ", { word: "chato", en: "annoying" }, " esquecer."] },
-  { role: "coach", text: ["Excellent! 'It was annoying to forget' — you're mixing naturally and that's exactly how fluency builds! 🎉"] },
+  { role: "user",  text: ["I went to the ", { word: "supermercado", en: "supermarket" }, " yesterday. Esqueci to buy the ", { word: "leite", en: "milk" }, ". Was very ", { word: "chato", en: "annoying" }, "!"] },
+  { role: "coach", text: ["Perfect! You mixed português naturally! ", { highlight: "supermercado" }, " = supermarket, ", { highlight: "leite" }, " = milk, ", { highlight: "chato" }, " = annoying. That's exactly how fluency builds! 🎉"] },
 ];
 
 type MixPart = string | { word: string; en: string } | { highlight: string };
