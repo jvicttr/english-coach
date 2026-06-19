@@ -189,6 +189,8 @@ function PostCard({ post, myId, user, router, isReply = false, onReaction, onDel
   const [editError, setEditError] = useState("");
   const [saving, setSaving] = useState(false);
   const [currentContent, setCurrentContent] = useState(post.content);
+  const [showEditEmoji, setShowEditEmoji] = useState(false);
+  const editTaRef = useRef<HTMLTextAreaElement>(null);
   const [translation, setTranslation] = useState<string | null>(null);
   const [translating, setTranslating] = useState(false);
   const [showTranslation, setShowTranslation] = useState(false);
@@ -305,6 +307,7 @@ function PostCard({ post, myId, user, router, isReply = false, onReaction, onDel
       {editing ? (
         <div style={{ marginBottom: 12 }}>
           <textarea
+            ref={editTaRef}
             value={editText}
             onChange={e => { setEditText(e.target.value); setEditError(""); }}
             maxLength={280}
@@ -312,10 +315,27 @@ function PostCard({ post, myId, user, router, isReply = false, onReaction, onDel
             autoFocus
             style={{ width: "100%", background: "#0d0d0d", border: "1px solid #3a3a3a", borderRadius: 10, outline: "none", fontSize: "0.9rem", color: "#fff", resize: "none", fontFamily: "'Inter', sans-serif", lineHeight: 1.6, padding: "8px 10px", boxSizing: "border-box" }}
           />
+          {showEditEmoji && (
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 3, background: "#0d0d0d", borderRadius: 8, padding: "6px 8px", marginTop: 4 }}>
+              {EMOJI_LIST.map(e => (
+                <button key={e} onClick={() => {
+                  const ta = editTaRef.current;
+                  const s = ta?.selectionStart ?? editText.length;
+                  const end = ta?.selectionEnd ?? editText.length;
+                  const next = editText.slice(0, s) + e + editText.slice(end);
+                  setEditText(next);
+                  setTimeout(() => { ta?.focus(); ta?.setSelectionRange(s + e.length, s + e.length); }, 0);
+                }} style={{ background: "none", border: "none", fontSize: "1rem", cursor: "pointer", padding: "1px 3px", borderRadius: 4 }}>{e}</button>
+              ))}
+            </div>
+          )}
           {editError && <p style={{ fontSize: "0.72rem", color: "#f87171", margin: "4px 0" }}>{editError}</p>}
-          <div style={{ display: "flex", gap: 8, marginTop: 6 }}>
-            <button onClick={() => { setEditing(false); setEditText(currentContent); setEditError(""); }} style={{ background: "none", border: "1px solid #2a2a2a", borderRadius: 50, padding: "4px 14px", fontSize: "0.75rem", color: "var(--gray)", cursor: "pointer" }}>Cancel</button>
-            <button onClick={saveEdit} disabled={!editText.trim() || saving} style={{ background: "var(--yellow)", border: "none", borderRadius: 50, padding: "4px 14px", fontSize: "0.75rem", fontWeight: 800, color: "#000", cursor: "pointer" }}>{saving ? "…" : "Save"}</button>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 6 }}>
+            <button onClick={() => setShowEditEmoji(v => !v)} style={{ background: showEditEmoji ? "rgba(245,200,0,.1)" : "none", border: "none", fontSize: "1rem", cursor: "pointer", padding: "2px 6px", borderRadius: 8 }}>😊</button>
+            <div style={{ marginLeft: "auto", display: "flex", gap: 8 }}>
+              <button onClick={() => { setEditing(false); setEditText(currentContent); setEditError(""); setShowEditEmoji(false); }} style={{ background: "none", border: "1px solid #2a2a2a", borderRadius: 50, padding: "4px 14px", fontSize: "0.75rem", color: "var(--gray)", cursor: "pointer" }}>Cancel</button>
+              <button onClick={saveEdit} disabled={!editText.trim() || saving} style={{ background: "var(--yellow)", border: "none", borderRadius: 50, padding: "4px 14px", fontSize: "0.75rem", fontWeight: 800, color: "#000", cursor: "pointer" }}>{saving ? "…" : "Save"}</button>
+            </div>
           </div>
         </div>
       ) : (
