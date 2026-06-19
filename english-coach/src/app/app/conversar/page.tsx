@@ -1396,8 +1396,8 @@ export default function Home() {
   // ── Chat Screen ──────────────────────────────────────────────────────────
   return (
     <div
-      className="flex flex-col items-center px-3 pb-4 sm:px-4 sm:pb-6"
-      style={{ background: "var(--black)", fontFamily: "'Inter', sans-serif", height: "100dvh", overflow: "hidden", paddingTop: 65 }}
+      className="flex flex-col items-center px-3 sm:px-4"
+      style={{ background: "var(--black)", fontFamily: "'Inter', sans-serif", height: "100dvh", overflow: "hidden", paddingTop: 65, paddingBottom: 65 }}
     >
       {/* ── Subheader contextual: voltar aos tópicos ───────── */}
       {topic && !trilhaStep && (
