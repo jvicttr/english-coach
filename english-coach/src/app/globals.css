@@ -33,6 +33,16 @@ body {
   font-family: 'Inter', sans-serif;
 }
 
+/* Header: hide version badge and Planos button on mobile */
+@media (max-width: 640px) {
+  .version-badge { display: none !important; }
+  .planos-btn { display: none !important; }
+  .menu-mobile-only { display: flex !important; }
+}
+@media (min-width: 641px) {
+  .menu-mobile-only { display: none !important; }
+}
+
 /* Used only on the home page to prevent iOS overscroll */
 .app-scroll {
   height: 100dvh;

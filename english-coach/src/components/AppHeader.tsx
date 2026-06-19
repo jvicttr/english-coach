@@ -132,7 +132,7 @@ export function AppHeader() {
           <span style={{ fontWeight: 800, fontSize: "0.95rem", color: "#fff" }}>
             JV <span style={{ color: "var(--yellow)" }}>IA</span>
           </span>
-          <span style={{ fontSize: "0.55rem", fontWeight: 800, color: "#000", background: "var(--yellow)", borderRadius: "50px", padding: "1px 6px", letterSpacing: "0.3px", lineHeight: 1.6 }}>
+          <span className="version-badge" style={{ fontSize: "0.55rem", fontWeight: 800, color: "#000", background: "var(--yellow)", borderRadius: "50px", padding: "1px 6px", letterSpacing: "0.3px", lineHeight: 1.6 }}>
             8.0
           </span>
         </div>
@@ -140,6 +140,7 @@ export function AppHeader() {
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <a
             href="/planos"
+            className="planos-btn"
             style={{ fontSize: ".75rem", fontWeight: 700, color: "var(--yellow)", border: "1px solid rgba(245,200,0,.35)", borderRadius: "50px", padding: ".25rem .75rem", textDecoration: "none" }}
           >
             Planos
@@ -238,6 +239,7 @@ export function AppHeader() {
               </button>
             )}
             {[
+              { href: "/planos", icon: "⭐", label: "Planos", mobileOnly: true },
               { href: "/app/progresso", icon: "🏆", label: "Progresso" },
               { href: "/app/resumo", icon: "📄", label: "Revisão de Aula" },
             ].map((item) => (
@@ -245,6 +247,7 @@ export function AppHeader() {
                 key={item.href}
                 href={item.href}
                 onClick={() => setMenuOpen(false)}
+                className={item.mobileOnly ? "menu-mobile-only" : undefined}
                 style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", textDecoration: "none", color: "#fff", fontSize: "0.9rem", fontWeight: 600 }}
                 onMouseEnter={(e) => (e.currentTarget.style.background = "#2a2a2a")}
                 onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
