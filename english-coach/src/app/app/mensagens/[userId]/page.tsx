@@ -64,13 +64,6 @@ export default function ChatPage() {
 
   async function initializeChat() {
     try {
-      // Buscar dados do outro usuário
-      const userRes = await fetch(`/api/users?search=${otherUserId}`);
-      const userData = await userRes.json();
-      if (userData.users?.[0]) {
-        setOtherUser(userData.users[0]);
-      }
-
       // Iniciar conversa
       const res = await fetch("/api/messages/start", {
         method: "POST",
@@ -79,6 +72,18 @@ export default function ChatPage() {
       });
       const data = await res.json();
       setConversationId(data.conversationId);
+
+      // Buscar dados do outro usuário
+      try {
+        const allUsersRes = await fetch("/api/users");
+        const allUsersData = await allUsersRes.json();
+        const foundUser = allUsersData.users?.find((u: OtherUser) => u.id === otherUserId);
+        if (foundUser) {
+          setOtherUser(foundUser);
+        }
+      } catch (e) {
+        console.error("Erro ao buscar dados do usuário:", e);
+      }
 
       // Carregar mensagens
       loadMessages(data.conversationId);
@@ -95,6 +100,7 @@ export default function ChatPage() {
       return () => clearInterval(interval);
     } catch (error) {
       console.error("Erro ao inicializar chat:", error);
+      setLoading(false);
     }
   }
 
