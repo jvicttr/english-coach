@@ -464,6 +464,9 @@ export default function ComunidadePage() {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [imageZoom, setImageZoom] = useState(1);
   const [composerOpen, setComposerOpen] = useState(false);
+  const [showUsersModal, setShowUsersModal] = useState(false);
+  const [users, setUsers] = useState<Array<{ id: string; name: string; email: string; image: string | null }>>([]);
+  const [usersLoading, setUsersLoading] = useState(false);
   const [postText, setPostText] = useState("");
   const [posting, setPosting] = useState(false);
   const [postError, setPostError] = useState("");
@@ -502,6 +505,37 @@ export default function ComunidadePage() {
   async function loadNewPosts() {
     setRefreshing(true);
     await loadPosts();
+  }
+
+  async function openUsersModal() {
+    setShowUsersModal(true);
+    if (users.length === 0) {
+      setUsersLoading(true);
+      try {
+        const res = await fetch("/api/users");
+        const data = await res.json();
+        setUsers(data.users || []);
+      } catch (error) {
+        console.error("Erro ao carregar usuários:", error);
+      } finally {
+        setUsersLoading(false);
+      }
+    }
+  }
+
+  async function startChat(otherUserId: string) {
+    try {
+      const res = await fetch("/api/messages/start", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ otherUserId }),
+      });
+      const data = await res.json();
+      setShowUsersModal(false);
+      router.push(`/app/mensagens/${otherUserId}`);
+    } catch (error) {
+      console.error("Erro ao iniciar chat:", error);
+    }
   }
 
   useEffect(() => {
@@ -843,6 +877,138 @@ export default function ComunidadePage() {
               <span style={{ color: "#fff", fontSize: "0.9rem", minWidth: 40, textAlign: "center" }}>{Math.round(imageZoom * 100)}%</span>
               <button onClick={() => setImageZoom(prev => Math.min(prev + 0.2, 3))} style={{ background: "none", border: "none", color: "#fff", fontSize: "1rem", cursor: "pointer" }}>+</button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* FAB Mensagens */}
+      <button
+        onClick={openUsersModal}
+        style={{
+          position: "fixed",
+          bottom: "100px",
+          right: "20px",
+          width: "56px",
+          height: "56px",
+          borderRadius: "50%",
+          background: "rgba(245,200,0,0.8)",
+          border: "none",
+          cursor: "pointer",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          fontSize: "1.5rem",
+          boxShadow: "0 4px 12px rgba(0,0,0,0.3)",
+          zIndex: 40,
+          backdropFilter: "blur(10px)",
+        }}
+        onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(245,200,0,0.95)")}
+        onMouseLeave={(e) => (e.currentTarget.style.background = "rgba(245,200,0,0.8)")}
+        title="Abrir mensagens"
+      >
+        💬
+      </button>
+
+      {/* Modal de usuários */}
+      {showUsersModal && (
+        <div
+          onClick={() => setShowUsersModal(false)}
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: "rgba(0,0,0,0.7)",
+            display: "flex",
+            alignItems: "flex-end",
+            zIndex: 100,
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: "100%",
+              maxHeight: "80vh",
+              background: "var(--black)",
+              borderRadius: "20px 20px 0 0",
+              padding: "20px",
+              overflowY: "auto",
+              display: "flex",
+              flexDirection: "column",
+            }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+              <h2 style={{ margin: 0, color: "#fff", fontSize: "1.1rem", fontWeight: 700 }}>Iniciar conversa</h2>
+              <button
+                onClick={() => setShowUsersModal(false)}
+                style={{
+                  background: "none",
+                  border: "none",
+                  color: "#999",
+                  fontSize: "1.5rem",
+                  cursor: "pointer",
+                }}
+              >
+                ✕
+              </button>
+            </div>
+
+            {usersLoading ? (
+              <div style={{ textAlign: "center", color: "#666", padding: "20px" }}>Carregando usuários...</div>
+            ) : users.length === 0 ? (
+              <div style={{ textAlign: "center", color: "#666", padding: "20px" }}>Nenhum usuário disponível</div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                {users.map((u) => (
+                  <button
+                    key={u.id}
+                    onClick={() => startChat(u.id)}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "12px",
+                      padding: "12px",
+                      background: "#0d0d0d",
+                      border: "1px solid #2a2a2a",
+                      borderRadius: "12px",
+                      cursor: "pointer",
+                      transition: "all 0.15s",
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = "rgba(245,200,0,.1)";
+                      e.currentTarget.style.borderColor = "rgba(245,200,0,.3)";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = "#0d0d0d";
+                      e.currentTarget.style.borderColor = "#2a2a2a";
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: "40px",
+                        height: "40px",
+                        borderRadius: "50%",
+                        background: u.image ? `url(${u.image})` : "var(--yellow)",
+                        backgroundSize: "cover",
+                        backgroundPosition: "center",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontSize: "1.2rem",
+                        flexShrink: 0,
+                      }}
+                    >
+                      {!u.image && "👤"}
+                    </div>
+                    <div style={{ textAlign: "left", flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: "0.9rem", fontWeight: 600, color: "#fff" }}>{u.name}</div>
+                      <div style={{ fontSize: "0.75rem", color: "#666" }}>{u.email}</div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       )}

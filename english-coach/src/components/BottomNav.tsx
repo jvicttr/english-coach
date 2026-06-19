@@ -8,7 +8,6 @@ const LEFT_ITEMS = [
 ];
 
 const RIGHT_ITEMS = [
-  { href: "/app/mensagens", icon: "💬", label: "Mensagens" },
   { href: "/app/progresso", icon: "📊", label: "Progresso" },
   { href: "/app/perfil", icon: "👤", label: "Perfil" },
 ];
