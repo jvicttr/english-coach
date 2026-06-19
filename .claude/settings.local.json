@@ -3,7 +3,10 @@
     "allow": [
       "Bash(npx create-next-app@latest english-coach --typescript --tailwind --eslint --app --src-dir --import-alias \"@/*\" --no-git)",
       "Bash(git add *)",
-      "Bash(git commit -m 'fix: conteúdo não vaza sobre header no mobile \\(landing page\\) *)"
+      "Bash(git commit -m 'fix: conteúdo não vaza sobre header no mobile \\(landing page\\) *)",
+      "Bash(git push *)",
+      "Bash(git rm *)",
+      "Bash(git commit *)"
     ]
   }
 }

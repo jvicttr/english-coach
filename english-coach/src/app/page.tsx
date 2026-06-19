@@ -373,7 +373,7 @@ export default function LandingPage() {
         </div>
         <div className="faq-list">
           {FAQS.map((item, i) => (
-            <div key={i} className={`faq-item anim anim-delay-${Math.min(i + 1, 5)} ${openFaq === i ? "open" : ""}`}>
+            <div key={i} className={`faq-item ${openFaq === i ? "open" : ""}`}>
               <button className="faq-q" onClick={() => setOpenFaq(openFaq === i ? null : i)}>
                 {item.q} <i className="fas fa-chevron-down" />
               </button>
