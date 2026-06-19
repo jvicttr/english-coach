@@ -612,8 +612,8 @@ export default function ComunidadePage() {
                     </div>
                   )}
                   {imagePreview && (
-                    <div style={{ position: "relative", marginTop: 8, marginBottom: 4 }}>
-                      <img src={imagePreview} alt="preview" style={{ width: "100%", maxHeight: 240, objectFit: "cover", borderRadius: 10 }} />
+                    <div style={{ position: "relative", marginTop: 8, marginBottom: 4, background: "#0d0d0d", borderRadius: 10, overflow: "hidden" }}>
+                      <img src={imagePreview} alt="preview" style={{ width: "100%", maxHeight: 240, objectFit: "contain", borderRadius: 10, display: "block" }} />
                       <button onClick={() => { setImageFile(null); setImagePreview(null); }} style={{ position: "absolute", top: 6, right: 6, background: "rgba(0,0,0,0.6)", border: "none", borderRadius: "50%", width: 24, height: 24, color: "#fff", fontSize: "0.75rem", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
                     </div>
                   )}
