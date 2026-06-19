@@ -452,6 +452,7 @@ export default function ComunidadePage() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [newPostsCount, setNewPostsCount] = useState(0);
+  const [pullProgress, setPullProgress] = useState(0);
   const [composerOpen, setComposerOpen] = useState(false);
   const [postText, setPostText] = useState("");
   const [posting, setPosting] = useState(false);
@@ -501,26 +502,36 @@ export default function ComunidadePage() {
     if (!container) return () => clearInterval(interval);
 
     const handleTouchStart = (e: TouchEvent) => {
-      if (container.scrollTop === 0) touchStartRef.current = e.touches[0].clientY;
+      if (container.scrollTop === 0) {
+        touchStartRef.current = e.touches[0].clientY;
+        setPullProgress(0);
+      }
     };
 
     const handleTouchMove = (e: TouchEvent) => {
       if (container.scrollTop !== 0 || refreshing) return;
       const touch = e.touches[0];
       const diff = touch.clientY - touchStartRef.current;
+      setPullProgress(Math.min(diff, 100));
       if (diff > 80) {
         loadNewPosts();
         touchStartRef.current = 0;
       }
     };
 
+    const handleTouchEnd = () => {
+      setPullProgress(0);
+    };
+
     container.addEventListener("touchstart", handleTouchStart, { passive: true });
     container.addEventListener("touchmove", handleTouchMove, { passive: true });
+    container.addEventListener("touchend", handleTouchEnd, { passive: true });
 
     return () => {
       clearInterval(interval);
       container.removeEventListener("touchstart", handleTouchStart);
       container.removeEventListener("touchmove", handleTouchMove);
+      container.removeEventListener("touchend", handleTouchEnd);
     };
   }, [refreshing]);
   useEffect(() => { if (composerOpen && !recording && !audioBlob) setTimeout(() => textareaRef.current?.focus(), 80); }, [composerOpen, recording, audioBlob]);
@@ -642,6 +653,21 @@ export default function ComunidadePage() {
         <span style={{ fontWeight: 800, fontSize: "0.95rem", color: "#fff" }}>🌎 Comunidade</span>
         {refreshing && <span style={{ fontSize: "0.75rem", color: "var(--yellow)" }}>Carregando…</span>}
       </div>
+
+      {(pullProgress > 0 || refreshing) && (
+        <div style={{ padding: "8px 16px", textAlign: "center", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+          <div style={{
+            fontSize: "1.2rem",
+            transition: "transform 0.2s",
+            transform: `rotate(${pullProgress > 80 ? 180 : 0}deg) scaleY(${Math.min(pullProgress / 80, 1)})`
+          }}>
+            ↓
+          </div>
+          <span style={{ fontSize: "0.75rem", color: "var(--gray)" }}>
+            {refreshing ? "Carregando…" : pullProgress > 80 ? "Solte para carregar" : "Puxe para carregar"}
+          </span>
+        </div>
+      )}
 
       {newPostsCount > 0 && (
         <div style={{ padding: "12px 16px", background: "rgba(245,200,0,.1)", borderBottom: "1px solid rgba(245,200,0,.2)", textAlign: "center", cursor: "pointer" }} onClick={() => loadNewPosts()}>
