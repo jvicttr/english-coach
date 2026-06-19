@@ -40,7 +40,7 @@ export default function MensagensPage() {
 
       // Buscar presença dos outros usuários
       if (data.conversations.length > 0 && user) {
-        const otherUserIds = data.conversations.map(c =>
+        const otherUserIds = data.conversations.map((c: Conversation) =>
           c.user1_id === user.id ? c.user2_id : c.user1_id
         );
         const presRes = await fetch(`/api/messages/presence?userIds=${otherUserIds.join(",")}`);
