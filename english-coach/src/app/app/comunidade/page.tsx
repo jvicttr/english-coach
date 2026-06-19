@@ -184,6 +184,11 @@ function PostCard({ post, myId, user, router, isReply = false, onReaction, onDel
   const [loadingReplies, setLoadingReplies] = useState(false);
   const [replyCount, setReplyCount] = useState(post.reply_count ?? 0);
   const [deleting, setDeleting] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [editText, setEditText] = useState(post.content);
+  const [editError, setEditError] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [currentContent, setCurrentContent] = useState(post.content);
   const [translation, setTranslation] = useState<string | null>(null);
   const [translating, setTranslating] = useState(false);
   const [showTranslation, setShowTranslation] = useState(false);
@@ -203,6 +208,22 @@ function PostCard({ post, myId, user, router, isReply = false, onReaction, onDel
     setDeleting(true);
     await fetch(`/api/community/posts/${post.id}`, { method: "DELETE" });
     onDeleted?.(post.id);
+  }
+
+  async function saveEdit() {
+    if (!editText.trim() || saving) return;
+    setSaving(true); setEditError("");
+    const res = await fetch(`/api/community/posts/${post.id}`, {
+      method: "PATCH", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ content: editText.trim() }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      setEditError(data.error === "not_english" ? "Please write in English! 🇺🇸" : "Something went wrong.");
+      setSaving(false); return;
+    }
+    setCurrentContent(editText.trim());
+    setEditing(false); setSaving(false);
   }
 
   async function loadReplies() {
@@ -243,11 +264,18 @@ function PostCard({ post, myId, user, router, isReply = false, onReaction, onDel
           <p style={{ fontSize: "0.65rem", color: "var(--gray)", margin: 0 }}>{timeAgo(post.created_at)}</p>
         </div>
         {post.user_id === myId && (
-          <button onClick={deletePost} disabled={deleting} title="Delete" style={{ background: "none", border: "none", cursor: "pointer", color: "#555", fontSize: "0.75rem", padding: "2px 6px", borderRadius: 6, flexShrink: 0, lineHeight: 1 }}
-            onMouseEnter={e => (e.currentTarget.style.color = "#f87171")}
-            onMouseLeave={e => (e.currentTarget.style.color = "#555")}>
-            {deleting ? "…" : "🗑"}
-          </button>
+          <div style={{ display: "flex", gap: 2, flexShrink: 0 }}>
+            {!editing && (
+              <button onClick={() => { setEditing(true); setEditText(currentContent); }} title="Edit" style={{ background: "none", border: "none", cursor: "pointer", color: "#555", fontSize: "0.75rem", padding: "2px 6px", borderRadius: 6, lineHeight: 1 }}
+                onMouseEnter={e => (e.currentTarget.style.color = "var(--yellow)")}
+                onMouseLeave={e => (e.currentTarget.style.color = "#555")}>✏️</button>
+            )}
+            <button onClick={deletePost} disabled={deleting} title="Delete" style={{ background: "none", border: "none", cursor: "pointer", color: "#555", fontSize: "0.75rem", padding: "2px 6px", borderRadius: 6, lineHeight: 1 }}
+              onMouseEnter={e => (e.currentTarget.style.color = "#f87171")}
+              onMouseLeave={e => (e.currentTarget.style.color = "#555")}>
+              {deleting ? "…" : "🗑"}
+            </button>
+          </div>
         )}
       </div>
 
@@ -274,7 +302,25 @@ function PostCard({ post, myId, user, router, isReply = false, onReaction, onDel
           )}
         </div>
       )}
-      {post.content && <p style={{ fontSize: isReply ? "0.85rem" : "0.9rem", color: "#fff", lineHeight: 1.6, marginBottom: 12, whiteSpace: "pre-wrap" }}>{post.content}</p>}
+      {editing ? (
+        <div style={{ marginBottom: 12 }}>
+          <textarea
+            value={editText}
+            onChange={e => { setEditText(e.target.value); setEditError(""); }}
+            maxLength={280}
+            rows={3}
+            autoFocus
+            style={{ width: "100%", background: "#0d0d0d", border: "1px solid #3a3a3a", borderRadius: 10, outline: "none", fontSize: "0.9rem", color: "#fff", resize: "none", fontFamily: "'Inter', sans-serif", lineHeight: 1.6, padding: "8px 10px", boxSizing: "border-box" }}
+          />
+          {editError && <p style={{ fontSize: "0.72rem", color: "#f87171", margin: "4px 0" }}>{editError}</p>}
+          <div style={{ display: "flex", gap: 8, marginTop: 6 }}>
+            <button onClick={() => { setEditing(false); setEditText(currentContent); setEditError(""); }} style={{ background: "none", border: "1px solid #2a2a2a", borderRadius: 50, padding: "4px 14px", fontSize: "0.75rem", color: "var(--gray)", cursor: "pointer" }}>Cancel</button>
+            <button onClick={saveEdit} disabled={!editText.trim() || saving} style={{ background: "var(--yellow)", border: "none", borderRadius: 50, padding: "4px 14px", fontSize: "0.75rem", fontWeight: 800, color: "#000", cursor: "pointer" }}>{saving ? "…" : "Save"}</button>
+          </div>
+        </div>
+      ) : (
+        currentContent && <p style={{ fontSize: isReply ? "0.85rem" : "0.9rem", color: "#fff", lineHeight: 1.6, marginBottom: 12, whiteSpace: "pre-wrap" }}>{currentContent}</p>
+      )}
 
       {/* Actions */}
       <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
