@@ -152,16 +152,25 @@ function ReplyComposer({ postId, user, onDone }: { postId: string; user: ReturnT
 }
 
 // ── PostCard ─────────────────────────────────────────────────────────────────
-function PostCard({ post, myId, user, router, isReply = false, onReaction }: {
+function PostCard({ post, myId, user, router, isReply = false, onReaction, onDeleted }: {
   post: Post; myId: string; user: ReturnType<typeof useUser>["user"];
   router: ReturnType<typeof useRouter>; isReply?: boolean;
   onReaction: (postId: string, emoji: string) => void;
+  onDeleted?: (postId: string) => void;
 }) {
   const [showReplyComposer, setShowReplyComposer] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const [replies, setReplies] = useState<Post[]>([]);
   const [loadingReplies, setLoadingReplies] = useState(false);
   const [replyCount, setReplyCount] = useState(post.reply_count ?? 0);
+  const [deleting, setDeleting] = useState(false);
+
+  async function deletePost() {
+    if (!confirm("Delete this post?")) return;
+    setDeleting(true);
+    await fetch(`/api/community/posts/${post.id}`, { method: "DELETE" });
+    onDeleted?.(post.id);
+  }
 
   async function loadReplies() {
     if (loadingReplies) return;
@@ -194,12 +203,19 @@ function PostCard({ post, myId, user, router, isReply = false, onReaction }: {
             {post.avatar_url ? <img src={post.avatar_url} alt={post.display_name} style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <span style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", fontSize: "0.9rem" }}>👤</span>}
           </div>
         </button>
-        <div>
+        <div style={{ flex: 1 }}>
           <button onClick={() => router.push(`/app/comunidade/u/${post.user_id}`)} style={{ background: "none", border: "none", padding: 0, cursor: "pointer" }}>
             <p style={{ fontSize: isReply ? "0.78rem" : "0.82rem", fontWeight: 700, color: "#fff", margin: 0 }}>{post.display_name}</p>
           </button>
           <p style={{ fontSize: "0.65rem", color: "var(--gray)", margin: 0 }}>{timeAgo(post.created_at)}</p>
         </div>
+        {post.user_id === myId && (
+          <button onClick={deletePost} disabled={deleting} title="Delete" style={{ background: "none", border: "none", cursor: "pointer", color: "#555", fontSize: "0.75rem", padding: "2px 6px", borderRadius: 6, flexShrink: 0, lineHeight: 1 }}
+            onMouseEnter={e => (e.currentTarget.style.color = "#f87171")}
+            onMouseLeave={e => (e.currentTarget.style.color = "#555")}>
+            {deleting ? "…" : "🗑"}
+          </button>
+        )}
       </div>
 
       {post.image_url && <img src={post.image_url} alt="post" style={{ width: "100%", maxHeight: 280, objectFit: "cover", borderRadius: 10, marginBottom: 10 }} />}
@@ -246,7 +262,7 @@ function PostCard({ post, myId, user, router, isReply = false, onReaction }: {
       {expanded && replies.length > 0 && (
         <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid #1e1e1e", display: "flex", flexDirection: "column", gap: 0 }}>
           {replies.map(r => (
-            <PostCard key={r.id} post={r} myId={myId} user={user} router={router} isReply onReaction={onReaction} />
+            <PostCard key={r.id} post={r} myId={myId} user={user} router={router} isReply onReaction={onReaction} onDeleted={id => { setReplies(prev => prev.filter(x => x.id !== id)); setReplyCount(c => Math.max(0, c - 1)); }} />
           ))}
         </div>
       )}
@@ -483,7 +499,7 @@ export default function ComunidadePage() {
         )}
 
         {posts.map(post => (
-          <PostCard key={post.id} post={post} myId={user?.id ?? ""} user={user} router={router} onReaction={toggleReaction} />
+          <PostCard key={post.id} post={post} myId={user?.id ?? ""} user={user} router={router} onReaction={toggleReaction} onDeleted={id => setPosts(prev => prev.filter(p => p.id !== id))} />
         ))}
       </div>
 
