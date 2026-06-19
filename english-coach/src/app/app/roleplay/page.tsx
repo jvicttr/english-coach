@@ -523,13 +523,8 @@ export default function RolePlay() {
   // ── Scenario picker ──────────────────────────────────────────────────────
   if (screen === "scenarios") {
     return (
-      <div className="flex flex-col items-center px-3 pb-4 sm:px-4 sm:pb-6" style={{ background: "var(--black)", fontFamily: "'Inter', sans-serif", minHeight: "100dvh", paddingTop: 65 }}>
-        <div className="w-full max-w-2xl flex-1">
-          <div className="mb-5">
-            <p className="font-bold text-white text-sm mb-1">Escolha um cenário</p>
-            <p className="text-xs" style={{ color: "var(--gray)" }}>Pratique inglês em situações reais do dia a dia</p>
-          </div>
-
+      <div className="flex flex-col items-center px-3 sm:px-4" style={{ background: "var(--black)", fontFamily: "'Inter', sans-serif", height: "100dvh", paddingTop: 65, paddingBottom: 70 }}>
+        <div className="w-full max-w-2xl flex-1 flex flex-col justify-center">
           <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "0.6rem" }}>
             {SCENARIOS.map((sc) => (
               <button
