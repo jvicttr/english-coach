@@ -26,7 +26,10 @@ function timeAgo(d: string) {
 export function AppHeader() {
   const pathname = usePathname();
   const router = useRouter();
-  const [isPro, setIsPro] = useState(false);
+  const [isPro, setIsPro] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return localStorage.getItem("isPro") === "true";
+  });
   const [menuOpen, setMenuOpen] = useState(false);
   const [portalLoading, setPortalLoading] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
@@ -39,7 +42,9 @@ export function AppHeader() {
       fetch("/api/me").then((r) => r.json()).catch(() => ({} as Record<string, unknown>)),
       fetch("/api/community/notifications").then((r) => r.ok ? r.json() : ({} as Record<string, unknown>)).catch(() => ({} as Record<string, unknown>)),
     ]).then(([me, notifData]) => {
-      setIsPro(me.plan === "pro" || me.plan === "combo");
+      const pro = me.plan === "pro" || me.plan === "combo";
+      setIsPro(pro);
+      localStorage.setItem("isPro", String(pro));
       setNotifs((notifData.notifications as Notif[] | undefined) ?? []);
       setUnread((notifData.unread as number | undefined) ?? 0);
     });
