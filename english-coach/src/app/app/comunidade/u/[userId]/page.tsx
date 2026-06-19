@@ -17,7 +17,11 @@ type Post = {
   community_reactions: Reaction[];
 };
 
-const EMOJIS = ["👍", "🔥", "💯"];
+const HEART_EMOJI = "❤️";
+
+function HeartIcon() {
+  return <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>;
+}
 
 function timeAgo(dateStr: string) {
   const diff = Math.floor((Date.now() - new Date(dateStr).getTime()) / 1000);
@@ -65,7 +69,7 @@ export default function UserProfilePage({ params }: { params: Promise<{ userId: 
   }
 
   return (
-    <div style={{ background: "var(--black)", minHeight: "100dvh", fontFamily: "'Inter', sans-serif", paddingTop: 65, paddingBottom: 80 }}>
+    <div style={{ background: "var(--black)", minHeight: "100dvh", fontFamily: "'Inter', sans-serif", paddingTop: 65, paddingBottom: 80, overflowX: "hidden" }}>
       <div style={{ padding: "10px 16px", borderBottom: "1px solid #1e1e1e", display: "flex", alignItems: "center", gap: 10 }}>
         <button onClick={() => router.back()} style={{ background: "var(--dark2)", border: "1px solid #2a2a2a", borderRadius: 10, height: 32, width: 32, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
           <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M9 2L4 7L9 12" stroke="var(--gray)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
@@ -120,16 +124,16 @@ export default function UserProfilePage({ params }: { params: Promise<{ userId: 
               {post.image_url && <img src={post.image_url} alt="post" style={{ width: "100%", maxHeight: 280, objectFit: "cover", borderRadius: 10, marginBottom: 10 }} />}
               {post.audio_url && <div style={{ background: "#0d0d0d", borderRadius: 10, padding: "8px 12px", marginBottom: 10 }}><audio src={post.audio_url} controls style={{ width: "100%", height: 32 }} /></div>}
               {post.content && <p style={{ fontSize: "0.9rem", color: "#fff", lineHeight: 1.6, marginBottom: 12, whiteSpace: "pre-wrap" }}>{post.content}</p>}
-              <div style={{ display: "flex", gap: 6 }}>
-                {EMOJIS.map(emoji => {
-                  const count = post.community_reactions.filter(r => r.emoji === emoji).length;
-                  const reacted = post.community_reactions.some(r => r.emoji === emoji && r.user_id === myId);
+              <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                {(() => {
+                  const count = post.community_reactions.filter(r => r.emoji === HEART_EMOJI).length;
+                  const reacted = post.community_reactions.some(r => r.emoji === HEART_EMOJI && r.user_id === myId);
                   return (
-                    <button key={emoji} onClick={() => toggleReaction(post.id, emoji)} style={{ display: "flex", alignItems: "center", gap: 5, padding: "4px 10px", borderRadius: 50, border: `1px solid ${reacted ? "rgba(245,200,0,.5)" : "#2a2a2a"}`, background: reacted ? "rgba(245,200,0,.08)" : "transparent", cursor: "pointer", fontSize: "0.78rem", color: reacted ? "var(--yellow)" : "var(--gray)", fontWeight: 600 }}>
-                      <span>{emoji}</span>{count > 0 && <span>{count}</span>}
+                    <button onClick={() => toggleReaction(post.id, HEART_EMOJI)} style={{ display: "flex", alignItems: "center", gap: 4, padding: "4px 10px", borderRadius: 50, border: `1px solid ${reacted ? "rgba(245,200,0,.5)" : "#2a2a2a"}`, background: reacted ? "rgba(245,200,0,.08)" : "transparent", cursor: "pointer", fontSize: "0.78rem", color: reacted ? "var(--yellow)" : "var(--gray)", fontWeight: 600 }}>
+                      <HeartIcon />{count > 0 && <span>{count}</span>}
                     </button>
                   );
-                })}
+                })()}
               </div>
             </div>
           );
