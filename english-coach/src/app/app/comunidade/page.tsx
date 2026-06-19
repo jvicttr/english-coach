@@ -160,8 +160,8 @@ function ReplyComposer({ postId, user, onDone }: { postId: string; user: ReturnT
               <button onClick={() => { setAudioBlob(null); setAudioUrl(null); }} style={{ background: "none", border: "none", color: "#f87171", cursor: "pointer", fontSize: "0.8rem" }}>✕</button>
             </div>
           ) : imagePreview ? (
-            <div style={{ marginBottom: 6, borderRadius: 8, overflow: "hidden", maxWidth: "100%", position: "relative" }}>
-              <img src={imagePreview} alt="preview" style={{ width: "100%", height: "auto", maxHeight: 200, objectFit: "contain", borderRadius: 8 }} />
+            <div style={{ marginBottom: 6, borderRadius: 8, overflow: "visible", maxWidth: "100%", position: "relative", display: "flex", justifyContent: "center" }}>
+              <img src={imagePreview} alt="preview" style={{ width: "100%", height: "auto", maxHeight: "none", objectFit: "contain", borderRadius: 8, display: "block" }} />
               <button onClick={() => { setImageFile(null); setImagePreview(null); }} style={{ position: "absolute", top: 4, right: 4, background: "#f87171", border: "none", color: "#fff", cursor: "pointer", fontSize: "0.8rem", width: 20, height: 20, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700 }}>✕</button>
             </div>
           ) : (
