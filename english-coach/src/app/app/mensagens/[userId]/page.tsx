@@ -201,7 +201,7 @@ export default function ChatPage() {
 
       {/* Emoji picker */}
       {showEmoji && (
-        <div className="w-full max-w-2xl mb-2 p-2 shrink-0" style={{ background: "var(--dark2)", border: "1px solid #2a2a2a", borderRadius: "var(--radius)", display: "flex", flexWrap: "wrap", gap: 4 }}>
+        <div className="hidden sm:flex w-full max-w-2xl mb-2 p-2 shrink-0" style={{ background: "var(--dark2)", border: "1px solid #2a2a2a", borderRadius: "var(--radius)", flexWrap: "wrap", gap: 4 }}>
           {EMOJIS.map(e => (
             <button key={e} onClick={() => insertEmoji(e)} style={{ background: "none", border: "none", fontSize: "1.3rem", cursor: "pointer", padding: "2px 4px", borderRadius: 6 }}>{e}</button>
           ))}
@@ -219,8 +219,8 @@ export default function ChatPage() {
 
       {/* Input */}
       <div className="-mx-3 sm:mx-auto w-full sm:max-w-2xl flex gap-2 items-end px-3 sm:px-0 pb-1 sm:pb-0 shrink-0" style={{ background: "var(--black)" }}>
-        {/* Emoji btn */}
-        <button onClick={() => setShowEmoji(s => !s)} style={{ width: 44, height: 44, background: showEmoji ? "var(--yellow)" : "var(--dark2)", border: "1px solid #2a2a2a", borderRadius: "var(--radius)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0, fontSize: "1.2rem" }}>
+        {/* Emoji btn - apenas desktop */}
+        <button onClick={() => setShowEmoji(s => !s)} className="hidden sm:flex" style={{ width: 44, height: 44, background: showEmoji ? "var(--yellow)" : "var(--dark2)", border: "1px solid #2a2a2a", borderRadius: "var(--radius)", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0, fontSize: "1.2rem" }}>
           😊
         </button>
 
