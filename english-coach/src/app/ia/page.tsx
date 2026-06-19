@@ -85,26 +85,12 @@ type MixPart = string | { word: string; en: string } | { highlight: string };
 function MixDemo() {
   const [visible, setVisible] = useState<number[]>([]);
   const ref = useRef<HTMLDivElement>(null);
-  const started = useRef(false);
 
   useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const obs = new IntersectionObserver(([e]) => {
-      if (e.isIntersecting && !started.current) {
-        started.current = true;
-        obs.disconnect();
-        let i = 0;
-        const show = () => {
-          setVisible(v => [...v, i]);
-          i++;
-          if (i < MIX_DEMO_STEPS.length) setTimeout(show, 1400);
-        };
-        setTimeout(show, 400);
-      }
-    }, { threshold: 0.3 });
-    obs.observe(el);
-    return () => obs.disconnect();
+    const timers: NodeJS.Timeout[] = [];
+    timers.push(setTimeout(() => setVisible([0]), 300));
+    timers.push(setTimeout(() => setVisible([0, 1]), 1800));
+    return () => timers.forEach(t => clearTimeout(t));
   }, []);
 
   return (
