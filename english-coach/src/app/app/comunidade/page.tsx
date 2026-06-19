@@ -147,7 +147,7 @@ function ReplyComposer({ postId, user, onDone }: { postId: string; user: ReturnT
         <div style={{ width: 28, height: 28, borderRadius: "50%", overflow: "hidden", background: "#1e1e1e", flexShrink: 0 }}>
           {user?.imageUrl ? <img src={user.imageUrl} alt="you" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <span style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", fontSize: "0.8rem" }}>👤</span>}
         </div>
-        <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
           {recording ? (
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
               <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#f87171", display: "inline-block", animation: "pulse 1s infinite" }} />
@@ -160,8 +160,8 @@ function ReplyComposer({ postId, user, onDone }: { postId: string; user: ReturnT
               <button onClick={() => { setAudioBlob(null); setAudioUrl(null); }} style={{ background: "none", border: "none", color: "#f87171", cursor: "pointer", fontSize: "0.8rem" }}>✕</button>
             </div>
           ) : imagePreview ? (
-            <div style={{ marginBottom: 6, borderRadius: 8, overflow: "visible", width: "100%", position: "relative", display: "flex", justifyContent: "center", minHeight: "auto" }}>
-              <img src={imagePreview} alt="preview" style={{ width: "auto", maxWidth: "100%", height: "auto", objectFit: "contain", borderRadius: 8, display: "block" }} />
+            <div style={{ marginBottom: 6, borderRadius: 8, position: "relative", display: "flex", justifyContent: "center", alignItems: "center" }}>
+              <img src={imagePreview} alt="preview" style={{ maxWidth: "100%", height: "auto", objectFit: "contain", borderRadius: 8 }} />
               <button onClick={() => { setImageFile(null); setImagePreview(null); }} style={{ position: "absolute", top: 4, right: 4, background: "#f87171", border: "none", color: "#fff", cursor: "pointer", fontSize: "0.8rem", width: 20, height: 20, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700 }}>✕</button>
             </div>
           ) : (
