@@ -101,15 +101,15 @@ function ReplyComposer({ postId, user, onDone }: { postId: string; user: ReturnT
         tf.append("audio", new File([audioBlob], `audio.${ext}`, { type: audioBlob.type }));
         const tr = await fetch("/api/transcribe", { method: "POST", body: tf });
         const td = await tr.json();
-        if (!td.text?.trim()) { setError("Couldn't understand audio. Try again."); return; }
-        const vr = await fetch("/api/community/posts", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ content: td.text, validateOnly: true }) });
+        if (!td.transcript?.trim()) { setError("Couldn't understand audio. Try again."); return; }
+        const vr = await fetch("/api/community/posts", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ content: td.transcript, validateOnly: true }) });
         const vd = await vr.json();
         if (vd.error === "not_english") { setError("Please record in English! 🇺🇸"); return; }
         const uf = new FormData();
         uf.append("file", new File([audioBlob], `audio.${ext}`, { type: audioBlob.type })); uf.append("type", "audio");
         const ur = await fetch("/api/community/upload", { method: "POST", body: uf });
         uploadedAudio = (await ur.json()).url;
-        audioTranscript = td.text;
+        audioTranscript = td.transcript;
       }
       const res = await fetch("/api/community/posts", {
         method: "POST", headers: { "Content-Type": "application/json" },
@@ -415,13 +415,13 @@ export default function ComunidadePage() {
         tf.append("audio", new File([audioBlob], `audio.${ext}`, { type: audioBlob.type }));
         const tr = await fetch("/api/transcribe", { method: "POST", body: tf });
         const td = await tr.json();
-        if (!td.text?.trim()) { setPostError("Couldn't understand audio."); return; }
-        const vr = await fetch("/api/community/posts", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ content: td.text, validateOnly: true }) });
+        if (!td.transcript?.trim()) { setPostError("Couldn't understand audio."); return; }
+        const vr = await fetch("/api/community/posts", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ content: td.transcript, validateOnly: true }) });
         if ((await vr.json()).error === "not_english") { setPostError("Please record in English! 🇺🇸"); return; }
         const uf = new FormData();
         uf.append("file", new File([audioBlob], `audio.${ext}`, { type: audioBlob.type })); uf.append("type", "audio");
         uploadedAudioUrl = (await (await fetch("/api/community/upload", { method: "POST", body: uf })).json()).url;
-        audioTranscript = td.text;
+        audioTranscript = td.transcript;
       }
 
       if (imageFile) {
