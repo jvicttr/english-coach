@@ -76,10 +76,10 @@ const HOW_STEPS = [
 ];
 
 const MIX_DEMO_STEPS = [
-  { role: "user",  text: ["I went to the ", { word: "supermercado", en: "supermarket" }, " yesterday but I forgot to buy the ", { word: "detergente", en: "dish soap" }, "."] },
-  { role: "coach", text: ["No problem! Quick vocab: ", { highlight: "supermercado" }, " = supermarket, and ", { highlight: "detergente" }, " = dish soap. Great sentence structure! 💡"] },
-  { role: "user",  text: ["Thanks! I also need to call my ", { word: "proprietário", en: "landlord" }, " about the ", { word: "vazamento", en: "leak" }, "."] },
-  { role: "coach", text: ["Perfect! Say: \"I need to call my landlord about the leak.\" You're mixing naturally — that's exactly how fluency builds! 🎉"] },
+  { role: "user",  text: ["I went to the ", { word: "supermercado", en: "supermarket" }, " yesterday and bought some ", { word: "coisas", en: "things" }, " but forgot the ", { word: "leite", en: "milk" }, "."] },
+  { role: "coach", text: ["Nice! So you're mixing português and inglês naturally. Let me help: ", { highlight: "supermercado" }, " = supermarket, ", { highlight: "coisas" }, " = things, and ", { highlight: "leite" }, " = milk. Your sentence structure is perfect! 💪"] },
+  { role: "user",  text: ["Thanks! So I need to go back to the supermarket again. It was ", { word: "chato", en: "annoying" }, "."] },
+  { role: "coach", text: ["Got it! 'It was annoying' — perfect! You could also say 'It was frustrating' 😄 The fact that you're mixing languages shows you're thinking in English already!"] },
 ];
 
 type MixPart = string | { word: string; en: string } | { highlight: string };
