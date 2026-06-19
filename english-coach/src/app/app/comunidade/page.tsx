@@ -547,14 +547,20 @@ export default function ComunidadePage() {
     } finally { setPosting(false); }
   }, [posting, postText, audioBlob, imageFile]);
 
-  async function toggleReaction(postId: string, emoji: string) {
-    await fetch("/api/community/react", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ postId, emoji }) });
+  function toggleReaction(postId: string, emoji: string) {
+    const myId = user?.id ?? "";
     setPosts(prev => prev.map(p => {
       if (p.id !== postId) return p;
-      const myId = user?.id ?? "";
       const hasIt = p.community_reactions.some(r => r.emoji === emoji && r.user_id === myId);
       return { ...p, community_reactions: hasIt ? p.community_reactions.filter(r => !(r.emoji === emoji && r.user_id === myId)) : [...p.community_reactions, { emoji, user_id: myId }] };
     }));
+    fetch("/api/community/react", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ postId, emoji }) }).catch(() => {
+      setPosts(prev => prev.map(p => {
+        if (p.id !== postId) return p;
+        const hasIt = p.community_reactions.some(r => r.emoji === emoji && r.user_id === myId);
+        return { ...p, community_reactions: hasIt ? p.community_reactions.filter(r => !(r.emoji === emoji && r.user_id === myId)) : [...p.community_reactions, { emoji, user_id: myId }] };
+      }));
+    });
   }
 
   const canPost = !posting && (postText.trim().length > 0 || !!audioBlob || !!imageFile);
