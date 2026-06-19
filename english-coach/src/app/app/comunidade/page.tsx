@@ -327,25 +327,6 @@ function PostCard({ post, myId, user, router, isReply = false, onReaction, onDel
           {post.transcript && (
             <div style={{ marginTop: 8 }}>
               <p style={{ fontSize: "0.78rem", color: "#ccc", lineHeight: 1.5, margin: 0, fontStyle: "italic" }}>"{post.transcript}"</p>
-              <div style={{ marginTop: 6 }}>
-                {showTranslation ? (
-                  <div style={{ display: "flex", alignItems: "flex-start", gap: 6 }}>
-                    <p style={{ fontSize: "0.75rem", color: "var(--gray)", lineHeight: 1.5, margin: 0 }}>
-                      {showTranslation === "pt" ? "🇧🇷" : "🇺🇸"} {showTranslation === "pt" ? translationPt : translationEn}
-                    </p>
-                    <button onClick={() => setShowTranslation(null)} style={{ background: "none", border: "none", color: "#555", fontSize: "0.65rem", cursor: "pointer", flexShrink: 0, padding: 0 }}>ocultar</button>
-                  </div>
-                ) : (
-                  <div style={{ display: "flex", gap: 6 }}>
-                    <button onClick={() => fetchTranslation(post.transcript!, "pt")} disabled={translating} style={{ background: "transparent", border: "1px solid #3a3a3a", borderRadius: 50, padding: "2px 10px", fontSize: "0.7rem", color: "var(--gray)", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 4 }}>
-                      {translating ? "…" : "🇧🇷 Ver tradução"}
-                    </button>
-                    <button onClick={() => fetchTranslation(post.transcript!, "en")} disabled={translating} style={{ background: "transparent", border: "1px solid #3a3a3a", borderRadius: 50, padding: "2px 10px", fontSize: "0.7rem", color: "var(--gray)", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 4 }}>
-                      {translating ? "…" : "🇺🇸 Ver tradução"}
-                    </button>
-                  </div>
-                )}
-              </div>
             </div>
           )}
         </div>
@@ -385,7 +366,30 @@ function PostCard({ post, myId, user, router, isReply = false, onReaction, onDel
           </div>
         </div>
       ) : (
-        currentContent && <p style={{ fontSize: isReply ? "0.85rem" : "0.9rem", color: "#fff", lineHeight: 1.6, marginBottom: 12, whiteSpace: "pre-wrap" }}>{currentContent}</p>
+        <>
+          {currentContent && <p style={{ fontSize: isReply ? "0.85rem" : "0.9rem", color: "#fff", lineHeight: 1.6, marginBottom: 12, whiteSpace: "pre-wrap" }}>{currentContent}</p>}
+          {currentContent && (
+            <div style={{ marginBottom: 12 }}>
+              {showTranslation ? (
+                <div style={{ display: "flex", alignItems: "flex-start", gap: 6 }}>
+                  <p style={{ fontSize: "0.75rem", color: "var(--gray)", lineHeight: 1.5, margin: 0 }}>
+                    {showTranslation === "pt" ? "🇧🇷" : "🇺🇸"} {showTranslation === "pt" ? translationPt : translationEn}
+                  </p>
+                  <button onClick={() => setShowTranslation(null)} style={{ background: "none", border: "none", color: "#555", fontSize: "0.65rem", cursor: "pointer", flexShrink: 0, padding: 0 }}>ocultar</button>
+                </div>
+              ) : (
+                <div style={{ display: "flex", gap: 6 }}>
+                  <button onClick={() => fetchTranslation(currentContent, "pt")} disabled={translating} style={{ background: "transparent", border: "1px solid #3a3a3a", borderRadius: 50, padding: "2px 10px", fontSize: "0.7rem", color: "var(--gray)", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 4 }}>
+                    {translating ? "…" : "🇧🇷 Ver tradução"}
+                  </button>
+                  <button onClick={() => fetchTranslation(currentContent, "en")} disabled={translating} style={{ background: "transparent", border: "1px solid #3a3a3a", borderRadius: 50, padding: "2px 10px", fontSize: "0.7rem", color: "var(--gray)", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 4 }}>
+                    {translating ? "…" : "🇺🇸 Ver tradução"}
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+        </>
       )}
 
       {/* Actions */}
