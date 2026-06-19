@@ -32,6 +32,7 @@ export default function ChatPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [messageText, setMessageText] = useState("");
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
   const [presence, setPresence] = useState<UserPresence | null>(null);
   const [replyTo, setReplyTo] = useState<Message | null>(null);
@@ -59,9 +60,19 @@ export default function ChatPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ otherUserId }),
       });
+
+      if (!res.ok) {
+        throw new Error(`API error: ${res.status}`);
+      }
+
       const data = await res.json();
+
+      if (!data.conversationId) {
+        throw new Error("No conversationId returned");
+      }
+
       setConversationId(data.conversationId);
-      loadMessages(data.conversationId);
+      await loadMessages(data.conversationId);
 
       const presRes = await fetch(`/api/messages/presence?userIds=${otherUserId}`);
       const presData = await presRes.json();
@@ -72,8 +83,10 @@ export default function ChatPage() {
       setLoading(false);
       const interval = setInterval(() => loadMessages(data.conversationId), 2000);
       return () => clearInterval(interval);
-    } catch (error) {
-      console.error("Erro:", error);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error("Erro ao inicializar chat:", msg);
+      setError(msg);
       setLoading(false);
     }
   }
@@ -141,6 +154,17 @@ export default function ChatPage() {
     return (
       <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100vh", color: "#999" }}>
         Carregando...
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100vh", flexDirection: "column", color: "#ff6b6b", gap: 20 }}>
+        <div>Erro ao carregar chat: {error}</div>
+        <button onClick={() => router.back()} style={{ padding: "8px 16px", background: "var(--yellow)", color: "#000", border: "none", borderRadius: 8, cursor: "pointer" }}>
+          Voltar
+        </button>
       </div>
     );
   }
