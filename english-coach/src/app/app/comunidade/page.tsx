@@ -160,9 +160,9 @@ function ReplyComposer({ postId, user, onDone }: { postId: string; user: ReturnT
               <button onClick={() => { setAudioBlob(null); setAudioUrl(null); }} style={{ background: "none", border: "none", color: "#f87171", cursor: "pointer", fontSize: "0.8rem" }}>✕</button>
             </div>
           ) : imagePreview ? (
-            <div style={{ display: "flex", alignItems: "center", gap: 6, background: "#0d0d0d", borderRadius: 8, padding: "6px 10px", marginBottom: 6, maxWidth: "100%" }}>
-              <img src={imagePreview} alt="preview" style={{ height: 40, borderRadius: 4, objectFit: "cover" }} />
-              <button onClick={() => { setImageFile(null); setImagePreview(null); }} style={{ background: "none", border: "none", color: "#f87171", cursor: "pointer", fontSize: "0.8rem", marginLeft: "auto" }}>✕</button>
+            <div style={{ marginBottom: 6, borderRadius: 8, overflow: "hidden", maxWidth: "100%", position: "relative" }}>
+              <img src={imagePreview} alt="preview" style={{ width: "100%", height: "auto", maxHeight: 200, objectFit: "contain", borderRadius: 8 }} />
+              <button onClick={() => { setImageFile(null); setImagePreview(null); }} style={{ position: "absolute", top: 4, right: 4, background: "#f87171", border: "none", color: "#fff", cursor: "pointer", fontSize: "0.8rem", width: 20, height: 20, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700 }}>✕</button>
             </div>
           ) : (
             <textarea
