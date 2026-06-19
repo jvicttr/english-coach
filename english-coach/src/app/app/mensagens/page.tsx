@@ -4,11 +4,11 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useUser } from "@clerk/nextjs";
 
-interface Conversation {
+interface User {
   id: string;
-  user1_id: string;
-  user2_id: string;
-  updated_at: string;
+  name: string;
+  email: string;
+  image_url: string | null;
 }
 
 interface UserPresence {
@@ -20,30 +20,29 @@ interface UserPresence {
 export default function MensagensPage() {
   const router = useRouter();
   const { user } = useUser();
-  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
   const [presences, setPresences] = useState<Record<string, UserPresence>>({});
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     if (!user) return;
-    loadConversations();
-    const interval = setInterval(updatePresence, 30000); // Atualizar a cada 30s
+    loadUsers();
+    const interval = setInterval(updatePresence, 30000);
     return () => clearInterval(interval);
   }, [user]);
 
-  async function loadConversations() {
+  async function loadUsers() {
     try {
-      const res = await fetch("/api/messages");
+      const res = await fetch("/api/users");
       const data = await res.json();
-      setConversations(data.conversations || []);
+      const allUsers = data.users || [];
+      setUsers(allUsers);
 
-      // Buscar presença dos outros usuários
-      if (data.conversations.length > 0 && user) {
-        const otherUserIds = data.conversations.map((c: Conversation) =>
-          c.user1_id === user.id ? c.user2_id : c.user1_id
-        );
-        const presRes = await fetch(`/api/messages/presence?userIds=${otherUserIds.join(",")}`);
+      // Buscar presença de todos os usuários
+      if (allUsers.length > 0) {
+        const userIds = allUsers.map((u: User) => u.id);
+        const presRes = await fetch(`/api/messages/presence?userIds=${userIds.join(",")}`);
         const presData = await presRes.json();
         const presenceMap: Record<string, UserPresence> = {};
         presData.presences?.forEach((p: UserPresence) => {
@@ -54,7 +53,7 @@ export default function MensagensPage() {
 
       setLoading(false);
     } catch (error) {
-      console.error("Erro ao carregar conversas:", error);
+      console.error("Erro ao carregar usuários:", error);
       setLoading(false);
     }
   }
@@ -71,10 +70,6 @@ export default function MensagensPage() {
     }
   }
 
-  function getOtherUser(conv: Conversation): string {
-    return conv.user1_id === user?.id ? conv.user2_id : conv.user1_id;
-  }
-
   function isOnline(userId: string): boolean {
     const presence = presences[userId];
     if (!presence) return false;
@@ -83,6 +78,11 @@ export default function MensagensPage() {
     const diffMinutes = (now.getTime() - lastSeen.getTime()) / (1000 * 60);
     return presence.is_online && diffMinutes < 5;
   }
+
+  const filteredUsers = users.filter(u =>
+    u.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    u.email.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   if (loading) {
     return (
@@ -94,7 +94,7 @@ export default function MensagensPage() {
 
   return (
     <div style={{ display: "flex", height: "100vh", background: "var(--black)", fontFamily: "'Inter', sans-serif" }}>
-      {/* Sidebar - Conversas */}
+      {/* Sidebar - Usuários */}
       <div style={{ width: "100%", maxWidth: "400px", borderRight: "1px solid #1e1e1e", display: "flex", flexDirection: "column" }}>
         <div style={{ padding: "16px", borderBottom: "1px solid #1e1e1e" }}>
           <h1 style={{ fontSize: "1.2rem", fontWeight: 800, color: "#fff", margin: 0 }}>💬 Mensagens</h1>
@@ -102,7 +102,7 @@ export default function MensagensPage() {
 
         <input
           type="text"
-          placeholder="Buscar conversa..."
+          placeholder="Buscar usuário..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           style={{
@@ -118,18 +118,17 @@ export default function MensagensPage() {
         />
 
         <div style={{ flex: 1, overflowY: "auto" }}>
-          {conversations.length === 0 ? (
+          {filteredUsers.length === 0 ? (
             <div style={{ padding: "20px", textAlign: "center", color: "#666" }}>
-              Nenhuma conversa ainda
+              Nenhum usuário encontrado
             </div>
           ) : (
-            conversations.map(conv => {
-              const otherUserId = getOtherUser(conv);
-              const online = isOnline(otherUserId);
+            filteredUsers.map(u => {
+              const online = isOnline(u.id);
               return (
                 <div
-                  key={conv.id}
-                  onClick={() => router.push(`/app/mensagens/${otherUserId}`)}
+                  key={u.id}
+                  onClick={() => router.push(`/app/mensagens/${u.id}`)}
                   style={{
                     padding: "12px 16px",
                     borderBottom: "1px solid #1e1e1e",
@@ -146,16 +145,21 @@ export default function MensagensPage() {
                       width: "40px",
                       height: "40px",
                       borderRadius: "50%",
-                      background: online ? "var(--yellow)" : "#2a2a2a",
+                      background: "#2a2a2a",
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
                       fontSize: "1.2rem",
                       position: "relative",
                       flexShrink: 0,
+                      overflow: "hidden",
                     }}
                   >
-                    👤
+                    {u.image_url ? (
+                      <img src={u.image_url} alt={u.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    ) : (
+                      <span style={{ fontSize: "1.2rem" }}>👤</span>
+                    )}
                     {online && (
                       <div
                         style={{
@@ -173,10 +177,10 @@ export default function MensagensPage() {
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: "0.9rem", fontWeight: 600, color: "#fff" }}>
-                      {otherUserId}
+                      {u.name}
                     </div>
                     <div style={{ fontSize: "0.75rem", color: "#666" }}>
-                      {online ? "Online agora" : "Offline"}
+                      {online ? "🟢 Online" : "⚫ Offline"}
                     </div>
                   </div>
                 </div>
@@ -186,7 +190,7 @@ export default function MensagensPage() {
         </div>
       </div>
 
-      {/* Chat Area - Vazio por enquanto */}
+      {/* Chat Area - Vazio */}
       <div
         style={{
           flex: 1,
@@ -197,7 +201,7 @@ export default function MensagensPage() {
           fontSize: "1rem",
         }}
       >
-        Selecione uma conversa
+        Selecione um usuário para começar
       </div>
     </div>
   );
