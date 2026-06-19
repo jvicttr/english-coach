@@ -205,11 +205,12 @@ function ReplyComposer({ postId, user, onDone }: { postId: string; user: ReturnT
 }
 
 // ── PostCard ─────────────────────────────────────────────────────────────────
-function PostCard({ post, myId, user, router, isReply = false, onReaction, onDeleted }: {
+function PostCard({ post, myId, user, router, isReply = false, onReaction, onDeleted, onImageClick }: {
   post: Post; myId: string; user: ReturnType<typeof useUser>["user"];
   router: ReturnType<typeof useRouter>; isReply?: boolean;
   onReaction: (postId: string, emoji: string) => void;
   onDeleted?: (postId: string) => void;
+  onImageClick?: (imageUrl: string) => void;
 }) {
   const [showReplyComposer, setShowReplyComposer] = useState(false);
   const [expanded, setExpanded] = useState(false);
@@ -318,7 +319,7 @@ function PostCard({ post, myId, user, router, isReply = false, onReaction, onDel
         <img
           src={post.image_url}
           alt="post"
-          onClick={() => { setSelectedImage(post.image_url); setImageZoom(1); }}
+          onClick={() => onImageClick?.(post.image_url)}
           style={{ width: "100%", maxHeight: 280, objectFit: "contain", borderRadius: 10, marginBottom: 10, background: "#0d0d0d", display: "block", cursor: "pointer" }}
         />
       )}
@@ -443,7 +444,7 @@ function PostCard({ post, myId, user, router, isReply = false, onReaction, onDel
       {expanded && replies.length > 0 && (
         <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid #1e1e1e", borderLeft: "2px solid #2a2a2a", paddingLeft: 12, display: "flex", flexDirection: "column", gap: 0 }}>
           {replies.map(r => (
-            <PostCard key={r.id} post={r} myId={myId} user={user} router={router} isReply onReaction={onReaction} onDeleted={id => { setReplies(prev => prev.filter(x => x.id !== id)); setReplyCount(c => Math.max(0, c - 1)); }} />
+            <PostCard key={r.id} post={r} myId={myId} user={user} router={router} isReply onReaction={onReaction} onImageClick={(url) => { setSelectedImage(url); setImageZoom(1); }} onDeleted={id => { setReplies(prev => prev.filter(x => x.id !== id)); setReplyCount(c => Math.max(0, c - 1)); }} />
           ))}
         </div>
       )}
@@ -792,7 +793,7 @@ export default function ComunidadePage() {
         )}
 
         {posts.map(post => (
-          <PostCard key={post.id} post={post} myId={user?.id ?? ""} user={user} router={router} onReaction={toggleReaction} onDeleted={id => setPosts(prev => prev.filter(p => p.id !== id))} />
+          <PostCard key={post.id} post={post} myId={user?.id ?? ""} user={user} router={router} onReaction={toggleReaction} onImageClick={(url) => { setSelectedImage(url); setImageZoom(1); }} onDeleted={id => setPosts(prev => prev.filter(p => p.id !== id))} />
         ))}
       </div>
 
