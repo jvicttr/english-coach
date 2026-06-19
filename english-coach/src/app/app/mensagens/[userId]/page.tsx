@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useUser } from "@clerk/nextjs";
 
@@ -22,13 +22,6 @@ interface UserPresence {
   last_seen: string;
 }
 
-interface OtherUser {
-  id: string;
-  name: string;
-  email: string;
-  image_url: string | null;
-}
-
 export default function ChatPage() {
   const params = useParams();
   const router = useRouter();
@@ -42,12 +35,10 @@ export default function ChatPage() {
   const [sending, setSending] = useState(false);
   const [presence, setPresence] = useState<UserPresence | null>(null);
   const [replyTo, setReplyTo] = useState<Message | null>(null);
-  const [otherUser, setOtherUser] = useState<OtherUser | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const audioInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
 
-  // Scroll para a última mensagem
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
@@ -56,7 +47,6 @@ export default function ChatPage() {
     scrollToBottom();
   }, [messages]);
 
-  // Inicializar conversa
   useEffect(() => {
     if (!user) return;
     initializeChat();
@@ -64,7 +54,6 @@ export default function ChatPage() {
 
   async function initializeChat() {
     try {
-      // Iniciar conversa
       const res = await fetch("/api/messages/start", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -72,34 +61,19 @@ export default function ChatPage() {
       });
       const data = await res.json();
       setConversationId(data.conversationId);
-
-      // Buscar dados do outro usuário
-      try {
-        const allUsersRes = await fetch("/api/users");
-        const allUsersData = await allUsersRes.json();
-        const foundUser = allUsersData.users?.find((u: OtherUser) => u.id === otherUserId);
-        if (foundUser) {
-          setOtherUser(foundUser);
-        }
-      } catch (e) {
-        console.error("Erro ao buscar dados do usuário:", e);
-      }
-
-      // Carregar mensagens
       loadMessages(data.conversationId);
 
-      // Buscar presença
       const presRes = await fetch(`/api/messages/presence?userIds=${otherUserId}`);
       const presData = await presRes.json();
       if (presData.presences?.[0]) {
         setPresence(presData.presences[0]);
       }
 
-      // Poll para novas mensagens a cada 2s
+      setLoading(false);
       const interval = setInterval(() => loadMessages(data.conversationId), 2000);
       return () => clearInterval(interval);
     } catch (error) {
-      console.error("Erro ao inicializar chat:", error);
+      console.error("Erro:", error);
       setLoading(false);
     }
   }
@@ -109,15 +83,13 @@ export default function ChatPage() {
       const res = await fetch(`/api/messages?conversationId=${convId}`);
       const data = await res.json();
       setMessages(data.messages || []);
-      setLoading(false);
     } catch (error) {
       console.error("Erro ao carregar mensagens:", error);
     }
   }
 
-  async function sendMessage(content?: string, imageUrl?: string, audioUrl?: string, videoUrl?: string) {
-    if (!conversationId || (!content && !imageUrl && !audioUrl && !videoUrl)) return;
-
+  async function sendMessage(content?: string) {
+    if (!conversationId || !content?.trim()) return;
     setSending(true);
     try {
       const res = await fetch("/api/messages", {
@@ -126,13 +98,12 @@ export default function ChatPage() {
         body: JSON.stringify({
           conversationId,
           content: content || null,
-          imageUrl: imageUrl || null,
-          audioUrl: audioUrl || null,
-          videoUrl: videoUrl || null,
+          imageUrl: null,
+          audioUrl: null,
+          videoUrl: null,
           replyToId: replyTo?.id || null,
         }),
       });
-
       if (res.ok) {
         setMessageText("");
         setReplyTo(null);
@@ -177,32 +148,14 @@ export default function ChatPage() {
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100vh", background: "var(--black)", fontFamily: "'Inter', sans-serif" }}>
       {/* Header */}
-      <div
-        style={{
-          padding: "12px 16px",
-          borderBottom: "1px solid #1e1e1e",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-        }}
-      >
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <button
-            onClick={() => router.back()}
-            style={{ background: "none", border: "none", color: "#fff", fontSize: "1.2rem", cursor: "pointer" }}
-          >
-            ←
-          </button>
-          {otherUser?.image_url && (
-            <div style={{ width: 36, height: 36, borderRadius: "50%", overflow: "hidden", background: "#1e1e1e" }}>
-              <img src={otherUser.image_url} alt={otherUser.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-            </div>
-          )}
-          <div>
-            <div style={{ fontSize: "0.95rem", fontWeight: 600, color: "#fff" }}>{otherUser?.name || otherUserId}</div>
-            <div style={{ fontSize: "0.7rem", color: isOnline() ? "#22c55e" : "#666" }}>
-              {isOnline() ? "🟢 Online" : "⚫ Offline"}
-            </div>
+      <div style={{ padding: "12px 16px", borderBottom: "1px solid #1e1e1e", display: "flex", alignItems: "center", gap: 12 }}>
+        <button onClick={() => router.back()} style={{ background: "none", border: "none", color: "#fff", fontSize: "1.2rem", cursor: "pointer" }}>
+          ←
+        </button>
+        <div>
+          <div style={{ fontSize: "0.95rem", fontWeight: 600, color: "#fff" }}>{otherUserId}</div>
+          <div style={{ fontSize: "0.7rem", color: isOnline() ? "#22c55e" : "#666" }}>
+            {isOnline() ? "🟢 Online" : "⚫ Offline"}
           </div>
         </div>
       </div>
