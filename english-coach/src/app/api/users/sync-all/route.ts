@@ -30,7 +30,7 @@ export async function GET(req: NextRequest) {
         id: user.id,
         email,
         name,
-        image_url: user.image_url || user.profile_image_url || null,
+        image_url: user.has_image ? (user.image_url || user.profile_image_url || null) : null,
       }, { onConflict: "id" });
 
       synced++;
