@@ -314,7 +314,7 @@ function PostCard({ post, myId, user, router, isReply = false, onReaction, onDel
         )}
       </div>
 
-      {post.image_url && <img src={post.image_url} alt="post" style={{ width: "100%", maxHeight: 280, objectFit: "cover", borderRadius: 10, marginBottom: 10 }} />}
+      {post.image_url && <img src={post.image_url} alt="post" style={{ width: "100%", maxHeight: 280, objectFit: "contain", borderRadius: 10, marginBottom: 10, background: "#0d0d0d", display: "block" }} />}
       {post.audio_url && (
         <div style={{ background: "#0d0d0d", borderRadius: 10, padding: "8px 12px", marginBottom: 10 }}>
           <audio src={post.audio_url} controls style={{ width: "100%", height: 32 }} />
