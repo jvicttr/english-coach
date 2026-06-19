@@ -28,30 +28,11 @@ export async function GET(req: NextRequest) {
 
     if (error) throw error;
 
-    // Busca a foto mais recente dos posts da comunidade como fallback
-    const userIds = (users || []).map((u) => u.id);
-    let postAvatarMap: Record<string, string> = {};
-    if (userIds.length > 0) {
-      const { data: postAvatars } = await supabase
-        .from("community_posts")
-        .select("user_id, avatar_url")
-        .in("user_id", userIds)
-        .not("avatar_url", "is", null)
-        .order("created_at", { ascending: false });
-
-      // Pega a foto mais recente de cada usuário
-      (postAvatars || []).forEach((p: any) => {
-        if (p.avatar_url && !postAvatarMap[p.user_id]) {
-          postAvatarMap[p.user_id] = p.avatar_url;
-        }
-      });
-    }
-
     const formattedUsers = (users || []).map((u) => ({
       id: u.id,
       email: u.email,
       name: u.name || u.email,
-      image_url: postAvatarMap[u.id] || u.image_url || null,
+      image_url: u.image_url || null,
     }));
 
     return NextResponse.json({ users: formattedUsers });
