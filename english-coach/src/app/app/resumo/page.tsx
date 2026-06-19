@@ -110,6 +110,23 @@ export default function ResumoAula() {
     }, 1500);
   }, []);
 
+  // Ensures review is saved and returns its ID — used before generating quiz/flashcards
+  const ensureReviewSaved = useCallback(async (): Promise<string | null> => {
+    if (reviewId) return reviewId;
+    if (messages.length === 0 || !lessonContext) return null;
+    if (saveTimerRef.current) { clearTimeout(saveTimerRef.current); saveTimerRef.current = null; }
+    try {
+      const res = await fetch("/api/lesson-reviews", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: null, file_name: fileName, lesson_context: lessonContext, messages }),
+      });
+      const data = await res.json();
+      if (data.id) { setReviewId(data.id); return data.id; }
+    } catch {}
+    return null;
+  }, [reviewId, messages, lessonContext, fileName]);
+
   useEffect(() => {
     saveReview(messages, lessonContext, fileName, reviewId);
   }, [messages]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -205,11 +222,12 @@ export default function ResumoAula() {
   async function generateFlashcards() {
     setScreen("loading-flashcards");
     try {
+      const resolvedId = await ensureReviewSaved();
       const packName = fileName ? fileName.replace(/\.pdf$/i, "") : "Revisão de Aula";
       await fetch("/api/flashcards/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages, packName, lessonContext, reviewId }),
+        body: JSON.stringify({ messages, packName, lessonContext, reviewId: resolvedId }),
       });
       router.push("/app/flashcards");
     } catch {
@@ -221,10 +239,11 @@ export default function ResumoAula() {
   async function generateQuiz() {
     setScreen("loading-quiz");
     try {
+      const resolvedId = await ensureReviewSaved();
       const res = await fetch("/api/quiz", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages, level: "intermediate", lessonContext, reviewId }),
+        body: JSON.stringify({ messages, level: "intermediate", lessonContext, reviewId: resolvedId }),
       });
       const data = await res.json();
       if (data.quiz) {
