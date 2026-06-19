@@ -466,7 +466,7 @@ export default function ResumoAula() {
   // ── History Detail View ───────────────────────────────────────────────────
   if (view === "history-detail") {
     return (
-      <div className="flex flex-col items-center px-3 pb-4 sm:px-4 sm:pb-6" style={{ background: "var(--black)", fontFamily: "'Inter', sans-serif", height: "100dvh", overflow: "hidden", paddingTop: 65 }}>
+      <div className="flex flex-col items-center px-3 pb-4 sm:px-4 sm:pb-6" style={{ background: "var(--black)", fontFamily: "'Inter', sans-serif", height: "100dvh", overflow: "hidden", paddingTop: 65, paddingBottom: 65 }}>
         <div className="w-full max-w-2xl mb-3 flex items-center gap-2">
           <button onClick={() => { setView("history"); setHistoryDetail(null); }} style={{ background: "var(--dark2)", border: "1px solid #2a2a2a", borderRadius: 10, height: 36, padding: "0 10px", display: "flex", alignItems: "center", gap: 5, fontSize: ".75rem", fontWeight: 600, color: "var(--gray)", cursor: "pointer" }}>
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M9 2L4 7L9 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
@@ -514,7 +514,7 @@ export default function ResumoAula() {
   // ── History List View ─────────────────────────────────────────────────────
   if (view === "history") {
     return (
-      <div className="flex flex-col items-center px-3 pb-4 sm:px-4 sm:pb-6" style={{ background: "var(--black)", fontFamily: "'Inter', sans-serif", height: "100dvh", overflow: "hidden", paddingTop: 65 }}>
+      <div className="flex flex-col items-center px-3 pb-4 sm:px-4 sm:pb-6" style={{ background: "var(--black)", fontFamily: "'Inter', sans-serif", height: "100dvh", overflow: "hidden", paddingTop: 65, paddingBottom: 65 }}>
         <div className="w-full max-w-2xl mb-3 flex items-center gap-2">
           <button onClick={() => setView("chat")} style={{ background: "var(--dark2)", border: "1px solid #2a2a2a", borderRadius: 10, height: 36, padding: "0 10px", display: "flex", alignItems: "center", gap: 5, fontSize: ".75rem", fontWeight: 600, color: "var(--gray)", cursor: "pointer" }}>
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M9 2L4 7L9 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
@@ -587,7 +587,7 @@ export default function ResumoAula() {
   return (
     <div
       className="flex flex-col items-center px-3 pb-4 sm:px-4 sm:pb-6"
-      style={{ background: "var(--black)", fontFamily: "'Inter', sans-serif", height: "100dvh", overflow: "hidden", paddingTop: 65 }}
+      style={{ background: "var(--black)", fontFamily: "'Inter', sans-serif", height: "100dvh", overflow: "hidden", paddingTop: 65, paddingBottom: 65 }}
     >
       <div className="w-full max-w-2xl mb-3 flex items-center gap-2 shrink-0">
         <button
