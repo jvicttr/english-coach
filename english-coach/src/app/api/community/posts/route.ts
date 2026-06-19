@@ -93,5 +93,25 @@ export async function POST(req: NextRequest) {
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  // Notify the parent post's author (skip if replying to own post)
+  if (parentId) {
+    const { data: parent } = await supabase
+      .from("community_posts")
+      .select("user_id")
+      .eq("id", parentId)
+      .single();
+    if (parent && parent.user_id !== userId) {
+      await supabase.from("notifications").insert({
+        user_id: parent.user_id,
+        type: "reply",
+        post_id: parentId,
+        from_user_id: userId,
+        from_display_name: displayName,
+        from_avatar_url: avatarUrl,
+      });
+    }
+  }
+
   return NextResponse.json({ post });
 }

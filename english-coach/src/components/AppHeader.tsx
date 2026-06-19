@@ -1,21 +1,83 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { UserButton } from "@clerk/nextjs";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import Image from "next/image";
+
+type Notif = {
+  id: string;
+  type: string;
+  post_id: string;
+  from_display_name: string;
+  from_avatar_url: string | null;
+  read: boolean;
+  created_at: string;
+};
+
+function timeAgo(d: string) {
+  const s = Math.floor((Date.now() - new Date(d).getTime()) / 1000);
+  if (s < 60) return "agora";
+  if (s < 3600) return `${Math.floor(s / 60)}min`;
+  if (s < 86400) return `${Math.floor(s / 3600)}h`;
+  return `${Math.floor(s / 86400)}d`;
+}
 
 export function AppHeader() {
   const pathname = usePathname();
+  const router = useRouter();
   const [isPro, setIsPro] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [portalLoading, setPortalLoading] = useState(false);
+  const [notifOpen, setNotifOpen] = useState(false);
+  const [notifs, setNotifs] = useState<Notif[]>([]);
+  const [unread, setUnread] = useState(0);
+  const notifRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     fetch("/api/me")
       .then((r) => r.json())
       .then((d) => setIsPro(d.plan === "pro" || d.plan === "combo"));
   }, []);
+
+  useEffect(() => {
+    loadNotifs();
+    const id = setInterval(loadNotifs, 30000);
+    return () => clearInterval(id);
+  }, []);
+
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (notifRef.current && !notifRef.current.contains(e.target as Node)) setNotifOpen(false);
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
+
+  async function loadNotifs() {
+    try {
+      const res = await fetch("/api/community/notifications");
+      if (!res.ok) return;
+      const data = await res.json();
+      setNotifs(data.notifications ?? []);
+      setUnread(data.unread ?? 0);
+    } catch {}
+  }
+
+  async function openNotifs() {
+    setNotifOpen((v) => !v);
+    setMenuOpen(false);
+    if (!notifOpen && unread > 0) {
+      setUnread(0);
+      setNotifs((prev) => prev.map((n) => ({ ...n, read: true })));
+      await fetch("/api/community/notifications", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({}) });
+    }
+  }
+
+  async function goToPost(n: Notif) {
+    setNotifOpen(false);
+    router.push(`/app/comunidade`);
+  }
 
   async function openPortal() {
     setPortalLoading(true);
@@ -82,6 +144,54 @@ export function AppHeader() {
           >
             Planos
           </a>
+
+          {/* Bell */}
+          <div ref={notifRef} style={{ position: "relative" }}>
+            <button
+              onClick={openNotifs}
+              style={{ background: "var(--dark2)", border: "1px solid #2a2a2a", borderRadius: 8, width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", position: "relative", flexShrink: 0 }}
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--gray)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+              </svg>
+              {unread > 0 && (
+                <span style={{ position: "absolute", top: -4, right: -4, background: "#f87171", borderRadius: "50%", width: 16, height: 16, fontSize: "0.6rem", fontWeight: 800, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", lineHeight: 1 }}>
+                  {unread > 9 ? "9+" : unread}
+                </span>
+              )}
+            </button>
+
+            {notifOpen && (
+              <div style={{ position: "fixed", top: 62, right: 16, background: "#1a1a1a", border: "1px solid #2a2a2a", borderRadius: 14, zIndex: 200, width: 300, maxHeight: 380, overflowY: "auto", boxShadow: "0 8px 32px rgba(0,0,0,.7)" }}>
+                <div style={{ padding: "12px 16px 8px", borderBottom: "1px solid #2a2a2a", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <span style={{ fontWeight: 800, fontSize: "0.85rem", color: "#fff" }}>Notifications</span>
+                  {notifs.length > 0 && (
+                    <a href="/app/comunidade" onClick={() => setNotifOpen(false)} style={{ fontSize: "0.7rem", color: "var(--yellow)", fontWeight: 700, textDecoration: "none" }}>See all</a>
+                  )}
+                </div>
+                {notifs.length === 0 ? (
+                  <div style={{ padding: "24px 16px", textAlign: "center", fontSize: "0.8rem", color: "var(--gray)" }}>No notifications yet</div>
+                ) : (
+                  notifs.map((n) => (
+                    <button key={n.id} onClick={() => goToPost(n)} style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "12px 14px", background: n.read ? "transparent" : "rgba(245,200,0,.04)", border: "none", borderBottom: "1px solid #1e1e1e", cursor: "pointer", width: "100%", textAlign: "left" }}>
+                      <div style={{ width: 32, height: 32, borderRadius: "50%", overflow: "hidden", background: "#2a2a2a", flexShrink: 0 }}>
+                        {n.from_avatar_url ? <img src={n.from_avatar_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <span style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", fontSize: "0.9rem" }}>👤</span>}
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <p style={{ fontSize: "0.78rem", color: "#fff", margin: 0, lineHeight: 1.4 }}>
+                          <span style={{ fontWeight: 700 }}>{n.from_display_name}</span>{" "}
+                          <span style={{ color: "var(--gray)" }}>replied to your post</span>
+                        </p>
+                        <p style={{ fontSize: "0.65rem", color: "var(--gray)", margin: "3px 0 0" }}>{timeAgo(n.created_at)}</p>
+                      </div>
+                      {!n.read && <span style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--yellow)", flexShrink: 0, marginTop: 4 }} />}
+                    </button>
+                  ))
+                )}
+              </div>
+            )}
+          </div>
 
           <button
             onClick={() => setMenuOpen((v) => !v)}
