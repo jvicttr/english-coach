@@ -71,11 +71,11 @@ export async function POST(req: NextRequest) {
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   try {
-  const { messages, level, scenario } = await req.json();
+  const { messages, level, scenario, lessonContext, reviewId } = await req.json();
 
-  const conversationText = messages
-    .map((m: { role: string; content: string }) => `${m.role === "user" ? "Student" : "Coach"}: ${m.content}`)
-    .join("\n");
+  const conversationText = messages?.length
+    ? messages.map((m: { role: string; content: string }) => `${m.role === "user" ? "Student" : "Coach"}: ${m.content}`).join("\n")
+    : lessonContext ?? "";
 
   const resolvedLevel = level || "intermediate";
   const response = await client.messages.create({
@@ -104,13 +104,14 @@ export async function POST(req: NextRequest) {
   }
 
   // Save session to Supabase (without answers yet)
-  const baseInsert = {
+  const baseInsert: Record<string, unknown> = {
     user_id: userId,
     title: quiz.title,
     level: level || "intermediate",
     questions: quiz.questions,
     score: null,
     completed_at: null,
+    ...(reviewId ? { lesson_review_id: reviewId } : {}),
   };
 
   let saved: { id: string } | null = null;

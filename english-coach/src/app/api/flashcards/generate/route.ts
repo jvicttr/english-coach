@@ -13,14 +13,13 @@ export async function POST(req: NextRequest) {
   const { data: sub } = await supabase.from("subscriptions").select("plan, level").eq("user_id", userId).single();
   if (sub?.plan !== "pro") return NextResponse.json({ error: "Pro required" }, { status: 403 });
 
-  const { messages, topic, packName } = await req.json();
+  const { messages, topic, packName, lessonContext, reviewId } = await req.json();
   const userLevel: string = sub?.level ?? "intermediate";
-  if (!messages?.length) return NextResponse.json({ cards: [] });
+  if (!messages?.length && !lessonContext) return NextResponse.json({ cards: [] });
 
-  const conversation = messages
-    .slice(-20)
-    .map((m: { role: string; content: string }) => `${m.role === "user" ? "Student" : "Coach"}: ${m.content}`)
-    .join("\n");
+  const conversation = messages?.length
+    ? messages.slice(-20).map((m: { role: string; content: string }) => `${m.role === "user" ? "Student" : "Coach"}: ${m.content}`).join("\n")
+    : lessonContext;
 
   const levelGuide: Record<string, string> = {
     beginner: "The student is a BEGINNER. Pick simple, high-frequency vocabulary they need to survive basic conversations. Avoid advanced idioms or complex phrases. Examples of good picks: 'schedule a meeting', 'I'd like to', 'by the way'.",
@@ -94,6 +93,7 @@ Return ONLY valid JSON, no markdown:
       interval: 1,
       ease_factor: 2.5,
       next_review: new Date().toISOString().split("T")[0],
+      ...(reviewId ? { lesson_review_id: reviewId } : {}),
     }));
 
     // Check which words already exist to avoid duplicates manually (fallback if unique constraint missing)

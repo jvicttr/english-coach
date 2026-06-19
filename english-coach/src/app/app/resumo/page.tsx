@@ -17,9 +17,14 @@ type ReviewSummary = {
   updated_at: string;
 };
 
+type QuizResult = { id: string; title: string; score: number | null; questions: unknown[]; completed_at: string | null; created_at: string };
+type FlashcardPack = { id: string; name: string };
+
 type ReviewDetail = ReviewSummary & {
   messages: Message[];
   lesson_context: string | null;
+  quizzes?: QuizResult[];
+  flashcardPacks?: FlashcardPack[];
 };
 
 export default function ResumoAula() {
@@ -203,7 +208,7 @@ export default function ResumoAula() {
       await fetch("/api/flashcards/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages, packName }),
+        body: JSON.stringify({ messages, packName, lessonContext, reviewId }),
       });
       router.push("/app/flashcards");
     } catch {
@@ -218,7 +223,7 @@ export default function ResumoAula() {
       const res = await fetch("/api/quiz", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages, level: "intermediate" }),
+        body: JSON.stringify({ messages, level: "intermediate", lessonContext, reviewId }),
       });
       const data = await res.json();
       if (data.quiz) {
@@ -507,6 +512,49 @@ export default function ResumoAula() {
           )}
         </div>
 
+        {/* Quizzes & Flashcards from this review */}
+        {!loadingDetail && historyDetail && ((historyDetail.quizzes?.length ?? 0) > 0 || (historyDetail.flashcardPacks?.length ?? 0) > 0) && (
+          <div className="w-full max-w-2xl mb-2" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {(historyDetail.quizzes?.length ?? 0) > 0 && (
+              <div style={{ background: "var(--dark1)", border: "1px solid #1f1f1f", borderRadius: 14, padding: "12px 16px" }}>
+                <p style={{ fontSize: ".72rem", fontWeight: 800, color: "var(--gray)", textTransform: "uppercase", letterSpacing: ".6px", marginBottom: 8 }}>🎯 Quizzes gerados</p>
+                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  {historyDetail.quizzes!.map((q) => (
+                    <div key={q.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 10px", background: "var(--dark2)", borderRadius: 10 }}>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <p style={{ fontSize: ".8rem", fontWeight: 700, color: "#fff", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{q.title}</p>
+                        <p style={{ fontSize: ".65rem", color: "var(--gray)", margin: "2px 0 0" }}>
+                          {q.completed_at
+                            ? `${q.score ?? 0}/${(q.questions as unknown[]).length} acertos · ${formatDate(q.completed_at)}`
+                            : `Não finalizado · ${formatDate(q.created_at)}`}
+                        </p>
+                      </div>
+                      {q.score !== null && (
+                        <span style={{ fontSize: ".75rem", fontWeight: 800, color: q.score >= (q.questions as unknown[]).length * 0.7 ? "#4ade80" : "var(--yellow)", flexShrink: 0 }}>
+                          {Math.round((q.score / (q.questions as unknown[]).length) * 100)}%
+                        </span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            {(historyDetail.flashcardPacks?.length ?? 0) > 0 && (
+              <div style={{ background: "var(--dark1)", border: "1px solid #1f1f1f", borderRadius: 14, padding: "12px 16px" }}>
+                <p style={{ fontSize: ".72rem", fontWeight: 800, color: "var(--gray)", textTransform: "uppercase", letterSpacing: ".6px", marginBottom: 8 }}>🃏 Flashcards gerados</p>
+                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  {historyDetail.flashcardPacks!.map((pack) => (
+                    <div key={pack.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 10px", background: "var(--dark2)", borderRadius: 10 }}>
+                      <p style={{ flex: 1, fontSize: ".8rem", fontWeight: 700, color: "#fff", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{pack.name}</p>
+                      <a href="/app/flashcards" style={{ fontSize: ".72rem", fontWeight: 700, color: "var(--yellow)", textDecoration: "none", flexShrink: 0 }}>Estudar →</a>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
       </div>
     );
   }
@@ -603,7 +651,7 @@ export default function ResumoAula() {
             <span style={{ fontSize: ".68rem", fontWeight: 600, color: "var(--yellow)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{fileName}</span>
           </div>
         )}
-        {messages.length >= 2 && (
+        {lessonContext && (
           <div className="flex items-center gap-2" style={{ marginLeft: "auto" }}>
             <button onClick={generateFlashcards} className="hidden sm:flex items-center" style={{ background: "var(--dark2)", border: "1px solid #2a2a2a", borderRadius: 10, height: 36, padding: "0 14px", fontSize: ".75rem", fontWeight: 700, color: "#fff", cursor: "pointer", gap: 6, whiteSpace: "nowrap" }}>
               🃏 Flashcards
