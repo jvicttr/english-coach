@@ -6,7 +6,8 @@
       "Bash(git commit -m 'fix: conteúdo não vaza sobre header no mobile \\(landing page\\) *)",
       "Bash(git push *)",
       "Bash(git rm *)",
-      "Bash(git commit *)"
+      "Bash(git commit *)",
+      "Bash(npm run *)"
     ]
   }
 }

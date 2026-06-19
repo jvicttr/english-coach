@@ -327,7 +327,7 @@ function PostCard({ post, myId, user, router, isReply = false, onReaction, onDel
                     <p style={{ fontSize: "0.75rem", color: "var(--gray)", lineHeight: 1.5, margin: 0 }}>
                       🇧🇷 {translationPt}
                     </p>
-                    <button onClick={() => setShowTranslation(null)} style={{ background: "none", border: "none", color: "#555", fontSize: "0.65rem", cursor: "pointer", flexShrink: 0, padding: 0 }}>ocultar</button>
+                    <button onClick={() => setShowTranslation(false)} style={{ background: "none", border: "none", color: "#555", fontSize: "0.65rem", cursor: "pointer", flexShrink: 0, padding: 0 }}>ocultar</button>
                   </div>
                 ) : (
                   <button onClick={() => fetchTranslation(post.transcript!)} disabled={translating} style={{ background: "transparent", border: "1px solid #3a3a3a", borderRadius: 50, padding: "2px 10px", fontSize: "0.7rem", color: "var(--gray)", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 4 }}>
