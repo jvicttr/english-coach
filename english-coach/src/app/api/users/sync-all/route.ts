@@ -28,6 +28,7 @@ export async function GET(req: NextRequest) {
     }
 
     const clerkData = await clerkRes.json();
+    console.log("Clerk response:", JSON.stringify(clerkData));
     const clerkUsers = clerkData.data || [];
     console.log(`Found ${clerkUsers.length} users in Clerk`);
 
