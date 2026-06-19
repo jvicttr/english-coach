@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import type { TrailStep } from "@/lib/trilha-steps";
+import { shuffleQuizOptions } from "@/lib/quiz";
 
 type Correction = { wrong: string; right: string; phonetic: string; wrongSentence?: string; rightSentence?: string };
 type CorrectionList = Correction[];
@@ -678,9 +679,10 @@ export default function Home() {
         });
         const data = await res.json();
         if (data.quiz) {
-          setQuiz(data.quiz);
+          const shuffled = shuffleQuizOptions(data.quiz);
+          setQuiz(shuffled);
           setQuizSessionId(data.sessionId ?? null);
-          setAnswers(new Array(data.quiz.questions.length).fill(null));
+          setAnswers(new Array(shuffled.questions.length).fill(null));
           setCurrentQ(0);
           setShowExplanation(false);
           setScore(0);

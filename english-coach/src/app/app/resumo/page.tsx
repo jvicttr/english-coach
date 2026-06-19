@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { shuffleQuizOptions } from "@/lib/quiz";
 
 type Message = { role: "user" | "assistant"; content: string; translation?: string };
 type QuizQuestion = { question: string; options: string[]; correct: number; explanation: string };
@@ -227,9 +228,10 @@ export default function ResumoAula() {
       });
       const data = await res.json();
       if (data.quiz) {
-        setQuiz(data.quiz);
+        const shuffled = shuffleQuizOptions(data.quiz);
+        setQuiz(shuffled);
         setQuizSessionId(data.sessionId ?? null);
-        setAnswers(new Array(data.quiz.questions.length).fill(null));
+        setAnswers(new Array(shuffled.questions.length).fill(null));
         setCurrentQ(0);
         setScore(0);
         setShowExplanation(false);
