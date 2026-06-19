@@ -46,6 +46,8 @@ function ReplyComposer({ postId, user, onDone }: { postId: string; user: ReturnT
   const [recording, setRecording] = useState(false);
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [seconds, setSeconds] = useState(0);
   const [posting, setPosting] = useState(false);
   const [error, setError] = useState("");
@@ -54,6 +56,7 @@ function ReplyComposer({ postId, user, onDone }: { postId: string; user: ReturnT
   const chunksRef = useRef<Blob[]>([]);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const taRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => { setTimeout(() => taRef.current?.focus(), 80); }, []);
 
@@ -89,12 +92,23 @@ function ReplyComposer({ postId, user, onDone }: { postId: string; user: ReturnT
     setTimeout(() => { ta.focus(); ta.setSelectionRange(s + e.length, s + e.length); }, 0);
   }
 
+  function handleImageSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) { setError("Please select an image file."); return; }
+    if (file.size > 5 * 1024 * 1024) { setError("Image must be smaller than 5MB."); return; }
+    setImageFile(file);
+    setImagePreview(URL.createObjectURL(file));
+    setError("");
+  }
+
   async function submit() {
-    if (posting || (!text.trim() && !audioBlob)) return;
+    if (posting || (!text.trim() && !audioBlob && !imageFile)) return;
     setPosting(true); setError("");
     try {
       let uploadedAudio: string | null = null;
       let audioTranscript: string | null = null;
+      let uploadedImage: string | null = null;
       if (audioBlob) {
         const ext = mimeToExt(audioBlob.type);
         const tf = new FormData();
@@ -111,9 +125,15 @@ function ReplyComposer({ postId, user, onDone }: { postId: string; user: ReturnT
         uploadedAudio = (await ur.json()).url;
         audioTranscript = td.transcript;
       }
+      if (imageFile) {
+        const uf = new FormData();
+        uf.append("file", imageFile); uf.append("type", "image");
+        const ur = await fetch("/api/community/upload", { method: "POST", body: uf });
+        uploadedImage = (await ur.json()).url;
+      }
       const res = await fetch("/api/community/posts", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ content: text.trim(), audioUrl: uploadedAudio, transcript: audioTranscript, parentId: postId }),
+        body: JSON.stringify({ content: text.trim(), audioUrl: uploadedAudio, transcript: audioTranscript, imageUrl: uploadedImage, parentId: postId }),
       });
       const data = await res.json();
       if (!res.ok) { setError(data.error === "not_english" ? "Please write in English! 🇺🇸" : "Something went wrong."); return; }
@@ -139,6 +159,11 @@ function ReplyComposer({ postId, user, onDone }: { postId: string; user: ReturnT
               <audio src={audioUrl!} controls style={{ flex: 1, height: 28, minWidth: 0 }} />
               <button onClick={() => { setAudioBlob(null); setAudioUrl(null); }} style={{ background: "none", border: "none", color: "#f87171", cursor: "pointer", fontSize: "0.8rem" }}>✕</button>
             </div>
+          ) : imagePreview ? (
+            <div style={{ display: "flex", alignItems: "center", gap: 6, background: "#0d0d0d", borderRadius: 8, padding: "6px 10px", marginBottom: 6, maxWidth: "100%" }}>
+              <img src={imagePreview} alt="preview" style={{ height: 40, borderRadius: 4, objectFit: "cover" }} />
+              <button onClick={() => { setImageFile(null); setImagePreview(null); }} style={{ background: "none", border: "none", color: "#f87171", cursor: "pointer", fontSize: "0.8rem", marginLeft: "auto" }}>✕</button>
+            </div>
           ) : (
             <textarea
               ref={taRef}
@@ -158,9 +183,11 @@ function ReplyComposer({ postId, user, onDone }: { postId: string; user: ReturnT
           {error && <p style={{ fontSize: "0.7rem", color: "#f87171", margin: "4px 0" }}>{error}</p>}
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 6 }}>
             <button onClick={() => { if (!recording && !audioBlob) startRec(); }} disabled={recording || !!audioBlob} style={{ background: "none", border: "none", fontSize: "0.9rem", cursor: "pointer", opacity: audioBlob ? 0.4 : 1 }}>🎙️</button>
+            <button onClick={() => fileInputRef.current?.click()} disabled={!!imageFile} style={{ background: "none", border: "none", fontSize: "0.9rem", cursor: "pointer", opacity: imageFile ? 0.4 : 1 }}>📷</button>
+            <input ref={fileInputRef} type="file" accept="image/*" onChange={handleImageSelect} style={{ display: "none" }} />
             <button onClick={() => setShowEmoji(v => !v)} style={{ background: "none", border: "none", fontSize: "0.9rem", cursor: "pointer" }}>😊</button>
             <div style={{ marginLeft: "auto", display: "flex", gap: 8, alignItems: "center" }}>
-              <button onClick={submit} disabled={!text.trim() && !audioBlob || posting} style={{ background: (text.trim() || audioBlob) ? "var(--yellow)" : "#1e1e1e", color: (text.trim() || audioBlob) ? "#000" : "#333", border: "none", borderRadius: 50, padding: "5px 14px", fontWeight: 800, fontSize: "0.78rem", cursor: (text.trim() || audioBlob) ? "pointer" : "default" }}>
+              <button onClick={submit} disabled={!text.trim() && !audioBlob && !imageFile || posting} style={{ background: (text.trim() || audioBlob || imageFile) ? "var(--yellow)" : "#1e1e1e", color: (text.trim() || audioBlob || imageFile) ? "#000" : "#333", border: "none", borderRadius: 50, padding: "5px 14px", fontWeight: 800, fontSize: "0.78rem", cursor: (text.trim() || audioBlob || imageFile) ? "pointer" : "default" }}>
                 {posting ? "…" : "Reply"}
               </button>
             </div>
