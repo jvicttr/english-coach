@@ -1,8 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { UserButton } from "@clerk/nextjs";
-import { BottomNavFixed } from "@/components/BottomNav";
 
 type QuizQuestion = {
   question: string;
@@ -203,16 +201,10 @@ export default function Progresso() {
   }
 
   return (
-    <div style={{ background: "var(--black)", minHeight: "100dvh", fontFamily: "'Inter', sans-serif", paddingBottom: 100 }}>
-      <header style={{ padding: "16px 16px 12px", display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid #1e1e1e" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <a href="/app" style={{ background: "var(--dark2)", border: "1px solid #2a2a2a", borderRadius: "10px", height: "36px", width: 36, display: "flex", alignItems: "center", justifyContent: "center", textDecoration: "none" }}>
-            <svg width="16" height="16" viewBox="0 0 14 14" fill="none"><path d="M9 2L4 7L9 12" stroke="var(--gray)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-          </a>
-          <span style={{ fontWeight: 800, color: "#fff", fontSize: "0.95rem" }}>📊 Meu Progresso</span>
-        </div>
-        <UserButton />
-      </header>
+    <div style={{ background: "var(--black)", minHeight: "100dvh", fontFamily: "'Inter', sans-serif", paddingTop: 65, paddingBottom: 100 }}>
+      <div style={{ padding: "10px 16px", borderBottom: "1px solid #1e1e1e" }}>
+        <span style={{ fontWeight: 800, color: "#fff", fontSize: "0.95rem" }}>📊 Meu Progresso</span>
+      </div>
 
       <div style={{ padding: "16px", maxWidth: 640, margin: "0 auto", display: "flex", flexDirection: "column", gap: 20 }}>
 
@@ -533,7 +525,6 @@ export default function Progresso() {
         )}
       </div>
 
-      <BottomNavFixed />
     </div>
   );
 }

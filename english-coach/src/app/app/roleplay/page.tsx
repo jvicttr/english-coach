@@ -1,10 +1,8 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { UserButton } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { BottomNavFlex } from "@/components/BottomNav";
 
 type Correction = { wrong: string; right: string; phonetic: string; wrongSentence?: string; rightSentence?: string };
 type CorrectionList = Correction[];
@@ -49,7 +47,6 @@ export default function RolePlay() {
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [micError, setMicError] = useState("");
   const [pendingSpeak, setPendingSpeak] = useState<string | null>(null);
-  const [isPro, setIsPro] = useState(false);
   const [limitReached, setLimitReached] = useState(false);
   const [quiz, setQuiz] = useState<Quiz | null>(null);
   const [quizSessionId, setQuizSessionId] = useState<string | null>(null);
@@ -90,7 +87,6 @@ export default function RolePlay() {
   useEffect(() => {
     fetch("/api/me").then((r) => r.json()).then((d) => {
       const pro = d.plan === "pro";
-      setIsPro(pro);
       if (!pro) router.replace("/planos");
       if (d.level) setLevel(d.level as Level);
       else if (localStorage.getItem("userLevel")) setLevel(localStorage.getItem("userLevel") as Level);
@@ -527,20 +523,7 @@ export default function RolePlay() {
   // ── Scenario picker ──────────────────────────────────────────────────────
   if (screen === "scenarios") {
     return (
-      <div className="flex flex-col items-center px-3 pt-3 pb-4 sm:px-4 sm:pt-4 sm:pb-6" style={{ background: "var(--black)", fontFamily: "'Inter', sans-serif", minHeight: "100dvh" }}>
-        <header className="w-full max-w-2xl mb-4 flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2">
-            <a href="/app" style={{ background: "var(--dark2)", border: "1px solid #2a2a2a", borderRadius: "10px", height: "36px", width: 36, display: "flex", alignItems: "center", justifyContent: "center", textDecoration: "none" }}>
-              <svg width="16" height="16" viewBox="0 0 14 14" fill="none"><path d="M9 2L4 7L9 12" stroke="var(--gray)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-            </a>
-            <span style={{ fontWeight: 800, color: "#fff", fontSize: "0.95rem" }}>🎭 Role-play</span>
-          </div>
-          <div style={{ position: "relative", display: "inline-flex" }}>
-            <UserButton />
-            {isPro && <span style={{ position: "absolute", bottom: -4, left: "50%", transform: "translateX(-50%)", fontSize: "0.52rem", fontWeight: 800, letterSpacing: "0.4px", background: "linear-gradient(135deg, #f5c800, #e0a800)", color: "#000", padding: "1px 5px", borderRadius: "50px", whiteSpace: "nowrap", lineHeight: 1.4, pointerEvents: "none" }}>PRO</span>}
-          </div>
-        </header>
-
+      <div className="flex flex-col items-center px-3 pb-4 sm:px-4 sm:pb-6" style={{ background: "var(--black)", fontFamily: "'Inter', sans-serif", minHeight: "100dvh", paddingTop: 65 }}>
         <div className="w-full max-w-2xl flex-1">
           <div className="mb-5">
             <p className="font-bold text-white text-sm mb-1">Escolha um cenário</p>
@@ -564,35 +547,25 @@ export default function RolePlay() {
             ))}
           </div>
         </div>
-
-        <BottomNavFlex />
       </div>
     );
   }
 
   // ── Chat ─────────────────────────────────────────────────────────────────
   return (
-    <div className="flex flex-col items-center px-3 pt-3 pb-4 sm:px-4 sm:pt-4 sm:pb-6" style={{ background: "var(--black)", fontFamily: "'Inter', sans-serif", height: "100dvh", overflow: "hidden" }}>
-      <header className="w-full max-w-2xl mb-3 flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2 shrink-0">
-          <button onClick={() => { setScreen("scenarios"); setMessages([]); setScenario(null); }} style={{ background: "var(--dark2)", border: "1px solid #2a2a2a", borderRadius: "10px", height: "36px", padding: "0 10px", display: "flex", alignItems: "center", gap: "5px", fontSize: "0.75rem", fontWeight: 600, color: "var(--gray)", cursor: "pointer" }}>
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M9 2L4 7L9 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-            <span className="hidden sm:inline">Cenários</span>
-          </button>
-        </div>
-        <div className="flex items-center gap-2" style={{ flex: 1, justifyContent: "center" }}>
-          {scenario && (
-            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <span style={{ fontSize: "1rem" }}>{scenario.emoji}</span>
-              <span style={{ fontSize: "0.78rem", fontWeight: 700, color: scenario.color }}>{scenario.name}</span>
-            </div>
-          )}
-        </div>
-        <div style={{ position: "relative", display: "inline-flex", flexShrink: 0 }}>
-          <UserButton />
-          {isPro && <span style={{ position: "absolute", bottom: -4, left: "50%", transform: "translateX(-50%)", fontSize: "0.52rem", fontWeight: 800, background: "linear-gradient(135deg, #f5c800, #e0a800)", color: "#000", padding: "1px 5px", borderRadius: "50px", whiteSpace: "nowrap", lineHeight: 1.4, pointerEvents: "none" }}>PRO</span>}
-        </div>
-      </header>
+    <div className="flex flex-col items-center px-3 pb-4 sm:px-4 sm:pb-6" style={{ background: "var(--black)", fontFamily: "'Inter', sans-serif", height: "100dvh", overflow: "hidden", paddingTop: 65 }}>
+      <div className="w-full max-w-2xl mb-3 flex items-center gap-2 shrink-0">
+        <button onClick={() => { setScreen("scenarios"); setMessages([]); setScenario(null); }} style={{ background: "var(--dark2)", border: "1px solid #2a2a2a", borderRadius: "10px", height: "36px", padding: "0 10px", display: "flex", alignItems: "center", gap: "5px", fontSize: "0.75rem", fontWeight: 600, color: "var(--gray)", cursor: "pointer" }}>
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M9 2L4 7L9 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+          <span className="hidden sm:inline">Cenários</span>
+        </button>
+        {scenario && (
+          <div style={{ display: "flex", alignItems: "center", gap: 6, flex: 1, justifyContent: "center" }}>
+            <span style={{ fontSize: "1rem" }}>{scenario.emoji}</span>
+            <span style={{ fontSize: "0.78rem", fontWeight: 700, color: scenario.color }}>{scenario.name}</span>
+          </div>
+        )}
+      </div>
 
       <div className="w-full max-w-2xl flex-1 min-h-0 p-3 sm:p-4 mb-3 overflow-y-auto" style={{ background: "var(--dark1)", border: "1px solid #1f1f1f", borderRadius: "var(--radius)", boxShadow: "var(--shadow)" }}>
         {messages.length === 0 && isLoading && (
@@ -779,7 +752,6 @@ export default function RolePlay() {
           : <span style={{ color: "var(--gray2)", opacity: 0.6 }}>● Toque em 🎙️ para gravar sua voz</span>}
       </div>
 
-      <BottomNavFlex />
     </div>
   );
 }

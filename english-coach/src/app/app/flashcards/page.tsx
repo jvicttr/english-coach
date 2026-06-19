@@ -2,8 +2,6 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { UserButton } from "@clerk/nextjs";
-import { BottomNavFixed } from "@/components/BottomNav";
 
 type Flashcard = {
   id: string;
@@ -190,21 +188,17 @@ export default function Flashcards() {
 
 
   const Header = ({ onBack, title, right }: { onBack?: () => void; title: string; right?: React.ReactNode }) => (
-    <header style={{ padding: "16px 16px 12px", display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid #1e1e1e" }}>
+    <div style={{ padding: "10px 16px 10px", display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid #1e1e1e" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-        {onBack ? (
-          <button onClick={onBack} style={{ background: "var(--dark2)", border: "1px solid #2a2a2a", borderRadius: "10px", height: "36px", width: 36, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
-            <svg width="16" height="16" viewBox="0 0 14 14" fill="none"><path d="M9 2L4 7L9 12" stroke="var(--gray)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+        {onBack && (
+          <button onClick={onBack} style={{ background: "var(--dark2)", border: "1px solid #2a2a2a", borderRadius: "10px", height: "32px", width: 32, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M9 2L4 7L9 12" stroke="var(--gray)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
           </button>
-        ) : (
-          <a href="/app" style={{ background: "var(--dark2)", border: "1px solid #2a2a2a", borderRadius: "10px", height: "36px", width: 36, display: "flex", alignItems: "center", justifyContent: "center", textDecoration: "none" }}>
-            <svg width="16" height="16" viewBox="0 0 14 14" fill="none"><path d="M9 2L4 7L9 12" stroke="var(--gray)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-          </a>
         )}
-        <span style={{ fontWeight: 800, color: "#fff", fontSize: "0.95rem" }}>{title}</span>
+        <span style={{ fontWeight: 800, color: "#fff", fontSize: "0.9rem" }}>{title}</span>
       </div>
-      {right ?? <UserButton />}
-    </header>
+      {right}
+    </div>
   );
 
   if (loading) {
@@ -221,7 +215,7 @@ export default function Flashcards() {
   // ── Empty state ──────────────────────────────────────────────────────────
   if (packs.length === 0) {
     return (
-      <div style={{ background: "var(--black)", minHeight: "100dvh", fontFamily: "'Inter', sans-serif", paddingBottom: 70 }}>
+      <div style={{ background: "var(--black)", minHeight: "100dvh", fontFamily: "'Inter', sans-serif", paddingTop: 65, paddingBottom: 70 }}>
         <Header title="🃏 Flashcards" />
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "70vh", textAlign: "center", padding: "0 24px", gap: 16 }}>
           <div style={{ fontSize: "3rem" }}>🃏</div>
@@ -233,7 +227,6 @@ export default function Flashcards() {
             Começar uma conversa
           </a>
         </div>
-        <BottomNavFixed />
       </div>
     );
   }
@@ -242,7 +235,7 @@ export default function Flashcards() {
   if (done && activePack) {
     const total = sessionResults.easy + sessionResults.hard + sessionResults.miss;
     return (
-      <div style={{ background: "var(--black)", minHeight: "100dvh", fontFamily: "'Inter', sans-serif", paddingBottom: 70 }}>
+      <div style={{ background: "var(--black)", minHeight: "100dvh", fontFamily: "'Inter', sans-serif", paddingTop: 65, paddingBottom: 70 }}>
         <Header onBack={backToList} title="🃏 Flashcards" />
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "70vh", textAlign: "center", padding: "0 24px", gap: 20 }}>
           <div style={{ fontSize: "3rem" }}>🎉</div>
@@ -266,7 +259,6 @@ export default function Flashcards() {
             Ver todos os packs
           </button>
         </div>
-        <BottomNavFixed />
       </div>
     );
   }
@@ -276,16 +268,11 @@ export default function Flashcards() {
     const card = activePack.cards[currentIndex];
     const progress = (currentIndex / activePack.cards.length) * 100;
     return (
-      <div style={{ background: "var(--black)", minHeight: "100dvh", fontFamily: "'Inter', sans-serif", paddingBottom: 70, display: "flex", flexDirection: "column" }}>
+      <div style={{ background: "var(--black)", minHeight: "100dvh", fontFamily: "'Inter', sans-serif", paddingTop: 65, paddingBottom: 70, display: "flex", flexDirection: "column" }}>
         <Header
           onBack={backToList}
           title={`🃏 ${activePack.pack_name}`}
-          right={
-            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <span style={{ fontSize: "0.78rem", color: "var(--gray)", fontWeight: 600 }}>{currentIndex + 1} / {activePack.cards.length}</span>
-              <UserButton />
-            </div>
-          }
+          right={<span style={{ fontSize: "0.78rem", color: "var(--gray)", fontWeight: 600 }}>{currentIndex + 1} / {activePack.cards.length}</span>}
         />
         <div style={{ height: 3, background: "var(--dark2)" }}>
           <div style={{ height: 3, background: "var(--yellow)", width: `${progress}%`, transition: "width .3s ease" }} />
@@ -374,7 +361,6 @@ export default function Flashcards() {
           )}
           {!flipped && <p style={{ fontSize: "0.75rem", color: "var(--gray2)", marginTop: -8 }}>Tente lembrar a tradução antes de virar</p>}
         </div>
-        <BottomNavFixed />
       </div>
     );
   }
@@ -385,7 +371,7 @@ export default function Flashcards() {
   const totalPending = packs.reduce((acc, p) => acc + p.cards.filter((c) => c.next_review <= today).length, 0);
 
   return (
-    <div style={{ background: "var(--black)", minHeight: "100dvh", fontFamily: "'Inter', sans-serif", paddingBottom: 80 }}>
+    <div style={{ background: "var(--black)", minHeight: "100dvh", fontFamily: "'Inter', sans-serif", paddingTop: 65, paddingBottom: 80 }}>
       <Header title="🃏 Flashcards" />
       <div style={{ padding: "16px", maxWidth: 640, margin: "0 auto", display: "flex", flexDirection: "column", gap: 12 }}>
 
@@ -461,7 +447,6 @@ export default function Flashcards() {
           );
         })}
       </div>
-      <BottomNavFixed />
     </div>
   );
 }

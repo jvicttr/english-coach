@@ -1,8 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { UserButton, useUser } from "@clerk/nextjs";
-import { BottomNavFixed } from "@/components/BottomNav";
+import { useUser } from "@clerk/nextjs";
 
 type ProfileData = {
   isPro: boolean;
@@ -62,11 +61,9 @@ export default function PerfilPage() {
     : 100;
 
   return (
-    <div style={{ background: "var(--black)", minHeight: "100dvh", fontFamily: "'Inter', sans-serif", display: "flex", flexDirection: "column", alignItems: "center", paddingBottom: 80 }}>
-      {/* Header */}
-      <div style={{ width: "100%", maxWidth: 672, padding: "18px 16px 0", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <span style={{ fontSize: "1rem", fontWeight: 800, color: "var(--white)" }}>Perfil</span>
-        <UserButton />
+    <div style={{ background: "var(--black)", minHeight: "100dvh", fontFamily: "'Inter', sans-serif", display: "flex", flexDirection: "column", alignItems: "center", paddingTop: 65, paddingBottom: 80 }}>
+      <div style={{ width: "100%", padding: "10px 16px", borderBottom: "1px solid #1e1e1e" }}>
+        <span style={{ fontSize: "1rem", fontWeight: 800, color: "var(--white)" }}>👤 Perfil</span>
       </div>
 
       <div style={{ width: "100%", maxWidth: 672, padding: "20px 16px", display: "flex", flexDirection: "column", gap: 14 }}>
@@ -173,7 +170,6 @@ export default function PerfilPage() {
 
       </div>
 
-      <BottomNavFixed />
     </div>
   );
 }

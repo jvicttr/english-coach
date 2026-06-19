@@ -1,3 +1,12 @@
+import { AppHeader } from "@/components/AppHeader";
+import { BottomNavFixed } from "@/components/BottomNav";
+
 export default function AppLayout({ children }: { children: React.ReactNode }) {
-  return <>{children}</>;
+  return (
+    <>
+      <AppHeader />
+      {children}
+      <BottomNavFixed />
+    </>
+  );
 }

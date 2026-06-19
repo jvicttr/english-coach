@@ -2,8 +2,6 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { UserButton } from "@clerk/nextjs";
-import { BottomNavFlex } from "@/components/BottomNav";
 
 type Message = { role: "user" | "assistant"; content: string; translation?: string };
 type QuizQuestion = { question: string; options: string[]; correct: number; explanation: string };
@@ -33,8 +31,6 @@ export default function ResumoAula() {
   const [fileName, setFileName] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loadingPdf, setLoadingPdf] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
   const [messages, setMessages] = useState<Message[]>([]);
   const [lessonContext, setLessonContext] = useState<string | null>(null);
   const [input, setInput] = useState("");
@@ -470,30 +466,22 @@ export default function ResumoAula() {
   // ── History Detail View ───────────────────────────────────────────────────
   if (view === "history-detail") {
     return (
-      <div className="flex flex-col items-center px-3 pt-3 pb-4 sm:px-4 sm:pt-4 sm:pb-6" style={{ background: "var(--black)", fontFamily: "'Inter', sans-serif", height: "100dvh", overflow: "hidden" }}>
-        <header className="w-full max-w-2xl mb-3 flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2">
-            <button onClick={() => { setView("history"); setHistoryDetail(null); }} style={{ background: "var(--dark2)", border: "1px solid #2a2a2a", borderRadius: 10, height: 36, padding: "0 10px", display: "flex", alignItems: "center", gap: 5, fontSize: ".75rem", fontWeight: 600, color: "var(--gray)", cursor: "pointer" }}>
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M9 2L4 7L9 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-              Histórico
-            </button>
-            {historyDetail?.file_name && (
-              <div style={{ display: "flex", alignItems: "center", gap: 5, background: "rgba(245,200,0,.1)", border: "1px solid rgba(245,200,0,.25)", borderRadius: 8, padding: "4px 10px", maxWidth: 180, overflow: "hidden" }}>
-                <span style={{ fontSize: ".75rem" }}>📄</span>
-                <span style={{ fontSize: ".68rem", fontWeight: 600, color: "var(--yellow)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{historyDetail.file_name}</span>
-              </div>
-            )}
-          </div>
-          <div className="flex items-center gap-2">
-            {historyDetail && (
-              <span style={{ fontSize: ".72rem", color: "var(--gray)" }}>{formatDate(historyDetail.updated_at)}</span>
-            )}
-            <div style={{ position: "relative", display: "inline-flex", flexShrink: 0 }}>
-              <UserButton />
-              <span style={{ position: "absolute", bottom: -4, left: "50%", transform: "translateX(-50%)", fontSize: "0.52rem", fontWeight: 800, background: "linear-gradient(135deg,#f5c800,#e0a800)", color: "#000", padding: "1px 5px", borderRadius: "50px", whiteSpace: "nowrap", lineHeight: 1.4, pointerEvents: "none" }}>PRO</span>
+      <div className="flex flex-col items-center px-3 pb-4 sm:px-4 sm:pb-6" style={{ background: "var(--black)", fontFamily: "'Inter', sans-serif", height: "100dvh", overflow: "hidden", paddingTop: 65 }}>
+        <div className="w-full max-w-2xl mb-3 flex items-center gap-2">
+          <button onClick={() => { setView("history"); setHistoryDetail(null); }} style={{ background: "var(--dark2)", border: "1px solid #2a2a2a", borderRadius: 10, height: 36, padding: "0 10px", display: "flex", alignItems: "center", gap: 5, fontSize: ".75rem", fontWeight: 600, color: "var(--gray)", cursor: "pointer" }}>
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M9 2L4 7L9 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            Histórico
+          </button>
+          {historyDetail?.file_name && (
+            <div style={{ display: "flex", alignItems: "center", gap: 5, background: "rgba(245,200,0,.1)", border: "1px solid rgba(245,200,0,.25)", borderRadius: 8, padding: "4px 10px", maxWidth: 180, overflow: "hidden" }}>
+              <span style={{ fontSize: ".75rem" }}>📄</span>
+              <span style={{ fontSize: ".68rem", fontWeight: 600, color: "var(--yellow)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{historyDetail.file_name}</span>
             </div>
-          </div>
-        </header>
+          )}
+          {historyDetail && (
+            <span style={{ fontSize: ".72rem", color: "var(--gray)", marginLeft: "auto" }}>{formatDate(historyDetail.updated_at)}</span>
+          )}
+        </div>
 
         <div className="w-full max-w-2xl flex-1 min-h-0 p-3 sm:p-4 mb-3 overflow-y-auto" style={{ background: "var(--dark1)", border: "1px solid #1f1f1f", borderRadius: "var(--radius, 20px)" }}>
           {loadingDetail && (
@@ -519,7 +507,6 @@ export default function ResumoAula() {
           )}
         </div>
 
-        <BottomNavFlex className="-mx-3 sm:mx-auto w-full sm:max-w-2xl mt-4" />
       </div>
     );
   }
@@ -527,20 +514,14 @@ export default function ResumoAula() {
   // ── History List View ─────────────────────────────────────────────────────
   if (view === "history") {
     return (
-      <div className="flex flex-col items-center px-3 pt-3 pb-4 sm:px-4 sm:pt-4 sm:pb-6" style={{ background: "var(--black)", fontFamily: "'Inter', sans-serif", height: "100dvh", overflow: "hidden" }}>
-        <header className="w-full max-w-2xl mb-3 flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2">
-            <button onClick={() => setView("chat")} style={{ background: "var(--dark2)", border: "1px solid #2a2a2a", borderRadius: 10, height: 36, padding: "0 10px", display: "flex", alignItems: "center", gap: 5, fontSize: ".75rem", fontWeight: 600, color: "var(--gray)", cursor: "pointer" }}>
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M9 2L4 7L9 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-              Voltar
-            </button>
-            <h1 style={{ fontSize: ".9rem", fontWeight: 800, color: "#fff" }}>Histórico de revisões</h1>
-          </div>
-          <div style={{ position: "relative", display: "inline-flex", flexShrink: 0 }}>
-            <UserButton />
-            <span style={{ position: "absolute", bottom: -4, left: "50%", transform: "translateX(-50%)", fontSize: "0.52rem", fontWeight: 800, background: "linear-gradient(135deg,#f5c800,#e0a800)", color: "#000", padding: "1px 5px", borderRadius: "50px", whiteSpace: "nowrap", lineHeight: 1.4, pointerEvents: "none" }}>PRO</span>
-          </div>
-        </header>
+      <div className="flex flex-col items-center px-3 pb-4 sm:px-4 sm:pb-6" style={{ background: "var(--black)", fontFamily: "'Inter', sans-serif", height: "100dvh", overflow: "hidden", paddingTop: 65 }}>
+        <div className="w-full max-w-2xl mb-3 flex items-center gap-2">
+          <button onClick={() => setView("chat")} style={{ background: "var(--dark2)", border: "1px solid #2a2a2a", borderRadius: 10, height: 36, padding: "0 10px", display: "flex", alignItems: "center", gap: 5, fontSize: ".75rem", fontWeight: 600, color: "var(--gray)", cursor: "pointer" }}>
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M9 2L4 7L9 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            Voltar
+          </button>
+          <h1 style={{ fontSize: ".9rem", fontWeight: 800, color: "#fff" }}>Histórico de revisões</h1>
+        </div>
 
         <div className="w-full max-w-2xl flex-1 min-h-0 overflow-y-auto" style={{ borderRadius: "var(--radius, 20px)" }}>
           {loadingHistory && (
@@ -598,7 +579,6 @@ export default function ResumoAula() {
           )}
         </div>
 
-        <BottomNavFlex className="-mx-3 sm:mx-auto w-full sm:max-w-2xl mt-4" />
       </div>
     );
   }
@@ -606,82 +586,34 @@ export default function ResumoAula() {
   // ── Main Chat Layout ──────────────────────────────────────────────────────
   return (
     <div
-      className="flex flex-col items-center px-3 pt-3 pb-4 sm:px-4 sm:pt-4 sm:pb-6"
-      style={{ background: "var(--black)", fontFamily: "'Inter', sans-serif", height: "100dvh", overflow: "hidden" }}
+      className="flex flex-col items-center px-3 pb-4 sm:px-4 sm:pb-6"
+      style={{ background: "var(--black)", fontFamily: "'Inter', sans-serif", height: "100dvh", overflow: "hidden", paddingTop: 65 }}
     >
-      {/* ── Header ─────────────────────────────────────────────────────────── */}
-      <header className="w-full max-w-2xl mb-3 flex items-center justify-between gap-2" style={{ position: "relative" }}>
-        <div className="flex items-center gap-2 shrink-0">
-          <button
-            onClick={() => router.push("/app")}
-            style={{ background: "var(--dark2)", border: "1px solid #2a2a2a", borderRadius: 10, height: 36, padding: "0 10px", display: "flex", alignItems: "center", gap: 5, fontSize: ".75rem", fontWeight: 600, color: "var(--gray)", cursor: "pointer" }}
-          >
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M9 2L4 7L9 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-            <span className="hidden sm:inline">Início</span>
-          </button>
-          {/* Histórico button */}
-          <button
-            onClick={() => { setView("history"); loadHistory(); }}
-            style={{ background: "var(--dark2)", border: "1px solid #2a2a2a", borderRadius: 10, height: 36, padding: "0 10px", display: "flex", alignItems: "center", gap: 5, fontSize: ".75rem", fontWeight: 600, color: "var(--gray)", cursor: "pointer" }}
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-            <span>Histórico</span>
-          </button>
-          {fileName && messages.length > 0 && (
-            <div style={{ display: "flex", alignItems: "center", gap: 5, background: "rgba(245,200,0,.1)", border: "1px solid rgba(245,200,0,.25)", borderRadius: 8, padding: "4px 10px", maxWidth: 130, overflow: "hidden" }}>
-              <span style={{ fontSize: ".75rem" }}>📄</span>
-              <span style={{ fontSize: ".68rem", fontWeight: 600, color: "var(--yellow)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{fileName}</span>
-            </div>
-          )}
-        </div>
-
-        <div className="flex items-center gap-2 shrink-0">
-          {messages.length >= 2 && (
-            <>
-              <button onClick={generateFlashcards} className="hidden sm:flex items-center" style={{ background: "var(--dark2)", border: "1px solid #2a2a2a", borderRadius: 10, height: 36, padding: "0 14px", fontSize: ".75rem", fontWeight: 700, color: "#fff", cursor: "pointer", gap: 6, whiteSpace: "nowrap" }}>
-                🃏 Flashcards
-              </button>
-              <button onClick={generateQuiz} style={{ background: "var(--yellow)", border: "none", borderRadius: 10, height: 36, padding: "0 14px", fontSize: ".75rem", fontWeight: 700, color: "var(--black)", cursor: "pointer", whiteSpace: "nowrap" }}>
-                🎯 Quiz
-              </button>
-            </>
-          )}
-
-          <button onClick={() => setMobileMenuOpen((v) => !v)} className="flex sm:hidden" style={{ background: "var(--dark2)", border: "1px solid #2a2a2a", borderRadius: 10, height: 36, width: 36, alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }}>
-            {mobileMenuOpen
-              ? <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--gray)" strokeWidth="2.5" strokeLinecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
-              : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--gray)" strokeWidth="2.5" strokeLinecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
-            }
-          </button>
-
-          <div style={{ position: "relative", display: "inline-flex", flexShrink: 0 }}>
-            <UserButton />
-            <span style={{ position: "absolute", bottom: -4, left: "50%", transform: "translateX(-50%)", fontSize: "0.52rem", fontWeight: 800, background: "linear-gradient(135deg,#f5c800,#e0a800)", color: "#000", padding: "1px 5px", borderRadius: "50px", whiteSpace: "nowrap", lineHeight: 1.4, pointerEvents: "none" }}>PRO</span>
-          </div>
-        </div>
-
-        {/* Mobile dropdown */}
-        {mobileMenuOpen && (
-          <div className="flex sm:hidden" style={{ position: "absolute", top: "calc(100% + 8px)", right: 0, background: "var(--dark1)", border: "1px solid #2a2a2a", borderRadius: 14, padding: ".5rem", flexDirection: "column", gap: ".35rem", zIndex: 50, minWidth: 200, boxShadow: "0 8px 32px rgba(0,0,0,.5)" }}>
-            <button onClick={() => { setView("history"); loadHistory(); setMobileMenuOpen(false); }} style={{ background: "transparent", border: "none", borderRadius: 10, height: 42, display: "flex", alignItems: "center", gap: 10, padding: "0 12px", cursor: "pointer", width: "100%" }}>
-              <span style={{ fontSize: "1rem", width: 24, textAlign: "center" }}>🕐</span>
-              <span style={{ fontSize: ".85rem", fontWeight: 600, color: "var(--gray)" }}>Histórico</span>
-            </button>
-            {messages.length >= 2 && (
-              <button onClick={() => { generateFlashcards(); setMobileMenuOpen(false); }} style={{ background: "transparent", border: "none", borderRadius: 10, height: 42, display: "flex", alignItems: "center", gap: 10, padding: "0 12px", cursor: "pointer", width: "100%" }}>
-                <span style={{ fontSize: "1rem", width: 24, textAlign: "center" }}>🃏</span>
-                <span style={{ fontSize: ".85rem", fontWeight: 600, color: "var(--gray)" }}>Criar Flashcards</span>
-              </button>
-            )}
-            {messages.length > 0 && (
-              <button onClick={() => { resetChat(); setMobileMenuOpen(false); }} style={{ background: "transparent", border: "none", borderRadius: 10, height: 42, display: "flex", alignItems: "center", gap: 10, padding: "0 12px", cursor: "pointer", width: "100%" }}>
-                <span style={{ fontSize: "1rem", width: 24, textAlign: "center" }}>📄</span>
-                <span style={{ fontSize: ".85rem", fontWeight: 600, color: "var(--gray)" }}>Nova aula</span>
-              </button>
-            )}
+      <div className="w-full max-w-2xl mb-3 flex items-center gap-2 shrink-0">
+        <button
+          onClick={() => { setView("history"); loadHistory(); }}
+          style={{ background: "var(--dark2)", border: "1px solid #2a2a2a", borderRadius: 10, height: 36, padding: "0 10px", display: "flex", alignItems: "center", gap: 5, fontSize: ".75rem", fontWeight: 600, color: "var(--gray)", cursor: "pointer" }}
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          <span>Histórico</span>
+        </button>
+        {fileName && messages.length > 0 && (
+          <div style={{ display: "flex", alignItems: "center", gap: 5, background: "rgba(245,200,0,.1)", border: "1px solid rgba(245,200,0,.25)", borderRadius: 8, padding: "4px 10px", maxWidth: 130, overflow: "hidden" }}>
+            <span style={{ fontSize: ".75rem" }}>📄</span>
+            <span style={{ fontSize: ".68rem", fontWeight: 600, color: "var(--yellow)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{fileName}</span>
           </div>
         )}
-      </header>
+        {messages.length >= 2 && (
+          <div className="flex items-center gap-2" style={{ marginLeft: "auto" }}>
+            <button onClick={generateFlashcards} className="hidden sm:flex items-center" style={{ background: "var(--dark2)", border: "1px solid #2a2a2a", borderRadius: 10, height: 36, padding: "0 14px", fontSize: ".75rem", fontWeight: 700, color: "#fff", cursor: "pointer", gap: 6, whiteSpace: "nowrap" }}>
+              🃏 Flashcards
+            </button>
+            <button onClick={generateQuiz} style={{ background: "var(--yellow)", border: "none", borderRadius: 10, height: 36, padding: "0 14px", fontSize: ".75rem", fontWeight: 700, color: "var(--black)", cursor: "pointer", whiteSpace: "nowrap" }}>
+              🎯 Quiz
+            </button>
+          </div>
+        )}
+      </div>
 
       {/* ── Chat area ──────────────────────────────────────────────────────── */}
       <div
@@ -785,7 +717,6 @@ export default function ResumoAula() {
         </div>
       </div>
 
-      <BottomNavFlex className="-mx-3 sm:mx-auto w-full sm:max-w-2xl mt-4" />
     </div>
   );
 }

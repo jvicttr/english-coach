@@ -1,10 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { UserButton } from "@clerk/nextjs";
-import { BottomNavFixed } from "@/components/BottomNav";
-import Image from "next/image";
 import { TIERS, getTier as getTierFromXp } from "@/lib/tiers";
 
 type TierInfo = { id: string; label: string; emoji: string; color: string; min: number; max: number };
@@ -44,7 +40,6 @@ type RankingData = {
 };
 
 export default function ConquistasPage() {
-  const router = useRouter();
   const [data, setData] = useState<ConquistasData | null>(null);
   const [ranking, setRanking] = useState<RankingData | null>(null);
   const [tab, setTab] = useState<"badges" | "ranking">("badges");
@@ -81,24 +76,16 @@ export default function ConquistasPage() {
   const earnedCount = badges.filter((b) => b.earned).length;
 
   return (
-    <div style={{ background: "var(--black)", minHeight: "100dvh", fontFamily: "'Inter', sans-serif", paddingBottom: 80 }}>
+    <div style={{ background: "var(--black)", minHeight: "100dvh", fontFamily: "'Inter', sans-serif", paddingTop: 65, paddingBottom: 80 }}>
       <style>{`
         @keyframes bounce { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
         @keyframes shimmer { 0%{background-position:-200% center} 100%{background-position:200% center} }
         @keyframes popIn { from{opacity:0;transform:scale(.85)} to{opacity:1;transform:scale(1)} }
       `}</style>
 
-      {/* Header */}
-      <header style={{ padding: "14px 16px 12px", display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid #1e1e1e", position: "sticky", top: 0, background: "#0d0d0d", zIndex: 100 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <button onClick={() => router.back()} style={{ background: "var(--dark2)", border: "1px solid #2a2a2a", borderRadius: "10px", height: "36px", width: 36, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M9 2L4 7L9 12" stroke="var(--gray)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-          </button>
-          <Image src="/favicon.png" alt="JV IA" width={28} height={28} style={{ borderRadius: 8 }} />
-          <span style={{ fontWeight: 800, fontSize: "0.95rem", color: "#fff" }}>Conquistas</span>
-        </div>
-        <UserButton />
-      </header>
+      <div style={{ padding: "10px 16px", borderBottom: "1px solid #1e1e1e" }}>
+        <span style={{ fontWeight: 800, fontSize: "0.95rem", color: "#fff" }}>🏅 Conquistas</span>
+      </div>
 
       <div style={{ maxWidth: 480, margin: "0 auto", padding: "20px 16px 0" }}>
 
@@ -278,7 +265,6 @@ export default function ConquistasPage() {
         <div style={{ height: 32 }} />
       </div>
 
-      <BottomNavFixed />
     </div>
   );
 }

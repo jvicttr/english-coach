@@ -2,9 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { UserButton } from "@clerk/nextjs";
-import { BottomNavFixed } from "@/components/BottomNav";
-import Image from "next/image";
 import { TRAIL_STEPS, LEVEL_INFO, isStepUnlocked, getStartingLevel, type TrailLevel, type TrailStep } from "@/lib/trilha-steps";
 
 function getPrerequisiteTitle(step: TrailStep): string | null {
@@ -31,7 +28,6 @@ export default function TrilhaPage() {
   const [userLevel, setUserLevel] = useState<string>("beginner");
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<TrailStep | null>(null);
-  const [isPro, setIsPro] = useState(false);
   function scanSavedSessions(): Set<string> {
     const sessions = new Set<string>();
     for (let i = 0; i < localStorage.length; i++) {
@@ -61,7 +57,6 @@ export default function TrilhaPage() {
       fetch("/api/trilha").then((r) => r.json()),
     ]).then(([me, trilha]) => {
       if (me.plan !== "pro") { router.replace("/planos"); return; }
-      setIsPro(true);
       const levelMap: Record<string, string> = {
         iniciante: "beginner",
         basico: "basic",
@@ -114,11 +109,11 @@ export default function TrilhaPage() {
   const completedCount = visibleLevels.reduce((acc, l) => acc + TRAIL_STEPS.filter((s) => s.level === l && completedIds.has(s.id)).length, 0);
 
   return (
-    <div style={{ background: "var(--black)", minHeight: "100dvh", fontFamily: "'Inter', sans-serif", paddingBottom: 80 }}>
+    <div style={{ background: "var(--black)", minHeight: "100dvh", fontFamily: "'Inter', sans-serif", paddingTop: 65, paddingBottom: 80 }}>
       <style>{`
         @keyframes pulse-ring { 0%,100%{transform:scale(1);opacity:1} 50%{transform:scale(1.15);opacity:.6} }
         @keyframes bounce { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
-        .trilha-container { max-width: 640px; margin: 0 auto; padding: 24px 16px 0; }
+        .trilha-container { max-width: 640px; margin: 0 auto; padding: 12px 16px 0; }
         .trilha-step-btn { min-width: 200px; max-width: 300px; }
         .trilha-step-row { padding-left: var(--row-pl, 40px); padding-right: var(--row-pr, 0px); }
         @media (min-width: 768px) {
@@ -131,24 +126,11 @@ export default function TrilhaPage() {
         }
       `}</style>
 
-      {/* Header */}
-      <header style={{ padding: "14px 16px 12px", display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid #1e1e1e", position: "sticky", top: 0, background: "#0d0d0d", zIndex: 100 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <a href="/app" style={{ background: "var(--dark2)", border: "1px solid #2a2a2a", borderRadius: "10px", height: "36px", width: 36, display: "flex", alignItems: "center", justifyContent: "center", textDecoration: "none" }}>
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M9 2L4 7L9 12" stroke="var(--gray)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-          </a>
-          <Image src="/favicon.png" alt="JV IA" width={28} height={28} style={{ borderRadius: 8 }} />
-          <span style={{ fontWeight: 800, fontSize: "0.95rem", color: "#fff" }}>Trilha</span>
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          {/* Progress summary */}
-          <span style={{ fontSize: "0.75rem", fontWeight: 700, color: "var(--gray)" }}>{completedCount}/{totalSteps} etapas</span>
-          <div style={{ position: "relative", display: "inline-flex" }}>
-            <UserButton />
-            {isPro && <span style={{ position: "absolute", bottom: -4, left: "50%", transform: "translateX(-50%)", fontSize: "0.52rem", fontWeight: 800, background: "linear-gradient(135deg,#f5c800,#e0a800)", color: "#000", padding: "1px 5px", borderRadius: "50px", whiteSpace: "nowrap", lineHeight: 1.4, pointerEvents: "none" }}>PRO</span>}
-          </div>
-        </div>
-      </header>
+      {/* Subheader com título + progresso */}
+      <div style={{ padding: "10px 16px 10px", borderBottom: "1px solid #1e1e1e", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <span style={{ fontWeight: 800, fontSize: "0.95rem", color: "#fff" }}>🗺️ Trilha</span>
+        <span style={{ fontSize: "0.75rem", fontWeight: 700, color: "var(--gray)" }}>{completedCount}/{totalSteps} etapas</span>
+      </div>
 
       {/* Overall progress bar */}
       <div style={{ height: 3, background: "var(--dark2)" }}>
@@ -302,8 +284,6 @@ export default function TrilhaPage() {
         {/* Bottom spacer */}
         <div style={{ height: 32 }} />
       </div>
-
-      <BottomNavFixed />
 
       <style>{`@keyframes fadeIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}`}</style>
     </div>
