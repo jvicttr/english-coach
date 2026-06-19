@@ -38,6 +38,7 @@ export default function ComunidadePage() {
   const [postError, setPostError] = useState("");
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
 
   // Audio state
   const [recording, setRecording] = useState(false);
@@ -79,7 +80,18 @@ export default function ComunidadePage() {
     setAudioBlob(null);
     setAudioUrl(null);
     setRecordingSeconds(0);
+    setShowEmojiPicker(false);
     if (timerRef.current) clearInterval(timerRef.current);
+  }
+
+  function insertEmoji(emoji: string) {
+    const ta = textareaRef.current;
+    if (!ta) { setPostText(t => t + emoji); return; }
+    const start = ta.selectionStart ?? postText.length;
+    const end = ta.selectionEnd ?? postText.length;
+    const next = postText.slice(0, start) + emoji + postText.slice(end);
+    setPostText(next);
+    setTimeout(() => { ta.focus(); ta.setSelectionRange(start + emoji.length, start + emoji.length); }, 0);
   }
 
   // ── Audio recording ─────────────────────────────────────────────────────
@@ -299,6 +311,15 @@ export default function ComunidadePage() {
                     />
                   )}
 
+                  {/* Emoji picker */}
+                  {showEmojiPicker && (
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 4, background: "#0d0d0d", borderRadius: 10, padding: "8px 10px", marginBottom: 8 }}>
+                      {["😀","😂","😍","🥰","😎","🤔","😅","🙌","👏","🔥","💯","❤️","🎉","✨","💪","🙏","👍","😊","🤩","😏","🥳","😤","💬","🌍","📚","🎯","🚀","⭐","💡","🎶"].map(e => (
+                        <button key={e} onClick={() => insertEmoji(e)} style={{ background: "none", border: "none", fontSize: "1.2rem", cursor: "pointer", padding: "2px 4px", borderRadius: 6, lineHeight: 1 }}>{e}</button>
+                      ))}
+                    </div>
+                  )}
+
                   {/* Image preview */}
                   {imagePreview && (
                     <div style={{ position: "relative", marginTop: 8, marginBottom: 4 }}>
@@ -345,6 +366,12 @@ export default function ComunidadePage() {
             <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 10 }}>
               {composerOpen && (
                 <>
+                  {/* Emoji button */}
+                  <button
+                    onClick={() => setShowEmojiPicker(v => !v)}
+                    style={{ background: showEmojiPicker ? "rgba(245,200,0,.1)" : "none", border: "none", fontSize: "1.1rem", cursor: "pointer", padding: "2px 6px", borderRadius: 8, lineHeight: 1 }}
+                    title="Add emoji"
+                  >😊</button>
                   {postText.length > 0 && (
                     <span style={{ fontSize: "0.65rem", color: postText.length > 250 ? "#f87171" : "var(--gray)" }}>{postText.length}/280</span>
                   )}
