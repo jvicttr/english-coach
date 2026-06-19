@@ -420,7 +420,10 @@ export default function ComunidadePage() {
         if ((await vr.json()).error === "not_english") { setPostError("Please record in English! 🇺🇸"); return; }
         const uf = new FormData();
         uf.append("file", new File([audioBlob], `audio.${ext}`, { type: audioBlob.type })); uf.append("type", "audio");
-        uploadedAudioUrl = (await (await fetch("/api/community/upload", { method: "POST", body: uf })).json()).url;
+        const uploadRes = await fetch("/api/community/upload", { method: "POST", body: uf });
+        const uploadData = await uploadRes.json();
+        if (!uploadRes.ok || !uploadData.url) { setPostError(`Upload failed: ${uploadData.error ?? "unknown"}`); return; }
+        uploadedAudioUrl = uploadData.url;
         audioTranscript = td.transcript;
       }
 
