@@ -20,13 +20,18 @@ function renderWithMentions(text: string): React.ReactNode[] {
   );
 }
 
+function isClerkDefault(url: string | null): boolean {
+  if (!url) return false;
+  return url.includes("img.clerk.com") && url.includes("eyJ0eXBlIjoiZGVmYXVsdCI");
+}
 function UserAvatar({ src, name, size = 32 }: { src: string; name: string; size?: number }) {
   const [err, setErr] = useState(false);
   const initial = (name || "?")[0].toUpperCase();
+  const realSrc = isClerkDefault(src) ? null : src;
   return (
-    <div style={{ width: size, height: size, borderRadius: "50%", background: (!src || err) ? avatarColor(name) : "#2a2a2a", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, overflow: "hidden" }}>
-      {src && !err
-        ? <img src={src} alt={name} style={{ width: "100%", height: "100%", objectFit: "cover" }} onError={() => setErr(true)} />
+    <div style={{ width: size, height: size, borderRadius: "50%", background: (!realSrc || err) ? avatarColor(name) : "#2a2a2a", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, overflow: "hidden" }}>
+      {realSrc && !err
+        ? <img src={realSrc} alt={name} style={{ width: "100%", height: "100%", objectFit: "cover" }} onError={() => setErr(true)} />
         : <span style={{ fontSize: size * 0.42, fontWeight: 700, color: "#fff", lineHeight: 1 }}>{initial}</span>
       }
     </div>
