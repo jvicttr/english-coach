@@ -16,7 +16,7 @@ export function UserSync() {
       body: JSON.stringify({
         email: user.primaryEmailAddress?.emailAddress || user.username || user.id,
         name: user.fullName || user.username || user.id,
-        image: user.externalAccounts?.[0]?.imageUrl || user.imageUrl || null,
+        image: null, // gerenciado pelo sync-all com profile_image_url estável
       }),
     }).catch((error) => console.error("Erro ao sincronizar usuário:", error));
   }, [user, isLoaded]);

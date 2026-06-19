@@ -50,14 +50,12 @@ export async function POST(req: NextRequest) {
   try {
     const { email, name, image } = await req.json();
 
+    const fields: Record<string, string> = { id: userId, email, name };
+    if (image) fields.image_url = image; // só atualiza foto se vier valor — evita apagar o que sync-all gravou
+
     const { data, error } = await supabase
       .from("users")
-      .upsert({
-        id: userId,
-        email,
-        name,
-        image_url: image,
-      }, { onConflict: "id" })
+      .upsert(fields, { onConflict: "id" })
       .select()
       .single();
 
