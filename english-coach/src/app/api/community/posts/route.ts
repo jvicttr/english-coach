@@ -10,6 +10,16 @@ const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 const FREE_POST_LIMIT = 1;
 
+async function isEnglish(text: string): Promise<boolean> {
+  if (!text.trim()) return true; // audio-only posts pass (audio validated separately)
+  const check = await anthropic.messages.create({
+    model: "claude-haiku-4-5-20251001",
+    max_tokens: 10,
+    messages: [{ role: "user", content: `Is this text written in English? Reply only "yes" or "no".\n\nText: "${text.slice(0, 300)}"` }],
+  });
+  return (check.content[0] as { text: string }).text.toLowerCase().includes("yes");
+}
+
 export async function GET() {
   const { userId } = await auth();
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -27,8 +37,24 @@ export async function POST(req: NextRequest) {
   const { userId } = await auth();
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { content } = await req.json();
-  if (!content?.trim()) return NextResponse.json({ error: "Empty post" }, { status: 400 });
+  const body = await req.json();
+  const { content = "", audioUrl = null, imageUrl = null, validateOnly = false } = body;
+
+  // Must have at least some content
+  if (!content.trim() && !audioUrl && !imageUrl) {
+    return NextResponse.json({ error: "Empty post" }, { status: 400 });
+  }
+
+  // Validate English if there's text
+  if (content.trim()) {
+    const english = await isEnglish(content);
+    if (!english) {
+      return NextResponse.json({ error: "not_english", message: "Please write in English! 🇺🇸" }, { status: 422 });
+    }
+  }
+
+  // validateOnly = just check language, don't save
+  if (validateOnly) return NextResponse.json({ ok: true });
 
   const [user, sub] = await Promise.all([
     currentUser(),
@@ -48,27 +74,12 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  // Validate English with AI
-  const check = await anthropic.messages.create({
-    model: "claude-haiku-4-5-20251001",
-    max_tokens: 10,
-    messages: [{
-      role: "user",
-      content: `Is this text written in English? Reply only "yes" or "no".\n\nText: "${content.slice(0, 300)}"`,
-    }],
-  });
-
-  const isEnglish = (check.content[0] as { text: string }).text.toLowerCase().includes("yes");
-  if (!isEnglish) {
-    return NextResponse.json({ error: "not_english", message: "Please write your post in English! 🇺🇸" }, { status: 422 });
-  }
-
   const displayName = user?.firstName ?? user?.username ?? "Student";
   const avatarUrl = user?.imageUrl ?? null;
 
   const { data: post, error } = await supabase
     .from("community_posts")
-    .insert({ user_id: userId, display_name: displayName, avatar_url: avatarUrl, content: content.trim() })
+    .insert({ user_id: userId, display_name: displayName, avatar_url: avatarUrl, content: content.trim(), audio_url: audioUrl, image_url: imageUrl })
     .select()
     .single();
 
