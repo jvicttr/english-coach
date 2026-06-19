@@ -314,7 +314,14 @@ function PostCard({ post, myId, user, router, isReply = false, onReaction, onDel
         )}
       </div>
 
-      {post.image_url && <img src={post.image_url} alt="post" style={{ width: "100%", maxHeight: 280, objectFit: "contain", borderRadius: 10, marginBottom: 10, background: "#0d0d0d", display: "block" }} />}
+      {post.image_url && (
+        <img
+          src={post.image_url}
+          alt="post"
+          onClick={() => { setSelectedImage(post.image_url); setImageZoom(1); }}
+          style={{ width: "100%", maxHeight: 280, objectFit: "contain", borderRadius: 10, marginBottom: 10, background: "#0d0d0d", display: "block", cursor: "pointer" }}
+        />
+      )}
       {post.audio_url && (
         <div style={{ background: "#0d0d0d", borderRadius: 10, padding: "8px 12px", marginBottom: 10 }}>
           <audio src={post.audio_url} controls style={{ width: "100%", height: 32 }} />
@@ -453,6 +460,8 @@ export default function ComunidadePage() {
   const [refreshing, setRefreshing] = useState(false);
   const [newPostsCount, setNewPostsCount] = useState(0);
   const [pullProgress, setPullProgress] = useState(0);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [imageZoom, setImageZoom] = useState(1);
   const [composerOpen, setComposerOpen] = useState(false);
   const [postText, setPostText] = useState("");
   const [posting, setPosting] = useState(false);
@@ -493,6 +502,17 @@ export default function ComunidadePage() {
     setRefreshing(true);
     await loadPosts();
   }
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setSelectedImage(null);
+        setImageZoom(1);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
 
   useEffect(() => {
     loadPosts();
@@ -777,6 +797,54 @@ export default function ComunidadePage() {
       </div>
 
       <button id="community-fab" onClick={() => setComposerOpen(true)} style={{ display: "none" }} />
+
+      {selectedImage && (
+        <div onClick={() => { setSelectedImage(null); setImageZoom(1); }} style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.95)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}>
+          <div onClick={(e) => e.stopPropagation()} style={{ position: "relative", width: "90%", height: "90%", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <img
+              src={selectedImage}
+              alt="fullscreen"
+              style={{
+                maxWidth: "100%",
+                maxHeight: "100%",
+                transform: `scale(${imageZoom})`,
+                transition: "transform 0.2s",
+                cursor: imageZoom > 1 ? "grab" : "zoom-in"
+              }}
+              onWheel={(e) => {
+                e.preventDefault();
+                setImageZoom(prev => Math.min(Math.max(prev + (e.deltaY > 0 ? -0.1 : 0.1), 1), 3));
+              }}
+            />
+            <button
+              onClick={() => { setSelectedImage(null); setImageZoom(1); }}
+              style={{
+                position: "absolute",
+                top: 20,
+                right: 20,
+                background: "rgba(255,255,255,0.2)",
+                border: "none",
+                color: "#fff",
+                fontSize: "1.5rem",
+                cursor: "pointer",
+                width: 40,
+                height: 40,
+                borderRadius: "50%",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center"
+              }}
+            >
+              ✕
+            </button>
+            <div style={{ position: "absolute", bottom: 20, display: "flex", gap: 10, background: "rgba(0,0,0,0.5)", padding: "10px 15px", borderRadius: 50 }}>
+              <button onClick={() => setImageZoom(prev => Math.max(prev - 0.2, 1))} style={{ background: "none", border: "none", color: "#fff", fontSize: "1rem", cursor: "pointer" }}>−</button>
+              <span style={{ color: "#fff", fontSize: "0.9rem", minWidth: 40, textAlign: "center" }}>{Math.round(imageZoom * 100)}%</span>
+              <button onClick={() => setImageZoom(prev => Math.min(prev + 0.2, 3))} style={{ background: "none", border: "none", color: "#fff", fontSize: "1rem", cursor: "pointer" }}>+</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <style>{`
         @keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
