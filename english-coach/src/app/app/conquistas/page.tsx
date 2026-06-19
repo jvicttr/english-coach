@@ -76,7 +76,7 @@ export default function ConquistasPage() {
   const earnedCount = badges.filter((b) => b.earned).length;
 
   return (
-    <div style={{ background: "var(--black)", minHeight: "100dvh", fontFamily: "'Inter', sans-serif", paddingTop: 65, paddingBottom: 80 }}>
+    <div className="app-scroll" style={{ background: "var(--black)", fontFamily: "'Inter', sans-serif", paddingTop: 65, paddingBottom: 80 }}>
       <style>{`
         @keyframes bounce { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
         @keyframes shimmer { 0%{background-position:-200% center} 100%{background-position:200% center} }

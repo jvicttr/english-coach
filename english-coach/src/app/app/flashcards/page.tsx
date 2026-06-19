@@ -203,7 +203,7 @@ export default function Flashcards() {
 
   if (loading) {
     return (
-      <div style={{ background: "var(--black)", minHeight: "100dvh", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Inter', sans-serif" }}>
+      <div className="app-scroll" style={{ background: "var(--black)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Inter', sans-serif" }}>
         <div style={{ display: "flex", gap: 6 }}>
           {[0, 150, 300].map((d) => <span key={d} style={{ width: 10, height: 10, borderRadius: "50%", background: "var(--yellow)", display: "inline-block", animation: "bounce .8s infinite", animationDelay: `${d}ms` }} />)}
         </div>
@@ -215,7 +215,7 @@ export default function Flashcards() {
   // ── Empty state ──────────────────────────────────────────────────────────
   if (packs.length === 0) {
     return (
-      <div style={{ background: "var(--black)", minHeight: "100dvh", fontFamily: "'Inter', sans-serif", paddingTop: 65, paddingBottom: 70 }}>
+      <div className="app-scroll" style={{ background: "var(--black)", fontFamily: "'Inter', sans-serif", paddingTop: 65, paddingBottom: 70 }}>
         <Header title="🃏 Flashcards" />
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "70vh", textAlign: "center", padding: "0 24px", gap: 16 }}>
           <div style={{ fontSize: "3rem" }}>🃏</div>
@@ -235,7 +235,7 @@ export default function Flashcards() {
   if (done && activePack) {
     const total = sessionResults.easy + sessionResults.hard + sessionResults.miss;
     return (
-      <div style={{ background: "var(--black)", minHeight: "100dvh", fontFamily: "'Inter', sans-serif", paddingTop: 65, paddingBottom: 70 }}>
+      <div className="app-scroll" style={{ background: "var(--black)", fontFamily: "'Inter', sans-serif", paddingTop: 65, paddingBottom: 70 }}>
         <Header onBack={backToList} title="🃏 Flashcards" />
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "70vh", textAlign: "center", padding: "0 24px", gap: 20 }}>
           <div style={{ fontSize: "3rem" }}>🎉</div>
@@ -268,7 +268,7 @@ export default function Flashcards() {
     const card = activePack.cards[currentIndex];
     const progress = (currentIndex / activePack.cards.length) * 100;
     return (
-      <div style={{ background: "var(--black)", minHeight: "100dvh", fontFamily: "'Inter', sans-serif", paddingTop: 65, paddingBottom: 70, display: "flex", flexDirection: "column" }}>
+      <div className="app-scroll" style={{ background: "var(--black)", fontFamily: "'Inter', sans-serif", paddingTop: 65, paddingBottom: 70, display: "flex", flexDirection: "column" }}>
         <Header
           onBack={backToList}
           title={`🃏 ${activePack.pack_name}`}
@@ -371,7 +371,7 @@ export default function Flashcards() {
   const totalPending = packs.reduce((acc, p) => acc + p.cards.filter((c) => c.next_review <= today).length, 0);
 
   return (
-    <div style={{ background: "var(--black)", minHeight: "100dvh", fontFamily: "'Inter', sans-serif", paddingTop: 65, paddingBottom: 80 }}>
+    <div className="app-scroll" style={{ background: "var(--black)", fontFamily: "'Inter', sans-serif", paddingTop: 65, paddingBottom: 80 }}>
       <Header title="🃏 Flashcards" />
       <div style={{ padding: "16px", maxWidth: 640, margin: "0 auto", display: "flex", flexDirection: "column", gap: 12 }}>
 
