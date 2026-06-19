@@ -228,13 +228,13 @@ function PostCard({ post, myId, user, router, isReply = false, onReaction, onDel
   const [translating, setTranslating] = useState(false);
   const [showTranslation, setShowTranslation] = useState<boolean>(false);
 
-  async function fetchTranslation(text: string, lang: "pt") {
-    if (translationPt) { setShowTranslation("pt"); return; }
+  async function fetchTranslation(text: string) {
+    if (translationPt) { setShowTranslation(true); return; }
     setTranslating(true);
     const res = await fetch("/api/community/translate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text }) });
     const data = await res.json();
     setTranslationPt(data.translation ?? null);
-    setShowTranslation("pt");
+    setShowTranslation(true);
     setTranslating(false);
   }
 
@@ -330,7 +330,7 @@ function PostCard({ post, myId, user, router, isReply = false, onReaction, onDel
                     <button onClick={() => setShowTranslation(null)} style={{ background: "none", border: "none", color: "#555", fontSize: "0.65rem", cursor: "pointer", flexShrink: 0, padding: 0 }}>ocultar</button>
                   </div>
                 ) : (
-                  <button onClick={() => fetchTranslation(post.transcript!, "pt")} disabled={translating} style={{ background: "transparent", border: "1px solid #3a3a3a", borderRadius: 50, padding: "2px 10px", fontSize: "0.7rem", color: "var(--gray)", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 4 }}>
+                  <button onClick={() => fetchTranslation(post.transcript!)} disabled={translating} style={{ background: "transparent", border: "1px solid #3a3a3a", borderRadius: 50, padding: "2px 10px", fontSize: "0.7rem", color: "var(--gray)", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 4 }}>
                     {translating ? "…" : "🇧🇷 Ver tradução"}
                   </button>
                 )}
@@ -386,7 +386,7 @@ function PostCard({ post, myId, user, router, isReply = false, onReaction, onDel
                   <button onClick={() => setShowTranslation(false)} style={{ background: "none", border: "none", color: "#555", fontSize: "0.65rem", cursor: "pointer", flexShrink: 0, padding: 0 }}>ocultar</button>
                 </div>
               ) : (
-                <button onClick={() => fetchTranslation(currentContent, "pt")} disabled={translating} style={{ background: "transparent", border: "1px solid #3a3a3a", borderRadius: 50, padding: "2px 10px", fontSize: "0.7rem", color: "var(--gray)", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 4 }}>
+                <button onClick={() => fetchTranslation(currentContent)} disabled={translating} style={{ background: "transparent", border: "1px solid #3a3a3a", borderRadius: 50, padding: "2px 10px", fontSize: "0.7rem", color: "var(--gray)", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 4 }}>
                   {translating ? "…" : "🇧🇷 Ver tradução"}
                 </button>
               )}
