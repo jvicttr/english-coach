@@ -235,20 +235,18 @@ function PostCard({ post, myId, user, router, isReply = false, onReaction, onDel
         })}
 
         {/* Reply button */}
-        {!isReply && (
-          <button
-            onClick={() => setShowReplyComposer(v => !v)}
-            style={{ display: "flex", alignItems: "center", gap: 4, padding: "4px 10px", borderRadius: 50, border: "1px solid #2a2a2a", background: showReplyComposer ? "rgba(255,255,255,.05)" : "transparent", cursor: "pointer", fontSize: "0.78rem", color: "var(--gray)", fontWeight: 600, marginLeft: 2 }}
-          >
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-            Reply
-          </button>
-        )}
+        <button
+          onClick={() => setShowReplyComposer(v => !v)}
+          style={{ display: "flex", alignItems: "center", gap: 4, padding: "4px 10px", borderRadius: 50, border: "1px solid #2a2a2a", background: showReplyComposer ? "rgba(255,255,255,.05)" : "transparent", cursor: "pointer", fontSize: "0.78rem", color: "var(--gray)", fontWeight: 600, marginLeft: 2 }}
+        >
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          Reply
+        </button>
 
         {/* Show replies */}
-        {!isReply && replyCount > 0 && (
+        {replyCount > 0 && (
           <button onClick={toggleExpand} style={{ background: "none", border: "none", fontSize: "0.72rem", color: "var(--yellow)", fontWeight: 700, cursor: "pointer", marginLeft: 4 }}>
-            {loadingReplies ? "…" : expanded ? `Hide replies` : `${replyCount} repl${replyCount === 1 ? "y" : "ies"}`}
+            {loadingReplies ? "…" : expanded ? `Hide` : `${replyCount} repl${replyCount === 1 ? "y" : "ies"}`}
           </button>
         )}
       </div>
@@ -260,7 +258,7 @@ function PostCard({ post, myId, user, router, isReply = false, onReaction, onDel
 
       {/* Replies */}
       {expanded && replies.length > 0 && (
-        <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid #1e1e1e", display: "flex", flexDirection: "column", gap: 0 }}>
+        <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid #1e1e1e", borderLeft: "2px solid #2a2a2a", paddingLeft: 12, display: "flex", flexDirection: "column", gap: 0 }}>
           {replies.map(r => (
             <PostCard key={r.id} post={r} myId={myId} user={user} router={router} isReply onReaction={onReaction} onDeleted={id => { setReplies(prev => prev.filter(x => x.id !== id)); setReplyCount(c => Math.max(0, c - 1)); }} />
           ))}
