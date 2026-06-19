@@ -60,6 +60,8 @@ export default function ChatPage() {
       if (startData.conversationId) {
         setConversationId(startData.conversationId);
         loadMessages(startData.conversationId);
+        // Marcar conversa como lida
+        fetch("/api/messages/unread", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ conversationId: startData.conversationId }) }).catch(() => {});
         intervalRef.current = setInterval(() => loadMessages(startData.conversationId), 3000);
       }
     } catch (e) { console.error(e); }

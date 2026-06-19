@@ -15,6 +15,16 @@ type Notif = {
   created_at: string;
 };
 
+type MsgNotif = {
+  id: string;
+  conversation_id: string;
+  sender_id: string;
+  sender_name: string;
+  sender_image: string | null;
+  content: string;
+  created_at: string;
+};
+
 function timeAgo(d: string) {
   const s = Math.floor((Date.now() - new Date(d).getTime()) / 1000);
   if (s < 60) return "agora";
@@ -35,6 +45,8 @@ export function AppHeader() {
   const [notifOpen, setNotifOpen] = useState(false);
   const [notifs, setNotifs] = useState<Notif[]>([]);
   const [unread, setUnread] = useState(0);
+  const [msgNotifs, setMsgNotifs] = useState<MsgNotif[]>([]);
+  const [unreadMsgs, setUnreadMsgs] = useState(0);
   const notifRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -45,7 +57,8 @@ export function AppHeader() {
     }).catch(() => {});
 
     loadNotifs();
-    const id = setInterval(loadNotifs, 30000);
+    loadMsgNotifs();
+    const id = setInterval(() => { loadNotifs(); loadMsgNotifs(); }, 15000);
     return () => clearInterval(id);
   }, []);
 
@@ -67,6 +80,16 @@ export function AppHeader() {
     } catch {}
   }
 
+  async function loadMsgNotifs() {
+    try {
+      const res = await fetch("/api/messages/unread");
+      if (!res.ok) return;
+      const data = await res.json();
+      setMsgNotifs(data.messages ?? []);
+      setUnreadMsgs(data.unread ?? 0);
+    } catch {}
+  }
+
   async function openNotifs() {
     setNotifOpen((v) => !v);
     setMenuOpen(false);
@@ -75,6 +98,15 @@ export function AppHeader() {
       setNotifs((prev) => prev.map((n) => ({ ...n, read: true })));
       await fetch("/api/community/notifications", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({}) });
     }
+  }
+
+  async function openChat(msg: MsgNotif) {
+    setNotifOpen(false);
+    // Marcar como lida
+    await fetch("/api/messages/unread", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ conversationId: msg.conversation_id }) });
+    setUnreadMsgs(0);
+    setMsgNotifs([]);
+    router.push(`/app/mensagens/${msg.sender_id}`);
   }
 
   async function goToPost(n: Notif) {
@@ -159,9 +191,9 @@ export function AppHeader() {
                 <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
                 <path d="M13.73 21a2 2 0 0 1-3.46 0" />
               </svg>
-              {unread > 0 && (
+              {(unread + unreadMsgs) > 0 && (
                 <span style={{ position: "absolute", top: -4, right: -4, background: "#f87171", borderRadius: "50%", width: 16, height: 16, fontSize: "0.6rem", fontWeight: 800, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", lineHeight: 1 }}>
-                  {unread > 9 ? "9+" : unread}
+                  {(unread + unreadMsgs) > 9 ? "9+" : (unread + unreadMsgs)}
                 </span>
               )}
             </button>
@@ -169,29 +201,57 @@ export function AppHeader() {
             {notifOpen && (
               <div style={{ position: "fixed", top: 62, right: 16, background: "#1a1a1a", border: "1px solid #2a2a2a", borderRadius: 14, zIndex: 200, width: 300, maxHeight: 380, overflowY: "auto", boxShadow: "0 8px 32px rgba(0,0,0,.7)" }}>
                 <div style={{ padding: "12px 16px 8px", borderBottom: "1px solid #2a2a2a", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <span style={{ fontWeight: 800, fontSize: "0.85rem", color: "#fff" }}>Notifications</span>
-                  {notifs.length > 0 && (
-                    <a href="/app/comunidade" onClick={() => setNotifOpen(false)} style={{ fontSize: "0.7rem", color: "var(--yellow)", fontWeight: 700, textDecoration: "none" }}>See all</a>
-                  )}
+                  <span style={{ fontWeight: 800, fontSize: "0.85rem", color: "#fff" }}>Notificações</span>
+                  <a href="/app/comunidade" onClick={() => setNotifOpen(false)} style={{ fontSize: "0.7rem", color: "var(--yellow)", fontWeight: 700, textDecoration: "none" }}>Ver tudo</a>
                 </div>
-                {notifs.length === 0 ? (
-                  <div style={{ padding: "24px 16px", textAlign: "center", fontSize: "0.8rem", color: "var(--gray)" }}>No notifications yet</div>
-                ) : (
-                  notifs.map((n) => (
-                    <button key={n.id} onClick={() => goToPost(n)} style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "12px 14px", background: n.read ? "transparent" : "rgba(245,200,0,.04)", border: "none", borderBottom: "1px solid #1e1e1e", cursor: "pointer", width: "100%", textAlign: "left" }}>
-                      <div style={{ width: 32, height: 32, borderRadius: "50%", overflow: "hidden", background: "#2a2a2a", flexShrink: 0 }}>
-                        {n.from_avatar_url ? <img src={n.from_avatar_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <span style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", fontSize: "0.9rem" }}>👤</span>}
-                      </div>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <p style={{ fontSize: "0.78rem", color: "#fff", margin: 0, lineHeight: 1.4 }}>
-                          <span style={{ fontWeight: 700 }}>{n.from_display_name}</span>{" "}
-                          <span style={{ color: "var(--gray)" }}>replied to your post</span>
-                        </p>
-                        <p style={{ fontSize: "0.65rem", color: "var(--gray)", margin: "3px 0 0" }}>{timeAgo(n.created_at)}</p>
-                      </div>
-                      {!n.read && <span style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--yellow)", flexShrink: 0, marginTop: 4 }} />}
-                    </button>
-                  ))
+
+                {/* Mensagens não lidas */}
+                {msgNotifs.length > 0 && (
+                  <>
+                    <div style={{ padding: "8px 14px 4px", fontSize: "0.68rem", fontWeight: 700, color: "var(--yellow)", letterSpacing: "0.5px" }}>💬 MENSAGENS</div>
+                    {msgNotifs.map((msg) => (
+                      <button key={msg.id} onClick={() => openChat(msg)} style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "10px 14px", background: "rgba(245,200,0,.04)", border: "none", borderBottom: "1px solid #1e1e1e", cursor: "pointer", width: "100%", textAlign: "left" }}>
+                        <div style={{ width: 32, height: 32, borderRadius: "50%", overflow: "hidden", background: "#2a2a2a", flexShrink: 0 }}>
+                          {msg.sender_image ? <img src={msg.sender_image} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <span style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", fontSize: "0.9rem" }}>👤</span>}
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <p style={{ fontSize: "0.78rem", color: "#fff", margin: 0, lineHeight: 1.4 }}>
+                            <span style={{ fontWeight: 700 }}>{msg.sender_name}</span>{" "}
+                            <span style={{ color: "var(--gray)" }}>enviou uma mensagem</span>
+                          </p>
+                          <p style={{ fontSize: "0.72rem", color: "var(--gray2)", margin: "2px 0 0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{msg.content}</p>
+                          <p style={{ fontSize: "0.65rem", color: "var(--gray)", margin: "2px 0 0" }}>{timeAgo(msg.created_at)}</p>
+                        </div>
+                        <span style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--yellow)", flexShrink: 0, marginTop: 4 }} />
+                      </button>
+                    ))}
+                  </>
+                )}
+
+                {/* Notificações da comunidade */}
+                {notifs.length > 0 && (
+                  <>
+                    <div style={{ padding: "8px 14px 4px", fontSize: "0.68rem", fontWeight: 700, color: "var(--gray)", letterSpacing: "0.5px" }}>🌍 COMUNIDADE</div>
+                    {notifs.map((n) => (
+                      <button key={n.id} onClick={() => goToPost(n)} style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "12px 14px", background: n.read ? "transparent" : "rgba(245,200,0,.04)", border: "none", borderBottom: "1px solid #1e1e1e", cursor: "pointer", width: "100%", textAlign: "left" }}>
+                        <div style={{ width: 32, height: 32, borderRadius: "50%", overflow: "hidden", background: "#2a2a2a", flexShrink: 0 }}>
+                          {n.from_avatar_url ? <img src={n.from_avatar_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <span style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", fontSize: "0.9rem" }}>👤</span>}
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <p style={{ fontSize: "0.78rem", color: "#fff", margin: 0, lineHeight: 1.4 }}>
+                            <span style={{ fontWeight: 700 }}>{n.from_display_name}</span>{" "}
+                            <span style={{ color: "var(--gray)" }}>respondeu seu post</span>
+                          </p>
+                          <p style={{ fontSize: "0.65rem", color: "var(--gray)", margin: "3px 0 0" }}>{timeAgo(n.created_at)}</p>
+                        </div>
+                        {!n.read && <span style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--yellow)", flexShrink: 0, marginTop: 4 }} />}
+                      </button>
+                    ))}
+                  </>
+                )}
+
+                {notifs.length === 0 && msgNotifs.length === 0 && (
+                  <div style={{ padding: "24px 16px", textAlign: "center", fontSize: "0.8rem", color: "var(--gray)" }}>Nenhuma notificação</div>
                 )}
               </div>
             )}
