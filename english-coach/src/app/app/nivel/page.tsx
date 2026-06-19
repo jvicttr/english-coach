@@ -60,6 +60,7 @@ export default function NivelPage() {
         alignItems: "center",
         justifyContent: "center",
         padding: "24px 16px",
+        paddingTop: "calc(65px + 24px)",
       }}
     >
       <div style={{ width: "100%", maxWidth: 480 }}>
