@@ -20,6 +20,16 @@ type Post = {
 };
 
 const EMOJIS_REACT = ["👍", "🔥", "💯"];
+
+function getSupportedMime() {
+  const types = ["audio/webm;codecs=opus", "audio/webm", "audio/mp4", "audio/ogg"];
+  return types.find(t => typeof MediaRecorder !== "undefined" && MediaRecorder.isTypeSupported(t)) ?? "";
+}
+function mimeToExt(mime: string) {
+  if (mime.includes("mp4")) return "mp4";
+  if (mime.includes("ogg")) return "ogg";
+  return "webm";
+}
 const EMOJI_LIST = ["😀","😂","😍","🥰","😎","🤔","😅","🙌","👏","🔥","💯","❤️","🎉","✨","💪","🙏","👍","😊","🤩","😏","🥳","😤","💬","🌍","📚","🎯","🚀","⭐","💡","🎶"];
 
 function timeAgo(dateStr: string) {
@@ -50,18 +60,24 @@ function ReplyComposer({ postId, user, onDone }: { postId: string; user: ReturnT
   async function startRec() {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mr = new MediaRecorder(stream, { mimeType: "audio/webm" });
+      const mime = getSupportedMime();
+      const mr = new MediaRecorder(stream, mime ? { mimeType: mime } : undefined);
       chunksRef.current = [];
       mr.ondataavailable = e => { if (e.data.size > 0) chunksRef.current.push(e.data); };
       mr.onstop = () => {
         stream.getTracks().forEach(t => t.stop());
-        const blob = new Blob(chunksRef.current, { type: "audio/webm" });
+        const blob = new Blob(chunksRef.current, { type: mr.mimeType });
         setAudioBlob(blob); setAudioUrl(URL.createObjectURL(blob)); setRecording(false);
         if (timerRef.current) clearInterval(timerRef.current);
       };
       mr.start(); mrRef.current = mr; setRecording(true); setSeconds(0);
       timerRef.current = setInterval(() => setSeconds(s => s + 1), 1000);
-    } catch { setError("Microphone access denied."); }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      setError(msg.includes("Permission") || msg.includes("denied") || msg.includes("NotAllowed")
+        ? "Permita o acesso ao microfone nas configurações do seu navegador."
+        : "Não foi possível acessar o microfone.");
+    }
   }
 
   function insertEmoji(e: string) {
@@ -80,8 +96,9 @@ function ReplyComposer({ postId, user, onDone }: { postId: string; user: ReturnT
       let uploadedAudio: string | null = null;
       let audioTranscript: string | null = null;
       if (audioBlob) {
+        const ext = mimeToExt(audioBlob.type);
         const tf = new FormData();
-        tf.append("audio", new File([audioBlob], "audio.webm", { type: "audio/webm" }));
+        tf.append("audio", new File([audioBlob], `audio.${ext}`, { type: audioBlob.type }));
         const tr = await fetch("/api/transcribe", { method: "POST", body: tf });
         const td = await tr.json();
         if (!td.text?.trim()) { setError("Couldn't understand audio. Try again."); return; }
@@ -89,7 +106,7 @@ function ReplyComposer({ postId, user, onDone }: { postId: string; user: ReturnT
         const vd = await vr.json();
         if (vd.error === "not_english") { setError("Please record in English! 🇺🇸"); return; }
         const uf = new FormData();
-        uf.append("file", new File([audioBlob], "audio.webm", { type: "audio/webm" })); uf.append("type", "audio");
+        uf.append("file", new File([audioBlob], `audio.${ext}`, { type: audioBlob.type })); uf.append("type", "audio");
         const ur = await fetch("/api/community/upload", { method: "POST", body: uf });
         uploadedAudio = (await ur.json()).url;
         audioTranscript = td.text;
@@ -357,18 +374,24 @@ export default function ComunidadePage() {
   async function startRecording() {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mr = new MediaRecorder(stream, { mimeType: "audio/webm" });
+      const mime = getSupportedMime();
+      const mr = new MediaRecorder(stream, mime ? { mimeType: mime } : undefined);
       chunksRef.current = [];
       mr.ondataavailable = e => { if (e.data.size > 0) chunksRef.current.push(e.data); };
       mr.onstop = () => {
         stream.getTracks().forEach(t => t.stop());
-        const blob = new Blob(chunksRef.current, { type: "audio/webm" });
+        const blob = new Blob(chunksRef.current, { type: mr.mimeType });
         setAudioBlob(blob); setAudioUrl(URL.createObjectURL(blob)); setRecording(false);
         if (timerRef.current) clearInterval(timerRef.current);
       };
       mr.start(); mrRef.current = mr; setRecording(true); setRecordingSeconds(0);
       timerRef.current = setInterval(() => setRecordingSeconds(s => s + 1), 1000);
-    } catch { setPostError("Microphone access denied."); }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      setPostError(msg.includes("Permission") || msg.includes("denied") || msg.includes("NotAllowed")
+        ? "Permita o acesso ao microfone nas configurações do seu navegador."
+        : "Não foi possível acessar o microfone.");
+    }
   }
 
   function handleImageSelect(e: React.ChangeEvent<HTMLInputElement>) {
@@ -387,15 +410,16 @@ export default function ComunidadePage() {
       let audioTranscript: string | null = null;
 
       if (audioBlob) {
+        const ext = mimeToExt(audioBlob.type);
         const tf = new FormData();
-        tf.append("audio", new File([audioBlob], "audio.webm", { type: "audio/webm" }));
+        tf.append("audio", new File([audioBlob], `audio.${ext}`, { type: audioBlob.type }));
         const tr = await fetch("/api/transcribe", { method: "POST", body: tf });
         const td = await tr.json();
         if (!td.text?.trim()) { setPostError("Couldn't understand audio."); return; }
         const vr = await fetch("/api/community/posts", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ content: td.text, validateOnly: true }) });
         if ((await vr.json()).error === "not_english") { setPostError("Please record in English! 🇺🇸"); return; }
         const uf = new FormData();
-        uf.append("file", new File([audioBlob], "audio.webm", { type: "audio/webm" })); uf.append("type", "audio");
+        uf.append("file", new File([audioBlob], `audio.${ext}`, { type: audioBlob.type })); uf.append("type", "audio");
         uploadedAudioUrl = (await (await fetch("/api/community/upload", { method: "POST", body: uf })).json()).url;
         audioTranscript = td.text;
       }
