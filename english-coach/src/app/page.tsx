@@ -175,7 +175,7 @@ export default function LandingPage() {
   }, []);
 
   return (
-    <div className="landing">
+    <div className="landing app-scroll">
       {/* NAV */}
       <nav className={menuOpen ? "nav-open" : ""}>
         <a className="nav-logo" href="#inicio">
