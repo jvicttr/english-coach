@@ -1,41 +1,46 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { clerkClient } from "@clerk/nextjs/server";
 
 const supabase = createClient(
   process.env.SUPABASE_URL!,
   process.env.SUPABASE_SECRET_KEY!
 );
 
-// GET - Sincronizar todos os usuários do Clerk
 export async function GET(req: NextRequest) {
   try {
-    // Buscar usuários do Clerk usando SDK
-    const clerkUsers = await clerkClient.users.getUserList({ limit: 500 });
-    console.log("Clerk users:", clerkUsers);
-    console.log("Type:", typeof clerkUsers);
-    console.log("Length:", clerkUsers?.length);
+    const clerkRes = await fetch("https://api.clerk.com/v1/users?limit=500", {
+      headers: {
+        Authorization: `Bearer ${process.env.CLERK_SECRET_KEY}`,
+      },
+    });
 
-    // Sincronizar cada usuário
+    if (!clerkRes.ok) {
+      const error = await clerkRes.text();
+      console.error("Clerk API error:", clerkRes.status, error);
+      return NextResponse.json({ error: "Clerk API failed", status: clerkRes.status, details: error }, { status: 500 });
+    }
+
+    const { data: clerkUsers } = await clerkRes.json();
+    console.log("Syncing", clerkUsers?.length, "users from Clerk");
+
     let synced = 0;
-    const usersArray = Array.isArray(clerkUsers) ? clerkUsers : clerkUsers?.data || [];
-    for (const user of usersArray) {
-      const email = user.emailAddresses?.[0]?.emailAddress || user.username || user.id;
-      const name = user.firstName ? `${user.firstName} ${user.lastName || ""}`.trim() : user.username || user.id;
+    for (const user of clerkUsers || []) {
+      const email = user.email_addresses?.[0]?.email_address || user.username || user.id;
+      const name = user.first_name ? `${user.first_name} ${user.last_name || ""}`.trim() : user.username || user.id;
 
       await supabase.from("users").upsert({
         id: user.id,
         email,
         name,
-        image_url: user.imageUrl || null,
+        image_url: user.profile_image_url || null,
       }, { onConflict: "id" });
 
       synced++;
     }
 
-    return NextResponse.json({ synced, total: usersArray.length });
+    return NextResponse.json({ synced, total: clerkUsers?.length || 0 });
   } catch (error) {
-    console.error("Erro ao sincronizar usuários:", error);
+    console.error("Erro:", error);
     return NextResponse.json({ error: "Server error", details: String(error) }, { status: 500 });
   }
 }
