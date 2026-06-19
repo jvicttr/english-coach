@@ -102,6 +102,33 @@ export default function ComunidadePage() {
 
       {/* Feed */}
       <div style={{ maxWidth: 600, margin: "0 auto", padding: "16px 16px 0" }}>
+
+        {/* Composer box */}
+        <div
+          onClick={() => setShowModal(true)}
+          style={{ background: "var(--dark1)", border: "1px solid #1e1e1e", borderRadius: 16, padding: "14px 16px", marginBottom: 16, cursor: "pointer" }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+            <div style={{ width: 36, height: 36, borderRadius: "50%", overflow: "hidden", background: "#1e1e1e", flexShrink: 0 }}>
+              {user?.imageUrl
+                ? <img src={user.imageUrl} alt="you" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                : <span style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", fontSize: "1rem" }}>👤</span>}
+            </div>
+            <span style={{ fontSize: "0.88rem", color: "#444", flex: 1 }}>What's on your mind?</span>
+          </div>
+          <div style={{ borderTop: "1px solid #1e1e1e", paddingTop: 10, display: "flex", gap: 16 }}>
+            <span style={{ fontSize: "0.75rem", color: "#333", display: "flex", alignItems: "center", gap: 5 }}>
+              <span>🎙️</span> Audio
+            </span>
+            <span style={{ fontSize: "0.75rem", color: "#333", display: "flex", alignItems: "center", gap: 5 }}>
+              <span>🖼️</span> Photo
+            </span>
+            <span style={{ fontSize: "0.75rem", color: "var(--yellow)", fontWeight: 700, marginLeft: "auto", display: "flex", alignItems: "center", gap: 5 }}>
+              <span>✍️</span> Write in English
+            </span>
+          </div>
+        </div>
+
         {loading && (
           <div style={{ display: "flex", justifyContent: "center", paddingTop: 60 }}>
             <div style={{ display: "flex", gap: 6 }}>
@@ -113,7 +140,7 @@ export default function ComunidadePage() {
         )}
 
         {!loading && posts.length === 0 && (
-          <div style={{ textAlign: "center", paddingTop: 80 }}>
+          <div style={{ textAlign: "center", paddingTop: 60 }}>
             <p style={{ fontSize: "2rem", marginBottom: 12 }}>🌎</p>
             <p style={{ fontWeight: 800, color: "#fff", marginBottom: 6 }}>No posts yet!</p>
             <p style={{ fontSize: "0.8rem", color: "var(--gray)" }}>Be the first to share something in English.</p>
