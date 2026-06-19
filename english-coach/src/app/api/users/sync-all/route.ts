@@ -20,11 +20,12 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Clerk API failed", status: clerkRes.status, details: error }, { status: 500 });
     }
 
-    const { data: clerkUsers } = await clerkRes.json();
+    const clerkUsers = await clerkRes.json();
     console.log("Syncing", clerkUsers?.length, "users from Clerk");
 
     let synced = 0;
-    for (const user of clerkUsers || []) {
+    const users = Array.isArray(clerkUsers) ? clerkUsers : clerkUsers?.data || [];
+    for (const user of users) {
       const email = user.email_addresses?.[0]?.email_address || user.username || user.id;
       const name = user.first_name ? `${user.first_name} ${user.last_name || ""}`.trim() : user.username || user.id;
 
@@ -38,7 +39,7 @@ export async function GET(req: NextRequest) {
       synced++;
     }
 
-    return NextResponse.json({ synced, total: clerkUsers?.length || 0 });
+    return NextResponse.json({ synced, total: users.length });
   } catch (error) {
     console.error("Erro:", error);
     return NextResponse.json({ error: "Server error", details: String(error) }, { status: 500 });
