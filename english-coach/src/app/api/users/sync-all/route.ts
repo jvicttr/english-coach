@@ -18,11 +18,18 @@ export async function GET(req: NextRequest) {
     });
 
     if (!clerkRes.ok) {
-      return NextResponse.json({ error: "Failed to fetch from Clerk" }, { status: 500 });
+      const errorText = await clerkRes.text();
+      console.error("Clerk API error:", clerkRes.status, errorText);
+      return NextResponse.json({
+        error: "Failed to fetch from Clerk",
+        status: clerkRes.status,
+        message: errorText
+      }, { status: 500 });
     }
 
     const clerkData = await clerkRes.json();
     const clerkUsers = clerkData.data || [];
+    console.log(`Found ${clerkUsers.length} users in Clerk`);
 
     // Sincronizar cada usuário
     let synced = 0;
