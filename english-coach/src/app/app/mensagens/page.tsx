@@ -4,6 +4,26 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useUser } from "@clerk/nextjs";
 
+const AVATAR_COLORS = ["#e85d4a","#f5a623","#4caf7d","#4a90d9","#9b59b6","#e91e8c","#00bcd4","#ff7043"];
+function avatarColor(name: string) {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
+}
+function UserAvatar({ src, name, size = 40, online }: { src: string | null; name: string; size?: number; online?: boolean }) {
+  const [err, setErr] = useState(false);
+  const initial = (name || "?")[0].toUpperCase();
+  return (
+    <div style={{ width: size, height: size, borderRadius: "50%", background: (!src || err) ? avatarColor(name) : "#2a2a2a", display: "flex", alignItems: "center", justifyContent: "center", position: "relative", flexShrink: 0, overflow: "hidden" }}>
+      {src && !err
+        ? <img src={src} alt={name} style={{ width: "100%", height: "100%", objectFit: "cover" }} onError={() => setErr(true)} />
+        : <span style={{ fontSize: size * 0.42, fontWeight: 700, color: "#fff", lineHeight: 1 }}>{initial}</span>
+      }
+      {online && <div style={{ position: "absolute", bottom: 0, right: 0, width: size * 0.3, height: size * 0.3, background: "#22c55e", borderRadius: "50%", border: "2px solid var(--black)" }} />}
+    </div>
+  );
+}
+
 interface User {
   id: string;
   name: string;
@@ -140,41 +160,7 @@ export default function MensagensPage() {
                   onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(255,255,255,.05)")}
                   onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
                 >
-                  <div
-                    style={{
-                      width: "40px",
-                      height: "40px",
-                      borderRadius: "50%",
-                      background: "#2a2a2a",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      fontSize: "1.2rem",
-                      position: "relative",
-                      flexShrink: 0,
-                      overflow: "hidden",
-                    }}
-                  >
-                    {u.image_url ? (
-                      <img src={u.image_url} alt={u.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                    ) : (
-                      <span style={{ fontSize: "1.2rem" }}>👤</span>
-                    )}
-                    {online && (
-                      <div
-                        style={{
-                          position: "absolute",
-                          bottom: 0,
-                          right: 0,
-                          width: 12,
-                          height: 12,
-                          background: "#22c55e",
-                          borderRadius: "50%",
-                          border: "2px solid var(--black)",
-                        }}
-                      />
-                    )}
-                  </div>
+                  <UserAvatar src={u.image_url} name={u.name} size={40} online={online} />
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: "0.9rem", fontWeight: 600, color: "#fff" }}>
                       {u.name}

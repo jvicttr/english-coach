@@ -6,6 +6,25 @@ import { useUser } from "@clerk/nextjs";
 
 const EMOJIS = ["😀","😂","😍","🥰","😎","🤔","😅","🙌","👏","🔥","💯","❤️","🎉","✨","💪","🙏","👍","😊","🤩","😏","🥳","💬","🌍","📚","🎯","🚀","⭐","💡","🎶","✅"];
 
+const AVATAR_COLORS = ["#e85d4a","#f5a623","#4caf7d","#4a90d9","#9b59b6","#e91e8c","#00bcd4","#ff7043"];
+function avatarColor(name: string) {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
+}
+function UserAvatar({ src, name, size = 32 }: { src: string; name: string; size?: number }) {
+  const [err, setErr] = useState(false);
+  const initial = (name || "?")[0].toUpperCase();
+  return (
+    <div style={{ width: size, height: size, borderRadius: "50%", background: (!src || err) ? avatarColor(name) : "#2a2a2a", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, overflow: "hidden" }}>
+      {src && !err
+        ? <img src={src} alt={name} style={{ width: "100%", height: "100%", objectFit: "cover" }} onError={() => setErr(true)} />
+        : <span style={{ fontSize: size * 0.42, fontWeight: 700, color: "#fff", lineHeight: 1 }}>{initial}</span>
+      }
+    </div>
+  );
+}
+
 function getSupportedMime() {
   const types = ["audio/webm;codecs=opus", "audio/webm", "audio/mp4", "audio/ogg"];
   return types.find(t => typeof MediaRecorder !== "undefined" && MediaRecorder.isTypeSupported(t)) ?? "";
@@ -154,10 +173,7 @@ export default function ChatPage() {
         <button onClick={() => router.back()} style={{ background: "var(--dark2)", border: "1px solid #2a2a2a", borderRadius: "10px", height: "36px", padding: "0 10px", display: "flex", alignItems: "center", gap: "5px", color: "var(--gray)", cursor: "pointer" }}>
           <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M9 2L4 7L9 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
         </button>
-        {otherUserImage
-          ? <img src={otherUserImage} alt={otherUserName} style={{ width: 32, height: 32, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} />
-          : <div style={{ width: 32, height: 32, borderRadius: "50%", background: "var(--dark2)", border: "1px solid #2a2a2a", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>👤</div>
-        }
+        <UserAvatar src={otherUserImage} name={otherUserName} size={32} />
         <div>
           <div style={{ fontWeight: 700, fontSize: "0.9rem", color: "var(--white)" }}>{otherUserName || "..."}</div>
           <div style={{ fontSize: "0.68rem", color: "var(--gray)" }}>Mensagem direta</div>
@@ -177,9 +193,7 @@ export default function ChatPage() {
         ) : messages.map((msg: any) => (
           <div key={msg.id} className={`mb-3 flex ${msg.sender_id === user?.id ? "justify-end" : "justify-start"} items-end gap-2`}>
             {msg.sender_id !== user?.id && (
-              otherUserImage
-                ? <img src={otherUserImage} alt="" style={{ width: 28, height: 28, borderRadius: "50%", objectFit: "cover", flexShrink: 0, marginBottom: 2 }} />
-                : <div style={{ width: 28, height: 28, borderRadius: "50%", background: "var(--dark2)", flexShrink: 0 }} />
+              <UserAvatar src={otherUserImage} name={otherUserName} size={28} />
             )}
             <div className="max-w-[82%] sm:max-w-[78%] px-3 sm:px-4 py-2.5 text-sm leading-relaxed"
               style={msg.sender_id === user?.id
