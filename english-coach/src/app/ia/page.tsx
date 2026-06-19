@@ -76,10 +76,10 @@ const HOW_STEPS = [
 ];
 
 const MIX_DEMO_STEPS = [
-  { role: "user",  text: ["I went to the ", { word: "supermercado", en: "supermarket" }, " yesterday and bought some ", { word: "coisas", en: "things" }, " but forgot the ", { word: "leite", en: "milk" }, "."] },
-  { role: "coach", text: ["Nice! So you're mixing português and inglês naturally. Let me help: ", { highlight: "supermercado" }, " = supermarket, ", { highlight: "coisas" }, " = things, and ", { highlight: "leite" }, " = milk. Your sentence structure is perfect! 💪"] },
-  { role: "user",  text: ["Thanks! So I need to go back to the supermarket again. It was ", { word: "chato", en: "annoying" }, "."] },
-  { role: "coach", text: ["Got it! 'It was annoying' — perfect! You could also say 'It was frustrating' 😄 The fact that you're mixing languages shows you're thinking in English already!"] },
+  { role: "user",  text: ["I went to the ", { word: "supermercado", en: "supermarket" }, " yesterday and forgot to buy the ", { word: "leite", en: "milk" }, "."] },
+  { role: "coach", text: ["Perfect! Quick translation: ", { highlight: "supermercado" }, " = supermarket, ", { highlight: "leite" }, " = milk. Great natural mixing! 💪"] },
+  { role: "user",  text: ["I need to go back. It was ", { word: "chato", en: "annoying" }, " esquecer."] },
+  { role: "coach", text: ["Excellent! 'It was annoying to forget' — you're mixing naturally and that's exactly how fluency builds! 🎉"] },
 ];
 
 type MixPart = string | { word: string; en: string } | { highlight: string };
@@ -110,7 +110,7 @@ function MixDemo() {
   }, []);
 
   return (
-    <div ref={ref} style={{ background:"#111", border:"1px solid rgba(245,200,0,.2)", borderRadius:20, padding:"1.4rem 1.2rem", maxWidth:500, width:"100%", boxShadow:"0 24px 80px rgba(0,0,0,.6)", fontFamily:"'Inter',sans-serif", display:"flex", flexDirection:"column" }}>
+    <div ref={ref} style={{ background:"#111", border:"1px solid rgba(245,200,0,.2)", borderRadius:20, padding:"1.2rem 1.2rem", maxWidth:500, width:"100%", boxShadow:"0 24px 80px rgba(0,0,0,.6)", fontFamily:"'Inter',sans-serif", display:"flex", flexDirection:"column", minHeight:"auto" }}>
       <div style={{ display:"flex", alignItems:"center", gap:".5rem", marginBottom:"1rem", fontSize:".75rem", color:"var(--gray)", fontWeight:600 }}>
         <span style={{ width:8, height:8, borderRadius:"50%", background:"#4ade80", display:"inline-block" }} />
         JV IA — detectando português automaticamente
