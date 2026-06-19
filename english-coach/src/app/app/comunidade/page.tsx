@@ -619,16 +619,16 @@ export default function ComunidadePage() {
             </div>
           </div>
           {postError && <p style={{ fontSize: "0.75rem", color: "#f87171", marginTop: 8, marginLeft: 46 }}>{postError}</p>}
-          <div style={{ borderTop: "1px solid #1e1e1e", marginTop: 10, paddingTop: 10, display: "flex", alignItems: "center", gap: 12 }}>
+          <div style={{ borderTop: "1px solid #1e1e1e", marginTop: 10, paddingTop: 10, display: "flex", alignItems: "center", gap: 8 }}>
             <button onClick={() => { if (!composerOpen) setComposerOpen(true); if (!recording && !audioBlob) startRecording(); }} disabled={recording || !!audioBlob}
-              style={{ background: "none", border: "none", cursor: recording || audioBlob ? "default" : "pointer", display: "flex", alignItems: "center", gap: 5, color: recording ? "#f87171" : audioBlob ? "#4ade80" : "#333", fontSize: "0.75rem", padding: 0 }}>
-              <span style={{ fontSize: "1rem" }}>🎙️</span>
-              <span style={{ fontWeight: 600 }}>{recording ? "Recording…" : audioBlob ? "Audio ✓" : "Audio"}</span>
+              style={{ display: "flex", alignItems: "center", gap: 4, padding: "4px 10px", borderRadius: 50, border: `1px solid ${audioBlob ? "rgba(245,200,0,.5)" : "#2a2a2a"}`, background: audioBlob ? "rgba(245,200,0,.08)" : "transparent", cursor: "pointer", fontSize: "0.75rem", color: audioBlob ? "var(--yellow)" : "var(--gray)", fontWeight: 600 }}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+              <span>{recording ? "Recording…" : audioBlob ? "Audio ✓" : "Audio"}</span>
             </button>
             <button onClick={() => { if (!composerOpen) setComposerOpen(true); imageInputRef.current?.click(); }}
-              style={{ background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 5, color: imageFile ? "#4ade80" : "#333", fontSize: "0.75rem", padding: 0 }}>
-              <span style={{ fontSize: "1rem" }}>🖼️</span>
-              <span style={{ fontWeight: 600 }}>{imageFile ? "Photo ✓" : "Photo"}</span>
+              style={{ display: "flex", alignItems: "center", gap: 4, padding: "4px 10px", borderRadius: 50, border: `1px solid ${imageFile ? "rgba(245,200,0,.5)" : "#2a2a2a"}`, background: imageFile ? "rgba(245,200,0,.08)" : "transparent", cursor: "pointer", fontSize: "0.75rem", color: imageFile ? "var(--yellow)" : "var(--gray)", fontWeight: 600 }}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+              <span>{imageFile ? "Photo ✓" : "Photo"}</span>
             </button>
             <input ref={imageInputRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handleImageSelect} />
             <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 10 }}>
