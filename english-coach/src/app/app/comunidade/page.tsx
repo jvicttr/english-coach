@@ -19,7 +19,7 @@ type Post = {
   community_reactions: Reaction[];
 };
 
-const EMOJIS_REACT = ["👍", "🔥", "💯"];
+const EMOJIS_REACT = ["❤️"];
 
 function getSupportedMime() {
   const types = ["audio/webm;codecs=opus", "audio/webm", "audio/mp4", "audio/ogg"];
@@ -380,11 +380,9 @@ function PostCard({ post, myId, user, router, isReply = false, onReaction, onDel
         {EMOJIS_REACT.map(emoji => {
           const count = post.community_reactions.filter(r => r.emoji === emoji).length;
           const reacted = post.community_reactions.some(r => r.emoji === emoji && r.user_id === myId);
-          const getIcon = () => {
-            if (emoji === "👍") return <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M14 9V5a2 2 0 0 0-2-2H7l-.1.5a6.1 6.1 0 0 0 1.3 5.1L9 12H4a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2v-7a2 2 0 0 0-2-2z"/></svg>;
-            if (emoji === "🔥") return <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M13.5.67s.74 2.65.74 4.8c0 2.06-1.35 3.73-3.41 3.73-2.07 0-3.63-1.67-3.63-3.73l.03-.36C5.21 7.51 4 10.62 4 14c0 4.42 3.58 8 8 8s8-3.58 8-8C20 8.61 17.41 2.08 13.5.67z"/></svg>;
-            return <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>;
-          };
+          const getIcon = () => (
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+          );
           return (
             <button key={emoji} onClick={() => onReaction(post.id, emoji)} style={{ display: "flex", alignItems: "center", gap: 4, padding: "4px 10px", borderRadius: 50, border: `1px solid ${reacted ? "rgba(245,200,0,.5)" : "#2a2a2a"}`, background: reacted ? "rgba(245,200,0,.08)" : "transparent", cursor: "pointer", fontSize: "0.78rem", color: reacted ? "var(--yellow)" : "var(--gray)", fontWeight: 600 }}>
               {getIcon()}{count > 0 && <span>{count}</span>}
