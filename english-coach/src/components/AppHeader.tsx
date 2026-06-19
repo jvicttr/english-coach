@@ -36,12 +36,12 @@ export function AppHeader() {
 
   useEffect(() => {
     Promise.all([
-      fetch("/api/me").then((r) => r.json()).catch(() => ({})),
-      fetch("/api/community/notifications").then((r) => r.ok ? r.json() : {}).catch(() => ({})),
+      fetch("/api/me").then((r) => r.json()).catch(() => ({} as Record<string, unknown>)),
+      fetch("/api/community/notifications").then((r) => r.ok ? r.json() : ({} as Record<string, unknown>)).catch(() => ({} as Record<string, unknown>)),
     ]).then(([me, notifData]) => {
       setIsPro(me.plan === "pro" || me.plan === "combo");
-      setNotifs(notifData.notifications ?? []);
-      setUnread(notifData.unread ?? 0);
+      setNotifs((notifData.notifications as Notif[] | undefined) ?? []);
+      setUnread((notifData.unread as number | undefined) ?? 0);
     });
 
     const id = setInterval(loadNotifs, 30000);
