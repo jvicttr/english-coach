@@ -38,17 +38,13 @@ export function AppHeader() {
   const notifRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    Promise.all([
-      fetch("/api/me").then((r) => r.json()).catch(() => ({} as Record<string, unknown>)),
-      fetch("/api/community/notifications").then((r) => r.ok ? r.json() : ({} as Record<string, unknown>)).catch(() => ({} as Record<string, unknown>)),
-    ]).then(([me, notifData]) => {
+    fetch("/api/me").then((r) => r.json()).then((me) => {
       const pro = me.plan === "pro" || me.plan === "combo";
       setIsPro(pro);
       localStorage.setItem("isPro", String(pro));
-      setNotifs((notifData.notifications as Notif[] | undefined) ?? []);
-      setUnread((notifData.unread as number | undefined) ?? 0);
-    });
+    }).catch(() => {});
 
+    loadNotifs();
     const id = setInterval(loadNotifs, 30000);
     return () => clearInterval(id);
   }, []);
