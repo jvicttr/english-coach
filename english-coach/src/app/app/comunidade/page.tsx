@@ -447,6 +447,8 @@ export default function ComunidadePage() {
   const router = useRouter();
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [newPostsCount, setNewPostsCount] = useState(0);
   const [composerOpen, setComposerOpen] = useState(false);
   const [postText, setPostText] = useState("");
   const [posting, setPosting] = useState(false);
@@ -463,15 +465,61 @@ export default function ComunidadePage() {
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const touchStartRef = useRef(0);
 
-  async function loadPosts() {
+  async function loadPosts(checkNew = false) {
     const res = await fetch("/api/community/posts");
     const data = await res.json();
-    setPosts(data.posts ?? []);
+    const newPosts = data.posts ?? [];
+
+    if (checkNew && posts.length > 0) {
+      const count = newPosts.length - posts.length;
+      if (count > 0) setNewPostsCount(count);
+      return;
+    }
+
+    setPosts(newPosts);
     setLoading(false);
+    setRefreshing(false);
+    setNewPostsCount(0);
   }
 
-  useEffect(() => { loadPosts(); }, []);
+  async function loadNewPosts() {
+    setRefreshing(true);
+    await loadPosts();
+  }
+
+  useEffect(() => {
+    loadPosts();
+    const interval = setInterval(() => loadPosts(true), 10000);
+
+    const container = scrollContainerRef.current;
+    if (!container) return () => clearInterval(interval);
+
+    const handleTouchStart = (e: TouchEvent) => {
+      if (container.scrollTop === 0) touchStartRef.current = e.touches[0].clientY;
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      if (container.scrollTop !== 0 || refreshing) return;
+      const touch = e.touches[0];
+      const diff = touch.clientY - touchStartRef.current;
+      if (diff > 80) {
+        loadNewPosts();
+        touchStartRef.current = 0;
+      }
+    };
+
+    container.addEventListener("touchstart", handleTouchStart, { passive: true });
+    container.addEventListener("touchmove", handleTouchMove, { passive: true });
+
+    return () => {
+      clearInterval(interval);
+      container.removeEventListener("touchstart", handleTouchStart);
+      container.removeEventListener("touchmove", handleTouchMove);
+    };
+  }, [refreshing]);
   useEffect(() => { if (composerOpen && !recording && !audioBlob) setTimeout(() => textareaRef.current?.focus(), 80); }, [composerOpen, recording, audioBlob]);
 
   function resetComposer() {
@@ -586,10 +634,17 @@ export default function ComunidadePage() {
   const canPost = !posting && (postText.trim().length > 0 || !!audioBlob || !!imageFile);
 
   return (
-    <div className="app-scroll" style={{ background: "var(--black)", fontFamily: "'Inter', sans-serif", paddingTop: 65, paddingBottom: 80 }}>
-      <div style={{ padding: "10px 16px", borderBottom: "1px solid #1e1e1e" }}>
+    <div ref={scrollContainerRef} className="app-scroll" style={{ background: "var(--black)", fontFamily: "'Inter', sans-serif", paddingTop: 65, paddingBottom: 80 }}>
+      <div style={{ padding: "10px 16px", borderBottom: "1px solid #1e1e1e", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <span style={{ fontWeight: 800, fontSize: "0.95rem", color: "#fff" }}>🌎 Comunidade</span>
+        {refreshing && <span style={{ fontSize: "0.75rem", color: "var(--yellow)" }}>Carregando…</span>}
       </div>
+
+      {newPostsCount > 0 && (
+        <div style={{ padding: "12px 16px", background: "rgba(245,200,0,.1)", borderBottom: "1px solid rgba(245,200,0,.2)", textAlign: "center", cursor: "pointer" }} onClick={() => loadNewPosts()}>
+          <span style={{ fontSize: "0.78rem", color: "var(--yellow)", fontWeight: 600 }}>📬 {newPostsCount} novo{newPostsCount > 1 ? "s post" : " post"}. Toque para carregar</span>
+        </div>
+      )}
 
       <div style={{ maxWidth: 600, margin: "0 auto", padding: "16px 16px 0" }}>
         {/* Composer */}
