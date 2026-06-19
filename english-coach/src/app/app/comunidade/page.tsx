@@ -319,7 +319,7 @@ function PostCard({ post, myId, user, router, isReply = false, onReaction, onDel
         <img
           src={post.image_url}
           alt="post"
-          onClick={() => onImageClick?.(post.image_url)}
+          onClick={() => post.image_url && onImageClick?.(post.image_url)}
           style={{ width: "100%", maxHeight: 280, objectFit: "contain", borderRadius: 10, marginBottom: 10, background: "#0d0d0d", display: "block", cursor: "pointer" }}
         />
       )}
