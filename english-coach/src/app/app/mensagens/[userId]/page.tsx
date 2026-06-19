@@ -22,6 +22,13 @@ interface UserPresence {
   last_seen: string;
 }
 
+interface OtherUser {
+  id: string;
+  name: string;
+  email: string;
+  image_url: string | null;
+}
+
 export default function ChatPage() {
   const params = useParams();
   const router = useRouter();
@@ -35,6 +42,7 @@ export default function ChatPage() {
   const [sending, setSending] = useState(false);
   const [presence, setPresence] = useState<UserPresence | null>(null);
   const [replyTo, setReplyTo] = useState<Message | null>(null);
+  const [otherUser, setOtherUser] = useState<OtherUser | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const audioInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
@@ -56,6 +64,13 @@ export default function ChatPage() {
 
   async function initializeChat() {
     try {
+      // Buscar dados do outro usuário
+      const userRes = await fetch(`/api/users?search=${otherUserId}`);
+      const userData = await userRes.json();
+      if (userData.users?.[0]) {
+        setOtherUser(userData.users[0]);
+      }
+
       // Iniciar conversa
       const res = await fetch("/api/messages/start", {
         method: "POST",
@@ -172,8 +187,13 @@ export default function ChatPage() {
           >
             ←
           </button>
+          {otherUser?.image_url && (
+            <div style={{ width: 36, height: 36, borderRadius: "50%", overflow: "hidden", background: "#1e1e1e" }}>
+              <img src={otherUser.image_url} alt={otherUser.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+            </div>
+          )}
           <div>
-            <div style={{ fontSize: "0.95rem", fontWeight: 600, color: "#fff" }}>{otherUserId}</div>
+            <div style={{ fontSize: "0.95rem", fontWeight: 600, color: "#fff" }}>{otherUser?.name || otherUserId}</div>
             <div style={{ fontSize: "0.7rem", color: isOnline() ? "#22c55e" : "#666" }}>
               {isOnline() ? "🟢 Online" : "⚫ Offline"}
             </div>

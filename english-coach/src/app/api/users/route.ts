@@ -7,18 +7,26 @@ const supabase = createClient(
   process.env.SUPABASE_SECRET_KEY!
 );
 
-// GET - Listar todos os usuários (exceto o atual)
+// GET - Listar usuários (com suporte a busca)
 export async function GET(req: NextRequest) {
   const { userId } = await auth();
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+  const searchParams = req.nextUrl.searchParams;
+  const search = searchParams.get("search");
+
   try {
-    // Buscar usuários do Supabase
-    const { data: users, error } = await supabase
-      .from("users")
-      .select("id, email, name, image_url")
-      .neq("id", userId)
-      .order("created_at", { ascending: false });
+    let query = supabase.from("users").select("id, email, name, image_url");
+
+    // Se há busca, inclui o usuário procurado mesmo que seja o próprio
+    if (search) {
+      query = query.eq("id", search);
+    } else {
+      // Caso contrário, lista todos exceto o atual
+      query = query.neq("id", userId);
+    }
+
+    const { data: users, error } = await query.order("created_at", { ascending: false });
 
     if (error) throw error;
 
@@ -26,7 +34,7 @@ export async function GET(req: NextRequest) {
       id: u.id,
       email: u.email,
       name: u.name || u.email,
-      image: u.image_url,
+      image_url: u.image_url,
     }));
 
     return NextResponse.json({ users: formattedUsers });
