@@ -438,7 +438,7 @@ export default function ComunidadePage() {
       });
       const data = await res.json();
       if (!res.ok) {
-        setPostError(data.error === "free_limit" ? "Upgrade to PRO to keep posting! 🚀" : data.error === "not_english" ? "Please write in English! 🇺🇸" : "Something went wrong.");
+        setPostError(data.error === "free_limit" ? "Upgrade to PRO to keep posting! 🚀" : data.error === "not_english" ? "Please write in English! 🇺🇸" : (data.error || data.message || JSON.stringify(data)));
         return;
       }
       resetComposer(); await loadPosts();
