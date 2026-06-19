@@ -444,7 +444,7 @@ function PostCard({ post, myId, user, router, isReply = false, onReaction, onDel
       {expanded && replies.length > 0 && (
         <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid #1e1e1e", borderLeft: "2px solid #2a2a2a", paddingLeft: 12, display: "flex", flexDirection: "column", gap: 0 }}>
           {replies.map(r => (
-            <PostCard key={r.id} post={r} myId={myId} user={user} router={router} isReply onReaction={onReaction} onImageClick={(url) => { setSelectedImage(url); setImageZoom(1); }} onDeleted={id => { setReplies(prev => prev.filter(x => x.id !== id)); setReplyCount(c => Math.max(0, c - 1)); }} />
+            <PostCard key={r.id} post={r} myId={user?.id ?? ""} user={user} router={router} isReply onReaction={onReaction} onImageClick={(url) => { setSelectedImage(url); setImageZoom(1); }} onDeleted={id => { setReplies(prev => prev.filter(x => x.id !== id)); setReplyCount(c => Math.max(0, c - 1)); }} />
           ))}
         </div>
       )}
