@@ -15,45 +15,29 @@ export async function GET(req: NextRequest) {
     });
 
     if (!clerkRes.ok) {
-      const error = await clerkRes.text();
-      console.error("Clerk API error:", clerkRes.status, error);
-      return NextResponse.json({ error: "Clerk API failed", status: clerkRes.status, details: error }, { status: 500 });
+      return NextResponse.json({ error: "Clerk API failed", status: clerkRes.status }, { status: 500 });
     }
 
     const clerkUsers = await clerkRes.json();
-    console.log("Clerk response type:", typeof clerkUsers);
-    console.log("Is array:", Array.isArray(clerkUsers));
-    console.log("Length:", clerkUsers?.length);
-    console.log("Full response:", JSON.stringify(clerkUsers).slice(0, 500));
+    const users = Array.isArray(clerkUsers) ? clerkUsers : clerkUsers?.data || [];
 
     let synced = 0;
-    const users = Array.isArray(clerkUsers) ? clerkUsers : clerkUsers?.data || [];
-    console.log("Users array length:", users.length);
-
     for (const user of users) {
-      console.log("Processing user:", user.id, user.first_name);
       const email = user.email_addresses?.[0]?.email_address || user.username || user.id;
       const name = user.first_name ? `${user.first_name} ${user.last_name || ""}`.trim() : user.username || user.id;
-      console.log("Upserting user:", { id: user.id, email, name });
 
-      const { error } = await supabase.from("users").upsert({
+      await supabase.from("users").upsert({
         id: user.id,
         email,
         name,
         image_url: user.profile_image_url || null,
       }, { onConflict: "id" });
 
-      if (error) {
-        console.error("Supabase error:", error);
-      } else {
-        synced++;
-      }
+      synced++;
     }
 
-    console.log("Sync complete:", { synced, total: users.length });
     return NextResponse.json({ synced, total: users.length });
   } catch (error) {
-    console.error("Erro:", error);
-    return NextResponse.json({ error: "Server error", details: String(error) }, { status: 500 });
+    return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
 }
