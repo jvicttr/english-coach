@@ -11,7 +11,7 @@ const supabase = createClient(
 export async function GET(req: NextRequest) {
   try {
     // Buscar usuários do Clerk usando SDK
-    const { data: clerkUsers } = await clerkClient.users.getUserList({ limit: 500 });
+    const clerkUsers = await clerkClient.users.getUserList({ limit: 500 });
 
     // Sincronizar cada usuário
     let synced = 0;
