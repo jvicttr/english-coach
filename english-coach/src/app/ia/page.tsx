@@ -99,7 +99,7 @@ function MixDemo() {
         <span style={{ width:8, height:8, borderRadius:"50%", background:"#4ade80", display:"inline-block" }} />
         JV IA — detectando português automaticamente
       </div>
-      <div style={{ display:"flex", flexDirection:"column", gap:"1rem", overflow:"visible", minHeight:200, alignItems:"center", textAlign:"center" }}>
+      <div style={{ display:"flex", flexDirection:"column", gap:"1rem", overflow:"visible", alignItems:"center", textAlign:"center" }}>
         {MIX_DEMO_STEPS.map((msg, i) => (
           <div key={i} style={{
             opacity: visible.includes(i) ? 1 : 0,
