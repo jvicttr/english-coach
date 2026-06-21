@@ -956,26 +956,33 @@ export default function ComunidadePage() {
         style={{
           position: "fixed",
           bottom: "100px",
-          right: "20px",
-          width: "56px",
-          height: "56px",
-          borderRadius: "50%",
-          background: "rgba(245,200,0,0.8)",
-          border: "none",
+          right: "max(20px, calc(50vw - 360px))",
+          width: "46px",
+          height: "46px",
+          borderRadius: "14px",
+          background: "#111",
+          border: "1px solid #2a2a2a",
           cursor: "pointer",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          fontSize: "1.5rem",
-          boxShadow: "0 4px 12px rgba(0,0,0,0.3)",
+          boxShadow: "0 4px 20px rgba(0,0,0,0.5)",
           zIndex: 40,
-          backdropFilter: "blur(10px)",
+          transition: "border-color 0.15s, background 0.15s",
         }}
-        onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(245,200,0,0.95)")}
-        onMouseLeave={(e) => (e.currentTarget.style.background = "rgba(245,200,0,0.8)")}
-        title="Abrir mensagens"
+        onMouseEnter={(e) => {
+          e.currentTarget.style.borderColor = "rgba(245,200,0,0.35)";
+          e.currentTarget.style.background = "#1a1a1a";
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.borderColor = "#2a2a2a";
+          e.currentTarget.style.background = "#111";
+        }}
+        title="Mensagens"
       >
-        💬
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="var(--yellow)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+        </svg>
       </button>
 
       {/* Painel lateral de usuários */}
