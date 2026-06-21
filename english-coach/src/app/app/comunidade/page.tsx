@@ -960,23 +960,25 @@ export default function ComunidadePage() {
           width: "46px",
           height: "46px",
           borderRadius: "14px",
-          background: "#111",
-          border: "1px solid #2a2a2a",
+          background: "rgba(17,17,17,0.6)",
+          backdropFilter: "blur(10px)",
+          WebkitBackdropFilter: "blur(10px)",
+          border: "1px solid rgba(255,255,255,0.07)",
           cursor: "pointer",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          boxShadow: "0 4px 20px rgba(0,0,0,0.5)",
+          boxShadow: "0 4px 20px rgba(0,0,0,0.35)",
           zIndex: 40,
           transition: "border-color 0.15s, background 0.15s",
         }}
         onMouseEnter={(e) => {
-          e.currentTarget.style.borderColor = "rgba(245,200,0,0.35)";
-          e.currentTarget.style.background = "#1a1a1a";
+          e.currentTarget.style.borderColor = "rgba(245,200,0,0.3)";
+          e.currentTarget.style.background = "rgba(30,30,30,0.75)";
         }}
         onMouseLeave={(e) => {
-          e.currentTarget.style.borderColor = "#2a2a2a";
-          e.currentTarget.style.background = "#111";
+          e.currentTarget.style.borderColor = "rgba(255,255,255,0.07)";
+          e.currentTarget.style.background = "rgba(17,17,17,0.6)";
         }}
         title="Mensagens"
       >
