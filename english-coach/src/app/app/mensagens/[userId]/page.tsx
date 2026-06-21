@@ -38,18 +38,43 @@ function getSupportedMime() {
   return types.find(t => typeof MediaRecorder !== "undefined" && MediaRecorder.isTypeSupported(t)) ?? "";
 }
 
+function parseDate(dateStr: string): Date {
+  // Supabase pode retornar "2026-06-21 14:10:00+00" (espaço, sem minutos no offset)
+  // Normalizamos para ISO 8601 válido antes de parsear
+  const normalized = dateStr
+    .replace(" ", "T")
+    .replace(/\+00$/, "Z")
+    .replace(/\+00:00$/, "Z")
+    .replace(/\+0000$/, "Z");
+  return new Date(normalized);
+}
+
+function fmtBrasiliaTime(dateStr: string): string {
+  return new Intl.DateTimeFormat("pt-BR", {
+    timeZone: "America/Sao_Paulo",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).format(parseDate(dateStr));
+}
+
 function getBrasiliaDay(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString("pt-BR", {
-    timeZone: "America/Sao_Paulo", year: "numeric", month: "2-digit", day: "2-digit",
-  });
+  return new Intl.DateTimeFormat("pt-BR", {
+    timeZone: "America/Sao_Paulo",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(parseDate(dateStr));
 }
 
 function getDayLabel(dateStr: string): string {
   const now = new Date();
-  const tz = { timeZone: "America/Sao_Paulo", year: "numeric" as const, month: "2-digit" as const, day: "2-digit" as const };
-  const today = now.toLocaleDateString("pt-BR", tz);
+  const fmt = (d: Date) => new Intl.DateTimeFormat("pt-BR", {
+    timeZone: "America/Sao_Paulo", year: "numeric", month: "2-digit", day: "2-digit",
+  }).format(d);
+  const today = fmt(now);
   const yest = new Date(now); yest.setDate(yest.getDate() - 1);
-  const yesterday = yest.toLocaleDateString("pt-BR", tz);
+  const yesterday = fmt(yest);
   const day = getBrasiliaDay(dateStr);
   if (day === today) return "Hoje";
   if (day === yesterday) return "Ontem";
@@ -274,7 +299,7 @@ export default function ChatPage() {
                 {msg.image_url && <img src={msg.image_url} alt="" style={{ maxWidth: "100%", borderRadius: 8, marginBottom: 4 }} />}
                 {msg.audio_url && <audio src={msg.audio_url} controls style={{ width: "100%", marginBottom: 4 }} />}
                 <div style={{ fontSize: "0.62rem", opacity: 0.6 }}>
-                  {new Date(msg.created_at).toLocaleTimeString("pt-BR", { timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit" })}
+                  {fmtBrasiliaTime(msg.created_at)}
                 </div>
               </div>
             </div>
