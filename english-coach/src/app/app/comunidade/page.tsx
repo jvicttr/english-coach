@@ -956,7 +956,7 @@ export default function ComunidadePage() {
         style={{
           position: "fixed",
           bottom: "100px",
-          right: "max(20px, calc(50vw - 360px))",
+          right: "max(20px, calc((100vw - 600px) / 6))",
           width: "46px",
           height: "46px",
           borderRadius: "14px",
