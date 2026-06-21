@@ -7,8 +7,8 @@ type ProfileData = {
   isPro: boolean;
   streak: number;
   totalXp: number;
-  tier: { label: string; min: number };
-  nextTier: { label: string; min: number } | null;
+  tier: { label: string; emoji: string; min: number };
+  nextTier: { label: string; emoji: string; min: number } | null;
   trilhaCompleted: { step_id: string }[];
   flashcardPending: number;
 };
@@ -133,7 +133,7 @@ export default function PerfilPage() {
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
           <StatCard emoji="🔥" label="Sequência" value={data ? `${data.streak} dia${data.streak !== 1 ? "s" : ""}` : "—"} />
           <StatCard emoji="⚡" label="XP total" value={data ? `${data.totalXp} XP` : "—"} />
-          <StatCard emoji="🏅" label="Ranking" value={data?.tier?.label ?? "—"} />
+          <StatCard emoji={data?.tier?.emoji ?? "🏅"} label="Ranking" value={data?.tier?.label ?? "—"} />
           <StatCard emoji="🗺️" label="Etapas na trilha" value={data ? `${data.trilhaCompleted.length}` : "—"} />
         </div>
 
@@ -141,7 +141,7 @@ export default function PerfilPage() {
         {data && (
           <div style={{ background: "var(--dark2)", borderRadius: 16, padding: "16px 18px" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 8 }}>
-              <span style={{ fontSize: "0.75rem", fontWeight: 800, color: "var(--white)" }}>🏅 {data.tier.label}</span>
+              <span style={{ fontSize: "0.75rem", fontWeight: 800, color: "var(--white)" }}>{data.tier.emoji} {data.tier.label}</span>
               {data.nextTier && (
                 <span style={{ fontSize: "0.65rem", color: "var(--gray2)" }}>{xpToNext} XP para {data.nextTier.label}</span>
               )}
