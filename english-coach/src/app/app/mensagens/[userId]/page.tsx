@@ -38,6 +38,24 @@ function getSupportedMime() {
   return types.find(t => typeof MediaRecorder !== "undefined" && MediaRecorder.isTypeSupported(t)) ?? "";
 }
 
+function getBrasiliaDay(dateStr: string): string {
+  return new Date(dateStr).toLocaleDateString("pt-BR", {
+    timeZone: "America/Sao_Paulo", year: "numeric", month: "2-digit", day: "2-digit",
+  });
+}
+
+function getDayLabel(dateStr: string): string {
+  const now = new Date();
+  const tz = { timeZone: "America/Sao_Paulo", year: "numeric" as const, month: "2-digit" as const, day: "2-digit" as const };
+  const today = now.toLocaleDateString("pt-BR", tz);
+  const yest = new Date(now); yest.setDate(yest.getDate() - 1);
+  const yesterday = yest.toLocaleDateString("pt-BR", tz);
+  const day = getBrasiliaDay(dateStr);
+  if (day === today) return "Hoje";
+  if (day === yesterday) return "Ontem";
+  return day;
+}
+
 export default function ChatPage() {
   const params = useParams();
   const router = useRouter();
@@ -231,26 +249,38 @@ export default function ChatPage() {
               <p className="text-xs mt-1" style={{ color: "var(--gray)" }}>Comece a conversa!</p>
             </div>
           </div>
-        ) : messages.map((msg: any) => (
-          <div key={msg.id} className={`mb-3 flex ${msg.sender_id === user?.id ? "justify-end" : "justify-start"} items-end gap-2`}>
-            {msg.sender_id !== user?.id && (
-              <UserAvatar src={otherUserImage} name={otherUserName} size={28} />
-            )}
-            <div className="max-w-[82%] sm:max-w-[78%] px-3 sm:px-4 py-2.5 text-sm leading-relaxed"
-              style={msg.sender_id === user?.id
-                ? { background: "var(--yellow)", color: "var(--black)", borderRadius: "18px 18px 4px 18px", fontWeight: 500 }
-                : { background: "var(--dark2)", color: "var(--white)", borderRadius: "18px 18px 18px 4px", border: "1px solid #2a2a2a" }
-              }
-            >
-              {msg.content && <p style={{ margin: "0 0 4px 0" }}>{renderWithMentions(msg.content)}</p>}
-              {msg.image_url && <img src={msg.image_url} alt="" style={{ maxWidth: "100%", borderRadius: 8, marginBottom: 4 }} />}
-              {msg.audio_url && <audio src={msg.audio_url} controls style={{ width: "100%", marginBottom: 4 }} />}
-              <div style={{ fontSize: "0.62rem", opacity: 0.6 }}>
-                {new Date(msg.created_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+        ) : messages.flatMap((msg: any, idx: number) => {
+          const showSep = idx === 0 || getBrasiliaDay(msg.created_at) !== getBrasiliaDay(messages[idx - 1].created_at);
+          const els = [];
+          if (showSep) els.push(
+            <div key={`sep-${msg.id}`} style={{ textAlign: "center", margin: "16px 0 8px" }}>
+              <span style={{ padding: "3px 14px", fontSize: "0.68rem", color: "var(--gray)", background: "#1a1a1a", border: "1px solid #2a2a2a", borderRadius: 50 }}>
+                {getDayLabel(msg.created_at)}
+              </span>
+            </div>
+          );
+          els.push(
+            <div key={msg.id} className={`mb-3 flex ${msg.sender_id === user?.id ? "justify-end" : "justify-start"} items-end gap-2`}>
+              {msg.sender_id !== user?.id && (
+                <UserAvatar src={otherUserImage} name={otherUserName} size={28} />
+              )}
+              <div className="max-w-[82%] sm:max-w-[78%] px-3 sm:px-4 py-2.5 text-sm leading-relaxed"
+                style={msg.sender_id === user?.id
+                  ? { background: "var(--yellow)", color: "var(--black)", borderRadius: "18px 18px 4px 18px", fontWeight: 500 }
+                  : { background: "var(--dark2)", color: "var(--white)", borderRadius: "18px 18px 18px 4px", border: "1px solid #2a2a2a" }
+                }
+              >
+                {msg.content && <p style={{ margin: "0 0 4px 0" }}>{renderWithMentions(msg.content)}</p>}
+                {msg.image_url && <img src={msg.image_url} alt="" style={{ maxWidth: "100%", borderRadius: 8, marginBottom: 4 }} />}
+                {msg.audio_url && <audio src={msg.audio_url} controls style={{ width: "100%", marginBottom: 4 }} />}
+                <div style={{ fontSize: "0.62rem", opacity: 0.6 }}>
+                  {new Date(msg.created_at).toLocaleTimeString("pt-BR", { timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit" })}
+                </div>
               </div>
             </div>
-          </div>
-        ))}
+          );
+          return els;
+        })}
         <div ref={bottomRef} />
       </div>
 
