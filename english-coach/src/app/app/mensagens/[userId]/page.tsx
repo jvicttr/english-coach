@@ -39,14 +39,15 @@ function getSupportedMime() {
 }
 
 function parseDate(dateStr: string): Date {
-  // Supabase pode retornar "2026-06-21 14:10:00+00" (espaço, sem minutos no offset)
-  // Normalizamos para ISO 8601 válido antes de parsear
-  const normalized = dateStr
-    .replace(" ", "T")
-    .replace(/\+00$/, "Z")
-    .replace(/\+00:00$/, "Z")
-    .replace(/\+0000$/, "Z");
-  return new Date(normalized);
+  let s = dateStr.replace(" ", "T");
+  // Se não há indicador de timezone, o Supabase está retornando UTC sem sufixo —
+  // adiciona Z para forçar interpretação UTC (evita JS tratar como horário local)
+  if (!s.endsWith("Z") && !/[+-]\d{2}:?\d{2}$/.test(s)) {
+    s += "Z";
+  }
+  // Normaliza offsets UTC explícitos para Z
+  s = s.replace(/\+00:00$/, "Z").replace(/\+00$/, "Z").replace(/\+0000$/, "Z");
+  return new Date(s);
 }
 
 function fmtBrasiliaTime(dateStr: string): string {
