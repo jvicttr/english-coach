@@ -473,7 +473,7 @@ export default function ComunidadePage() {
   const [imageZoom, setImageZoom] = useState(1);
   const [composerOpen, setComposerOpen] = useState(false);
   const [showUsersModal, setShowUsersModal] = useState(false);
-  const [users, setUsers] = useState<Array<{ id: string; name: string; email: string; image: string | null }>>([]);
+  const [users, setUsers] = useState<Array<{ id: string; name: string; email: string; image_url: string | null }>>([]);
   const [usersLoading, setUsersLoading] = useState(false);
   const [mentionOpen, setMentionOpen] = useState(false);
   const [mentionQuery, setMentionQuery] = useState("");
@@ -1074,7 +1074,7 @@ export default function ComunidadePage() {
                           width: "40px",
                           height: "40px",
                           borderRadius: "50%",
-                          background: u.image ? `url(${u.image})` : "var(--yellow)",
+                          background: u.image_url ? "transparent" : "var(--yellow)",
                           backgroundSize: "cover",
                           backgroundPosition: "center",
                           display: "flex",
@@ -1082,9 +1082,12 @@ export default function ComunidadePage() {
                           justifyContent: "center",
                           fontSize: "1.2rem",
                           flexShrink: 0,
+                          overflow: "hidden",
                         }}
                       >
-                        {!u.image && "👤"}
+                        {u.image_url
+                          ? <img src={u.image_url} alt={u.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                          : "👤"}
                       </div>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ fontSize: "0.9rem", fontWeight: 600, color: "#fff" }}>{u.name}</div>
