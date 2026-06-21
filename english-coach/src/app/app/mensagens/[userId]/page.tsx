@@ -273,7 +273,7 @@ export default function ChatPage() {
       )}
 
       {/* Input */}
-      <div className="-mx-3 sm:mx-auto w-full sm:max-w-2xl flex gap-2 items-end px-3 sm:px-0 pb-1 sm:pb-0 shrink-0" style={{ background: "var(--black)" }}>
+      <div className="-mx-3 sm:mx-auto w-full sm:max-w-2xl flex gap-2 items-center px-3 sm:px-0 pb-1 sm:pb-0 shrink-0" style={{ background: "var(--black)" }}>
         {/* Emoji btn - apenas desktop */}
         <button onClick={() => setShowEmoji(s => !s)} className="hidden sm:flex" style={{ width: 44, height: 44, background: showEmoji ? "var(--yellow)" : "var(--dark2)", border: "1px solid #2a2a2a", borderRadius: "var(--radius)", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0, fontSize: "1.2rem" }}>
           😊
@@ -344,12 +344,11 @@ export default function ChatPage() {
       </div>
 
       {/* Status gravação */}
-      <div className="mt-1.5 h-3.5 text-center" style={{ fontSize: "11px" }}>
-        {recording
-          ? <span style={{ color: "#ef4444" }}>● Gravando {recSeconds}s — toque em ⏹ para parar</span>
-          : <span style={{ color: "var(--gray2)", opacity: 0.6 }}>● Toque em 🎙️ para gravar áudio</span>
-        }
-      </div>
+      {recording && (
+        <div className="mt-1.5 h-3.5 text-center" style={{ fontSize: "11px" }}>
+          <span style={{ color: "#ef4444" }}>● Gravando {recSeconds}s — toque em ⏹ para parar</span>
+        </div>
+      )}
     </div>
   );
 }
