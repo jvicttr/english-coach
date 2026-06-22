@@ -1,8 +1,17 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
+import { NextResponse } from "next/server";
 
 const isProtected = createRouteMatcher(["/app(.*)"]);
+const isAdminRoute = createRouteMatcher(["/admin(.*)"]);
 
 export default clerkMiddleware(async (auth, req) => {
+  if (isAdminRoute(req)) {
+    const { userId } = await auth();
+    const adminId = process.env.ADMIN_USER_ID;
+    if (!userId || !adminId || userId !== adminId) {
+      return NextResponse.redirect(new URL("/app", req.url));
+    }
+  }
   if (isProtected(req)) await auth.protect();
 });
 
