@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { useUser } from "@clerk/nextjs";
-import { useRouter } from "next/navigation";
 import Image from "next/image";
 
 type ShareableLinkState = {
@@ -22,20 +21,10 @@ type User = {
   createdAt: number;
 };
 
-const ADMIN_USER_ID = "user_3EzV0DXiskFt0wNSwNSXVHapiBC";
-
 export default function AdminPage() {
   const { user, isLoaded } = useUser();
-  const router = useRouter();
   const [users, setUsers] = useState<User[]>([]);
   const [shareable, setShareable] = useState<ShareableLinkState>({ percent: "50", label: "", loading: false, url: null, copied: false });
-
-  useEffect(() => {
-    if (!isLoaded) return;
-    if (!user || user.id !== ADMIN_USER_ID) {
-      router.replace("/app");
-    }
-  }, [isLoaded, user, router]);
 
   async function generateShareableLink() {
     setShareable((s) => ({ ...s, loading: true, url: null, copied: false }));
@@ -115,7 +104,7 @@ export default function AdminPage() {
 
   const proCount = users.filter((u) => u.plan === "pro").length;
 
-  if (!isLoaded || !user || user.id !== ADMIN_USER_ID) {
+  if (!isLoaded || !user) {
     return <div style={{ minHeight: "100vh", background: "var(--black)" }} />;
   }
 
