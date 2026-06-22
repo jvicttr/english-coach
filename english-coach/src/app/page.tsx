@@ -106,7 +106,7 @@ function PlanosToggle() {
                 <span style={{ ...blur, color: "var(--white)", fontWeight: 600 }}>{"parcela" in p ? p.parcela : p.soAula}</span>
               </div>
               <div style={{ display: "flex", justifyContent: "space-between", color: "var(--gray)" }}>
-                <span>JV IA <span style={{ background: "rgba(245,200,0,.12)", color: "var(--yellow)", fontSize: ".7rem", fontWeight: 700, padding: "1px 7px", borderRadius: "50px" }}>40% OFF</span></span>
+                <span>JV IA <span style={{ background: "rgba(245,200,0,.12)", color: "var(--yellow)", fontSize: ".7rem", fontWeight: 700, padding: "1px 7px", borderRadius: "50px" }}>50% OFF</span></span>
                 <span style={{ ...blur, color: "var(--yellow)", fontWeight: 600 }}>{p.coach}/mês</span>
               </div>
               <div style={{ borderTop: "1px solid rgba(255,255,255,.07)", paddingTop: ".6rem", display: "flex", justifyContent: "space-between" }}>
@@ -135,7 +135,7 @@ function PlanosToggle() {
       </div>
 
       <p style={{ textAlign: "center", marginTop: "1.5rem", fontSize: ".78rem", color: "var(--gray2)" }}>
-        JV IA com <strong style={{ color: "var(--yellow)" }}>40% de desconto</strong> exclusivo para alunos — fale comigo para saber o valor exato do seu plano
+        JV IA com <strong style={{ color: "var(--yellow)" }}>50% de desconto</strong> exclusivo para alunos — fale comigo para saber o valor exato do seu plano
       </p>
     </div>
   );
@@ -341,7 +341,7 @@ export default function LandingPage() {
       <section className="why" id="planos" style={{ background: "var(--black)" }}>
         <div className="section-label anim">Planos</div>
         <h2 className="anim anim-delay-1">Aulas ao vivo + JV IA: <em>combo completo</em></h2>
-        <p className="subtitle anim anim-delay-2">Combine aulas particulares com o JV IA e pratique inglês todos os dias — com 40% de desconto exclusivo no coach.</p>
+        <p className="subtitle anim anim-delay-2">Combine aulas particulares com o JV IA e pratique inglês todos os dias — com 50% de desconto exclusivo no coach.</p>
         <PlanosToggle />
       </section>
 
