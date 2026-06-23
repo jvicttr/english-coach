@@ -167,9 +167,6 @@ export function AppHeader() {
           <span style={{ fontWeight: 800, fontSize: "0.95rem", color: "#fff" }}>
             JV <span style={{ color: "var(--yellow)" }}>IA</span>
           </span>
-          <span className="version-badge" style={{ fontSize: "0.55rem", fontWeight: 800, color: "#000", background: "var(--yellow)", borderRadius: "50px", padding: "1px 6px", letterSpacing: "0.3px", lineHeight: 1.6 }}>
-            10.1
-          </span>
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
