@@ -300,6 +300,7 @@ function PostCard({ post, myId, user, router, isReply = false, onReaction, onDel
   const [loadingReplies, setLoadingReplies] = useState(false);
   const [replyCount, setReplyCount] = useState(post.reply_count ?? 0);
   const [deleting, setDeleting] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const [editing, setEditing] = useState(false);
   const [editText, setEditText] = useState(post.content);
   const [editError, setEditError] = useState("");
@@ -321,10 +322,10 @@ function PostCard({ post, myId, user, router, isReply = false, onReaction, onDel
     setTranslating(false);
   }
 
-  async function deletePost() {
-    if (!confirm("Delete this post?")) return;
+  async function confirmDeletePost() {
     setDeleting(true);
     await fetch(`/api/community/posts/${post.id}`, { method: "DELETE" });
+    setConfirmDelete(false);
     onDeleted?.(post.id);
   }
 
@@ -390,7 +391,7 @@ function PostCard({ post, myId, user, router, isReply = false, onReaction, onDel
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
               </button>
             )}
-            <button onClick={deletePost} disabled={deleting} title="Delete" style={{ background: "none", border: "none", cursor: "pointer", color: "#555", padding: "2px 6px", borderRadius: 6, lineHeight: 1, display: "flex", alignItems: "center", justifyContent: "center" }}
+            <button onClick={() => setConfirmDelete(true)} disabled={deleting} title="Delete" style={{ background: "none", border: "none", cursor: "pointer", color: "#555", padding: "2px 6px", borderRadius: 6, lineHeight: 1, display: "flex", alignItems: "center", justifyContent: "center" }}
               onMouseEnter={e => (e.currentTarget.style.color = "#f87171")}
               onMouseLeave={e => (e.currentTarget.style.color = "#555")}>
               {deleting ? "…" : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>}
@@ -530,6 +531,19 @@ function PostCard({ post, myId, user, router, isReply = false, onReaction, onDel
           {replies.map(r => (
             <PostCard key={r.id} post={r} myId={user?.id ?? ""} user={user} router={router} isReply onReaction={onReaction} onDeleted={id => { setReplies(prev => prev.filter(x => x.id !== id)); setReplyCount(c => Math.max(0, c - 1)); }} />
           ))}
+        </div>
+      )}
+
+      {confirmDelete && (
+        <div onClick={() => !deleting && setConfirmDelete(false)} style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.6)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1001 }}>
+          <div onClick={e => e.stopPropagation()} style={{ background: "var(--dark2)", borderRadius: 14, padding: "20px 18px", maxWidth: "90%", minWidth: 280, border: "1px solid #2a2a2a" }}>
+            <p style={{ fontSize: "1rem", fontWeight: 700, color: "#fff", margin: 0, marginBottom: 8 }}>Quer mesmo deletar este post?</p>
+            <p style={{ fontSize: "0.85rem", color: "var(--gray)", margin: 0, marginBottom: 16 }}>Esta ação não pode ser desfeita.</p>
+            <div style={{ display: "flex", gap: 10 }}>
+              <button onClick={() => setConfirmDelete(false)} disabled={deleting} style={{ flex: 1, padding: "10px 14px", border: "1px solid #2a2a2a", background: "#1a1a1a", color: "var(--gray)", borderRadius: 8, fontSize: "0.9rem", fontWeight: 700, cursor: deleting ? "default" : "pointer", opacity: deleting ? 0.5 : 1 }}>Cancelar</button>
+              <button onClick={confirmDeletePost} disabled={deleting} style={{ flex: 1, padding: "10px 14px", border: "none", background: "#ff4444", color: "#fff", borderRadius: 8, fontSize: "0.9rem", fontWeight: 700, cursor: deleting ? "default" : "pointer", opacity: deleting ? 0.5 : 1 }}>Deletar</button>
+            </div>
+          </div>
         </div>
       )}
     </div>
