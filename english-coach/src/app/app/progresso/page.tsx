@@ -203,7 +203,10 @@ export default function Progresso() {
   return (
     <div className="app-scroll" style={{ background: "var(--black)", fontFamily: "'Inter', sans-serif", paddingTop: 65, paddingBottom: 100 }}>
       <div style={{ padding: "10px 16px", borderBottom: "1px solid #1e1e1e" }}>
-        <span style={{ fontWeight: 800, color: "#fff", fontSize: "0.95rem" }}>📊 Meu Progresso</span>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, fontWeight: 800, color: "#fff", fontSize: "0.95rem" }}>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="2" x2="12" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+          Meu Progresso
+        </div>
       </div>
 
       <div style={{ padding: "16px", maxWidth: 640, margin: "0 auto", display: "flex", flexDirection: "column", gap: 20 }}>

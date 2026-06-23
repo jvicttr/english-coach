@@ -128,7 +128,10 @@ export default function TrilhaPage() {
 
       {/* Subheader com título + progresso */}
       <div style={{ padding: "10px 16px 10px", borderBottom: "1px solid #1e1e1e", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <span style={{ fontWeight: 800, fontSize: "0.95rem", color: "#fff" }}>🗺️ Trilha</span>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, fontWeight: 800, fontSize: "0.95rem", color: "#fff" }}>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2L2 7v10c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-10-5z"/><polyline points="10 12 14 16 10 20"/></svg>
+          Trilha
+        </div>
         <span style={{ fontSize: "0.75rem", fontWeight: 700, color: "var(--gray)" }}>{completedCount}/{totalSteps} etapas</span>
       </div>
 
