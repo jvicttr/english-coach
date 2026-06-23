@@ -119,7 +119,7 @@ export async function POST(req: NextRequest) {
         const senderName = sender?.name ?? "Alguém";
         const messagePreview = content ? content.substring(0, 100) : imageUrl ? "📸 Enviou uma imagem" : audioUrl ? "🎵 Enviou áudio" : "Enviou uma mensagem";
 
-        await fetch("https://onesignal.com/api/v1/notifications", {
+        const notifRes = await fetch("https://onesignal.com/api/v1/notifications", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -133,7 +133,14 @@ export async function POST(req: NextRequest) {
             url: `https://faleinglesjv.com/app/mensagens/${userId}`,
             web_url: `https://faleinglesjv.com/app/mensagens/${userId}`,
           }),
-        }).catch(() => {});
+        }).catch((e) => { console.error("[notification] error:", e); });
+
+        if (!notifRes?.ok) {
+          const err = await notifRes?.text();
+          console.error("[notification] OneSignal error:", err);
+        }
+      } else {
+        console.warn("[notification] Missing player ID or API key", { hasPlayerId: !!recipient?.onesignal_player_id, hasApiKey: !!process.env.ONESIGNAL_API_KEY });
       }
     }
   } catch {}
