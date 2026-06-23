@@ -72,5 +72,51 @@ export async function POST(req: NextRequest) {
     .update({ updated_at: new Date().toISOString() })
     .eq("id", conversationId);
 
+  // Enviar notificação para o outro usuário
+  try {
+    const { data: conv } = await supabase
+      .from("conversations")
+      .select("user1_id, user2_id")
+      .eq("id", conversationId)
+      .single();
+
+    if (conv) {
+      const recipientId = conv.user1_id === userId ? conv.user2_id : conv.user1_id;
+
+      const { data: sender } = await supabase
+        .from("subscriptions")
+        .select("name")
+        .eq("user_id", userId)
+        .single();
+
+      const { data: recipient } = await supabase
+        .from("subscriptions")
+        .select("onesignal_player_id")
+        .eq("user_id", recipientId)
+        .single();
+
+      if (recipient?.onesignal_player_id && process.env.ONESIGNAL_API_KEY) {
+        const senderName = sender?.name ?? "Alguém";
+        const messagePreview = content ? content.substring(0, 100) : imageUrl ? "📸 Enviou uma imagem" : audioUrl ? "🎵 Enviou áudio" : "Enviou uma mensagem";
+
+        await fetch("https://onesignal.com/api/v1/notifications", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Basic ${process.env.ONESIGNAL_API_KEY}`,
+          },
+          body: JSON.stringify({
+            include_external_user_ids: [recipientId],
+            headings: { en: `${senderName}` },
+            contents: { en: messagePreview },
+            data: { conversationId, userId: recipientId },
+            url: `https://faleinglesjv.com/app/mensagens/${userId}`,
+            web_url: `https://faleinglesjv.com/app/mensagens/${userId}`,
+          }),
+        }).catch(() => {});
+      }
+    }
+  } catch {}
+
   return NextResponse.json({ message });
 }
