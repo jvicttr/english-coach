@@ -3,14 +3,54 @@
 import { usePathname, useRouter } from "next/navigation";
 
 const LEFT_ITEMS = [
-  { href: "/app", icon: "🏠", label: "Início" },
-  { href: "/app/trilha", icon: "🗺️", label: "Trilha" },
+  { href: "/app", icon: "home", label: "Início" },
+  { href: "/app/trilha", icon: "trilha", label: "Trilha" },
 ];
 
 const RIGHT_ITEMS = [
-  { href: "/app/progresso", icon: "📊", label: "Progresso" },
-  { href: "/app/perfil", icon: "👤", label: "Perfil" },
+  { href: "/app/progresso", icon: "progresso", label: "Progresso" },
+  { href: "/app/perfil", icon: "perfil", label: "Perfil" },
 ];
+
+function NavIcon({ name, active }: { name: string; active: boolean }) {
+  const color = active ? "#fff" : "#666";
+  const strokeWidth = active ? "2" : "1.5";
+
+  const icons = {
+    home: (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
+        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
+      </svg>
+    ),
+    trilha: (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
+        <path d="M12 2L2 7v10c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-10-5z"/><polyline points="10 12 14 16 10 20"/>
+      </svg>
+    ),
+    progresso: (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
+        <line x1="12" y1="2" x2="12" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+      </svg>
+    ),
+    perfil: (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
+        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+      </svg>
+    ),
+    globe: (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+      </svg>
+    ),
+    escrever: (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
+        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+      </svg>
+    ),
+  };
+
+  return icons[name as keyof typeof icons] || null;
+}
 
 function NavItem({ href, icon, label, active }: { href: string; icon: string; label: string; active: boolean }) {
   return (
@@ -18,8 +58,8 @@ function NavItem({ href, icon, label, active }: { href: string; icon: string; la
       href={href}
       style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2, padding: "8px 0 10px", textDecoration: "none" }}
     >
-      <span style={{ fontSize: "1.1rem" }}>{icon}</span>
-      <span style={{ fontSize: "0.6rem", fontWeight: 700, color: active ? "var(--yellow)" : "#444" }}>{label}</span>
+      <NavIcon name={icon} active={active} />
+      <span style={{ fontSize: "0.6rem", fontWeight: 700, color: active ? "#fff" : "#666" }}>{label}</span>
     </a>
   );
 }
@@ -56,21 +96,25 @@ function NavItems() {
             width: 48,
             height: 48,
             borderRadius: "50%",
-            background: isComunidade ? "var(--yellow)" : "linear-gradient(135deg, #f5c800, #e0a800)",
-            border: "none",
+            background: "#222",
+            border: "1px solid #333",
             cursor: "pointer",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            fontSize: "1.3rem",
-            boxShadow: "0 4px 16px rgba(245,200,0,0.4)",
             transform: "translateY(-6px)",
-            transition: "transform .15s, box-shadow .15s",
+            transition: "transform .15s, background .15s",
           }}
-          onMouseEnter={e => (e.currentTarget.style.transform = "translateY(-9px)")}
-          onMouseLeave={e => (e.currentTarget.style.transform = "translateY(-6px)")}
+          onMouseEnter={e => {
+            e.currentTarget.style.transform = "translateY(-9px)";
+            e.currentTarget.style.background = "#2a2a2a";
+          }}
+          onMouseLeave={e => {
+            e.currentTarget.style.transform = "translateY(-6px)";
+            e.currentTarget.style.background = "#222";
+          }}
         >
-          {isComunidade ? "✍️" : "🌎"}
+          <NavIcon name={isComunidade ? "escrever" : "globe"} active={true} />
         </button>
       </div>
 
