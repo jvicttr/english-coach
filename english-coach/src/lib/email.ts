@@ -1,4 +1,4 @@
-﻿// Shared email utility — uses Resend REST API (no extra package needed)
+﻿// Shared email utility — uses Mailgun REST API
 
 export async function sendEmail({
   to,
@@ -11,31 +11,35 @@ export async function sendEmail({
   html: string;
   replyTo?: string;
 }) {
-  const apiKey = process.env.RESEND_API_KEY;
-  if (!apiKey) {
-    console.warn("[email] RESEND_API_KEY not set — skipping email to", to);
+  const apiKey = process.env.MAILGUN_API_KEY;
+  const domain = process.env.MAILGUN_DOMAIN;
+
+  if (!apiKey || !domain) {
+    console.warn("[email] MAILGUN_API_KEY or MAILGUN_DOMAIN not set — skipping email to", to);
     return;
   }
 
   try {
-    const res = await fetch("https://api.resend.com/emails", {
+    const auth = Buffer.from(`api:${apiKey}`).toString("base64");
+
+    const formData = new URLSearchParams();
+    formData.append("from", "Fale Inglês JV <coach@faleinglesjv.com>");
+    formData.append("to", to);
+    formData.append("subject", subject);
+    formData.append("html", html);
+    formData.append("h:Reply-To", replyTo);
+
+    const res = await fetch(`https://api.mailgun.net/v3/${domain}/messages`, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
+        Authorization: `Basic ${auth}`,
       },
-      body: JSON.stringify({
-        from: "Fale Inglês JV <coach@faleinglesjv.com>",
-        to,
-        subject,
-        reply_to: replyTo,
-        html,
-      }),
+      body: formData,
     });
 
     if (!res.ok) {
       const err = await res.text();
-      console.error("[email] Resend error:", err);
+      console.error("[email] Mailgun error:", err);
     }
   } catch (e) {
     console.error("[email] fetch failed:", e);
