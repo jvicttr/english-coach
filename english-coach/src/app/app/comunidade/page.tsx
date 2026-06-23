@@ -925,7 +925,7 @@ export default function ComunidadePage() {
                     </div>
                   )}
                   {showEmojiPicker && (
-                    <div style={{ display: "grid", gridTemplateColumns: "repeat(10, 1fr)", gap: 3, background: "#0d0d0d", borderRadius: 8, padding: "8px", marginBottom: 8, height: "120px", maxHeight: "120px", overflowY: "auto", border: "2px solid #fff", scrollBehavior: "smooth" }}>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(10, 1fr)", gap: 3, background: "#0d0d0d", borderRadius: 8, padding: "8px", marginBottom: 8, height: "80px", maxHeight: "80px", overflowY: "auto", border: "2px solid #fff", scrollBehavior: "smooth" }}>
                       {EMOJI_LIST.map(e => <button key={e} onClick={() => insertEmoji(e)} style={{ background: "none", border: "none", fontSize: "1.3rem", cursor: "pointer", padding: "4px", borderRadius: 6, lineHeight: 1, transition: "transform .1s", display: "flex", alignItems: "center", justifyContent: "center" }} onMouseEnter={e => (e.currentTarget.style.transform = "scale(1.2)")} onMouseLeave={e => (e.currentTarget.style.transform = "scale(1)")}>{e}</button>)}
                     </div>
                   )}
