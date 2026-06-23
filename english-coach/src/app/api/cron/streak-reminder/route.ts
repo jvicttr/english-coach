@@ -1,83 +1,104 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { sendEmail, streakReminderHtml } from "@/lib/email";
 
-const supabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SECRET_KEY!);
+const supabase = createClient(
+  process.env.SUPABASE_URL!,
+  process.env.SUPABASE_SECRET_KEY!
+);
 
-// Runs daily around 20h via Vercel Cron or external scheduler
-// Sends a push notification to users with active streaks who haven't practiced today
-export async function GET(req: Request) {
-  const secret = new URL(req.url).searchParams.get("secret");
-  if (secret !== process.env.CRON_SECRET) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+function calcStreak(dates: string[]): number {
+  if (dates.length === 0) return 0;
+  const unique = [...new Set(dates.map((d) => d.split("T")[0]))].sort(
+    (a, b) => new Date(b).getTime() - new Date(a).getTime()
+  );
+
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  const yStr = yesterday.toISOString().split("T")[0];
+
+  if (unique[0] !== yStr) return 0;
+
+  let streak = 1;
+  for (let i = 1; i < unique.length; i++) {
+    const prev = new Date(unique[i - 1]);
+    const curr = new Date(unique[i]);
+    const diff = Math.round(
+      (prev.getTime() - curr.getTime()) / (1000 * 60 * 60 * 24)
+    );
+    if (diff === 1) streak++;
+    else break;
   }
+  return streak;
+}
 
-  const apiKey = process.env.ONESIGNAL_API_KEY;
-  const appId = process.env.NEXT_PUBLIC_ONESIGNAL_APP_ID ?? "bd73670e-ac08-4c40-8519-2dc5bd677db7";
-
-  if (!apiKey) {
-    return NextResponse.json({ error: "ONESIGNAL_API_KEY not configured" }, { status: 500 });
+export async function GET(req: NextRequest) {
+  const authHeader = req.headers.get("authorization");
+  const cronSecret = process.env.CRON_SECRET;
+  if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const today = new Date().toISOString().split("T")[0];
 
-  // Get users with player IDs who haven't practiced today
+  const { data: allResults } = await supabase
+    .from("quiz_results")
+    .select("user_id, created_at")
+    .order("created_at", { ascending: false });
+
+  if (!allResults || allResults.length === 0) {
+    return NextResponse.json({ sent: 0 });
+  }
+
+  const byUser: Record<string, string[]> = {};
+  for (const row of allResults) {
+    if (!byUser[row.user_id]) byUser[row.user_id] = [];
+    byUser[row.user_id].push(row.created_at);
+  }
+
+  const toNotify: { userId: string; streak: number }[] = [];
+  for (const [userId, dates] of Object.entries(byUser)) {
+    const practicedToday = dates.some((d) => d.startsWith(today));
+    if (practicedToday) continue;
+
+    const streak = calcStreak(dates);
+    toNotify.push({ userId, streak });
+  }
+
+  if (toNotify.length === 0) {
+    return NextResponse.json({ sent: 0, message: "All users practiced today" });
+  }
+
+  const userIds = toNotify.map((u) => u.userId);
   const { data: subs } = await supabase
     .from("subscriptions")
-    .select("user_id, onesignal_player_id")
-    .not("onesignal_player_id", "is", null);
+    .select("user_id, email, name")
+    .in("user_id", userIds);
 
-  if (!subs?.length) return NextResponse.json({ sent: 0 });
+  const subsMap: Record<string, { email: string; name: string }> = {};
+  for (const s of subs ?? []) {
+    if (s.email) subsMap[s.user_id] = { email: s.email, name: s.name ?? "aluno" };
+  }
 
-  const userIds = subs.map((s: { user_id: string }) => s.user_id);
+  let sent = 0;
 
-  // Find who practiced today
-  const { data: usedToday } = await supabase
-    .from("usage")
-    .select("user_id")
-    .in("user_id", userIds)
-    .eq("date", today);
+  for (const { userId, streak } of toNotify) {
+    const sub = subsMap[userId];
+    if (!sub?.email) continue;
 
-  const { data: quizzedToday } = await supabase
-    .from("quiz_results")
-    .select("user_id")
-    .in("user_id", userIds)
-    .gte("completed_at", `${today}T00:00:00`)
-    .not("score", "is", null);
+    const firstName = sub.name.split(" ")[0];
 
-  const practicedToday = new Set([
-    ...(usedToday ?? []).map((r: { user_id: string }) => r.user_id),
-    ...(quizzedToday ?? []).map((r: { user_id: string }) => r.user_id),
-  ]);
+    await sendEmail({
+      to: sub.email,
+      subject:
+        streak >= 3
+          ? `🔥 ${streak} dias seguidos — não para agora, ${firstName}!`
+          : `💬 Hora de praticar inglês agora, ${firstName}!`,
+      html: streakReminderHtml(firstName, streak),
+    });
 
-  const playerIds = subs
-    .filter((s: { user_id: string; onesignal_player_id: string }) => !practicedToday.has(s.user_id))
-    .map((s: { onesignal_player_id: string }) => s.onesignal_player_id)
-    .filter(Boolean);
+    sent++;
+  }
 
-  if (!playerIds.length) return NextResponse.json({ sent: 0 });
-
-  const messages = [
-    "⚡ Sua sequência está em risco! Pratique inglês agora.",
-    "🔥 Não perca sua sequência! 5 minutos de prática fazem diferença.",
-    "🎯 Hora de praticar inglês! Sua sequência te espera.",
-    "💪 Um dia sem prática é um dia perdido. Vamos lá!",
-  ];
-  const msg = messages[new Date().getDate() % messages.length];
-
-  await fetch("https://onesignal.com/api/v1/notifications", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Basic ${apiKey}`,
-    },
-    body: JSON.stringify({
-      app_id: appId,
-      include_player_ids: playerIds.slice(0, 2000),
-      headings: { en: "Fale Inglês JV", pt: "Fale Inglês JV" },
-      contents: { en: msg, pt: msg },
-      url: "https://www.faleinglesjv.com/app",
-    }),
-  });
-
-  return NextResponse.json({ sent: playerIds.length });
+  return NextResponse.json({ sent, total: toNotify.length });
 }
