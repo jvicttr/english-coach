@@ -77,7 +77,20 @@ export default function TrilhaPage() {
   const completedIds = new Set(progress.map((p) => p.step_id));
 
   function startStep(step: TrailStep) {
-    localStorage.setItem("pendingTrilhaStep", JSON.stringify({ ...step, phase: "chat1" }));
+    // Try to restore previous phase if it exists (user was in middle of trilha step)
+    let phase: "chat1" | "flashcards" | "quiz" | "chat2" = "chat1";
+
+    try {
+      const sessionRes = localStorage.getItem(`trilhaContinue_${step.id}`);
+      if (sessionRes) {
+        const parsed = JSON.parse(sessionRes);
+        if (parsed?.phase) {
+          phase = parsed.phase;
+        }
+      }
+    } catch {}
+
+    localStorage.setItem("pendingTrilhaStep", JSON.stringify({ ...step, phase }));
     router.push("/app/conversar");
   }
 

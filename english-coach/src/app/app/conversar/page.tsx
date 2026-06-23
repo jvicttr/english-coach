@@ -917,8 +917,6 @@ export default function Home() {
   async function proceedToFlashcards() {
     if (!trilhaStep) return;
     setTrilhaPhase("flashcards");
-    // Clear old session data from chat1
-    try { localStorage.removeItem(`trilhaContinue_${trilhaStep.id}`); } catch {}
     // Save conversation for review mode
     try { localStorage.setItem(`trilhaReview_chat_${trilhaStep.id}`, JSON.stringify(messages)); } catch {}
     setTrilhaChat1Messages(messages); // save chat1 messages for quiz generation later
@@ -937,6 +935,8 @@ export default function Home() {
         setScreen("trail-fc");
         // Save for review mode
         try { localStorage.setItem(`trilhaReview_fc_${trilhaStep.id}`, JSON.stringify(data.cards)); } catch {}
+        // Save state to localStorage (so if user leaves, we can restore to flashcards)
+        try { localStorage.setItem(`trilhaContinue_${trilhaStep.id}`, JSON.stringify({ phase: "flashcards", fcIndex: 0, fcFlipped: false })); } catch {}
         // Save state to Supabase
         fetch("/api/trilha-session", {
           method: "POST",
@@ -975,6 +975,10 @@ export default function Home() {
         // Save for review mode
         try {
           localStorage.setItem(`trilhaReview_quiz_${trilhaStep!.id}`, JSON.stringify({ quiz: data.quiz, answers: newAnswers, score: 0, sessionId }));
+        } catch {}
+        // Save state to localStorage (so if user leaves, we can restore to quiz)
+        try {
+          localStorage.setItem(`trilhaContinue_${trilhaStep!.id}`, JSON.stringify({ phase: "quiz", currentQ: 0, answers: newAnswers, total: data.quiz.questions.length }));
         } catch {}
         // Save initial quiz state to Supabase
         if (trilhaStep) {
@@ -1020,7 +1024,10 @@ export default function Home() {
       if (!res.ok) return;
       const data = await res.json();
       if (data.reply) {
-        setMessages([{ role: "assistant", content: data.reply, translation: data.translation ?? undefined }]);
+        const initialMsgs = [{ role: "assistant" as const, content: data.reply, translation: data.translation ?? undefined }];
+        setMessages(initialMsgs);
+        // Save state to localStorage (so if user leaves, we can restore to chat2)
+        try { localStorage.setItem(`trilhaContinue_${trilhaStep.id}`, JSON.stringify({ messages: initialMsgs, msgCount: 0, phase: "chat2" })); } catch {}
       }
     } finally {
       setIsLoading(false);
