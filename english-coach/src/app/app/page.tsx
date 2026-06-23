@@ -336,33 +336,36 @@ export default function AppHome() {
         onClick={() => setShowStartChat(true)}
         style={{
           position: "fixed",
-          bottom: "80px",
+          bottom: "100px",
           right: "max(20px, calc((100vw - 600px) / 6))",
-          width: "56px",
-          height: "56px",
+          width: "46px",
+          height: "46px",
           borderRadius: "14px",
-          background: "#1a1a1a",
-          border: "1px solid #2a2a2a",
+          background: "rgba(17,17,17,0.6)",
+          backdropFilter: "blur(10px)",
+          WebkitBackdropFilter: "blur(10px)",
+          border: "1px solid rgba(255,255,255,0.07)",
+          cursor: "pointer",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          cursor: "pointer",
-          fontSize: "1.5rem",
-          transition: "all 0.2s",
-          boxShadow: "0 4px 12px rgba(0,0,0,0.3)",
+          boxShadow: "0 4px 20px rgba(0,0,0,0.35)",
+          zIndex: 40,
+          transition: "border-color 0.15s, background 0.15s",
         }}
         onMouseEnter={(e) => {
-          e.currentTarget.style.background = "#252525";
-          e.currentTarget.style.borderColor = "rgba(245,200,0,.5)";
-          e.currentTarget.style.boxShadow = "0 6px 16px rgba(245,200,0,.15)";
+          e.currentTarget.style.borderColor = "rgba(245,200,0,0.3)";
+          e.currentTarget.style.background = "rgba(30,30,30,0.75)";
         }}
         onMouseLeave={(e) => {
-          e.currentTarget.style.background = "#1a1a1a";
-          e.currentTarget.style.borderColor = "#2a2a2a";
-          e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.3)";
+          e.currentTarget.style.borderColor = "rgba(255,255,255,0.07)";
+          e.currentTarget.style.background = "rgba(17,17,17,0.6)";
         }}
+        title="Mensagens"
       >
-        💬
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="var(--yellow)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+        </svg>
       </button>
 
       <StartConversationModal isOpen={showStartChat} onClose={() => setShowStartChat(false)} />
