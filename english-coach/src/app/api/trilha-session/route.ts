@@ -16,7 +16,7 @@ export async function GET(req: NextRequest) {
   if (stepId) {
     const { data } = await supabase
       .from("trilha_sessions")
-      .select("messages, msg_count, phase")
+      .select("*")
       .eq("user_id", userId)
       .eq("step_id", stepId)
       .single();
@@ -35,11 +35,21 @@ export async function POST(req: NextRequest) {
   const { userId } = await auth();
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { stepId, messages, msgCount, phase } = await req.json();
-  if (!stepId || !messages) return NextResponse.json({ error: "Missing fields" }, { status: 400 });
+  const { stepId, messages, msgCount, phase, flashcardIndex, flashcardFlipped, quizData } = await req.json();
+  if (!stepId) return NextResponse.json({ error: "Missing stepId" }, { status: 400 });
 
   await supabase.from("trilha_sessions").upsert(
-    { user_id: userId, step_id: stepId, messages, msg_count: msgCount ?? 0, phase: phase ?? "chat1", updated_at: new Date().toISOString() },
+    {
+      user_id: userId,
+      step_id: stepId,
+      messages: messages ?? [],
+      msg_count: msgCount ?? 0,
+      phase: phase ?? "chat1",
+      flashcard_index: flashcardIndex ?? null,
+      flashcard_flipped: flashcardFlipped ?? null,
+      quiz_data: quizData ?? null,
+      updated_at: new Date().toISOString(),
+    },
     { onConflict: "user_id,step_id" }
   );
 

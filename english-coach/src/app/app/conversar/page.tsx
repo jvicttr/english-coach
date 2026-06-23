@@ -94,7 +94,7 @@ export default function Home() {
   const [couponLoading, setCouponLoading] = useState(false);
   const [topic, setTopic] = useState<TopicDef | null>(null);
   const [trilhaStep, setTrilhaStep] = useState<TrailStep | null>(null);
-  const [trilhaPhase, setTrilhaPhase] = useState<"chat1" | "chat2" | "review" | null>(null);
+  const [trilhaPhase, setTrilhaPhase] = useState<"chat1" | "flashcards" | "quiz" | "chat2" | "review" | null>(null);
   const [trilhaMsgCount, setTrilhaMsgCount] = useState(0);
   const [trilhaChat1Messages, setTrilhaChat1Messages] = useState<Message[]>([]);
   const [trilhaFlashcards, setTrilhaFlashcards] = useState<TrilhaFlashcard[]>([]);
@@ -161,20 +161,46 @@ export default function Home() {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // Save trilha chat1 progress whenever messages change (localStorage + Supabase for cross-device)
+  // Save trilha progress whenever state changes (localStorage + Supabase for cross-device)
   useEffect(() => {
-    if (!trilhaStep || trilhaPhase !== "chat1" || messages.length === 0) return;
-    // localStorage for instant same-device cache
-    try {
-      localStorage.setItem(`trilhaContinue_${trilhaStep.id}`, JSON.stringify({ messages, msgCount: trilhaMsgCount }));
-    } catch {}
-    // Supabase for cross-device sync (fire-and-forget)
-    fetch("/api/trilha-session", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ stepId: trilhaStep.id, messages, msgCount: trilhaMsgCount, phase: trilhaPhase }),
-    }).catch(() => {});
-  }, [messages, trilhaStep, trilhaPhase, trilhaMsgCount]);
+    if (!trilhaStep) return;
+
+    // Chat1 and Chat2: save messages and msgCount
+    if ((trilhaPhase === "chat1" || trilhaPhase === "chat2") && messages.length > 0) {
+      try {
+        localStorage.setItem(`trilhaContinue_${trilhaStep.id}`, JSON.stringify({ messages, msgCount: trilhaMsgCount, phase: trilhaPhase }));
+      } catch {}
+      fetch("/api/trilha-session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ stepId: trilhaStep.id, messages, msgCount: trilhaMsgCount, phase: trilhaPhase }),
+      }).catch(() => {});
+    }
+
+    // Flashcards: save index and flipped state
+    if (trilhaPhase === "flashcards" && trilhaFlashcards.length > 0) {
+      try {
+        localStorage.setItem(`trilhaContinue_${trilhaStep.id}`, JSON.stringify({ phase: "flashcards", fcIndex, fcFlipped }));
+      } catch {}
+      fetch("/api/trilha-session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ stepId: trilhaStep.id, phase: "flashcards", flashcardIndex: fcIndex, flashcardFlipped: fcFlipped }),
+      }).catch(() => {});
+    }
+
+    // Quiz: save quiz state (current question, answers)
+    if (trilhaPhase === "quiz" && quiz) {
+      try {
+        localStorage.setItem(`trilhaContinue_${trilhaStep.id}`, JSON.stringify({ phase: "quiz", quizState: { currentQ, answers, total: quiz.questions.length } }));
+      } catch {}
+      fetch("/api/trilha-session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ stepId: trilhaStep.id, phase: "quiz", quizData: { currentQ, answers, total: quiz.questions.length } }),
+      }).catch(() => {});
+    }
+  }, [messages, trilhaStep, trilhaPhase, trilhaMsgCount, fcIndex, fcFlipped, trilhaFlashcards.length, currentQ, answers, quiz]);
 
   // Also save on page unload (e.g., navigating via browser back or home button)
   useEffect(() => {
@@ -217,7 +243,7 @@ export default function Home() {
         try {
           const parsed = JSON.parse(pendingStep);
           localStorage.removeItem("pendingTrilhaStep");
-          const phase: "chat1" | "chat2" | "review" = parsed.phase ?? "chat1";
+          const phase: "chat1" | "flashcards" | "quiz" | "chat2" | "review" = parsed.phase ?? "chat1";
           // eslint-disable-next-line @typescript-eslint/no-unused-vars
           const { phase: _p, ...step } = parsed;
           setTrilhaStep(step as TrailStep);
@@ -289,8 +315,8 @@ export default function Home() {
             return;
           }
 
-          // Restore saved chat1 session — check Supabase first (cross-device), then localStorage
-          if (phase === "chat1") {
+          // Restore saved session — check Supabase first (cross-device), then localStorage
+          if (phase === "chat1" || phase === "chat2") {
             setIsLoading(true);
             let savedMessages: unknown[] | null = null;
             let savedMsgCount = 0;
@@ -308,8 +334,11 @@ export default function Home() {
               try {
                 const local = localStorage.getItem(`trilhaContinue_${(step as TrailStep).id}`);
                 if (local) {
-                  const { messages: localMsgs, msgCount: localCount } = JSON.parse(local);
-                  if (localMsgs?.length > 0) { savedMessages = localMsgs; savedMsgCount = localCount ?? 0; }
+                  const parsed = JSON.parse(local);
+                  if (parsed?.messages?.length > 0) {
+                    savedMessages = parsed.messages;
+                    savedMsgCount = parsed.msgCount ?? 0;
+                  }
                 }
               } catch {}
             }
@@ -319,6 +348,102 @@ export default function Home() {
               setIsLoading(false);
               return;
             }
+          }
+
+          // Restore flashcards state
+          if (phase === "flashcards") {
+            setIsLoading(true);
+            try {
+              // First try to restore flashcards from localStorage/Supabase
+              let flashcards: TrilhaFlashcard[] = [];
+              let savedFcIndex = 0;
+              let savedFcFlipped = false;
+
+              // Get flashcards from localStorage (review mode)
+              try {
+                const fcRaw = localStorage.getItem(`trilhaReview_fc_${(step as TrailStep).id}`);
+                if (fcRaw) flashcards = JSON.parse(fcRaw);
+              } catch {}
+
+              // Get current position from Supabase
+              try {
+                const sessionRes = await fetch(`/api/trilha-session?stepId=${(step as TrailStep).id}`);
+                const sessionData = await sessionRes.json();
+                if (sessionData.session?.flashcard_index !== null && sessionData.session?.flashcard_index !== undefined) {
+                  savedFcIndex = sessionData.session.flashcard_index;
+                  savedFcFlipped = sessionData.session.flashcard_flipped ?? false;
+                }
+              } catch {}
+
+              if (flashcards.length > 0) {
+                setTrilhaFlashcards(flashcards);
+                setFcIndex(savedFcIndex);
+                setFcFlipped(savedFcFlipped);
+                setScreen("trail-fc");
+              } else {
+                // No flashcards found, restart proceedToFlashcards
+                setIsLoading(false);
+                const savedChat1Messages = (await (async () => {
+                  try {
+                    const sessionRes = await fetch(`/api/trilha-session?stepId=${(step as TrailStep).id}`);
+                    const sessionData = await sessionRes.json();
+                    return sessionData.session?.messages ?? null;
+                  } catch { return null; }
+                })());
+                if (savedChat1Messages) {
+                  await generateTrailQuiz(savedChat1Messages);
+                } else {
+                  router.push("/app/trilha");
+                }
+                return;
+              }
+            } catch {}
+            setIsLoading(false);
+          }
+
+          // Restore quiz state
+          if (phase === "quiz") {
+            setIsLoading(true);
+            try {
+              let quiz_data = null;
+              let quiz_obj = null;
+              let sessionId = null;
+
+              // Get quiz data from localStorage first (which includes full quiz object and sessionId)
+              try {
+                const qRaw = localStorage.getItem(`trilhaReview_quiz_${(step as TrailStep).id}`);
+                if (qRaw) {
+                  const parsed = JSON.parse(qRaw);
+                  quiz_obj = parsed.quiz ?? null;
+                  sessionId = parsed.sessionId ?? null;
+                }
+              } catch {}
+
+              // Get current progress from Supabase
+              try {
+                const sessionRes = await fetch(`/api/trilha-session?stepId=${(step as TrailStep).id}`);
+                const sessionData = await sessionRes.json();
+                const supabaseQuizData = sessionData.session?.quiz_data;
+                if (supabaseQuizData) {
+                  quiz_data = supabaseQuizData;
+                  if (supabaseQuizData.sessionId) sessionId = supabaseQuizData.sessionId;
+                }
+              } catch {}
+
+              if (quiz_data && quiz_obj) {
+                setQuiz(quiz_obj);
+                setQuizSessionId(sessionId);
+                setCurrentQ(quiz_data.currentQ ?? 0);
+                setAnswers(quiz_data.answers ?? []);
+                setShowExplanation(false);
+                setScore(0);
+                setScreen("quiz");
+              } else {
+                // Quiz not found, go back to trilha
+                router.push("/app/trilha");
+              }
+            } catch {}
+            setIsLoading(false);
           }
 
           // Fresh start: AI opens the conversation
@@ -791,10 +916,10 @@ export default function Home() {
 
   async function proceedToFlashcards() {
     if (!trilhaStep) return;
-    // Clear saved session — user completed chat1 and is moving forward
+    setTrilhaPhase("flashcards");
+    // Clear old session data from chat1
     try { localStorage.removeItem(`trilhaContinue_${trilhaStep.id}`); } catch {}
-    fetch("/api/trilha-session", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ stepId: trilhaStep.id }) }).catch(() => {});
-    // Save conversation for review mode before deleting session
+    // Save conversation for review mode
     try { localStorage.setItem(`trilhaReview_chat_${trilhaStep.id}`, JSON.stringify(messages)); } catch {}
     setTrilhaChat1Messages(messages); // save chat1 messages for quiz generation later
     setScreen("loading-flashcards");
@@ -812,6 +937,12 @@ export default function Home() {
         setScreen("trail-fc");
         // Save for review mode
         try { localStorage.setItem(`trilhaReview_fc_${trilhaStep.id}`, JSON.stringify(data.cards)); } catch {}
+        // Save state to Supabase
+        fetch("/api/trilha-session", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ stepId: trilhaStep.id, phase: "flashcards", flashcardIndex: 0, flashcardFlipped: false }),
+        }).catch(() => {});
       } else {
         // Flashcard generation failed — go straight to quiz with saved messages
         await generateTrailQuiz(messages);
@@ -823,6 +954,7 @@ export default function Home() {
 
   async function generateTrailQuiz(msgs: Message[]) {
     setScreen("loading-quiz");
+    if (trilhaStep) setTrilhaPhase("quiz");
     try {
       const res = await fetch("/api/quiz", {
         method: "POST",
@@ -832,12 +964,26 @@ export default function Home() {
       const data = await res.json();
       if (data.quiz) {
         setQuiz(data.quiz);
-        setQuizSessionId(data.sessionId ?? null);
-        setAnswers(new Array(data.quiz.questions.length).fill(null));
+        const sessionId = data.sessionId ?? null;
+        setQuizSessionId(sessionId);
+        const newAnswers = new Array(data.quiz.questions.length).fill(null);
+        setAnswers(newAnswers);
         setCurrentQ(0);
         setShowExplanation(false);
         setScore(0);
         setScreen("quiz");
+        // Save for review mode
+        try {
+          localStorage.setItem(`trilhaReview_quiz_${trilhaStep!.id}`, JSON.stringify({ quiz: data.quiz, answers: newAnswers, score: 0, sessionId }));
+        } catch {}
+        // Save initial quiz state to Supabase
+        if (trilhaStep) {
+          fetch("/api/trilha-session", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ stepId: trilhaStep.id, phase: "quiz", quizData: { currentQ: 0, answers: newAnswers, total: data.quiz.questions.length, sessionId } }),
+          }).catch(() => {});
+        }
       } else {
         await startChat2();
       }
@@ -1452,17 +1598,27 @@ export default function Home() {
                 <span style={{ color: "var(--gray2)" }}>›</span>
                 {trilhaPhase === "chat1" ? (
                   <>
-                    <span style={{ color: "var(--yellow)", fontWeight: 700 }}>●1</span>
-                    <span style={{ color: "var(--gray2)" }}>›</span>
-                    <span>2</span>
+                    <span style={{ color: "var(--yellow)", fontWeight: 700 }}>●2</span>
                     <span style={{ color: "var(--gray2)" }}>›</span>
                     <span>3</span>
+                    <span style={{ color: "var(--gray2)" }}>›</span>
+                    <span>4</span>
+                  </>
+                ) : trilhaPhase === "flashcards" || trilhaPhase === "quiz" ? (
+                  <>
+                    <span style={{ color: "#4ade80", fontWeight: 700 }}>✓2</span>
+                    <span style={{ color: "var(--gray2)" }}>›</span>
+                    <span style={{ color: "var(--yellow)", fontWeight: 700 }}>●3</span>
+                    <span style={{ color: "var(--gray2)" }}>›</span>
+                    <span>4</span>
                   </>
                 ) : (
                   <>
                     <span style={{ color: "#4ade80", fontWeight: 700 }}>✓2</span>
                     <span style={{ color: "var(--gray2)" }}>›</span>
-                    <span style={{ color: "var(--yellow)", fontWeight: 700 }}>●3</span>
+                    <span style={{ color: "#4ade80", fontWeight: 700 }}>✓3</span>
+                    <span style={{ color: "var(--gray2)" }}>›</span>
+                    <span style={{ color: "var(--yellow)", fontWeight: 700 }}>●4</span>
                   </>
                 )}
               </>
