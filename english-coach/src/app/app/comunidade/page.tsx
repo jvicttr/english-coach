@@ -986,7 +986,28 @@ export default function ComunidadePage() {
 
       {selectedImage && (
         <div onClick={() => { setSelectedImage(null); setImageZoom(1); }} style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.95)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}>
-          <div onClick={(e) => e.stopPropagation()} style={{ position: "relative", width: "90%", height: "90%", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <div onClick={(e) => e.stopPropagation()} style={{ position: "relative", width: "90%", height: "90%", display: "flex", alignItems: "center", justifyContent: "center" }}
+            onTouchStart={(e) => {
+              if (e.touches.length === 2) {
+                const dx = e.touches[0].clientX - e.touches[1].clientX;
+                const dy = e.touches[0].clientY - e.touches[1].clientY;
+                (e.currentTarget as any).initialDistance = Math.sqrt(dx * dx + dy * dy);
+              }
+            }}
+            onTouchMove={(e) => {
+              if (e.touches.length === 2 && (e.currentTarget as any).initialDistance) {
+                const dx = e.touches[0].clientX - e.touches[1].clientX;
+                const dy = e.touches[0].clientY - e.touches[1].clientY;
+                const currentDistance = Math.sqrt(dx * dx + dy * dy);
+                const scale = currentDistance / (e.currentTarget as any).initialDistance;
+                setImageZoom(prev => Math.min(Math.max(prev * scale, 1), 3));
+                (e.currentTarget as any).initialDistance = currentDistance;
+              }
+            }}
+            onTouchEnd={() => {
+              (e.currentTarget as any).initialDistance = null;
+            }}
+          >
             <img
               src={selectedImage}
               alt="fullscreen"
@@ -995,7 +1016,8 @@ export default function ComunidadePage() {
                 maxHeight: "100%",
                 transform: `scale(${imageZoom})`,
                 transition: "transform 0.2s",
-                cursor: imageZoom > 1 ? "grab" : "zoom-in"
+                cursor: imageZoom > 1 ? "grab" : "zoom-in",
+                touchAction: "none"
               }}
               onWheel={(e) => {
                 e.preventDefault();
