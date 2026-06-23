@@ -1596,29 +1596,53 @@ export default function Home() {
               <>
                 <span style={{ color: "#4ade80", fontWeight: 700 }}>✓1</span>
                 <span style={{ color: "var(--gray2)" }}>›</span>
-                {trilhaPhase === "chat1" ? (
+                {screen === "chat" && trilhaPhase === "chat1" ? (
                   <>
+                    <span style={{ color: "var(--yellow)", fontWeight: 700 }}>●1</span>
+                    <span style={{ color: "var(--gray2)" }}>›</span>
+                    <span>2</span>
+                    <span style={{ color: "var(--gray2)" }}>›</span>
+                    <span>3</span>
+                    <span style={{ color: "var(--gray2)" }}>›</span>
+                    <span>4</span>
+                  </>
+                ) : screen === "trail-fc" ? (
+                  <>
+                    <span style={{ color: "#4ade80", fontWeight: 700 }}>✓1</span>
+                    <span style={{ color: "var(--gray2)" }}>›</span>
                     <span style={{ color: "var(--yellow)", fontWeight: 700 }}>●2</span>
                     <span style={{ color: "var(--gray2)" }}>›</span>
                     <span>3</span>
                     <span style={{ color: "var(--gray2)" }}>›</span>
                     <span>4</span>
                   </>
-                ) : trilhaPhase === "flashcards" || trilhaPhase === "quiz" ? (
+                ) : screen === "quiz" ? (
                   <>
+                    <span style={{ color: "#4ade80", fontWeight: 700 }}>✓1</span>
+                    <span style={{ color: "var(--gray2)" }}>›</span>
                     <span style={{ color: "#4ade80", fontWeight: 700 }}>✓2</span>
                     <span style={{ color: "var(--gray2)" }}>›</span>
                     <span style={{ color: "var(--yellow)", fontWeight: 700 }}>●3</span>
                     <span style={{ color: "var(--gray2)" }}>›</span>
                     <span>4</span>
                   </>
-                ) : (
+                ) : screen === "chat" && trilhaPhase === "chat2" ? (
                   <>
+                    <span style={{ color: "#4ade80", fontWeight: 700 }}>✓1</span>
+                    <span style={{ color: "var(--gray2)" }}>›</span>
                     <span style={{ color: "#4ade80", fontWeight: 700 }}>✓2</span>
                     <span style={{ color: "var(--gray2)" }}>›</span>
                     <span style={{ color: "#4ade80", fontWeight: 700 }}>✓3</span>
                     <span style={{ color: "var(--gray2)" }}>›</span>
                     <span style={{ color: "var(--yellow)", fontWeight: 700 }}>●4</span>
+                  </>
+                ) : (
+                  <>
+                    <span>2</span>
+                    <span style={{ color: "var(--gray2)" }}>›</span>
+                    <span>3</span>
+                    <span style={{ color: "var(--gray2)" }}>›</span>
+                    <span>4</span>
                   </>
                 )}
               </>
