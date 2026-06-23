@@ -272,7 +272,7 @@ function ReplyComposer({ postId, user, onDone }: { postId: string; user: ReturnT
             </button>
             <input ref={fileInputRef} type="file" accept="image/*" onChange={handleImageSelect} style={{ display: "none" }} />
             <button onClick={() => setShowEmoji(v => !v)} style={{ display: "flex", alignItems: "center", gap: 4, padding: "4px 10px", borderRadius: 50, border: `1px solid ${showEmoji ? "rgba(245,200,0,.5)" : "#2a2a2a"}`, background: showEmoji ? "rgba(245,200,0,.08)" : "transparent", cursor: "pointer", color: showEmoji ? "var(--yellow)" : "var(--gray)" }}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2" fill="none" stroke="currentColor" strokeWidth="2"/><circle cx="9" cy="9" r="1" fill="white"/><circle cx="15" cy="9" r="1" fill="white"/></svg>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><circle cx="9" cy="9" r="1"/><circle cx="15" cy="9" r="1"/></svg>
             </button>
             <div style={{ marginLeft: "auto", display: "flex", gap: 8, alignItems: "center" }}>
               <button onClick={submit} disabled={!text.trim() && !audioBlob && !imageFile || posting} style={{ background: (text.trim() || audioBlob || imageFile) ? "var(--yellow)" : "#1e1e1e", color: (text.trim() || audioBlob || imageFile) ? "#000" : "#333", border: "none", borderRadius: 50, padding: "5px 14px", fontWeight: 800, fontSize: "0.78rem", cursor: (text.trim() || audioBlob || imageFile) ? "pointer" : "default" }}>
