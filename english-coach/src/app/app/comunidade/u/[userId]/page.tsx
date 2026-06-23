@@ -70,7 +70,7 @@ export default function UserProfilePage({ params }: { params: Promise<{ userId: 
 
   return (
     <div style={{ background: "var(--black)", minHeight: "100dvh", fontFamily: "'Inter', sans-serif", paddingTop: 65, paddingBottom: 80, overflowX: "hidden" }}>
-      <div style={{ position: "fixed", top: 0, left: 0, right: 0, padding: "10px 16px", borderBottom: "1px solid #1e1e1e", display: "flex", alignItems: "center", gap: 10, background: "var(--black)", zIndex: 50 }}>
+      <div style={{ position: "fixed", top: 0, left: 0, right: 0, padding: "10px 16px", borderBottom: "1px solid #1e1e1e", display: "flex", alignItems: "center", gap: 10, background: "var(--black)", zIndex: 1000 }}>
         <button onClick={() => router.back()} style={{ background: "var(--dark2)", border: "1px solid #2a2a2a", borderRadius: 10, height: 32, width: 32, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
           <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M9 2L4 7L9 12" stroke="var(--gray)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
         </button>
