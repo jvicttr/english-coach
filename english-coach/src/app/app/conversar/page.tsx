@@ -381,8 +381,7 @@ export default function Home() {
                 setFcFlipped(savedFcFlipped);
                 setScreen("trail-fc");
               } else {
-                // No flashcards found, restart proceedToFlashcards
-                setIsLoading(false);
+                // No flashcards found, try to regenerate them from saved chat1 messages
                 const savedChat1Messages = (await (async () => {
                   try {
                     const sessionRes = await fetch(`/api/trilha-session?stepId=${(step as TrailStep).id}`);
@@ -390,9 +389,39 @@ export default function Home() {
                     return sessionData.session?.messages ?? null;
                   } catch { return null; }
                 })());
-                if (savedChat1Messages) {
-                  await generateTrailQuiz(savedChat1Messages);
+                if (savedChat1Messages && savedChat1Messages.length > 0) {
+                  // Regenerate flashcards from saved messages
+                  setTrilhaChat1Messages(savedChat1Messages);
+                  setMessages(savedChat1Messages);
+                  setScreen("loading-flashcards");
+                  try {
+                    const res = await fetch("/api/flashcards/generate", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ messages: savedChat1Messages, topic: "free", packName: (step as TrailStep).title }),
+                    });
+                    const data = await res.json();
+                    if (data.cards && data.cards.length > 0) {
+                      setTrilhaFlashcards(data.cards);
+                      setFcIndex(0);
+                      setFcFlipped(false);
+                      setScreen("trail-fc");
+                      try { localStorage.setItem(`trilhaReview_fc_${(step as TrailStep).id}`, JSON.stringify(data.cards)); } catch {}
+                      try { localStorage.setItem(`trilhaContinue_${(step as TrailStep).id}`, JSON.stringify({ phase: "flashcards", fcIndex: 0, fcFlipped: false })); } catch {}
+                      fetch("/api/trilha-session", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ stepId: (step as TrailStep).id, phase: "flashcards", flashcardIndex: 0, flashcardFlipped: false }),
+                      }).catch(() => {});
+                    } else {
+                      // Flashcard regeneration failed — go straight to quiz
+                      await generateTrailQuiz(savedChat1Messages);
+                    }
+                  } catch {
+                    await generateTrailQuiz(savedChat1Messages);
+                  }
                 } else {
+                  setIsLoading(false);
                   router.push("/app/trilha");
                 }
                 return;

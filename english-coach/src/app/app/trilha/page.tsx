@@ -35,7 +35,7 @@ export default function TrilhaPage() {
       if (key?.startsWith("trilhaContinue_")) {
         try {
           const val = JSON.parse(localStorage.getItem(key)!);
-          if (val?.messages?.length > 0) sessions.add(key.replace("trilhaContinue_", ""));
+          if (val?.messages?.length > 0 || val?.phase) sessions.add(key.replace("trilhaContinue_", ""));
         } catch {}
       }
     }
