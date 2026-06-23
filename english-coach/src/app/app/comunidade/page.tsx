@@ -911,7 +911,7 @@ export default function ComunidadePage() {
                     </div>
                   )}
                   {showEmojiPicker && (
-                    <div style={{ display: "grid", gridTemplateColumns: "repeat(10, 1fr)", gap: 3, background: "#0d0d0d", borderRadius: 10, padding: "8px", marginBottom: 8, maxHeight: "160px", overflowY: "scroll", border: "1px solid #1e1e1e", scrollBehavior: "smooth" }}>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(10, 1fr)", gap: 3, background: "#0d0d0d", borderRadius: 8, padding: "8px", marginBottom: 8, maxHeight: "140px", overflowY: "scroll", border: "2px solid #fff", scrollBehavior: "smooth", WebkitScrollbar: true }}>
                       {EMOJI_LIST.map(e => <button key={e} onClick={() => insertEmoji(e)} style={{ background: "none", border: "none", fontSize: "1.3rem", cursor: "pointer", padding: "4px", borderRadius: 6, lineHeight: 1, transition: "transform .1s", display: "flex", alignItems: "center", justifyContent: "center" }} onMouseEnter={e => (e.currentTarget.style.transform = "scale(1.2)")} onMouseLeave={e => (e.currentTarget.style.transform = "scale(1)")}>{e}</button>)}
                     </div>
                   )}
@@ -1212,6 +1212,10 @@ export default function ComunidadePage() {
         @keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
         @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}
         @keyframes slideIn{from{transform:translateX(100%)}to{transform:translateX(0)}}
+        [style*="border: 2px solid #fff"]::-webkit-scrollbar { width: 6px; }
+        [style*="border: 2px solid #fff"]::-webkit-scrollbar-track { background: transparent; }
+        [style*="border: 2px solid #fff"]::-webkit-scrollbar-thumb { background: #555; border-radius: 3px; }
+        [style*="border: 2px solid #fff"]::-webkit-scrollbar-thumb:hover { background: #777; }
       `}</style>
     </div>
   );
