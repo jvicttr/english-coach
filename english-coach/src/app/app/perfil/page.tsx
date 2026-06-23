@@ -150,7 +150,7 @@ export default function PerfilPage() {
               )}
             </div>
             <div style={{ height: 7, background: "#1e1e1e", borderRadius: 99, overflow: "hidden" }}>
-              <div style={{ height: "100%", width: `${xpPct}%`, background: "linear-gradient(90deg, #F5C800, #e0a800)", borderRadius: 99, transition: "width 0.6s" }} />
+              <div style={{ height: "100%", width: `${xpPct}%`, background: data.tier.label === "Ouro" ? "linear-gradient(90deg, #F5C800, #e0a800)" : data.tier.label === "Prata" ? "linear-gradient(90deg, #C0C0C0, #A8A8A8)" : "linear-gradient(90deg, #CD7F32, #B87333)", borderRadius: 99, transition: "width 0.6s" }} />
             </div>
             <p style={{ fontSize: "0.65rem", color: "var(--gray2)", margin: "6px 0 0", textAlign: "right" }}>{data.totalXp} XP</p>
           </div>
