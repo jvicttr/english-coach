@@ -126,9 +126,9 @@ export async function POST(req: NextRequest) {
             Authorization: `Basic ${process.env.ONESIGNAL_API_KEY}`,
           },
           body: JSON.stringify({
-            include_external_user_ids: [recipientId],
-            headings: { en: `${senderName}` },
-            contents: { en: messagePreview },
+            include_player_ids: [recipient.onesignal_player_id],
+            headings: { en: `${senderName}`, pt: `${senderName}` },
+            contents: { en: messagePreview, pt: messagePreview },
             data: { conversationId, userId: recipientId },
             url: `https://faleinglesjv.com/app/mensagens/${userId}`,
             web_url: `https://faleinglesjv.com/app/mensagens/${userId}`,
