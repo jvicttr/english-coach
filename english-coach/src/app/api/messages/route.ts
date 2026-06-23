@@ -39,6 +39,26 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({ conversations });
 }
 
+// PATCH - Marcar mensagem como lida
+export async function PATCH(req: NextRequest) {
+  const { userId } = await auth();
+  if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const { conversationId } = await req.json();
+  if (!conversationId) return NextResponse.json({ error: "Invalid request" }, { status: 400 });
+
+  // Marcar todas as mensagens não-lidas da conversa como lidas
+  const { error } = await supabase
+    .from("direct_messages")
+    .update({ read_at: new Date().toISOString() })
+    .eq("conversation_id", conversationId)
+    .neq("sender_id", userId)
+    .is("read_at", null);
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  return NextResponse.json({ ok: true });
+}
+
 // POST - Enviar mensagem
 export async function POST(req: NextRequest) {
   const { userId } = await auth();

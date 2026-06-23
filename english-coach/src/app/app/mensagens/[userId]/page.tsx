@@ -135,7 +135,8 @@ export default function ChatPage() {
       if (startData.conversationId) {
         setConversationId(startData.conversationId);
         loadMessages(startData.conversationId);
-        // Marcar conversa como lida
+        // Marcar mensagens como lidas
+        fetch("/api/messages", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ conversationId: startData.conversationId }) }).catch(() => {});
         fetch("/api/messages/unread", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ conversationId: startData.conversationId }) }).catch(() => {});
         intervalRef.current = setInterval(() => loadMessages(startData.conversationId), 3000);
       }
@@ -299,8 +300,13 @@ export default function ChatPage() {
                 {msg.content && <p style={{ margin: "0 0 4px 0" }}>{renderWithMentions(msg.content)}</p>}
                 {msg.image_url && <img src={msg.image_url} alt="" style={{ maxWidth: "100%", borderRadius: 8, marginBottom: 4 }} />}
                 {msg.audio_url && <audio src={msg.audio_url} controls style={{ width: "100%", marginBottom: 4 }} />}
-                <div style={{ fontSize: "0.62rem", opacity: 0.6 }}>
+                <div style={{ fontSize: "0.62rem", opacity: 0.6, display: "flex", alignItems: "center", gap: "4px" }}>
                   {fmtBrasiliaTime(msg.created_at)}
+                  {msg.sender_id === user?.id && (
+                    <span style={{ color: msg.read_at ? "var(--yellow)" : "var(--gray)" }}>
+                      {msg.read_at ? "✓✓" : "✓"}
+                    </span>
+                  )}
                 </div>
               </div>
             </div>
