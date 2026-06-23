@@ -1691,63 +1691,79 @@ export default function Home() {
                   </button>
                 </div>
               )}
-              {msg.role === "assistant" && msg.corrections && msg.corrections.length > 0 && (
-                <div style={{ marginTop: "8px", paddingTop: "8px", borderTop: "1px solid rgba(255,255,255,0.06)", display: "flex", flexDirection: "column", gap: "10px" }}>
-                  <div style={{ fontSize: "0.72rem", color: "var(--gray)" }}>
-                    {msg.corrections.length === 1 ? "Correção" : `${msg.corrections.length} Correções`}
-                  </div>
-                  {msg.corrections.map((c, ci) => {
-                    const wrongWords = (c.wrongSentence ?? c.wrong).split(" ");
-                    const rightWords = (c.rightSentence ?? c.right).split(" ");
-                    const maxLen = Math.max(wrongWords.length, rightWords.length);
-                    const wrongHighlighted = wrongWords.map((w, i) => {
-                      const changed = w.toLowerCase().replace(/[^a-z]/g, "") !== (rightWords[i] ?? "").toLowerCase().replace(/[^a-z]/g, "");
-                      return changed ? <span key={i} style={{ color: "#f87171", fontWeight: 700 }}>{w} </span> : <span key={i}>{w} </span>;
-                    });
-                    const rightHighlighted = Array.from({ length: maxLen }, (_, i) => {
-                      const rw = rightWords[i] ?? "";
-                      const ww = wrongWords[i] ?? "";
-                      const changed = rw.toLowerCase().replace(/[^a-z]/g, "") !== ww.toLowerCase().replace(/[^a-z]/g, "");
-                      return changed ? <span key={i} style={{ color: "#4ade80", fontWeight: 700 }}>{rw} </span> : <span key={i}>{rw} </span>;
-                    });
-                    const correctedSentence = c.rightSentence ?? c.right;
-                    return (
-                      <div key={ci} style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                        {msg.corrections!.length > 1 && (
-                          <div style={{ fontSize: "0.68rem", color: "var(--gray)", opacity: 0.6 }}>Erro {ci + 1}: <span style={{ color: "#f87171" }}>{c.wrong}</span> → <span style={{ color: "#4ade80" }}>{c.right}</span></div>
-                        )}
-                        <div style={{ fontSize: "0.8rem", background: "rgba(248,113,113,0.08)", border: "1px solid rgba(248,113,113,0.2)", borderRadius: "8px", padding: "5px 10px", lineHeight: 1.5 }}>
-                          ❌ {wrongHighlighted}
-                        </div>
-                        <div style={{ fontSize: "0.8rem", background: "rgba(74,222,128,0.08)", border: "1px solid rgba(74,222,128,0.2)", borderRadius: "8px", padding: "5px 10px", lineHeight: 1.5 }}>
-                          ✅ {rightHighlighted}
-                        </div>
-                        <div style={{ fontSize: "0.72rem", color: "var(--gray)", fontStyle: "italic", paddingLeft: "4px" }}>
-                          🗣️ {c.phonetic}
-                        </div>
-                        <div style={{ display: "flex", gap: "6px", marginTop: "2px" }}>
-                          <button
-                            onClick={() => { unlockAudio(); speak(correctedSentence); }}
-                            disabled={isSpeaking || isLoading}
-                            title="Ouvir a frase corrigida"
-                            style={{ background: "transparent", border: "1px solid rgba(74,222,128,0.3)", borderRadius: "50px", padding: "2px 10px", fontSize: "0.68rem", color: "#4ade80", cursor: "pointer", display: "flex", alignItems: "center", gap: "4px", opacity: isSpeaking || isLoading ? 0.4 : 1 }}
-                          >
-                            🔊 Ouvir
-                          </button>
-                          <button
-                            onClick={() => { unlockAudio(); speak(correctedSentence, true); }}
-                            disabled={isSpeaking || isLoading}
-                            title="Ouvir a frase corrigida devagar"
-                            style={{ background: "transparent", border: "1px solid rgba(74,222,128,0.3)", borderRadius: "50px", padding: "2px 10px", fontSize: "0.68rem", color: "#4ade80", cursor: "pointer", display: "flex", alignItems: "center", gap: "4px", opacity: isSpeaking || isLoading ? 0.4 : 1 }}
-                          >
-                            🐢 Devagar
-                          </button>
-                        </div>
+              {msg.role === "assistant" && msg.corrections && msg.corrections.length > 0 && (() => {
+                const corrections = msg.corrections;
+                const mainCorrection = corrections[0];
+                const wrongSentence = mainCorrection.wrongSentence ?? mainCorrection.wrong;
+                const rightSentence = mainCorrection.rightSentence ?? mainCorrection.right;
+
+                // Mark all wrong words from all corrections
+                const wrongWords = wrongSentence.split(" ");
+                const rightWords = rightSentence.split(" ");
+                const errorIndices = new Set<number>();
+
+                corrections.forEach((c) => {
+                  const cWrongWords = (c.wrongSentence ?? c.wrong).split(" ");
+                  const cRightWords = (c.rightSentence ?? c.right).split(" ");
+                  cWrongWords.forEach((w, i) => {
+                    const rw = cRightWords[i] ?? "";
+                    if (w.toLowerCase().replace(/[^a-z]/g, "") !== rw.toLowerCase().replace(/[^a-z]/g, "")) {
+                      errorIndices.add(i);
+                    }
+                  });
+                });
+
+                const wrongHighlighted = wrongWords.map((w, i) =>
+                  errorIndices.has(i)
+                    ? <span key={i} style={{ color: "#f87171", fontWeight: 700 }}>{w} </span>
+                    : <span key={i}>{w} </span>
+                );
+
+                const rightHighlighted = rightWords.map((w, i) =>
+                  errorIndices.has(i)
+                    ? <span key={i} style={{ color: "#4ade80", fontWeight: 700 }}>{w} </span>
+                    : <span key={i}>{w} </span>
+                );
+
+                const phonetics = corrections.map(c => c.phonetic).filter(Boolean).join(" · ");
+
+                return (
+                  <div style={{ marginTop: "8px", paddingTop: "8px", borderTop: "1px solid rgba(255,255,255,0.06)", display: "flex", flexDirection: "column", gap: "8px" }}>
+                    <div style={{ fontSize: "0.72rem", color: "var(--gray)" }}>
+                      {corrections.length === 1 ? "Correção" : `${corrections.length} Correções`}
+                    </div>
+                    <div style={{ fontSize: "0.8rem", background: "rgba(248,113,113,0.08)", border: "1px solid rgba(248,113,113,0.2)", borderRadius: "8px", padding: "5px 10px", lineHeight: 1.5 }}>
+                      ❌ {wrongHighlighted}
+                    </div>
+                    <div style={{ fontSize: "0.8rem", background: "rgba(74,222,128,0.08)", border: "1px solid rgba(74,222,128,0.2)", borderRadius: "8px", padding: "5px 10px", lineHeight: 1.5 }}>
+                      ✅ {rightHighlighted}
+                    </div>
+                    {phonetics && (
+                      <div style={{ fontSize: "0.72rem", color: "var(--gray)", fontStyle: "italic", paddingLeft: "4px" }}>
+                        🗣️ {phonetics}
                       </div>
-                    );
-                  })}
-                </div>
-              )}
+                    )}
+                    <div style={{ display: "flex", gap: "6px", marginTop: "2px" }}>
+                      <button
+                        onClick={() => { unlockAudio(); speak(rightSentence); }}
+                        disabled={isSpeaking || isLoading}
+                        title="Ouvir a frase corrigida"
+                        style={{ background: "transparent", border: "1px solid rgba(74,222,128,0.3)", borderRadius: "50px", padding: "2px 10px", fontSize: "0.68rem", color: "#4ade80", cursor: "pointer", display: "flex", alignItems: "center", gap: "4px", opacity: isSpeaking || isLoading ? 0.4 : 1 }}
+                      >
+                        🔊 Ouvir
+                      </button>
+                      <button
+                        onClick={() => { unlockAudio(); speak(rightSentence, true); }}
+                        disabled={isSpeaking || isLoading}
+                        title="Ouvir a frase corrigida devagar"
+                        style={{ background: "transparent", border: "1px solid rgba(74,222,128,0.3)", borderRadius: "50px", padding: "2px 10px", fontSize: "0.68rem", color: "#4ade80", cursor: "pointer", display: "flex", alignItems: "center", gap: "4px", opacity: isSpeaking || isLoading ? 0.4 : 1 }}
+                      >
+                        🐢 Devagar
+                      </button>
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
           </div>
         ))}
