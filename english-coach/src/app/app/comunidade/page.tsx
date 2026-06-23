@@ -941,7 +941,9 @@ export default function ComunidadePage() {
             <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", justifyContent: "flex-end" }}>
               {composerOpen ? (
                 <>
-                  <button onClick={() => setShowEmojiPicker(v => !v)} style={{ background: showEmojiPicker ? "rgba(245,200,0,.1)" : "none", border: "none", fontSize: "1.1rem", cursor: "pointer", padding: "2px 6px", borderRadius: 8 }} title="Add emoji">😊</button>
+                  <button onClick={() => setShowEmojiPicker(v => !v)} style={{ background: showEmojiPicker ? "rgba(245,200,0,.1)" : "none", border: "none", cursor: "pointer", padding: "2px 6px", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", color: showEmojiPicker ? "var(--yellow)" : "var(--gray)" }} title="Add emoji">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><circle cx="9" cy="9" r="1"/><circle cx="15" cy="9" r="1"/></svg>
+                  </button>
                   {postText.length > 0 && <span style={{ fontSize: "0.65rem", color: postText.length > 250 ? "#f87171" : "var(--gray)" }}>{postText.length}/280</span>}
                   <button onClick={resetComposer} style={{ background: "none", border: "none", color: "var(--gray)", fontSize: "0.78rem", cursor: "pointer", padding: "0 4px" }}>Cancel</button>
                   <button onClick={submitPost} disabled={!canPost} style={{ background: canPost ? "var(--yellow)" : "#1e1e1e", color: canPost ? "#000" : "#333", border: "none", borderRadius: 50, padding: "6px 18px", fontWeight: 800, fontSize: "0.82rem", cursor: canPost ? "pointer" : "default", transition: "all .15s" }}>
