@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import OnboardingTour from "@/components/OnboardingTour";
 import LevelSelect from "@/components/LevelSelect";
+import { StartConversationModal } from "@/components/StartConversationModal";
 import { TRAIL_STEPS, isStepUnlocked, getStartingLevel, type TrailStep } from "@/lib/trilha-steps";
 
 type TierInfo = { id: string; label: string; emoji: string; color: string; min: number; max: number };
@@ -31,6 +32,7 @@ export default function AppHome() {
   const [xpData, setXpData] = useState<XpData | null>(null);
   const [trilhaCta, setTrilhaCta] = useState<{ type: "continue" | "next"; step: TrailStep } | null | undefined>(undefined);
   const [recommendation, setRecommendation] = useState<{ packName: string; hardCount: number } | null>(null);
+  const [showStartChat, setShowStartChat] = useState(false);
 
   useEffect(() => {
     const saved = localStorage.getItem("lastTopic");
@@ -329,6 +331,38 @@ export default function AppHome() {
         )}
       </div>
 
+      {/* Botão FAB Mensagens */}
+      <button
+        onClick={() => setShowStartChat(true)}
+        style={{
+          position: "fixed",
+          bottom: "100px",
+          right: "max(20px, calc((100vw - 600px) / 6))",
+          width: "46px",
+          height: "46px",
+          borderRadius: "50%",
+          background: "rgba(245,200,0,.12)",
+          border: "1px solid rgba(245,200,0,.25)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          cursor: "pointer",
+          fontSize: "1.2rem",
+          transition: "all 0.2s",
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.background = "rgba(245,200,0,.2)";
+          e.currentTarget.style.borderColor = "rgba(245,200,0,.4)";
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.background = "rgba(245,200,0,.12)";
+          e.currentTarget.style.borderColor = "rgba(245,200,0,.25)";
+        }}
+      >
+        💬
+      </button>
+
+      <StartConversationModal isOpen={showStartChat} onClose={() => setShowStartChat(false)} />
     </div>
     </>
   );
