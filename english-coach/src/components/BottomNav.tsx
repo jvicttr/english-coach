@@ -96,25 +96,31 @@ function NavItems() {
             width: 48,
             height: 48,
             borderRadius: "50%",
-            background: "#222",
-            border: "1px solid #333",
+            background: "var(--yellow)",
+            border: "none",
             cursor: "pointer",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
             transform: "translateY(-6px)",
-            transition: "transform .15s, background .15s",
+            transition: "transform .15s, opacity .15s",
           }}
           onMouseEnter={e => {
             e.currentTarget.style.transform = "translateY(-9px)";
-            e.currentTarget.style.background = "#2a2a2a";
+            e.currentTarget.style.opacity = "0.9";
           }}
           onMouseLeave={e => {
             e.currentTarget.style.transform = "translateY(-6px)";
-            e.currentTarget.style.background = "#222";
+            e.currentTarget.style.opacity = "1";
           }}
         >
-          <NavIcon name={isComunidade ? "escrever" : "globe"} active={true} />
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#000" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            {isComunidade ? (
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+            ) : (
+              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z M12 13a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/>
+            )}
+          </svg>
         </button>
       </div>
 
