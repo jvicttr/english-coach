@@ -1004,7 +1004,7 @@ export default function ComunidadePage() {
                 (e.currentTarget as any).initialDistance = currentDistance;
               }
             }}
-            onTouchEnd={() => {
+            onTouchEnd={(e) => {
               (e.currentTarget as any).initialDistance = null;
             }}
           >
