@@ -336,27 +336,30 @@ export default function AppHome() {
         onClick={() => setShowStartChat(true)}
         style={{
           position: "fixed",
-          bottom: "100px",
+          bottom: "80px",
           right: "max(20px, calc((100vw - 600px) / 6))",
-          width: "46px",
-          height: "46px",
-          borderRadius: "50%",
-          background: "rgba(245,200,0,.12)",
-          border: "1px solid rgba(245,200,0,.25)",
+          width: "56px",
+          height: "56px",
+          borderRadius: "14px",
+          background: "#1a1a1a",
+          border: "1px solid #2a2a2a",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
           cursor: "pointer",
-          fontSize: "1.2rem",
+          fontSize: "1.5rem",
           transition: "all 0.2s",
+          boxShadow: "0 4px 12px rgba(0,0,0,0.3)",
         }}
         onMouseEnter={(e) => {
-          e.currentTarget.style.background = "rgba(245,200,0,.2)";
-          e.currentTarget.style.borderColor = "rgba(245,200,0,.4)";
+          e.currentTarget.style.background = "#252525";
+          e.currentTarget.style.borderColor = "rgba(245,200,0,.5)";
+          e.currentTarget.style.boxShadow = "0 6px 16px rgba(245,200,0,.15)";
         }}
         onMouseLeave={(e) => {
-          e.currentTarget.style.background = "rgba(245,200,0,.12)";
-          e.currentTarget.style.borderColor = "rgba(245,200,0,.25)";
+          e.currentTarget.style.background = "#1a1a1a";
+          e.currentTarget.style.borderColor = "#2a2a2a";
+          e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.3)";
         }}
       >
         💬
