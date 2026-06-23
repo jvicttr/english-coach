@@ -5,14 +5,6 @@
       "schedule": "0 22 * * *"
     },
     {
-      "path": "/api/cron/notify",
-      "schedule": "0 11 * * *"
-    },
-    {
-      "path": "/api/cron/notify",
-      "schedule": "30 20 * * *"
-    },
-    {
       "path": "/api/cron/streak-reminder",
       "schedule": "0 13 * * *"
     },
