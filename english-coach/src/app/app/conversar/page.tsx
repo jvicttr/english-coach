@@ -793,7 +793,7 @@ export default function Home() {
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: withFixTags(updatedMessages), level, topic: topic?.id ?? "free", stepContext: activeStepContext }),
+        body: JSON.stringify({ messages: withFixTags(updatedMessages), level, topic: trilhaStep ? "free" : topic?.id ?? "free", stepContext: activeStepContext }),
       });
       if (!res.ok) {
         setMessages((prev) => [...prev, { role: "assistant", content: "Ops, tive um problema. Tente enviar de novo!" }]);
