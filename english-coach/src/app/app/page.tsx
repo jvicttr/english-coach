@@ -50,7 +50,17 @@ export default function AppHome() {
       // Compute trilha CTA from returned data
       const completedList: { step_id: string; completed_at: string }[] = d.trilhaCompleted ?? [];
       const completedIds = new Set<string>(completedList.map((c) => c.step_id));
-      const activeSessions: string[] = d.trilhaActiveSessions ?? [];
+      let activeSessions: string[] = d.trilhaActiveSessions ?? [];
+
+      // Check localStorage first for pending trilha step (faster than database)
+      const pendingStep = typeof window !== "undefined" ? localStorage.getItem("pendingTrilhaStep") : null;
+      if (pendingStep) {
+        try {
+          const parsed = JSON.parse(pendingStep);
+          if (parsed?.id) activeSessions = [parsed.id];
+        } catch {}
+      }
+
       const levelMap: Record<string, string> = { iniciante: "beginner", basico: "basic", intermediario: "intermediate", avancado: "advanced" };
       const userLevel = d.englishLevel ? (levelMap[d.englishLevel] ?? "beginner") : "beginner";
       const startingLevel = getStartingLevel(userLevel);
