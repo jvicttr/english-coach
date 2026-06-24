@@ -52,12 +52,13 @@ export default function AppHome() {
       const completedIds = new Set<string>(completedList.map((c) => c.step_id));
       let activeSessions: string[] = d.trilhaActiveSessions ?? [];
 
-      // Check localStorage first for pending trilha step (faster than database)
+      // Check localStorage for a pending trilha step that overrides the database
       const pendingStep = typeof window !== "undefined" ? localStorage.getItem("pendingTrilhaStep") : null;
       if (pendingStep) {
         try {
           const parsed = JSON.parse(pendingStep);
-          if (parsed?.id) activeSessions = [parsed.id];
+          // Only use it if not yet completed
+          if (parsed?.id && !completedIds.has(parsed.id)) activeSessions = [parsed.id];
         } catch {}
       }
 
@@ -65,8 +66,9 @@ export default function AppHome() {
       const userLevel = d.englishLevel ? (levelMap[d.englishLevel] ?? "beginner") : "beginner";
       const startingLevel = getStartingLevel(userLevel);
 
+      // Only show "continue" for sessions that are NOT yet completed
       if (activeSessions.length > 0) {
-        const step = TRAIL_STEPS.find((s) => s.id === activeSessions[0]);
+        const step = TRAIL_STEPS.find((s) => activeSessions.includes(s.id) && !completedIds.has(s.id));
         if (step) { setTrilhaCta({ type: "continue", step }); return; }
       }
       let nextStep: TrailStep | undefined;
