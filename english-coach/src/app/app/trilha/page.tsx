@@ -90,7 +90,7 @@ export default function TrilhaPage() {
       }
     } catch {}
 
-    localStorage.setItem("pendingTrilhaStep", JSON.stringify({ ...step, phase }));
+    localStorage.setItem("pendingTrilhaStep", JSON.stringify({ ...step, phase, isTrilha: true }));
     router.push("/app/conversar");
   }
 

@@ -245,11 +245,20 @@ export default function Home() {
           localStorage.removeItem("pendingTrilhaStep");
           const phase: "chat1" | "flashcards" | "quiz" | "chat2" | "review" = parsed.phase ?? "chat1";
           // eslint-disable-next-line @typescript-eslint/no-unused-vars
-          const { phase: _p, ...step } = parsed;
+          const { phase: _p, isTrilha: _isTrilha, ...step } = parsed;
           setTrilhaStep(step as TrailStep);
           setTrilhaPhase(phase);
-          const freeTopic = TOPICS.find((t) => t.id === "free")!;
-          setTopic(freeTopic);
+
+          // Create a topic based on the trilha step
+          const trailStep = step as TrailStep;
+          const trilhaTopic: TopicDef = {
+            id: `trilha_${trailStep.id}`,
+            emoji: trailStep.emoji,
+            label: trailStep.title,
+            desc: trailStep.desc,
+            color: "#f59e0b", // amber color for trail topics
+          };
+          setTopic(trilhaTopic);
 
           // Review mode: load saved conversation read-only, no new AI call
           if (phase === "review") {
