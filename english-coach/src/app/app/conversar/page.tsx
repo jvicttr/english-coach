@@ -493,7 +493,7 @@ export default function Home() {
           fetch("/api/chat", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ messages: [], level: d.level ?? localStorage.getItem("userLevel") ?? null, topic: "free", topicStart: true, stepContext: ctx }),
+            body: JSON.stringify({ messages: [], level: d.level ?? localStorage.getItem("userLevel") ?? null, topic: "free", topicStart: true, stepContext: ctx, stepLevel: (step as TrailStep).level }),
           }).then((r) => r.json()).then((chatData) => {
             if (chatData.reply) {
               const initialMsgs = [{ role: "assistant" as const, content: chatData.reply, translation: chatData.translation ?? undefined }];
@@ -793,7 +793,7 @@ export default function Home() {
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: withFixTags(updatedMessages), level, topic: trilhaStep ? "free" : topic?.id ?? "free", stepContext: activeStepContext }),
+        body: JSON.stringify({ messages: withFixTags(updatedMessages), level, topic: trilhaStep ? "free" : topic?.id ?? "free", stepContext: activeStepContext, stepLevel: trilhaStep?.level }),
       });
       if (!res.ok) {
         setMessages((prev) => [...prev, { role: "assistant", content: "Ops, tive um problema. Tente enviar de novo!" }]);
@@ -1057,7 +1057,7 @@ export default function Home() {
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: [], level, topic: "free", topicStart: true, stepContext: ctx }),
+        body: JSON.stringify({ messages: [], level, topic: "free", topicStart: true, stepContext: ctx, stepLevel: trilhaStep.level }),
       });
       if (!res.ok) return;
       const data = await res.json();

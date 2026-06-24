@@ -56,7 +56,7 @@ export async function POST(req: NextRequest) {
     )).catch(() => {});
   }
 
-  const { messages, level, topic, topicStart, roleplay, scenario, stepContext } = await req.json();
+  const { messages, level, topic, topicStart, roleplay, scenario, stepContext, stepLevel } = await req.json();
 
   if (roleplay && !isPro) {
     return NextResponse.json({ proRequired: true }, { status: 403 });
@@ -69,10 +69,11 @@ export async function POST(req: NextRequest) {
     systemFull += buildRoleplayBlock(ROLEPLAY_SCENARIOS[scenario], scenario, effectiveLevel, !!topicStart);
   } else if (topic === "free" || !topic) {
     if (stepContext) {
+      const cefrDesc = stepLevel ? CEFR_DESCRIPTIONS[stepLevel as keyof typeof CEFR_DESCRIPTIONS] : null;
       systemFull += `\n\nLEARNING PATH STEP — Guided conversation.
 The student is working through a structured learning trail. This session has a specific focus:
 ${stepContext}
-
+${cefrDesc ? `\nTarget CEFR level for this step: ${stepLevel} — ${cefrDesc}. Pitch your language, vocabulary, and grammar complexity exactly at this level from the very first message. Do not simplify below it.` : ""}
 Guide the conversation around this theme. Keep it natural and engaging, not like a drill. After 6-8 exchanges, wrap up naturally. The student needs to score ≥70% on the quiz to complete this step.`;
     } else {
       systemFull += `\n\n${FREE_CONVERSATION_CONTEXT}`;
@@ -146,6 +147,14 @@ Guide the conversation around this theme. Keep it natural and engaging, not like
 
   return NextResponse.json({ reply, detectedLevel, translation: finalTranslation, corrections });
 }
+
+const CEFR_DESCRIPTIONS = {
+  A1: "Absolute beginner. Use very short, simple sentences. Present tense only. Survival vocabulary. Speak slowly and clearly.",
+  A2: "Elementary. Simple past and future tenses. Basic daily topics. Common vocabulary only. Short sentences, no idioms.",
+  B1: "Intermediate. Student can discuss familiar topics. Mix of tenses, occasional errors. Introduce natural expressions and some phrasal verbs.",
+  B2: "Upper-intermediate. Complex topics, idiomatic expressions, mostly fluent. Use sophisticated vocabulary, conditionals, and nuance freely.",
+  C1: "Advanced. Near-native. Complex grammar, idioms, cultural references. Push for precision, nuance, and native-like expression.",
+};
 
 function getTopicStartHint(topic: string): string {
   const hints: Record<string, string> = {
