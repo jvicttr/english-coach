@@ -59,6 +59,43 @@ export async function PATCH(req: NextRequest) {
   return NextResponse.json({ ok: true });
 }
 
+// DELETE - Apagar mensagem (soft delete)
+export async function DELETE(req: NextRequest) {
+  const { userId } = await auth();
+  if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const { searchParams } = new URL(req.url);
+  const messageId = searchParams.get("messageId");
+  if (!messageId) return NextResponse.json({ error: "Invalid request" }, { status: 400 });
+
+  const { data: message } = await supabase
+    .from("direct_messages")
+    .select("id, conversation_id")
+    .eq("id", messageId)
+    .is("deleted_at", null)
+    .single();
+
+  if (!message) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+  const { data: conv } = await supabase
+    .from("conversations")
+    .select("user1_id, user2_id")
+    .eq("id", message.conversation_id)
+    .single();
+
+  if (!conv || (conv.user1_id !== userId && conv.user2_id !== userId)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  const { error } = await supabase
+    .from("direct_messages")
+    .update({ deleted_at: new Date().toISOString() })
+    .eq("id", messageId);
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  return NextResponse.json({ ok: true });
+}
+
 // POST - Enviar mensagem
 export async function POST(req: NextRequest) {
   const { userId } = await auth();

@@ -12,6 +12,7 @@ function avatarColor(name: string) {
   for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
   return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
 }
+
 function renderWithMentions(text: string): React.ReactNode[] {
   return text.split(/(@\w+)/g).map((part, i) =>
     /^@\w/.test(part)
@@ -40,12 +41,7 @@ function getSupportedMime() {
 
 function parseDate(dateStr: string): Date {
   let s = dateStr.replace(" ", "T");
-  // Se não há indicador de timezone, o Supabase está retornando UTC sem sufixo —
-  // adiciona Z para forçar interpretação UTC (evita JS tratar como horário local)
-  if (!s.endsWith("Z") && !/[+-]\d{2}:?\d{2}$/.test(s)) {
-    s += "Z";
-  }
-  // Normaliza offsets UTC explícitos para Z
+  if (!s.endsWith("Z") && !/[+-]\d{2}:?\d{2}$/.test(s)) s += "Z";
   s = s.replace(/\+00:00$/, "Z").replace(/\+00$/, "Z").replace(/\+0000$/, "Z");
   return new Date(s);
 }
@@ -82,6 +78,47 @@ function getDayLabel(dateStr: string): string {
   return day;
 }
 
+// SVG checkmarks — WhatsApp-style
+function CheckSingle({ color = "#999" }: { color?: string }) {
+  return (
+    <svg width="14" height="10" viewBox="0 0 14 10" fill="none" style={{ display: "inline-block", verticalAlign: "middle", flexShrink: 0 }}>
+      <path d="M1.5 5L5 8.5L12.5 1" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  );
+}
+
+function CheckDouble({ color = "#999" }: { color?: string }) {
+  return (
+    <svg width="20" height="10" viewBox="0 0 20 10" fill="none" style={{ display: "inline-block", verticalAlign: "middle", flexShrink: 0 }}>
+      <path d="M1.5 5L5 8.5L12.5 1" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+      <path d="M7 5L10.5 8.5L18 1" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  );
+}
+
+function MsgStatus({ msg }: { msg: any }) {
+  if (msg.id?.startsWith("tmp-")) return <CheckSingle color="#888" />;
+  if (msg.read_at) return <CheckDouble color="#4fc3f7" />;
+  return <CheckDouble color="#888" />;
+}
+
+// Reply icon button
+function ActionBtn({ onClick, title, children }: { onClick: () => void; title: string; children: React.ReactNode }) {
+  return (
+    <button
+      onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); onClick(); }}
+      title={title}
+      style={{
+        width: 28, height: 28, background: "var(--dark2)", border: "1px solid #2a2a2a",
+        borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center",
+        cursor: "pointer", flexShrink: 0, color: "var(--gray)",
+      }}
+    >
+      {children}
+    </button>
+  );
+}
+
 export default function ChatPage() {
   const params = useParams();
   const router = useRouter();
@@ -103,6 +140,19 @@ export default function ChatPage() {
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [recSeconds, setRecSeconds] = useState(0);
 
+  // Reply state
+  const [replyTo, setReplyTo] = useState<any>(null);
+  // Hover state for desktop action buttons
+  const [hoveredMsgId, setHoveredMsgId] = useState<string | null>(null);
+  // Swipe state for mobile reply
+  const [swipeState, setSwipeState] = useState<{ msgId: string; offset: number } | null>(null);
+  const swipingActiveRef = useRef(false);
+  const touchStartRef = useRef<{ id: string; x: number; y: number } | null>(null);
+  const replyTriggeredRef = useRef(false);
+  // Long press menu for mobile delete
+  const [longPressMenu, setLongPressMenu] = useState<{ msgId: string; x: number; y: number } | null>(null);
+  const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const bottomRef = useRef<HTMLDivElement>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const mrRef = useRef<MediaRecorder | null>(null);
@@ -121,6 +171,14 @@ export default function ChatPage() {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  // Close long press menu on outside click
+  useEffect(() => {
+    if (!longPressMenu) return;
+    const handler = () => setLongPressMenu(null);
+    document.addEventListener("click", handler);
+    return () => document.removeEventListener("click", handler);
+  }, [longPressMenu]);
+
   async function init() {
     try {
       const [startRes, usersRes] = await Promise.all([
@@ -135,7 +193,6 @@ export default function ChatPage() {
       if (startData.conversationId) {
         setConversationId(startData.conversationId);
         loadMessages(startData.conversationId);
-        // Marcar mensagens como lidas
         fetch("/api/messages", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ conversationId: startData.conversationId }) }).catch(() => {});
         fetch("/api/messages/unread", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ conversationId: startData.conversationId }) }).catch(() => {});
         intervalRef.current = setInterval(() => loadMessages(startData.conversationId), 3000);
@@ -151,18 +208,42 @@ export default function ChatPage() {
     } catch (e) { console.error(e); }
   }
 
-  async function send(content?: string, imageUrl?: string, audioUrl?: string) {
+  async function send(content?: string, imageUrl?: string, audioUrlParam?: string) {
     if (!conversationId || sending) return;
-    if (!content?.trim() && !imageUrl && !audioUrl) return;
+    if (!content?.trim() && !imageUrl && !audioUrlParam) return;
     setSending(true);
-    if (content) { setInput(""); setMessages(prev => [...prev, { id: `tmp-${Date.now()}`, sender_id: user?.id, content, created_at: new Date().toISOString() }]); }
+    const currentReplyTo = replyTo;
+    setReplyTo(null);
+    if (content) {
+      setInput("");
+      setMessages(prev => [...prev, {
+        id: `tmp-${Date.now()}`,
+        sender_id: user?.id,
+        content,
+        created_at: new Date().toISOString(),
+        reply_to_id: currentReplyTo?.id || null,
+      }]);
+    }
     try {
       await fetch("/api/messages", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ conversationId, content: content || null, imageUrl: imageUrl || null, audioUrl: audioUrl || null, videoUrl: null, replyToId: null }),
+        body: JSON.stringify({
+          conversationId,
+          content: content || null,
+          imageUrl: imageUrl || null,
+          audioUrl: audioUrlParam || null,
+          videoUrl: null,
+          replyToId: currentReplyTo?.id || null,
+        }),
       });
       loadMessages(conversationId);
     } catch (e) { console.error(e); } finally { setSending(false); }
+  }
+
+  async function deleteMsg(messageId: string) {
+    if (messageId.startsWith("tmp-")) return;
+    setMessages(prev => prev.filter(m => m.id !== messageId));
+    await fetch(`/api/messages?messageId=${encodeURIComponent(messageId)}`, { method: "DELETE" }).catch(() => {});
   }
 
   async function startRecording() {
@@ -241,9 +322,7 @@ export default function ChatPage() {
     setTimeout(() => ta?.focus(), 0);
   }
 
-  const filteredMentions = allUsers
-    .filter(u => u.name.toLowerCase().includes(mentionQuery))
-    .slice(0, 5);
+  const filteredMentions = allUsers.filter(u => u.name.toLowerCase().includes(mentionQuery)).slice(0, 5);
 
   function insertEmoji(e: string) {
     setInput(prev => prev + e);
@@ -251,8 +330,71 @@ export default function ChatPage() {
     textareaRef.current?.focus();
   }
 
+  // Mobile touch handlers
+  function handleTouchStart(e: React.TouchEvent, msgId: string) {
+    const t = e.touches[0];
+    touchStartRef.current = { id: msgId, x: t.clientX, y: t.clientY };
+    replyTriggeredRef.current = false;
+    swipingActiveRef.current = true;
+    if (longPressTimerRef.current) clearTimeout(longPressTimerRef.current);
+    longPressTimerRef.current = setTimeout(() => {
+      setLongPressMenu({ msgId, x: t.clientX, y: t.clientY });
+    }, 600);
+  }
+
+  function handleTouchMove(e: React.TouchEvent, msgId: string) {
+    if (!touchStartRef.current || touchStartRef.current.id !== msgId) return;
+    const deltaX = e.touches[0].clientX - touchStartRef.current.x;
+    const deltaY = e.touches[0].clientY - touchStartRef.current.y;
+    if (Math.abs(deltaX) > 5 || Math.abs(deltaY) > 5) {
+      if (longPressTimerRef.current) clearTimeout(longPressTimerRef.current);
+    }
+    if (Math.abs(deltaY) > 20 && Math.abs(deltaY) > Math.abs(deltaX)) {
+      // vertical scroll dominates — cancel swipe
+      setSwipeState(null);
+      swipingActiveRef.current = false;
+      touchStartRef.current = null;
+      return;
+    }
+    if (deltaX > 0) {
+      setSwipeState({ msgId, offset: Math.min(deltaX, 72) });
+    }
+  }
+
+  function handleTouchEnd(msgId: string) {
+    if (longPressTimerRef.current) clearTimeout(longPressTimerRef.current);
+    const offset = swipeState?.msgId === msgId ? swipeState.offset : 0;
+    if (offset > 50 && !replyTriggeredRef.current) {
+      const msg = messages.find(m => m.id === msgId);
+      if (msg) {
+        replyTriggeredRef.current = true;
+        setReplyTo(msg);
+        setTimeout(() => textareaRef.current?.focus(), 100);
+      }
+    }
+    setSwipeState(null);
+    swipingActiveRef.current = false;
+    touchStartRef.current = null;
+  }
+
+  function getSwipeOffset(msgId: string) {
+    return swipeState?.msgId === msgId ? swipeState.offset : 0;
+  }
+
+  function getReplyContent(msg: any) {
+    if (!msg) return "Mensagem apagada";
+    if (msg.content) return msg.content.length > 80 ? msg.content.slice(0, 80) + "…" : msg.content;
+    if (msg.image_url) return "📷 Imagem";
+    if (msg.audio_url) return "🎵 Áudio";
+    return "📎 Arquivo";
+  }
+
   return (
-    <div className="flex flex-col items-center px-3 sm:px-4" style={{ background: "var(--black)", fontFamily: "'Inter', sans-serif", height: "100dvh", overflow: "hidden", paddingTop: 65, paddingBottom: 65 }}>
+    <div
+      className="flex flex-col items-center px-3 sm:px-4"
+      style={{ background: "var(--black)", fontFamily: "'Inter', sans-serif", height: "100dvh", overflow: "hidden", paddingTop: 65, paddingBottom: 65 }}
+      onClick={() => longPressMenu && setLongPressMenu(null)}
+    >
 
       {/* Subheader */}
       <div className="w-full max-w-2xl mb-3 flex items-center gap-3 shrink-0">
@@ -267,7 +409,10 @@ export default function ChatPage() {
       </div>
 
       {/* Chat area */}
-      <div className="w-full max-w-2xl flex-1 min-h-0 p-3 sm:p-4 mb-3 overflow-y-auto" style={{ background: "var(--dark1)", border: "1px solid #1f1f1f", borderRadius: "var(--radius)", boxShadow: "var(--shadow)" }}>
+      <div
+        className="w-full max-w-2xl flex-1 min-h-0 p-3 sm:p-4 mb-3 overflow-y-auto"
+        style={{ background: "var(--dark1)", border: "1px solid #1f1f1f", borderRadius: "var(--radius)", boxShadow: "var(--shadow)" }}
+      >
         {messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center gap-3">
             <div style={{ fontSize: "2rem" }}>💬</div>
@@ -277,8 +422,19 @@ export default function ChatPage() {
             </div>
           </div>
         ) : messages.flatMap((msg: any, idx: number) => {
+          const isOwn = msg.sender_id === user?.id;
           const showSep = idx === 0 || getBrasiliaDay(msg.created_at) !== getBrasiliaDay(messages[idx - 1].created_at);
-          const els = [];
+          const swipeOffset = getSwipeOffset(msg.id);
+          const isHovered = hoveredMsgId === msg.id;
+          const isTmp = msg.id?.startsWith("tmp-");
+
+          const originalMsg = msg.reply_to_id ? messages.find((m: any) => m.id === msg.reply_to_id) : null;
+          const replyBorderColor = isOwn ? "rgba(0,0,0,0.25)" : "var(--yellow)";
+          const replyBg = isOwn ? "rgba(0,0,0,0.15)" : "rgba(255,213,0,0.08)";
+          const replyNameColor = isOwn ? "rgba(0,0,0,0.6)" : "var(--yellow)";
+
+          const els: React.ReactNode[] = [];
+
           if (showSep) els.push(
             <div key={`sep-${msg.id}`} style={{ textAlign: "center", margin: "16px 0 8px" }}>
               <span style={{ padding: "3px 14px", fontSize: "0.68rem", color: "var(--gray)", background: "#1a1a1a", border: "1px solid #2a2a2a", borderRadius: 50 }}>
@@ -286,35 +442,199 @@ export default function ChatPage() {
               </span>
             </div>
           );
+
           els.push(
-            <div key={msg.id} className={`mb-3 flex ${msg.sender_id === user?.id ? "justify-end" : "justify-start"} items-end gap-2`}>
-              {msg.sender_id !== user?.id && (
-                <UserAvatar src={otherUserImage} name={otherUserName} size={28} />
-              )}
-              <div className="max-w-[82%] sm:max-w-[78%] px-3 sm:px-4 py-2.5 text-sm leading-relaxed"
-                style={msg.sender_id === user?.id
-                  ? { background: "var(--yellow)", color: "var(--black)", borderRadius: "18px 18px 4px 18px", fontWeight: 500 }
-                  : { background: "var(--dark2)", color: "var(--white)", borderRadius: "18px 18px 18px 4px", border: "1px solid #2a2a2a" }
-                }
+            <div key={msg.id} style={{ position: "relative", marginBottom: 10 }}>
+              {/* Mobile swipe reply arrow */}
+              <div
+                style={{
+                  position: "absolute",
+                  left: isOwn ? "auto" : 4,
+                  right: isOwn ? 4 : "auto",
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  opacity: Math.min(swipeOffset / 50, 1),
+                  pointerEvents: "none",
+                  color: "var(--gray)",
+                  fontSize: "1.1rem",
+                  transition: swipeOffset === 0 ? "opacity 0.2s" : "none",
+                }}
               >
-                {msg.content && <p style={{ margin: "0 0 4px 0" }}>{renderWithMentions(msg.content)}</p>}
-                {msg.image_url && <img src={msg.image_url} alt="" style={{ maxWidth: "100%", borderRadius: 8, marginBottom: 4 }} />}
-                {msg.audio_url && <audio src={msg.audio_url} controls style={{ width: "100%", marginBottom: 4 }} />}
-                <div style={{ fontSize: "0.62rem", opacity: 0.6, display: "flex", alignItems: "center", gap: "4px" }}>
-                  {fmtBrasiliaTime(msg.created_at)}
-                  {msg.sender_id === user?.id && (
-                    <span style={{ color: msg.read_at ? "var(--yellow)" : "var(--gray)" }}>
-                      {msg.read_at ? "✓✓" : "✓"}
-                    </span>
+                ↩
+              </div>
+
+              {/* Message row */}
+              <div
+                className={`flex ${isOwn ? "justify-end" : "justify-start"} items-end gap-2`}
+                style={{
+                  transform: `translateX(${isOwn ? -swipeOffset : swipeOffset}px)`,
+                  transition: swipeOffset === 0 ? "transform 0.2s ease" : "none",
+                }}
+                onMouseEnter={() => !isTmp && setHoveredMsgId(msg.id)}
+                onMouseLeave={() => setHoveredMsgId(null)}
+                onDoubleClick={(e) => { e.preventDefault(); setReplyTo(msg); setTimeout(() => textareaRef.current?.focus(), 50); }}
+                onTouchStart={(e) => handleTouchStart(e, msg.id)}
+                onTouchMove={(e) => handleTouchMove(e, msg.id)}
+                onTouchEnd={() => handleTouchEnd(msg.id)}
+              >
+                {/* Other user avatar */}
+                {!isOwn && <UserAvatar src={otherUserImage} name={otherUserName} size={28} />}
+
+                {/* Action buttons for own messages (desktop, left of bubble) */}
+                {isOwn && isHovered && !isTmp && (
+                  <div className="hidden sm:flex items-center gap-1">
+                    <ActionBtn onClick={() => { setReplyTo(msg); setTimeout(() => textareaRef.current?.focus(), 50); }} title="Responder">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M9 17H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11a2 2 0 0 1 2 2v3"/>
+                        <path d="M13 21l-4-4 4-4"/>
+                        <path d="M9 17h8a2 2 0 0 0 2-2v-5"/>
+                      </svg>
+                    </ActionBtn>
+                    <ActionBtn onClick={() => deleteMsg(msg.id)} title="Apagar mensagem">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/>
+                      </svg>
+                    </ActionBtn>
+                  </div>
+                )}
+
+                {/* Message bubble */}
+                <div
+                  className="max-w-[82%] sm:max-w-[78%] px-3 sm:px-4 py-2.5 text-sm leading-relaxed"
+                  style={isOwn
+                    ? { background: "var(--yellow)", color: "var(--black)", borderRadius: "18px 18px 4px 18px", fontWeight: 500 }
+                    : { background: "var(--dark2)", color: "var(--white)", borderRadius: "18px 18px 18px 4px", border: "1px solid #2a2a2a" }
+                  }
+                >
+                  {/* Reply quote inside bubble */}
+                  {msg.reply_to_id && (
+                    <div style={{
+                      borderLeft: `3px solid ${replyBorderColor}`,
+                      background: replyBg,
+                      borderRadius: 6,
+                      padding: "4px 8px",
+                      marginBottom: 6,
+                      cursor: "default",
+                    }}>
+                      <div style={{ fontSize: "0.68rem", fontWeight: 700, color: replyNameColor, marginBottom: 2 }}>
+                        {originalMsg
+                          ? (originalMsg.sender_id === user?.id ? "Você" : otherUserName)
+                          : "Mensagem apagada"
+                        }
+                      </div>
+                      <div style={{ fontSize: "0.75rem", opacity: 0.75, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 220 }}>
+                        {getReplyContent(originalMsg)}
+                      </div>
+                    </div>
                   )}
+
+                  {msg.content && <p style={{ margin: "0 0 4px 0" }}>{renderWithMentions(msg.content)}</p>}
+                  {msg.image_url && <img src={msg.image_url} alt="" style={{ maxWidth: "100%", borderRadius: 8, marginBottom: 4 }} />}
+                  {msg.audio_url && <audio src={msg.audio_url} controls style={{ width: "100%", marginBottom: 4 }} />}
+
+                  {/* Timestamp + status */}
+                  <div style={{ fontSize: "0.62rem", opacity: 0.65, display: "flex", alignItems: "center", gap: 4, justifyContent: "flex-end", marginTop: 2 }}>
+                    {fmtBrasiliaTime(msg.created_at)}
+                    {isOwn && <MsgStatus msg={msg} />}
+                  </div>
                 </div>
+
+                {/* Action buttons for other's messages (desktop, right of bubble) */}
+                {!isOwn && isHovered && (
+                  <div className="hidden sm:flex items-center gap-1">
+                    <ActionBtn onClick={() => { setReplyTo(msg); setTimeout(() => textareaRef.current?.focus(), 50); }} title="Responder">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M9 17H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11a2 2 0 0 1 2 2v3"/>
+                        <path d="M13 21l-4-4 4-4"/>
+                        <path d="M9 17h8a2 2 0 0 0 2-2v-5"/>
+                      </svg>
+                    </ActionBtn>
+                    <ActionBtn onClick={() => deleteMsg(msg.id)} title="Apagar mensagem">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/>
+                      </svg>
+                    </ActionBtn>
+                  </div>
+                )}
               </div>
             </div>
           );
+
           return els;
         })}
         <div ref={bottomRef} />
       </div>
+
+      {/* Long press context menu (mobile) */}
+      {longPressMenu && (
+        <>
+          <div style={{ position: "fixed", inset: 0, zIndex: 998 }} onClick={(e) => { e.stopPropagation(); setLongPressMenu(null); }} />
+          <div
+            style={{
+              position: "fixed",
+              top: Math.min(longPressMenu.y, window.innerHeight - 110),
+              left: Math.min(longPressMenu.x, window.innerWidth - 180),
+              background: "#1e1e1e",
+              border: "1px solid #2a2a2a",
+              borderRadius: 14,
+              zIndex: 999,
+              overflow: "hidden",
+              boxShadow: "0 8px 32px rgba(0,0,0,0.7)",
+              minWidth: 170,
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {[
+              {
+                label: "Responder",
+                icon: (
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M9 17H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11a2 2 0 0 1 2 2v3"/>
+                    <path d="M13 21l-4-4 4-4"/><path d="M9 17h8a2 2 0 0 0 2-2v-5"/>
+                  </svg>
+                ),
+                color: "var(--white)",
+                action: () => {
+                  const msg = messages.find(m => m.id === longPressMenu.msgId);
+                  if (msg) { setReplyTo(msg); setTimeout(() => textareaRef.current?.focus(), 100); }
+                  setLongPressMenu(null);
+                },
+              },
+              {
+                label: "Apagar mensagem",
+                icon: (
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/>
+                    <path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/>
+                  </svg>
+                ),
+                color: "#ef4444",
+                action: () => {
+                  deleteMsg(longPressMenu.msgId);
+                  setLongPressMenu(null);
+                },
+              },
+            ].map((item, i, arr) => (
+              <button
+                key={item.label}
+                onClick={item.action}
+                style={{
+                  display: "flex", alignItems: "center", gap: 10,
+                  padding: "12px 16px", background: "transparent",
+                  border: "none", borderBottom: i < arr.length - 1 ? "1px solid #2a2a2a" : "none",
+                  cursor: "pointer", width: "100%", textAlign: "left",
+                  color: item.color, fontSize: "0.85rem", fontWeight: 500,
+                }}
+                onMouseEnter={e => (e.currentTarget.style.background = "#2a2a2a")}
+                onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
+              >
+                {item.icon}
+                {item.label}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
 
       {/* Emoji picker */}
       {showEmoji && (
@@ -331,6 +651,25 @@ export default function ChatPage() {
           <audio src={audioUrl} controls style={{ flex: 1, height: 36 }} />
           <button onClick={sendAudio} disabled={sending} style={{ background: "var(--yellow)", color: "#000", border: "none", borderRadius: 8, padding: "6px 14px", fontWeight: 700, cursor: "pointer", fontSize: "0.85rem" }}>Enviar</button>
           <button onClick={() => { setAudioBlob(null); setAudioUrl(null); }} style={{ background: "none", border: "none", color: "var(--gray)", cursor: "pointer", fontSize: "1.2rem" }}>✕</button>
+        </div>
+      )}
+
+      {/* Reply preview bar */}
+      {replyTo && (
+        <div className="w-full max-w-2xl mb-2 shrink-0 flex items-center gap-3" style={{ background: "var(--dark2)", border: "1px solid #2a2a2a", borderLeft: "3px solid var(--yellow)", borderRadius: "var(--radius)", padding: "8px 12px" }}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--yellow)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+            <path d="M9 17H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11a2 2 0 0 1 2 2v3"/>
+            <path d="M13 21l-4-4 4-4"/><path d="M9 17h8a2 2 0 0 0 2-2v-5"/>
+          </svg>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: "0.7rem", color: "var(--yellow)", fontWeight: 700, marginBottom: 1 }}>
+              {replyTo.sender_id === user?.id ? "Respondendo a você mesmo" : `Respondendo a ${otherUserName}`}
+            </div>
+            <div style={{ fontSize: "0.78rem", color: "var(--gray)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              {getReplyContent(replyTo)}
+            </div>
+          </div>
+          <button onClick={() => setReplyTo(null)} style={{ background: "none", border: "none", color: "var(--gray)", cursor: "pointer", fontSize: "1.1rem", flexShrink: 0, lineHeight: 1 }}>✕</button>
         </div>
       )}
 
