@@ -559,6 +559,25 @@ export default function ChatPage() {
                 {/* Other user avatar */}
                 {!isOwn && <UserAvatar src={otherUserImage} name={otherUserName} size={28} />}
 
+                {/* Emoji reaction button — mobile, sempre visível (esquerda do bubble para msgs próprias) */}
+                {isOwn && !isTmp && (
+                  <button
+                    className="sm:hidden"
+                    onTouchStart={(e) => e.stopPropagation()}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const r = e.currentTarget.getBoundingClientRect();
+                      const pw = 292;
+                      setReactionPicker(prev => prev?.msgId === msg.id ? null : {
+                        msgId: msg.id,
+                        x: Math.max(8, Math.min(r.left - pw / 2 + 13, window.innerWidth - pw - 8)),
+                        y: Math.max(70, r.top - 58),
+                      });
+                    }}
+                    style={{ width: 26, height: 26, background: reactionPicker?.msgId === msg.id ? "rgba(245,200,0,0.2)" : "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0, fontSize: "0.85rem", lineHeight: 1 }}
+                  >😊</button>
+                )}
+
                 {/* Action buttons for own messages (desktop, left of bubble) */}
                 {isOwn && showActions && (
                   <div className="hidden sm:flex items-center gap-1">
@@ -636,6 +655,25 @@ export default function ChatPage() {
                     {isOwn && <MsgStatus msg={msg} />}
                   </div>
                 </div>
+
+                {/* Emoji reaction button — mobile, sempre visível (direita do bubble para msgs recebidas) */}
+                {!isOwn && (
+                  <button
+                    className="sm:hidden"
+                    onTouchStart={(e) => e.stopPropagation()}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const r = e.currentTarget.getBoundingClientRect();
+                      const pw = 292;
+                      setReactionPicker(prev => prev?.msgId === msg.id ? null : {
+                        msgId: msg.id,
+                        x: Math.max(8, Math.min(r.left - pw / 2 + 13, window.innerWidth - pw - 8)),
+                        y: Math.max(70, r.top - 58),
+                      });
+                    }}
+                    style={{ width: 26, height: 26, background: reactionPicker?.msgId === msg.id ? "rgba(245,200,0,0.2)" : "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0, fontSize: "0.85rem", lineHeight: 1 }}
+                  >😊</button>
+                )}
 
                 {/* Action buttons for other's messages (desktop, right of bubble) */}
                 {!isOwn && showActions && (
