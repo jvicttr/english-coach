@@ -445,12 +445,11 @@ export default function ChatPage() {
 
           els.push(
             <div key={msg.id} style={{ position: "relative", marginBottom: 10 }}>
-              {/* Mobile swipe reply arrow */}
+              {/* Mobile swipe reply arrow — sempre à esquerda */}
               <div
                 style={{
                   position: "absolute",
-                  left: isOwn ? "auto" : 4,
-                  right: isOwn ? 4 : "auto",
+                  left: 4,
                   top: "50%",
                   transform: "translateY(-50%)",
                   opacity: Math.min(swipeOffset / 50, 1),
@@ -467,7 +466,7 @@ export default function ChatPage() {
               <div
                 className={`flex ${isOwn ? "justify-end" : "justify-start"} items-end gap-2`}
                 style={{
-                  transform: `translateX(${isOwn ? -swipeOffset : swipeOffset}px)`,
+                  transform: `translateX(${swipeOffset}px)`,
                   transition: swipeOffset === 0 ? "transform 0.2s ease" : "none",
                 }}
                 onMouseEnter={() => !isTmp && setHoveredMsgId(msg.id)}
