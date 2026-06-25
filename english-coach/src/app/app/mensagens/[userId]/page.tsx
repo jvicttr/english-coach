@@ -562,7 +562,7 @@ export default function ChatPage() {
                 {/* Emoji reaction button — mobile, sempre visível (esquerda do bubble para msgs próprias) */}
                 {isOwn && !isTmp && (
                   <button
-                    className="sm:hidden"
+                    className=""
                     onTouchStart={(e) => e.stopPropagation()}
                     onClick={(e) => {
                       e.stopPropagation();
@@ -581,15 +581,6 @@ export default function ChatPage() {
                 {/* Action buttons for own messages (desktop, left of bubble) */}
                 {isOwn && showActions && (
                   <div className="hidden sm:flex items-center gap-1">
-                    <button
-                      onMouseDown={(e) => {
-                        e.preventDefault(); e.stopPropagation();
-                        const r = e.currentTarget.getBoundingClientRect();
-                        setReactionPicker(prev => prev?.msgId === msg.id ? null : { msgId: msg.id, x: Math.max(8, r.left - 210), y: Math.max(70, r.top - 56) });
-                      }}
-                      title="Reagir"
-                      style={{ width: 28, height: 28, background: reactionPicker?.msgId === msg.id ? "var(--yellow)" : "var(--dark2)", border: "1px solid #2a2a2a", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0, fontSize: "0.9rem" }}
-                    >😊</button>
                     <ActionBtn onClick={() => { setReplyTo(msg); setTimeout(() => textareaRef.current?.focus(), 50); }} title="Responder">
                       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M9 17H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11a2 2 0 0 1 2 2v3"/>
@@ -659,7 +650,7 @@ export default function ChatPage() {
                 {/* Emoji reaction button — mobile, sempre visível (direita do bubble para msgs recebidas) */}
                 {!isOwn && (
                   <button
-                    className="sm:hidden"
+                    className=""
                     onTouchStart={(e) => e.stopPropagation()}
                     onClick={(e) => {
                       e.stopPropagation();
@@ -690,15 +681,6 @@ export default function ChatPage() {
                         <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/>
                       </svg>
                     </ActionBtn>
-                    <button
-                      onMouseDown={(e) => {
-                        e.preventDefault(); e.stopPropagation();
-                        const r = e.currentTarget.getBoundingClientRect();
-                        setReactionPicker(prev => prev?.msgId === msg.id ? null : { msgId: msg.id, x: Math.max(8, r.left - 10), y: Math.max(70, r.top - 56) });
-                      }}
-                      title="Reagir"
-                      style={{ width: 28, height: 28, background: reactionPicker?.msgId === msg.id ? "var(--yellow)" : "var(--dark2)", border: "1px solid #2a2a2a", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0, fontSize: "0.9rem" }}
-                    >😊</button>
                   </div>
                 )}
               </div>
