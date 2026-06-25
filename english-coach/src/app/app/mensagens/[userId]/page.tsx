@@ -411,7 +411,7 @@ export default function ChatPage() {
       {/* Chat area */}
       <div
         className="w-full max-w-2xl flex-1 min-h-0 p-3 sm:p-4 mb-3 overflow-y-auto"
-        style={{ background: "var(--dark1)", border: "1px solid #1f1f1f", borderRadius: "var(--radius)", boxShadow: "var(--shadow)" }}
+        style={{ background: "var(--dark1)", border: "1px solid #1f1f1f", borderRadius: "var(--radius)", boxShadow: "var(--shadow)", overflowX: "hidden" }}
       >
         {messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center gap-3">
