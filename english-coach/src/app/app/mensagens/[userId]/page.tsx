@@ -153,6 +153,8 @@ export default function ChatPage() {
   const [longPressMenu, setLongPressMenu] = useState<{ msgId: string; x: number; y: number } | null>(null);
   const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  const [highlightedMsgId, setHighlightedMsgId] = useState<string | null>(null);
+
   const bottomRef = useRef<HTMLDivElement>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const mrRef = useRef<MediaRecorder | null>(null);
@@ -160,6 +162,8 @@ export default function ChatPage() {
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const msgRefsMap = useRef<Map<string, HTMLElement>>(new Map());
+  const chatScrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!user?.id || !otherUserId) return;
@@ -381,6 +385,14 @@ export default function ChatPage() {
     return swipeState?.msgId === msgId ? swipeState.offset : 0;
   }
 
+  function scrollToMessage(msgId: string) {
+    const el = msgRefsMap.current.get(msgId);
+    if (!el || !chatScrollRef.current) return;
+    el.scrollIntoView({ behavior: "smooth", block: "center" });
+    setHighlightedMsgId(msgId);
+    setTimeout(() => setHighlightedMsgId(null), 1200);
+  }
+
   function getReplyContent(msg: any) {
     if (!msg) return "Mensagem apagada";
     if (msg.content) return msg.content.length > 80 ? msg.content.slice(0, 80) + "…" : msg.content;
@@ -410,6 +422,7 @@ export default function ChatPage() {
 
       {/* Chat area */}
       <div
+        ref={chatScrollRef}
         className="w-full max-w-2xl flex-1 min-h-0 p-3 sm:p-4 mb-3 overflow-y-auto"
         style={{ background: "var(--dark1)", border: "1px solid #1f1f1f", borderRadius: "var(--radius)", boxShadow: "var(--shadow)", overflowX: "hidden" }}
       >
@@ -443,8 +456,20 @@ export default function ChatPage() {
             </div>
           );
 
+          const isHighlighted = highlightedMsgId === msg.id;
+
           els.push(
-            <div key={msg.id} style={{ position: "relative", marginBottom: 10 }}>
+            <div
+              key={msg.id}
+              ref={(el) => { if (el) msgRefsMap.current.set(msg.id, el); else msgRefsMap.current.delete(msg.id); }}
+              style={{
+                position: "relative",
+                marginBottom: 10,
+                borderRadius: 12,
+                transition: "background 0.3s ease",
+                background: isHighlighted ? "rgba(245,200,0,0.12)" : "transparent",
+              }}
+            >
               {/* Mobile swipe reply arrow — sempre à esquerda */}
               <div
                 style={{
@@ -505,16 +530,19 @@ export default function ChatPage() {
                     : { background: "var(--dark2)", color: "var(--white)", borderRadius: "18px 18px 18px 4px", border: "1px solid #2a2a2a" }
                   }
                 >
-                  {/* Reply quote inside bubble */}
+                  {/* Reply quote inside bubble — clicável para ir à mensagem original */}
                   {msg.reply_to_id && (
-                    <div style={{
-                      borderLeft: `3px solid ${replyBorderColor}`,
-                      background: replyBg,
-                      borderRadius: 6,
-                      padding: "4px 8px",
-                      marginBottom: 6,
-                      cursor: "default",
-                    }}>
+                    <div
+                      onClick={(e) => { e.stopPropagation(); if (originalMsg) scrollToMessage(msg.reply_to_id); }}
+                      style={{
+                        borderLeft: `3px solid ${replyBorderColor}`,
+                        background: replyBg,
+                        borderRadius: 6,
+                        padding: "4px 8px",
+                        marginBottom: 6,
+                        cursor: originalMsg ? "pointer" : "default",
+                      }}
+                    >
                       <div style={{ fontSize: "0.68rem", fontWeight: 700, color: replyNameColor, marginBottom: 2 }}>
                         {originalMsg
                           ? (originalMsg.sender_id === user?.id ? "Você" : otherUserName)
