@@ -149,6 +149,7 @@ export default function ChatPage() {
   const swipingActiveRef = useRef(false);
   const touchStartRef = useRef<{ id: string; x: number; y: number } | null>(null);
   const replyTriggeredRef = useRef(false);
+  const swipeVibratedRef = useRef(false);
   // Long press menu for mobile delete
   const [longPressMenu, setLongPressMenu] = useState<{ msgId: string; x: number; y: number } | null>(null);
   const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -339,6 +340,7 @@ export default function ChatPage() {
     const t = e.touches[0];
     touchStartRef.current = { id: msgId, x: t.clientX, y: t.clientY };
     replyTriggeredRef.current = false;
+    swipeVibratedRef.current = false;
     swipingActiveRef.current = true;
     if (longPressTimerRef.current) clearTimeout(longPressTimerRef.current);
     longPressTimerRef.current = setTimeout(() => {
@@ -361,7 +363,12 @@ export default function ChatPage() {
       return;
     }
     if (deltaX > 0) {
-      setSwipeState({ msgId, offset: Math.min(deltaX, 72) });
+      const offset = Math.min(deltaX, 72);
+      if (offset >= 50 && !swipeVibratedRef.current) {
+        swipeVibratedRef.current = true;
+        navigator.vibrate?.(40);
+      }
+      setSwipeState({ msgId, offset });
     }
   }
 
