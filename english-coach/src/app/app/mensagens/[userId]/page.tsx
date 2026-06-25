@@ -267,23 +267,33 @@ export default function ChatPage() {
     await fetch(`/api/messages?messageId=${encodeURIComponent(messageId)}`, { method: "DELETE" }).catch(() => {});
   }
 
-  function react(messageId: string, emoji: string) {
+  function addReaction(messageId: string, emoji: string) {
     if (!user?.id || messageId.startsWith("tmp-")) return;
     setMessages(prev => prev.map(m => {
       if (m.id !== messageId) return m;
-      const reactions: any[] = m.message_reactions || [];
-      const alreadyReacted = reactions.some((r: any) => r.user_id === user.id && r.emoji === emoji);
-      return {
-        ...m,
-        message_reactions: alreadyReacted
-          ? reactions.filter((r: any) => !(r.user_id === user.id && r.emoji === emoji))
-          : [...reactions, { id: `tmp-r-${Date.now()}`, message_id: messageId, user_id: user.id, emoji }],
-      };
+      return { ...m, message_reactions: [...(m.message_reactions || []), { id: `tmp-r-${Date.now()}`, message_id: messageId, user_id: user.id, emoji }] };
     }));
     fetch("/api/messages/reactions", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ messageId, emoji }),
+    }).catch(() => {});
+  }
+
+  function removeReaction(messageId: string, emoji: string) {
+    if (!user?.id) return;
+    setMessages(prev => prev.map(m => {
+      if (m.id !== messageId) return m;
+      const reactions: any[] = m.message_reactions || [];
+      // Remove a última ocorrência da reação deste usuário
+      const idx = reactions.map((r: any, i: number) => r.user_id === user.id && r.emoji === emoji ? i : -1).filter(i => i !== -1).pop();
+      if (idx === undefined) return m;
+      return { ...m, message_reactions: [...reactions.slice(0, idx), ...reactions.slice(idx + 1)] };
+    }));
+    fetch("/api/messages/reactions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ messageId, emoji, remove: true }),
     }).catch(() => {});
   }
 
@@ -663,7 +673,7 @@ export default function ChatPage() {
                     return (
                       <button
                         key={emoji}
-                        onClick={() => react(msg.id, emoji)}
+                        onClick={() => { if (hasOwn) removeReaction(msg.id, emoji); else addReaction(msg.id, emoji); }}
                         style={{ background: hasOwn ? "rgba(245,200,0,0.18)" : "rgba(255,255,255,0.07)", border: hasOwn ? "1px solid rgba(245,200,0,0.45)" : "1px solid rgba(255,255,255,0.12)", borderRadius: 20, padding: "3px 9px", fontSize: "0.82rem", cursor: "pointer", display: "flex", alignItems: "center", gap: 4, color: "var(--white)", fontFamily: "inherit", lineHeight: 1 }}
                       >
                         {emoji}{count > 1 && <span style={{ fontSize: "0.7rem", fontWeight: 700, opacity: 0.85 }}>{count}</span>}
@@ -723,7 +733,7 @@ export default function ChatPage() {
             {QUICK_EMOJIS.map(emoji => (
               <button
                 key={emoji}
-                onMouseDown={(e) => { e.preventDefault(); react(reactionPicker.msgId, emoji); setReactionPicker(null); }}
+                onMouseDown={(e) => { e.preventDefault(); addReaction(reactionPicker.msgId, emoji); setReactionPicker(null); }}
                 style={{ background: "none", border: "none", fontSize: "1.4rem", cursor: "pointer", padding: "4px 5px", borderRadius: 8, lineHeight: 1 }}
                 onMouseEnter={e => (e.currentTarget.style.background = "#2a2a2a")}
                 onMouseLeave={e => (e.currentTarget.style.background = "none")}
@@ -757,7 +767,7 @@ export default function ChatPage() {
               {QUICK_EMOJIS.map(emoji => (
                 <button
                   key={emoji}
-                  onClick={() => { react(longPressMenu.msgId, emoji); setLongPressMenu(null); }}
+                  onClick={() => { addReaction(longPressMenu.msgId, emoji); setLongPressMenu(null); }}
                   style={{ background: "none", border: "none", fontSize: "1.4rem", cursor: "pointer", padding: "2px 3px", borderRadius: 8, lineHeight: 1 }}
                 >{emoji}</button>
               ))}
