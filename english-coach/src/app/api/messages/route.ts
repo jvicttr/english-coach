@@ -19,7 +19,7 @@ export async function GET(req: NextRequest) {
     // Buscar mensagens de uma conversa específica
     const { data: messages, error } = await supabase
       .from("direct_messages")
-      .select("*")
+      .select("*, message_reactions(id, user_id, emoji)")
       .eq("conversation_id", conversationId)
       .is("deleted_at", null)
       .order("created_at", { ascending: true });

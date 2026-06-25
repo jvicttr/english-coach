@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useUser } from "@clerk/nextjs";
 
 const EMOJIS = ["😀","😂","😍","🥰","😎","🤔","😅","🙌","👏","🔥","💯","❤️","🎉","✨","💪","🙏","👍","😊","🤩","😏","🥳","💬","🌍","📚","🎯","🚀","⭐","💡","🎶","✅"];
+const QUICK_EMOJIS = ["❤️","😂","😮","😢","🙏","👍","🔥","😍"];
 
 const AVATAR_COLORS = ["#e85d4a","#f5a623","#4caf7d","#4a90d9","#9b59b6","#e91e8c","#00bcd4","#ff7043"];
 function avatarColor(name: string) {
@@ -102,6 +103,16 @@ function MsgStatus({ msg }: { msg: any }) {
   return <CheckDouble color="#888" />;
 }
 
+function groupReactions(reactions: any[]): { emoji: string; count: number; userIds: string[] }[] {
+  const order: string[] = [];
+  const map = new Map<string, string[]>();
+  for (const r of reactions || []) {
+    if (!map.has(r.emoji)) { order.push(r.emoji); map.set(r.emoji, []); }
+    map.get(r.emoji)!.push(r.user_id);
+  }
+  return order.map(emoji => ({ emoji, count: map.get(emoji)!.length, userIds: map.get(emoji)! }));
+}
+
 // Reply icon button
 function ActionBtn({ onClick, title, children }: { onClick: () => void; title: string; children: React.ReactNode }) {
   return (
@@ -142,6 +153,8 @@ export default function ChatPage() {
 
   // Lightbox
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
+  // Reaction picker (desktop) — posição fixed na tela
+  const [reactionPicker, setReactionPicker] = useState<{ msgId: string; x: number; y: number } | null>(null);
 
   // Reply state
   const [replyTo, setReplyTo] = useState<any>(null);
@@ -252,6 +265,26 @@ export default function ChatPage() {
     if (messageId.startsWith("tmp-")) return;
     setMessages(prev => prev.filter(m => m.id !== messageId));
     await fetch(`/api/messages?messageId=${encodeURIComponent(messageId)}`, { method: "DELETE" }).catch(() => {});
+  }
+
+  function react(messageId: string, emoji: string) {
+    if (!user?.id || messageId.startsWith("tmp-")) return;
+    setMessages(prev => prev.map(m => {
+      if (m.id !== messageId) return m;
+      const reactions: any[] = m.message_reactions || [];
+      const alreadyReacted = reactions.some((r: any) => r.user_id === user.id && r.emoji === emoji);
+      return {
+        ...m,
+        message_reactions: alreadyReacted
+          ? reactions.filter((r: any) => !(r.user_id === user.id && r.emoji === emoji))
+          : [...reactions, { id: `tmp-r-${Date.now()}`, message_id: messageId, user_id: user.id, emoji }],
+      };
+    }));
+    fetch("/api/messages/reactions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ messageId, emoji }),
+    }).catch(() => {});
   }
 
   async function startRecording() {
@@ -467,6 +500,8 @@ export default function ChatPage() {
           );
 
           const isHighlighted = highlightedMsgId === msg.id;
+          const grouped = groupReactions(msg.message_reactions);
+          const showActions = (isHovered && !isTmp) || reactionPicker?.msgId === msg.id;
 
           els.push(
             <div
@@ -515,8 +550,17 @@ export default function ChatPage() {
                 {!isOwn && <UserAvatar src={otherUserImage} name={otherUserName} size={28} />}
 
                 {/* Action buttons for own messages (desktop, left of bubble) */}
-                {isOwn && isHovered && !isTmp && (
+                {isOwn && showActions && (
                   <div className="hidden sm:flex items-center gap-1">
+                    <button
+                      onMouseDown={(e) => {
+                        e.preventDefault(); e.stopPropagation();
+                        const r = e.currentTarget.getBoundingClientRect();
+                        setReactionPicker(prev => prev?.msgId === msg.id ? null : { msgId: msg.id, x: Math.max(8, r.left - 210), y: Math.max(70, r.top - 56) });
+                      }}
+                      title="Reagir"
+                      style={{ width: 28, height: 28, background: reactionPicker?.msgId === msg.id ? "var(--yellow)" : "var(--dark2)", border: "1px solid #2a2a2a", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0, fontSize: "0.9rem" }}
+                    >😊</button>
                     <ActionBtn onClick={() => { setReplyTo(msg); setTimeout(() => textareaRef.current?.focus(), 50); }} title="Responder">
                       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M9 17H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11a2 2 0 0 1 2 2v3"/>
@@ -584,7 +628,7 @@ export default function ChatPage() {
                 </div>
 
                 {/* Action buttons for other's messages (desktop, right of bubble) */}
-                {!isOwn && isHovered && (
+                {!isOwn && showActions && (
                   <div className="hidden sm:flex items-center gap-1">
                     <ActionBtn onClick={() => { setReplyTo(msg); setTimeout(() => textareaRef.current?.focus(), 50); }} title="Responder">
                       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
@@ -598,9 +642,36 @@ export default function ChatPage() {
                         <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/>
                       </svg>
                     </ActionBtn>
+                    <button
+                      onMouseDown={(e) => {
+                        e.preventDefault(); e.stopPropagation();
+                        const r = e.currentTarget.getBoundingClientRect();
+                        setReactionPicker(prev => prev?.msgId === msg.id ? null : { msgId: msg.id, x: Math.max(8, r.left - 10), y: Math.max(70, r.top - 56) });
+                      }}
+                      title="Reagir"
+                      style={{ width: 28, height: 28, background: reactionPicker?.msgId === msg.id ? "var(--yellow)" : "var(--dark2)", border: "1px solid #2a2a2a", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0, fontSize: "0.9rem" }}
+                    >😊</button>
                   </div>
                 )}
               </div>
+
+              {/* Reaction pills abaixo do bubble */}
+              {grouped.length > 0 && (
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 3, justifyContent: isOwn ? "flex-end" : "flex-start", paddingLeft: isOwn ? 0 : 36, paddingRight: 4 }}>
+                  {grouped.map(({ emoji, count, userIds }) => {
+                    const hasOwn = userIds.includes(user?.id ?? "");
+                    return (
+                      <button
+                        key={emoji}
+                        onClick={() => react(msg.id, emoji)}
+                        style={{ background: hasOwn ? "rgba(245,200,0,0.18)" : "rgba(255,255,255,0.07)", border: hasOwn ? "1px solid rgba(245,200,0,0.45)" : "1px solid rgba(255,255,255,0.12)", borderRadius: 20, padding: "3px 9px", fontSize: "0.82rem", cursor: "pointer", display: "flex", alignItems: "center", gap: 4, color: "var(--white)", fontFamily: "inherit", lineHeight: 1 }}
+                      >
+                        {emoji}{count > 1 && <span style={{ fontSize: "0.7rem", fontWeight: 700, opacity: 0.85 }}>{count}</span>}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           );
 
@@ -641,6 +712,27 @@ export default function ChatPage() {
         </div>
       )}
 
+      {/* Reaction picker flutuante — desktop */}
+      {reactionPicker && (
+        <>
+          <div style={{ position: "fixed", inset: 0, zIndex: 298 }} onClick={() => setReactionPicker(null)} />
+          <div
+            style={{ position: "fixed", top: reactionPicker.y, left: reactionPicker.x, background: "#1e1e1e", border: "1px solid #2a2a2a", borderRadius: 30, padding: "6px 8px", display: "flex", gap: 2, zIndex: 299, boxShadow: "0 4px 24px rgba(0,0,0,0.7)" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {QUICK_EMOJIS.map(emoji => (
+              <button
+                key={emoji}
+                onMouseDown={(e) => { e.preventDefault(); react(reactionPicker.msgId, emoji); setReactionPicker(null); }}
+                style={{ background: "none", border: "none", fontSize: "1.4rem", cursor: "pointer", padding: "4px 5px", borderRadius: 8, lineHeight: 1 }}
+                onMouseEnter={e => (e.currentTarget.style.background = "#2a2a2a")}
+                onMouseLeave={e => (e.currentTarget.style.background = "none")}
+              >{emoji}</button>
+            ))}
+          </div>
+        </>
+      )}
+
       {/* Long press context menu (mobile) */}
       {longPressMenu && (
         <>
@@ -648,18 +740,28 @@ export default function ChatPage() {
           <div
             style={{
               position: "fixed",
-              top: Math.min(longPressMenu.y, window.innerHeight - 110),
-              left: Math.min(longPressMenu.x, window.innerWidth - 180),
+              top: Math.min(longPressMenu.y, window.innerHeight - 175),
+              left: Math.min(longPressMenu.x, window.innerWidth - 200),
               background: "#1e1e1e",
               border: "1px solid #2a2a2a",
               borderRadius: 14,
               zIndex: 999,
               overflow: "hidden",
               boxShadow: "0 8px 32px rgba(0,0,0,0.7)",
-              minWidth: 170,
+              minWidth: 190,
             }}
             onClick={(e) => e.stopPropagation()}
           >
+            {/* Quick emoji reactions no topo */}
+            <div style={{ display: "flex", justifyContent: "space-around", padding: "10px 8px", borderBottom: "1px solid #2a2a2a" }}>
+              {QUICK_EMOJIS.map(emoji => (
+                <button
+                  key={emoji}
+                  onClick={() => { react(longPressMenu.msgId, emoji); setLongPressMenu(null); }}
+                  style={{ background: "none", border: "none", fontSize: "1.4rem", cursor: "pointer", padding: "2px 3px", borderRadius: 8, lineHeight: 1 }}
+                >{emoji}</button>
+              ))}
+            </div>
             {[
               {
                 label: "Responder",
