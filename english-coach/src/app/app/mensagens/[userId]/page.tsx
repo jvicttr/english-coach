@@ -140,6 +140,9 @@ export default function ChatPage() {
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [recSeconds, setRecSeconds] = useState(0);
 
+  // Lightbox
+  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
+
   // Reply state
   const [replyTo, setReplyTo] = useState<any>(null);
   // Hover state for desktop action buttons
@@ -563,7 +566,14 @@ export default function ChatPage() {
                   )}
 
                   {msg.content && <p style={{ margin: "0 0 4px 0" }}>{renderWithMentions(msg.content)}</p>}
-                  {msg.image_url && <img src={msg.image_url} alt="" style={{ maxWidth: "100%", borderRadius: 8, marginBottom: 4 }} />}
+                  {msg.image_url && (
+                    <img
+                      src={msg.image_url}
+                      alt=""
+                      onClick={(e) => { e.stopPropagation(); setLightboxUrl(msg.image_url); }}
+                      style={{ maxWidth: "100%", borderRadius: 8, marginBottom: 4, cursor: "zoom-in", display: "block" }}
+                    />
+                  )}
                   {msg.audio_url && <audio src={msg.audio_url} controls style={{ width: "100%", marginBottom: 4 }} />}
 
                   {/* Timestamp + status */}
@@ -598,6 +608,38 @@ export default function ChatPage() {
         })}
         <div ref={bottomRef} />
       </div>
+
+      {/* Lightbox */}
+      {lightboxUrl && (
+        <div
+          onClick={() => setLightboxUrl(null)}
+          style={{
+            position: "fixed", inset: 0, zIndex: 2000,
+            background: "rgba(0,0,0,0.95)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            cursor: "zoom-out",
+          }}
+        >
+          <img
+            src={lightboxUrl}
+            alt=""
+            style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain", userSelect: "none" }}
+            onClick={(e) => e.stopPropagation()}
+          />
+          <button
+            onClick={() => setLightboxUrl(null)}
+            style={{
+              position: "absolute", top: 16, right: 16,
+              background: "rgba(255,255,255,0.1)", border: "none",
+              borderRadius: "50%", width: 40, height: 40,
+              color: "#fff", fontSize: "1.2rem", cursor: "pointer",
+              display: "flex", alignItems: "center", justifyContent: "center",
+            }}
+          >
+            ✕
+          </button>
+        </div>
+      )}
 
       {/* Long press context menu (mobile) */}
       {longPressMenu && (
