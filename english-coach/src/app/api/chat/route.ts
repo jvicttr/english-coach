@@ -150,7 +150,7 @@ Guide the conversation around this theme. Keep it natural and engaging, not like
         const results = (tavilyData.results ?? [])
           .map((r: { title: string; url: string; content: string }) => `- ${r.title}: ${r.content}`)
           .join("\n");
-        searchResults = answer + results;
+        searchResults = (answer + results).trim() || "No results found.";
       } catch { /* ignore, use fallback */ }
 
       const messagesWithTool = [
@@ -162,17 +162,29 @@ Guide the conversation around this theme. Keep it natural and engaging, not like
         },
       ];
 
+      // Force text response — no tools on second call to avoid infinite tool_use loop
       response = await client.messages.create({
         model: "claude-sonnet-4-6",
         max_tokens: 1800,
         system: systemFull,
         messages: messagesWithTool,
+        tool_choice: { type: "none" },
         tools: [webSearchTool],
       });
     }
   }
 
-  const textBlock = response.content.find(b => b.type === "text");
+  let textBlock = response.content.find(b => b.type === "text");
+  // Fallback: if tool_use cycle produced no text, retry without tools
+  if (!textBlock && isPro) {
+    const fallbackResponse = await client.messages.create({
+      model: "claude-sonnet-4-6",
+      max_tokens: 1800,
+      system: systemFull,
+      messages: baseMessages,
+    });
+    textBlock = fallbackResponse.content.find(b => b.type === "text");
+  }
   const raw = textBlock && textBlock.type === "text" ? textBlock.text.trim() : "";
   const rawNoBR = raw.replace(/\[BR:([^\]]+)\]/g, "$1");
   const levelMatch = rawNoBR.match(/\[LEVEL:(beginner|intermediate|advanced)\]/);
