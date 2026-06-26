@@ -120,7 +120,7 @@ Guide the conversation around this theme. Keep it natural and engaging, not like
     },
   };
 
-  const lastUserMsg = baseMessages.filter(m => m.role === "user").at(-1)?.content ?? "";
+  const lastUserMsg = baseMessages.filter((m: { role: string; content: string }) => m.role === "user").at(-1)?.content ?? "";
   const needsSearch = isPro && /game|match|score|result|won|win|lost|lose|played|championship|cup|tournament|news|today|yesterday|weather|price|dollar|election|season|episode|série|jogo|partida|placar|resultado|campeonato|copa|notícia|hoje|ontem|clima|preço|eleição/i.test(typeof lastUserMsg === "string" ? lastUserMsg : "");
 
   const createParams = isPro
