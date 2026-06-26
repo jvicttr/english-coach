@@ -41,41 +41,52 @@ export async function GET(req: NextRequest) {
 
   const today = new Date().toISOString().split("T")[0];
 
-  // All quiz results for streak calculation
   const { data: allResults } = await supabase
     .from("quiz_results")
     .select("user_id, created_at")
     .order("created_at", { ascending: false });
 
+  if (!allResults || allResults.length === 0) {
+    return NextResponse.json({ sent: 0 });
+  }
+
   const byUser: Record<string, string[]> = {};
-  for (const row of allResults ?? []) {
+  for (const row of allResults) {
     if (!byUser[row.user_id]) byUser[row.user_id] = [];
     byUser[row.user_id].push(row.created_at);
   }
 
-  const practicedToday = new Set(
-    Object.entries(byUser)
-      .filter(([, dates]) => dates.some((d) => d.startsWith(today)))
-      .map(([id]) => id)
-  );
+  const toNotify: { userId: string; streak: number }[] = [];
+  for (const [userId, dates] of Object.entries(byUser)) {
+    const practicedToday = dates.some((d) => d.startsWith(today));
+    if (practicedToday) continue;
 
-  // All users with email (including new users who never practiced)
+    const streak = calcStreak(dates);
+    toNotify.push({ userId, streak });
+  }
+
+  if (toNotify.length === 0) {
+    return NextResponse.json({ sent: 0, message: "All users practiced today" });
+  }
+
+  const userIds = toNotify.map((u) => u.userId);
   const { data: subs } = await supabase
     .from("subscriptions")
     .select("user_id, email, name")
-    .not("email", "is", null);
+    .in("user_id", userIds);
 
-  if (!subs || subs.length === 0) {
-    return NextResponse.json({ sent: 0 });
+  const subsMap: Record<string, { email: string; name: string }> = {};
+  for (const s of subs ?? []) {
+    if (s.email) subsMap[s.user_id] = { email: s.email, name: s.name ?? "aluno" };
   }
 
   let sent = 0;
 
-  for (const sub of subs) {
-    if (!sub.email || practicedToday.has(sub.user_id)) continue;
+  for (const { userId, streak } of toNotify) {
+    const sub = subsMap[userId];
+    if (!sub?.email) continue;
 
-    const firstName = (sub.name ?? "aluno").split(" ")[0];
-    const streak = calcStreak(byUser[sub.user_id] ?? []);
+    const firstName = sub.name.split(" ")[0];
 
     await sendEmail({
       to: sub.email,
@@ -89,5 +100,5 @@ export async function GET(req: NextRequest) {
     sent++;
   }
 
-  return NextResponse.json({ sent, total: subs.length });
+  return NextResponse.json({ sent, total: toNotify.length });
 }

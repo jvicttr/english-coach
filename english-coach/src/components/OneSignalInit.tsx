@@ -1,8 +1,11 @@
 "use client";
 
 import { useEffect } from "react";
+import { useUser } from "@clerk/nextjs";
 
 export default function OneSignalInit() {
+  const { user } = useUser();
+
   useEffect(() => {
     if (typeof window === "undefined") return;
 
@@ -14,38 +17,44 @@ export default function OneSignalInit() {
         allowLocalhostAsSecureOrigin: false,
       });
 
-      // Show push permission prompt after 5s if not yet decided
-      setTimeout(async () => {
-        const permission = OneSignal.Notifications?.permission;
-        if (!permission) {
+      // Show push permission prompt if not decided yet
+      const isSubscribed = OneSignal.Notifications?.permission;
+      if (!isSubscribed) {
+        setTimeout(async () => {
           await OneSignal.Slidedown?.promptPush({
             force: false,
             slidedownPromptOptions: {
-              actionMessage: "Receba lembretes diários para praticar inglês!",
-              acceptButtonText: "Sim, quero!",
+              actionMessage: "Ative notificações para receber mensagens e lembretes diários 🔔",
+              acceptButtonText: "Ativar",
               cancelButtonText: "Agora não",
             },
           });
-        }
-        // Save player ID after prompt (whether accepted or not, ID is available)
-        try {
-          const playerId = await OneSignal.User?.PushSubscription?.id;
-          if (playerId) {
-            fetch("/api/onesignal/register", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ playerId }),
-            }).catch(() => {});
-          }
-        } catch { /* ignore */ }
-      }, 5000);
+        }, 4000);
+      }
     });
 
-    const script = document.createElement("script");
-    script.src = "https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js";
-    script.defer = true;
-    document.head.appendChild(script);
+    if (!document.querySelector('script[src*="OneSignalSDK.page"]')) {
+      const script = document.createElement("script");
+      script.src = "https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js";
+      script.defer = true;
+      document.head.appendChild(script);
+    }
   }, []);
+
+  // Link OneSignal subscription to the Clerk user ID (external_id)
+  // This enables targeting the user by ID without storing player_ids
+  useEffect(() => {
+    if (!user?.id) return;
+
+    window.OneSignalDeferred = window.OneSignalDeferred || [];
+    window.OneSignalDeferred.push(async function (OneSignal: OneSignalType) {
+      try {
+        await OneSignal.login(user.id);
+      } catch {
+        // SDK not yet ready or user already linked — safe to ignore
+      }
+    });
+  }, [user?.id]);
 
   return null;
 }

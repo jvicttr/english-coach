@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { auth } from "@clerk/nextjs/server";
-import { sendEmail, newMessageEmailHtml } from "@/lib/email";
 
 const supabase = createClient(
   process.env.SUPABASE_URL!,
@@ -130,65 +129,49 @@ export async function POST(req: NextRequest) {
     .update({ updated_at: new Date().toISOString() })
     .eq("id", conversationId);
 
-  // Enviar notificação para o outro usuário
+  // Enviar push notification para o destinatário via OneSignal external_id
   try {
-    const { data: conv } = await supabase
-      .from("conversations")
-      .select("user1_id, user2_id")
-      .eq("id", conversationId)
-      .single();
-
-    if (conv) {
-      const recipientId = conv.user1_id === userId ? conv.user2_id : conv.user1_id;
-
-      const { data: sender } = await supabase
-        .from("subscriptions")
-        .select("name")
-        .eq("user_id", userId)
+    if (process.env.ONESIGNAL_APP_ID && process.env.ONESIGNAL_API_KEY) {
+      const { data: conv } = await supabase
+        .from("conversations")
+        .select("user1_id, user2_id")
+        .eq("id", conversationId)
         .single();
 
-      const { data: recipient } = await supabase
-        .from("subscriptions")
-        .select("onesignal_player_id, email, name")
-        .eq("user_id", recipientId)
-        .single();
+      if (conv) {
+        const recipientId = conv.user1_id === userId ? conv.user2_id : conv.user1_id;
 
-      if (recipient) {
+        const { data: sender } = await supabase
+          .from("subscriptions")
+          .select("name")
+          .eq("user_id", userId)
+          .single();
+
         const senderName = sender?.name ?? "Alguém";
-        const messagePreview = content ? content.substring(0, 100) : imageUrl ? "📸 Enviou uma imagem" : audioUrl ? "🎵 Enviou áudio" : "Enviou uma mensagem";
+        const messagePreview = content
+          ? content.substring(0, 100)
+          : imageUrl ? "📸 Enviou uma imagem"
+          : audioUrl ? "🎵 Enviou áudio"
+          : "Enviou uma mensagem";
 
-        // Email notification
-        if (recipient.email) {
-          sendEmail({
-            to: recipient.email,
-            subject: `💬 ${senderName} te mandou uma mensagem`,
-            html: newMessageEmailHtml(senderName, messagePreview, userId),
-          }).catch((e) => console.warn("[notification] email error:", e));
-        }
-
-        // Push notification (OneSignal)
-        if (recipient.onesignal_player_id && process.env.ONESIGNAL_API_KEY) {
-          const notifRes = await fetch("https://onesignal.com/api/v1/notifications", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Basic ${process.env.ONESIGNAL_API_KEY}`,
-            },
-            body: JSON.stringify({
-              include_player_ids: [recipient.onesignal_player_id],
-              headings: { en: `${senderName}`, pt: `${senderName}` },
-              contents: { en: messagePreview, pt: messagePreview },
-              data: { conversationId, userId: recipientId },
-              url: `https://faleinglesjv.com/app/mensagens/${userId}`,
-              web_url: `https://faleinglesjv.com/app/mensagens/${userId}`,
-            }),
-          }).catch((e) => { console.error("[notification] error:", e); });
-
-          if (!notifRes?.ok) {
-            const err = await notifRes?.text();
-            console.error("[notification] OneSignal error:", err);
-          }
-        }
+        fetch("https://onesignal.com/api/v1/notifications", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Basic ${process.env.ONESIGNAL_API_KEY}`,
+          },
+          body: JSON.stringify({
+            app_id: process.env.ONESIGNAL_APP_ID,
+            include_external_user_ids: [recipientId],
+            headings: { en: senderName, pt: senderName },
+            contents: { en: messagePreview, pt: messagePreview },
+            url: `https://www.faleinglesjv.com/app/mensagens/${userId}`,
+            web_url: `https://www.faleinglesjv.com/app/mensagens/${userId}`,
+            large_icon: "https://www.faleinglesjv.com/icon-192.png",
+            ios_badgeType: "Increase",
+            ios_badgeCount: 1,
+          }),
+        }).catch((e) => console.warn("[notification] push error:", e));
       }
     }
   } catch {}
