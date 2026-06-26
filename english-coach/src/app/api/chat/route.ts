@@ -1,4 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
+import { tavily } from "@tavily/core";
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { auth } from "@clerk/nextjs/server";
@@ -147,19 +148,9 @@ Guide the conversation around this theme. Keep it natural and engaging, not like
       let searchResults = "No results found.";
       console.log("[TAVILY] query:", query, "key present:", !!process.env.TAVILY_API_KEY);
       try {
-        const tavilyRes = await fetch("https://api.tavily.com/search", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            api_key: process.env.TAVILY_API_KEY,
-            query,
-            search_depth: "basic",
-            max_results: 5,
-            include_answer: true,
-          }),
-        });
-        const tavilyData = await tavilyRes.json();
-        console.log("[TAVILY] status:", tavilyRes.status, "answer:", tavilyData.answer?.slice(0, 100));
+        const tvly = tavily({ apiKey: process.env.TAVILY_API_KEY! });
+        const tavilyData = await tvly.search(query, { searchDepth: "basic", maxResults: 5, includeAnswer: true });
+        console.log("[TAVILY] answer:", tavilyData.answer?.slice(0, 100));
         const answer = tavilyData.answer ? `Summary: ${tavilyData.answer}\n\n` : "";
         const results = (tavilyData.results ?? [])
           .map((r: { title: string; url: string; content: string }) => `- ${r.title}: ${r.content}`)
