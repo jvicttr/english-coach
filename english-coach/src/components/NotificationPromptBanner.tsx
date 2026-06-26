@@ -11,18 +11,31 @@ export default function NotificationPromptBanner() {
 
   useEffect(() => {
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    const confirmedSubscribed = localStorage.getItem("push-subscribed") === "1";
+
+    // If user already confirmed subscription in a previous session, hide banner
+    if (confirmedSubscribed) {
+      setPerm("granted");
+      return;
+    }
 
     if (!("Notification" in window)) {
-      // On iOS PWA, Notification API may not be exposed until permission is granted.
-      // Show the banner anyway so the user can tap the button.
+      // On iOS PWA the Notification API may not exist until permission is granted.
+      // Always show the banner so the user can tap the button.
       if (isIOS) setPerm("default");
-      else setPerm("granted"); // not supported on this device, hide
+      else setPerm("granted"); // truly unsupported browser
+      return;
+    }
+
+    // On iOS, Notification.permission can incorrectly report "granted" even when
+    // the user has never been asked. Force show the banner on iOS unless confirmed.
+    if (isIOS && Notification.permission !== "denied") {
+      setPerm("default");
       return;
     }
 
     setPerm(Notification.permission as PermState);
 
-    // Listen for changes (e.g. user unblocks in settings while page is open)
     const handler = () => setPerm(Notification.permission as PermState);
     navigator.permissions
       ?.query({ name: "notifications" })
@@ -42,6 +55,9 @@ export default function NotificationPromptBanner() {
           try { await OneSignal.Slidedown?.promptPush({ force: true }); } catch { /* ignore */ }
         }
         const p = ("Notification" in window) ? Notification.permission : "granted";
+        if (p === "granted") {
+          localStorage.setItem("push-subscribed", "1");
+        }
         setPerm(p as PermState);
         setRequesting(false);
       });
