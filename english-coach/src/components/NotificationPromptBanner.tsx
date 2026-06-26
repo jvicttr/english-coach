@@ -46,22 +46,27 @@ export default function NotificationPromptBanner() {
   const enable = async () => {
     setRequesting(true);
     try {
-      window.OneSignalDeferred = window.OneSignalDeferred || [];
-      window.OneSignalDeferred.push(async (OneSignal: OneSignalType) => {
-        try {
-          // requestPermission is the most reliable method on iOS PWA
-          await OneSignal.Notifications?.requestPermission?.();
-        } catch {
-          try { await OneSignal.Slidedown?.promptPush({ force: true }); } catch { /* ignore */ }
-        }
-        const p = ("Notification" in window) ? Notification.permission : "granted";
-        if (p === "granted") {
+      if ("Notification" in window) {
+        // Must be called directly from the user gesture click — iOS blocks async wrappers
+        const result = await Notification.requestPermission();
+        setPerm(result as PermState);
+        if (result === "granted") {
           localStorage.setItem("push-subscribed", "1");
+          // Register the subscription with OneSignal after permission is granted
+          window.OneSignalDeferred = window.OneSignalDeferred || [];
+          window.OneSignalDeferred.push(async (OneSignal: OneSignalType) => {
+            try { await OneSignal.Slidedown?.promptPush({ force: false }); } catch { /* ignore */ }
+          });
+          // Auto-dismiss after showing success message
+          setTimeout(() => setDismissed(true), 3000);
         }
-        setPerm(p as PermState);
-        setRequesting(false);
-      });
+      } else {
+        // Notification API not available (very old browser)
+        setPerm("denied");
+      }
     } catch {
+      setPerm("denied");
+    } finally {
       setRequesting(false);
     }
   };
@@ -91,7 +96,7 @@ export default function NotificationPromptBanner() {
       </span>
 
       <div style={{ flex: 1 }}>
-        {perm === "default" ? (
+        {perm === "default" && (
           <>
             <div style={{ fontWeight: 700, fontSize: 14, color: "#fff", marginBottom: 4 }}>
               Ative as notificações
@@ -117,15 +122,28 @@ export default function NotificationPromptBanner() {
               {requesting ? "Aguarde..." : "Ativar notificações"}
             </button>
           </>
-        ) : (
+        )}
+
+        {perm === "granted" && (
+          <>
+            <div style={{ fontWeight: 700, fontSize: 14, color: "#4ade80", marginBottom: 4 }}>
+              ✓ Notificações ativadas!
+            </div>
+            <div style={{ fontSize: 12, color: "#aaa" }}>
+              Você vai receber mensagens e lembretes diários.
+            </div>
+          </>
+        )}
+
+        {perm === "denied" && (
           <>
             <div style={{ fontWeight: 700, fontSize: 14, color: "#fff", marginBottom: 4 }}>
               Notificações bloqueadas
             </div>
             <div style={{ fontSize: 12, color: "#aaa", lineHeight: 1.55 }}>
-              Para receber mensagens e lembretes, vá nas{" "}
-              <strong style={{ color: "#F5C800" }}>configurações do seu navegador</strong>,
-              encontre este site e permita notificações.
+              Vá em{" "}
+              <strong style={{ color: "#F5C800" }}>Ajustes → Notificações → JV IA</strong>{" "}
+              e ative as notificações.
             </div>
           </>
         )}
