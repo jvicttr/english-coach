@@ -6,8 +6,8 @@ import { clerkClient } from "@clerk/nextjs/server";
 
 const supabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SECRET_KEY!);
 
-export async function GET(_req: NextRequest, { params }: { params: { postId: string } }) {
-  const { postId } = params;
+export async function GET(_req: NextRequest, { params }: { params: Promise<{ postId: string }> }) {
+  const { postId } = await params;
 
   const { data: reactions } = await supabase
     .from("community_reactions")
