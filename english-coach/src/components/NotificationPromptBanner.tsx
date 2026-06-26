@@ -10,10 +10,16 @@ export default function NotificationPromptBanner() {
   const [requesting, setRequesting] = useState(false);
 
   useEffect(() => {
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+
     if (!("Notification" in window)) {
-      setPerm("granted"); // not supported, hide banner
+      // On iOS PWA, Notification API may not be exposed until permission is granted.
+      // Show the banner anyway so the user can tap the button.
+      if (isIOS) setPerm("default");
+      else setPerm("granted"); // not supported on this device, hide
       return;
     }
+
     setPerm(Notification.permission as PermState);
 
     // Listen for changes (e.g. user unblocks in settings while page is open)
@@ -26,17 +32,22 @@ export default function NotificationPromptBanner() {
 
   const enable = async () => {
     setRequesting(true);
-    window.OneSignalDeferred = window.OneSignalDeferred || [];
-    window.OneSignalDeferred.push(async (OneSignal: OneSignalType) => {
-      try {
-        await OneSignal.Slidedown?.promptPush({ force: true });
-      } catch {
-        // Fallback: use native browser prompt
-        await Notification.requestPermission();
-      }
-      setPerm(Notification.permission as PermState);
+    try {
+      window.OneSignalDeferred = window.OneSignalDeferred || [];
+      window.OneSignalDeferred.push(async (OneSignal: OneSignalType) => {
+        try {
+          // requestPermission is the most reliable method on iOS PWA
+          await OneSignal.Notifications?.requestPermission?.();
+        } catch {
+          try { await OneSignal.Slidedown?.promptPush({ force: true }); } catch { /* ignore */ }
+        }
+        const p = ("Notification" in window) ? Notification.permission : "granted";
+        setPerm(p as PermState);
+        setRequesting(false);
+      });
+    } catch {
       setRequesting(false);
-    });
+    }
   };
 
   if (perm === "loading" || perm === "granted" || dismissed) return null;
