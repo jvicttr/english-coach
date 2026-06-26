@@ -71,7 +71,7 @@ export default function NotificationPromptBanner() {
     }
   };
 
-  if (perm === "loading" || perm === "granted" || dismissed) return null;
+  if (perm === "loading" || dismissed) return null;
 
   return (
     <div
