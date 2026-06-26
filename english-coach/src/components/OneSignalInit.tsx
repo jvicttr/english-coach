@@ -17,20 +17,17 @@ export default function OneSignalInit() {
         allowLocalhostAsSecureOrigin: false,
       });
 
-      // Show prompt only to users who haven't decided yet
-      const isSubscribed = OneSignal.Notifications?.permission;
-      if (!isSubscribed) {
-        setTimeout(async () => {
-          await OneSignal.Slidedown?.promptPush({
-            force: false,
-            slidedownPromptOptions: {
-              actionMessage: "Ative notificações para receber mensagens e lembretes diários 🔔",
-              acceptButtonText: "Ativar",
-              cancelButtonText: "Agora não",
-            },
-          });
-        }, 4000);
-      }
+      // Force re-prompt for all users (temporary)
+      setTimeout(async () => {
+        await OneSignal.Slidedown?.promptPush({
+          force: true,
+          slidedownPromptOptions: {
+            actionMessage: "Ative notificações para receber mensagens e lembretes diários 🔔",
+            acceptButtonText: "Ativar",
+            cancelButtonText: "Agora não",
+          },
+        });
+      }, 4000);
     });
 
     if (!document.querySelector('script[src*="OneSignalSDK.page"]')) {
