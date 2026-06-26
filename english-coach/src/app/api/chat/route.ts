@@ -120,8 +120,18 @@ Guide the conversation around this theme. Keep it natural and engaging, not like
     },
   };
 
+  const lastUserMsg = baseMessages.filter(m => m.role === "user").at(-1)?.content ?? "";
+  const needsSearch = isPro && /game|match|score|result|won|win|lost|lose|played|championship|cup|tournament|news|today|yesterday|weather|price|dollar|election|season|episode|série|jogo|partida|placar|resultado|campeonato|copa|notícia|hoje|ontem|clima|preço|eleição/i.test(typeof lastUserMsg === "string" ? lastUserMsg : "");
+
   const createParams = isPro
-    ? { model: "claude-sonnet-4-6", max_tokens: 1800, system: systemFull, messages: baseMessages, tools: [webSearchTool] }
+    ? {
+        model: "claude-sonnet-4-6",
+        max_tokens: 1800,
+        system: systemFull,
+        messages: baseMessages,
+        tools: [webSearchTool],
+        tool_choice: needsSearch ? { type: "any" as const } : { type: "auto" as const },
+      }
     : { model: "claude-sonnet-4-6", max_tokens: 1800, system: systemFull, messages: baseMessages };
 
   let response = await client.messages.create(createParams);
