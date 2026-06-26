@@ -89,6 +89,25 @@ Guide the conversation around this theme. Keep it natural and engaging, not like
     ? [{ role: "user" as const, content: "start the session" }]
     : messages.slice(-20).map(({ role, content }: { role: string; content: string }) => ({ role, content }));
 
+  // Extract all mistakes already corrected in this session from the FIX tags in history
+  if (!topicStart) {
+    const fixRegexHistory = /\[FIX\|([^|]+)\|([^|]+)\|[^|]*\|([^|]*)\|[^\]]*\]/g;
+    const alreadyCorrected: string[] = [];
+    for (const msg of messages) {
+      if (msg.role !== "assistant") continue;
+      let m;
+      while ((m = fixRegexHistory.exec(msg.content)) !== null) {
+        const wrong = m[1].trim();
+        const right = m[2].trim();
+        const wrongSentence = m[3].trim();
+        alreadyCorrected.push(wrongSentence ? `"${wrongSentence}" → corrected to use "${right}"` : `"${wrong}" → corrected to "${right}"`);
+      }
+    }
+    if (alreadyCorrected.length > 0) {
+      systemFull += `\n\n## Already corrected in this session — DO NOT repeat these\n${alreadyCorrected.map(s => `- ${s}`).join("\n")}\nNever generate a [FIX] tag for any of these items again, even if the student repeats the same mistake.`;
+    }
+  }
+
   const webSearchTool = {
     name: "web_search",
     description: "Search the internet for current information, news, sports results, events, prices, or anything that requires up-to-date data. Use this whenever the user asks about something that may have happened recently or that you don't have reliable current knowledge about.",
