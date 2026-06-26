@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { auth } from "@clerk/nextjs/server";
+import { sendEmail, newMessageEmailHtml } from "@/lib/email";
 
 const supabase = createClient(
   process.env.SUPABASE_URL!,
@@ -148,36 +149,46 @@ export async function POST(req: NextRequest) {
 
       const { data: recipient } = await supabase
         .from("subscriptions")
-        .select("onesignal_player_id")
+        .select("onesignal_player_id, email, name")
         .eq("user_id", recipientId)
         .single();
 
-      if (recipient?.onesignal_player_id && process.env.ONESIGNAL_API_KEY) {
+      if (recipient) {
         const senderName = sender?.name ?? "Alguém";
         const messagePreview = content ? content.substring(0, 100) : imageUrl ? "📸 Enviou uma imagem" : audioUrl ? "🎵 Enviou áudio" : "Enviou uma mensagem";
 
-        const notifRes = await fetch("https://onesignal.com/api/v1/notifications", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Basic ${process.env.ONESIGNAL_API_KEY}`,
-          },
-          body: JSON.stringify({
-            include_player_ids: [recipient.onesignal_player_id],
-            headings: { en: `${senderName}`, pt: `${senderName}` },
-            contents: { en: messagePreview, pt: messagePreview },
-            data: { conversationId, userId: recipientId },
-            url: `https://faleinglesjv.com/app/mensagens/${userId}`,
-            web_url: `https://faleinglesjv.com/app/mensagens/${userId}`,
-          }),
-        }).catch((e) => { console.error("[notification] error:", e); });
-
-        if (!notifRes?.ok) {
-          const err = await notifRes?.text();
-          console.error("[notification] OneSignal error:", err);
+        // Email notification
+        if (recipient.email) {
+          sendEmail({
+            to: recipient.email,
+            subject: `💬 ${senderName} te mandou uma mensagem`,
+            html: newMessageEmailHtml(senderName, messagePreview, userId),
+          }).catch((e) => console.warn("[notification] email error:", e));
         }
-      } else {
-        console.warn("[notification] Missing player ID or API key", { hasPlayerId: !!recipient?.onesignal_player_id, hasApiKey: !!process.env.ONESIGNAL_API_KEY });
+
+        // Push notification (OneSignal)
+        if (recipient.onesignal_player_id && process.env.ONESIGNAL_API_KEY) {
+          const notifRes = await fetch("https://onesignal.com/api/v1/notifications", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Basic ${process.env.ONESIGNAL_API_KEY}`,
+            },
+            body: JSON.stringify({
+              include_player_ids: [recipient.onesignal_player_id],
+              headings: { en: `${senderName}`, pt: `${senderName}` },
+              contents: { en: messagePreview, pt: messagePreview },
+              data: { conversationId, userId: recipientId },
+              url: `https://faleinglesjv.com/app/mensagens/${userId}`,
+              web_url: `https://faleinglesjv.com/app/mensagens/${userId}`,
+            }),
+          }).catch((e) => { console.error("[notification] error:", e); });
+
+          if (!notifRes?.ok) {
+            const err = await notifRes?.text();
+            console.error("[notification] OneSignal error:", err);
+          }
+        }
       }
     }
   } catch {}
