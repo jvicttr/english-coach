@@ -145,6 +145,7 @@ Guide the conversation around this theme. Keep it natural and engaging, not like
       const query = (toolUseBlock.input as { query: string }).query;
 
       let searchResults = "No results found.";
+      console.log("[TAVILY] query:", query, "key present:", !!process.env.TAVILY_API_KEY);
       try {
         const tavilyRes = await fetch("https://api.tavily.com/search", {
           method: "POST",
@@ -158,12 +159,13 @@ Guide the conversation around this theme. Keep it natural and engaging, not like
           }),
         });
         const tavilyData = await tavilyRes.json();
+        console.log("[TAVILY] status:", tavilyRes.status, "answer:", tavilyData.answer?.slice(0, 100));
         const answer = tavilyData.answer ? `Summary: ${tavilyData.answer}\n\n` : "";
         const results = (tavilyData.results ?? [])
           .map((r: { title: string; url: string; content: string }) => `- ${r.title}: ${r.content}`)
           .join("\n");
         searchResults = (answer + results).trim() || "No results found.";
-      } catch { /* ignore, use fallback */ }
+      } catch (e) { console.log("[TAVILY] error:", e); }
 
       const messagesWithTool = [
         ...baseMessages,
