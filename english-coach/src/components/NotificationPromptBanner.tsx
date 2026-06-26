@@ -44,7 +44,7 @@ export default function NotificationPromptBanner() {
   return (
     <div
       style={{
-        margin: "12px 16px 0",
+        margin: "74px 16px 0",
         background: perm === "denied" ? "#1a1010" : "#141200",
         border: `1px solid ${perm === "denied" ? "#5a1a1a" : "#3a2e00"}`,
         borderRadius: 14,
