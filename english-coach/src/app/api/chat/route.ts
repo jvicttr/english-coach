@@ -89,14 +89,72 @@ Guide the conversation around this theme. Keep it natural and engaging, not like
     ? [{ role: "user" as const, content: "start the session" }]
     : messages.slice(-20).map(({ role, content }: { role: string; content: string }) => ({ role, content }));
 
-  const response = await client.messages.create({
-    model: "claude-sonnet-4-6",
-    max_tokens: 1800,
-    system: systemFull,
-    messages: baseMessages,
-  });
+  const webSearchTool = {
+    name: "web_search",
+    description: "Search the internet for current information, news, sports results, events, prices, or anything that requires up-to-date data. Use this whenever the user asks about something that may have happened recently or that you don't have reliable current knowledge about.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        query: { type: "string", description: "The search query in English" },
+      },
+      required: ["query"],
+    },
+  };
 
-  const raw = response.content[0].type === "text" ? response.content[0].text.trim() : "";
+  const createParams = isPro
+    ? { model: "claude-sonnet-4-6", max_tokens: 1800, system: systemFull, messages: baseMessages, tools: [webSearchTool] }
+    : { model: "claude-sonnet-4-6", max_tokens: 1800, system: systemFull, messages: baseMessages };
+
+  let response = await client.messages.create(createParams);
+
+  // Handle tool use (Pro only — web search)
+  if (isPro && response.stop_reason === "tool_use") {
+    const toolUseBlock = response.content.find(b => b.type === "tool_use");
+    if (toolUseBlock && toolUseBlock.type === "tool_use" && toolUseBlock.name === "web_search") {
+      const query = (toolUseBlock.input as { query: string }).query;
+
+      let searchResults = "No results found.";
+      try {
+        const tavilyRes = await fetch("https://api.tavily.com/search", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            api_key: process.env.TAVILY_API_KEY,
+            query,
+            search_depth: "basic",
+            max_results: 5,
+            include_answer: true,
+          }),
+        });
+        const tavilyData = await tavilyRes.json();
+        const answer = tavilyData.answer ? `Summary: ${tavilyData.answer}\n\n` : "";
+        const results = (tavilyData.results ?? [])
+          .map((r: { title: string; url: string; content: string }) => `- ${r.title}: ${r.content}`)
+          .join("\n");
+        searchResults = answer + results;
+      } catch { /* ignore, use fallback */ }
+
+      const messagesWithTool = [
+        ...baseMessages,
+        { role: "assistant" as const, content: response.content },
+        {
+          role: "user" as const,
+          content: [{ type: "tool_result" as const, tool_use_id: toolUseBlock.id, content: searchResults }],
+        },
+      ];
+
+      response = await client.messages.create({
+        model: "claude-sonnet-4-6",
+        max_tokens: 1800,
+        system: systemFull,
+        messages: messagesWithTool,
+        tools: [webSearchTool],
+      });
+    }
+  }
+
+  const textBlock = response.content.find(b => b.type === "text");
+  const raw = textBlock && textBlock.type === "text" ? textBlock.text.trim() : "";
   const rawNoBR = raw.replace(/\[BR:([^\]]+)\]/g, "$1");
   const levelMatch = rawNoBR.match(/\[LEVEL:(beginner|intermediate|advanced)\]/);
   const detectedLevel = levelMatch?.[1] ?? null;
