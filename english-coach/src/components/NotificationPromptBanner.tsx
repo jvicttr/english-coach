@@ -4,33 +4,44 @@ import { useState, useEffect } from "react";
 
 type PermState = "loading" | "default" | "denied" | "granted";
 
+const DISMISSED_KEY = "notif-banner-dismissed";
+const SUBSCRIBED_KEY = "push-subscribed";
+
 export default function NotificationPromptBanner() {
   const [perm, setPerm] = useState<PermState>("loading");
   const [dismissed, setDismissed] = useState(false);
   const [requesting, setRequesting] = useState(false);
 
   useEffect(() => {
-    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-    const confirmedSubscribed = localStorage.getItem("push-subscribed") === "1";
-
-    // If user already confirmed subscription in a previous session, hide banner
-    if (confirmedSubscribed) {
-      setPerm("granted");
+    // Permanently dismissed by the user (× button) — never show again
+    if (localStorage.getItem(DISMISSED_KEY) === "1") {
+      setDismissed(true);
       return;
     }
+
+    // Already subscribed and confirmed in a previous session — hide banner
+    if (localStorage.getItem(SUBSCRIBED_KEY) === "1") {
+      setDismissed(true);
+      return;
+    }
+
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
 
     if (!("Notification" in window)) {
-      // On iOS PWA the Notification API may not exist until permission is granted.
-      // Always show the banner so the user can tap the button.
       if (isIOS) setPerm("default");
-      else setPerm("granted"); // truly unsupported browser
+      else setDismissed(true); // not supported, hide
       return;
     }
 
-    // On iOS, Notification.permission can incorrectly report "granted" even when
-    // the user has never been asked. Force show the banner on iOS unless confirmed.
+    // On iOS, Notification.permission can incorrectly report "granted" before
+    // the user has actually been asked. Show the banner until confirmed.
     if (isIOS && Notification.permission !== "denied") {
       setPerm("default");
+      return;
+    }
+
+    if (Notification.permission === "granted") {
+      setDismissed(true); // already granted on non-iOS, no banner needed
       return;
     }
 
@@ -43,25 +54,32 @@ export default function NotificationPromptBanner() {
       .catch(() => {});
   }, []);
 
+  const dismiss = () => {
+    localStorage.setItem(DISMISSED_KEY, "1");
+    setDismissed(true);
+  };
+
   const enable = async () => {
     setRequesting(true);
     try {
       if ("Notification" in window) {
-        // Must be called directly from the user gesture click — iOS blocks async wrappers
+        // Must be called directly from the user gesture — iOS blocks async wrappers
         const result = await Notification.requestPermission();
-        setPerm(result as PermState);
         if (result === "granted") {
-          localStorage.setItem("push-subscribed", "1");
-          // Register the subscription with OneSignal after permission is granted
+          localStorage.setItem(SUBSCRIBED_KEY, "1");
+          localStorage.setItem(DISMISSED_KEY, "1");
+          setPerm("granted");
+          // Register subscription with OneSignal
           window.OneSignalDeferred = window.OneSignalDeferred || [];
           window.OneSignalDeferred.push(async (OneSignal: OneSignalType) => {
             try { await OneSignal.Slidedown?.promptPush({ force: false }); } catch { /* ignore */ }
           });
-          // Auto-dismiss after showing success message
-          setTimeout(() => setDismissed(true), 3000);
+          // Show success message briefly then hide permanently
+          setTimeout(() => setDismissed(true), 2500);
+        } else {
+          setPerm(result as PermState);
         }
       } else {
-        // Notification API not available (very old browser)
         setPerm("denied");
       }
     } catch {
@@ -81,8 +99,8 @@ export default function NotificationPromptBanner() {
         left: 12,
         right: 12,
         zIndex: 150,
-        background: perm === "denied" ? "#1a1010" : "#141200",
-        border: `1px solid ${perm === "denied" ? "#5a1a1a" : "#3a2e00"}`,
+        background: perm === "denied" ? "#1a1010" : perm === "granted" ? "#0d1f0d" : "#141200",
+        border: `1px solid ${perm === "denied" ? "#5a1a1a" : perm === "granted" ? "#1a4d1a" : "#3a2e00"}`,
         borderRadius: 14,
         padding: "14px 16px",
         display: "flex",
@@ -92,7 +110,7 @@ export default function NotificationPromptBanner() {
       }}
     >
       <span style={{ fontSize: 24, lineHeight: 1, flexShrink: 0 }}>
-        {perm === "denied" ? "🔕" : "🔔"}
+        {perm === "denied" ? "🔕" : perm === "granted" ? "✅" : "🔔"}
       </span>
 
       <div style={{ flex: 1 }}>
@@ -126,8 +144,8 @@ export default function NotificationPromptBanner() {
 
         {perm === "granted" && (
           <>
-            <div style={{ fontWeight: 700, fontSize: 14, color: "#4ade80", marginBottom: 4 }}>
-              ✓ Notificações ativadas!
+            <div style={{ fontWeight: 700, fontSize: 14, color: "#4ade80", marginBottom: 2 }}>
+              Notificações ativadas!
             </div>
             <div style={{ fontSize: 12, color: "#aaa" }}>
               Você vai receber mensagens e lembretes diários.
@@ -150,7 +168,7 @@ export default function NotificationPromptBanner() {
       </div>
 
       <button
-        onClick={() => setDismissed(true)}
+        onClick={dismiss}
         style={{
           background: "none",
           border: "none",
