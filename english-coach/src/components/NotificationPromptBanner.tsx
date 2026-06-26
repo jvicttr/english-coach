@@ -62,19 +62,33 @@ export default function NotificationPromptBanner() {
   const enable = async () => {
     setRequesting(true);
     try {
-      if ("Notification" in window) {
-        // Must be called directly from the user gesture — iOS blocks async wrappers
-        const result = await Notification.requestPermission();
-        if (result === "granted") {
+      // Access OneSignal directly (sync — no deferred queue) so iOS sees it as user gesture
+      const os = (window as WindowWithOneSignal).OneSignal;
+
+      if (os?.Notifications?.requestPermission) {
+        // OneSignal v16: handles full subscription registration internally
+        await os.Notifications.requestPermission();
+        const granted = os.Notifications.permission === true;
+        if (granted) {
+          try { await os.User?.PushSubscription?.optIn?.(); } catch { /* ignore */ }
           localStorage.setItem(SUBSCRIBED_KEY, "1");
           localStorage.setItem(DISMISSED_KEY, "1");
           setPerm("granted");
-          // Register subscription with OneSignal
+          setTimeout(() => setDismissed(true), 2500);
+        } else {
+          setPerm("denied");
+        }
+      } else if ("Notification" in window) {
+        // Fallback: native API + manual OneSignal opt-in via deferred
+        const result = await Notification.requestPermission();
+        if (result === "granted") {
           window.OneSignalDeferred = window.OneSignalDeferred || [];
           window.OneSignalDeferred.push(async (OneSignal: OneSignalType) => {
-            try { await OneSignal.Slidedown?.promptPush({ force: false }); } catch { /* ignore */ }
+            try { await OneSignal.User?.PushSubscription?.optIn?.(); } catch { /* ignore */ }
           });
-          // Show success message briefly then hide permanently
+          localStorage.setItem(SUBSCRIBED_KEY, "1");
+          localStorage.setItem(DISMISSED_KEY, "1");
+          setPerm("granted");
           setTimeout(() => setDismissed(true), 2500);
         } else {
           setPerm(result as PermState);
@@ -190,8 +204,14 @@ export default function NotificationPromptBanner() {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type OneSignalType = any;
 
+type WindowWithOneSignal = Window & {
+  OneSignal?: OneSignalType;
+  OneSignalDeferred: ((os: OneSignalType) => void)[];
+};
+
 declare global {
   interface Window {
+    OneSignal?: OneSignalType;
     OneSignalDeferred: ((os: OneSignalType) => void)[];
   }
 }
