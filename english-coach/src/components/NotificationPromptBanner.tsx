@@ -71,7 +71,11 @@ export default function NotificationPromptBanner() {
   return (
     <div
       style={{
-        margin: "74px 16px 0",
+        position: "fixed",
+        top: 62,
+        left: 12,
+        right: 12,
+        zIndex: 150,
         background: perm === "denied" ? "#1a1010" : "#141200",
         border: `1px solid ${perm === "denied" ? "#5a1a1a" : "#3a2e00"}`,
         borderRadius: 14,
@@ -79,6 +83,7 @@ export default function NotificationPromptBanner() {
         display: "flex",
         alignItems: "flex-start",
         gap: 12,
+        boxShadow: "0 4px 24px rgba(0,0,0,0.5)",
       }}
     >
       <span style={{ fontSize: 24, lineHeight: 1, flexShrink: 0 }}>
