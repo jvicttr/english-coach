@@ -110,7 +110,7 @@ Guide the conversation around this theme. Keep it natural and engaging, not like
 
   const webSearchTool = {
     name: "web_search",
-    description: "Search the internet for current information, news, sports results, events, prices, or anything that requires up-to-date data. Use this whenever the user asks about something that may have happened recently or that you don't have reliable current knowledge about.",
+    description: `Search the internet for real-time information. You MUST use this tool whenever the user's message references: sports games/matches/results (football, soccer, basketball, etc.), recent news or current events, scores, standings, tournament results, weather, prices, or anything time-sensitive. This includes conversational phrasing like "Did you see the game?", "What happened in the match?", "How did Brazil do?", "Who won?". Today's date is ${new Date().toISOString().split("T")[0]}. Your training data is outdated — always search for sports and current events instead of guessing.`,
     input_schema: {
       type: "object" as const,
       properties: {
