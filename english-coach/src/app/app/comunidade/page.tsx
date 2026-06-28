@@ -246,6 +246,7 @@ function PostCard({ post, myId, user, router, isReply = false, onReaction, onDel
   const [likersPopover, setLikersPopover] = useState<{ emoji: string; users: { user_id: string; name: string; avatar: string | null }[] } | null>(null);
   const [loadingLikers, setLoadingLikers] = useState(false);
   const likersRef = useRef<HTMLDivElement>(null);
+  const likersCloseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -455,7 +456,7 @@ function PostCard({ post, myId, user, router, isReply = false, onReaction, onDel
             <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
           );
           return (
-            <div key={emoji} style={{ position: "relative" }} ref={likersPopover?.emoji === emoji ? likersRef : undefined} onMouseLeave={() => setLikersPopover(null)}>
+            <div key={emoji} style={{ position: "relative" }} ref={likersPopover?.emoji === emoji ? likersRef : undefined} onMouseLeave={() => { likersCloseTimer.current = setTimeout(() => setLikersPopover(null), 150); }} onMouseEnter={() => { if (likersCloseTimer.current) { clearTimeout(likersCloseTimer.current); likersCloseTimer.current = null; } }}>
               <div style={{ display: "flex", alignItems: "center", gap: 0, borderRadius: 50, border: `1px solid ${reacted ? "rgba(245,200,0,.5)" : "#2a2a2a"}`, background: reacted ? "rgba(245,200,0,.08)" : "transparent", overflow: "hidden" }}>
                 <button onClick={() => onReaction(post.id, emoji)} style={{ display: "flex", alignItems: "center", gap: 4, padding: count > 0 ? "4px 8px 4px 10px" : "4px 10px", background: "transparent", border: "none", cursor: "pointer", fontSize: "0.78rem", color: reacted ? "var(--yellow)" : "var(--gray)", fontWeight: 600 }}>
                   {getIcon()}
@@ -463,7 +464,7 @@ function PostCard({ post, myId, user, router, isReply = false, onReaction, onDel
                 {count > 0 && (
                   <button
                     onClick={() => showLikers(emoji)}
-                    onMouseEnter={() => showLikers(emoji)}
+                    onMouseEnter={() => { if (likersCloseTimer.current) { clearTimeout(likersCloseTimer.current); likersCloseTimer.current = null; } showLikers(emoji); }}
                     style={{ background: "transparent", border: "none", borderLeft: `1px solid ${reacted ? "rgba(245,200,0,.3)" : "#2a2a2a"}`, padding: "4px 10px 4px 8px", cursor: "pointer", fontSize: "0.78rem", color: reacted ? "var(--yellow)" : "var(--gray)", fontWeight: 600 }}
                   >
                     {count}
