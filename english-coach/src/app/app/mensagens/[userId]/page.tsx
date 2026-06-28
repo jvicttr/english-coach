@@ -457,20 +457,22 @@ export default function ChatPage() {
   return (
     <div
       className="flex flex-col items-center px-3 sm:px-4"
-      style={{ background: "var(--black)", fontFamily: "'Inter', sans-serif", height: "100dvh", overflow: "hidden", paddingTop: 65, paddingBottom: 65 }}
+      style={{ background: "var(--black)", fontFamily: "'Inter', sans-serif", height: "100dvh", overflow: "hidden", paddingTop: "calc(65px + env(safe-area-inset-top))", paddingBottom: 65 }}
       onClick={() => longPressMenu && setLongPressMenu(null)}
     >
 
       {/* Subheader */}
-      <div className="w-full max-w-2xl mb-3 flex items-center gap-3 shrink-0">
-        <button onClick={() => router.back()} style={{ background: "var(--dark2)", border: "1px solid #2a2a2a", borderRadius: "10px", height: "36px", padding: "0 10px", display: "flex", alignItems: "center", gap: "5px", color: "var(--gray)", cursor: "pointer" }}>
+      <div style={{ position: "fixed", top: 0, left: 0, right: 0, paddingTop: "calc(10px + env(safe-area-inset-top))", paddingBottom: 10, paddingLeft: 16, paddingRight: 16, background: "var(--black)", borderBottom: "1px solid #1e1e1e", zIndex: 1000, display: "flex", alignItems: "center", gap: 12 }}>
+        <button onClick={() => router.back()} style={{ background: "var(--dark2)", border: "1px solid #2a2a2a", borderRadius: "10px", height: "36px", padding: "0 10px", display: "flex", alignItems: "center", gap: "5px", color: "var(--gray)", cursor: "pointer", flexShrink: 0 }}>
           <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M9 2L4 7L9 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
         </button>
-        <UserAvatar src={otherUserImage} name={otherUserName} size={32} />
-        <div>
-          <div style={{ fontWeight: 700, fontSize: "0.9rem", color: "var(--white)" }}>{otherUserName || "..."}</div>
-          <div style={{ fontSize: "0.68rem", color: "var(--gray)" }}>Mensagem direta</div>
-        </div>
+        <a href={`/app/comunidade/u/${userId}`} style={{ display: "flex", alignItems: "center", gap: 10, textDecoration: "none", flex: 1, minWidth: 0 }}>
+          <UserAvatar src={otherUserImage} name={otherUserName} size={36} />
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontWeight: 700, fontSize: "0.9rem", color: "var(--white)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{otherUserName || "..."}</div>
+            <div style={{ fontSize: "0.68rem", color: "var(--gray)" }}>Mensagem direta</div>
+          </div>
+        </a>
       </div>
 
       {/* Chat area */}

@@ -134,7 +134,7 @@ export function AppHeader() {
   }
 
   const isHome = pathname === "/app";
-  const hideHeader = /^\/app\/comunidade\/u\//.test(pathname);
+  const hideHeader = /^\/app\/comunidade\/u\//.test(pathname) || /^\/app\/mensagens\/[^/]+/.test(pathname);
 
   if (hideHeader) return null;
 
