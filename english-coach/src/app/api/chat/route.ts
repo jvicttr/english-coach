@@ -122,25 +122,23 @@ Guide the conversation around this theme. Keep it natural and engaging, not like
   };
 
   const lastUserMsg = baseMessages.filter((m: { role: string; content: string }) => m.role === "user").at(-1)?.content ?? "";
-  const needsSearch = isPro && /game|match|score|result|won|win|lost|lose|played|championship|cup|tournament|news|today|yesterday|weather|price|dollar|election|season|episode|série|jogo|partida|placar|resultado|campeonato|copa|notícia|hoje|ontem|clima|preço|eleição/i.test(typeof lastUserMsg === "string" ? lastUserMsg : "");
-  console.log("[SEARCH DEBUG]", { isPro, needsSearch, lastUserMsg: typeof lastUserMsg === "string" ? lastUserMsg.slice(0, 100) : "(not string)" });
+  const needsSearch = /game|match|score|result|won|win|lost|lose|played|championship|cup|tournament|news|today|yesterday|weather|price|dollar|election|season|episode|série|jogo|partida|placar|resultado|campeonato|copa|notícia|hoje|ontem|clima|preço|eleição/i.test(typeof lastUserMsg === "string" ? lastUserMsg : "");
+  console.log("[SEARCH DEBUG]", { needsSearch, lastUserMsg: typeof lastUserMsg === "string" ? lastUserMsg.slice(0, 100) : "(not string)" });
 
-  const createParams = isPro
-    ? {
-        model: "claude-sonnet-4-6",
-        max_tokens: 1800,
-        system: systemFull,
-        messages: baseMessages,
-        tools: [webSearchTool],
-        tool_choice: needsSearch ? { type: "any" as const } : { type: "auto" as const },
-      }
-    : { model: "claude-sonnet-4-6", max_tokens: 1800, system: systemFull, messages: baseMessages };
+  const createParams = {
+    model: "claude-sonnet-4-6",
+    max_tokens: 1800,
+    system: systemFull,
+    messages: baseMessages,
+    tools: [webSearchTool],
+    tool_choice: needsSearch ? { type: "any" as const } : { type: "auto" as const },
+  };
 
   let response = await client.messages.create(createParams);
 
   console.log("[SEARCH DEBUG] stop_reason:", response.stop_reason, "content types:", response.content.map(b => b.type));
   // Handle tool use (Pro only — web search)
-  if (isPro && response.stop_reason === "tool_use") {
+  if (response.stop_reason === "tool_use") {
     const toolUseBlock = response.content.find(b => b.type === "tool_use");
     if (toolUseBlock && toolUseBlock.type === "tool_use" && toolUseBlock.name === "web_search") {
       const query = (toolUseBlock.input as { query: string }).query;
@@ -181,7 +179,7 @@ Guide the conversation around this theme. Keep it natural and engaging, not like
 
   let textBlock = response.content.find(b => b.type === "text");
   // Fallback: if tool_use cycle produced no text, retry without tools
-  if (!textBlock && isPro) {
+  if (!textBlock) {
     const fallbackResponse = await client.messages.create({
       model: "claude-sonnet-4-6",
       max_tokens: 1800,
