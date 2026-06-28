@@ -111,7 +111,7 @@ Guide the conversation around this theme. Keep it natural and engaging, not like
 
   const webSearchTool = {
     name: "web_search",
-    description: `Search the internet for real-time information. You MUST use this tool whenever the user's message references: sports games/matches/results (football, soccer, basketball, etc.), recent news or current events, scores, standings, tournament results, weather, prices, or anything time-sensitive. This includes conversational phrasing like "Did you see the game?", "What happened in the match?", "How did Brazil do?", "Who won?". Today's date is ${new Date().toISOString().split("T")[0]}. Your training data is outdated — always search for sports and current events instead of guessing.`,
+    description: `Search the internet for real-time information. Today's date is ${new Date().toISOString().split("T")[0]} and your training data cutoff is mid-2025 — anything that may have changed since then REQUIRES a search. You MUST use this tool for: sports (scores, results, standings, biggest events, who won, tournaments, championships, games), current events, news, weather, prices, elections, TV/series releases, or ANY question about what is happening "now", "today", "this year", "currently", "right now", or "recently". If there is ANY chance the answer depends on information from after mid-2025, search instead of guessing.`,
     input_schema: {
       type: "object" as const,
       properties: {
@@ -122,16 +122,13 @@ Guide the conversation around this theme. Keep it natural and engaging, not like
   };
 
   const lastUserMsg = baseMessages.filter((m: { role: string; content: string }) => m.role === "user").at(-1)?.content ?? "";
-  const needsSearch = /game|match|score|result|won|win|lost|lose|played|championship|cup|tournament|news|today|yesterday|weather|price|dollar|election|season|episode|série|jogo|partida|placar|resultado|campeonato|copa|notícia|hoje|ontem|clima|preço|eleição/i.test(typeof lastUserMsg === "string" ? lastUserMsg : "");
-  console.log("[SEARCH DEBUG]", { needsSearch, lastUserMsg: typeof lastUserMsg === "string" ? lastUserMsg.slice(0, 100) : "(not string)" });
-
   const createParams = {
     model: "claude-sonnet-4-6",
     max_tokens: 1800,
     system: systemFull,
     messages: baseMessages,
     tools: [webSearchTool],
-    tool_choice: needsSearch ? { type: "any" as const } : { type: "auto" as const },
+    tool_choice: { type: "auto" as const },
   };
 
   let response = await client.messages.create(createParams);
