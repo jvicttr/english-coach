@@ -482,7 +482,7 @@ function PostCard({ post, myId, user, router, isReply = false, onReaction, onDel
                   ) : (
                     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                       {likersPopover.users.map(u => (
-                        <div key={u.user_id} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <a key={u.user_id} href={`/app/comunidade/u/${u.user_id}`} style={{ display: "flex", alignItems: "center", gap: 8, textDecoration: "none", borderRadius: 8, padding: "2px 4px", margin: "-2px -4px", transition: "background 0.15s" }} onMouseEnter={e => (e.currentTarget.style.background = "#2a2a2a")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
                           {u.avatar ? (
                             <img src={u.avatar} alt={u.name} style={{ width: 28, height: 28, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} />
                           ) : (
@@ -491,7 +491,7 @@ function PostCard({ post, myId, user, router, isReply = false, onReaction, onDel
                             </div>
                           )}
                           <span style={{ fontSize: "0.82rem", color: "#e0e0e0", fontWeight: 500, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{u.name}</span>
-                        </div>
+                        </a>
                       ))}
                     </div>
                   )}
