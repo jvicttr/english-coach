@@ -455,13 +455,17 @@ function PostCard({ post, myId, user, router, isReply = false, onReaction, onDel
             <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
           );
           return (
-            <div key={emoji} style={{ position: "relative" }} ref={likersPopover?.emoji === emoji ? likersRef : undefined}>
+            <div key={emoji} style={{ position: "relative" }} ref={likersPopover?.emoji === emoji ? likersRef : undefined} onMouseLeave={() => setLikersPopover(null)}>
               <div style={{ display: "flex", alignItems: "center", gap: 0, borderRadius: 50, border: `1px solid ${reacted ? "rgba(245,200,0,.5)" : "#2a2a2a"}`, background: reacted ? "rgba(245,200,0,.08)" : "transparent", overflow: "hidden" }}>
                 <button onClick={() => onReaction(post.id, emoji)} style={{ display: "flex", alignItems: "center", gap: 4, padding: count > 0 ? "4px 8px 4px 10px" : "4px 10px", background: "transparent", border: "none", cursor: "pointer", fontSize: "0.78rem", color: reacted ? "var(--yellow)" : "var(--gray)", fontWeight: 600 }}>
                   {getIcon()}
                 </button>
                 {count > 0 && (
-                  <button onClick={() => showLikers(emoji)} style={{ background: "transparent", border: "none", borderLeft: `1px solid ${reacted ? "rgba(245,200,0,.3)" : "#2a2a2a"}`, padding: "4px 10px 4px 8px", cursor: "pointer", fontSize: "0.78rem", color: reacted ? "var(--yellow)" : "var(--gray)", fontWeight: 600 }}>
+                  <button
+                    onClick={() => showLikers(emoji)}
+                    onMouseEnter={() => showLikers(emoji)}
+                    style={{ background: "transparent", border: "none", borderLeft: `1px solid ${reacted ? "rgba(245,200,0,.3)" : "#2a2a2a"}`, padding: "4px 10px 4px 8px", cursor: "pointer", fontSize: "0.78rem", color: reacted ? "var(--yellow)" : "var(--gray)", fontWeight: 600 }}
+                  >
                     {count}
                   </button>
                 )}
