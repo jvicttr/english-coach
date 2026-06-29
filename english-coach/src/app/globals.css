@@ -33,6 +33,24 @@ body {
   font-family: 'Inter', sans-serif;
 }
 
+/* Fix browser autofill overriding dark theme — force dark bg + black text */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 1000px #1a1a1a inset !important;
+  -webkit-text-fill-color: #000000 !important;
+  caret-color: #000000;
+  transition: background-color 9999s ease-in-out 0s;
+}
+
+/* Clerk button text — ensure visible on yellow background */
+.cl-formButtonPrimary,
+.cl-formButtonPrimary span,
+[data-localization-key="formButtonPrimary"] {
+  color: #000000 !important;
+}
+
 /* Header: hide version badge and Planos button on mobile */
 @media (max-width: 640px) {
   .version-badge { display: none !important; }
