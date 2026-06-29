@@ -47,7 +47,6 @@ export async function GET() {
     { data: flashcards },
     { data: hardCards },
     { data: communityData },
-    { data: xpHistory },
   ] = await Promise.all([
     currentUser(),
     supabase.from("subscriptions").select("plan, level, english_level").eq("user_id", userId).single(),
