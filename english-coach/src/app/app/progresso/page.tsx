@@ -477,7 +477,20 @@ export default function Progresso() {
                             setSharingId(r.id);
                             const resultEmoji = pct >= 80 ? "🏆" : pct >= 60 ? "💪" : "📚";
                             const content = `${resultEmoji} Just scored ${r.score}/${total} (${pct}%) on a quiz!\n\n"${r.title}"`;
-                            await fetch("/api/community/posts", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ content, isShare: true }) });
+                            const quizTranscript = JSON.stringify({
+                              type: "quiz_result",
+                              title: r.title,
+                              score: r.score,
+                              total,
+                              questions: r.questions.map((q, i) => ({
+                                question: q.question,
+                                options: q.options,
+                                correct: q.correct,
+                                userAnswer: r.answers?.[i] ?? null,
+                                explanation: q.explanation,
+                              })),
+                            });
+                            await fetch("/api/community/posts", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ content, transcript: quizTranscript, isShare: true }) });
                             setSharingId(null);
                             setSharedIds((prev) => new Set([...prev, r.id]));
                           }}

@@ -37,6 +37,7 @@ export default function Flashcards() {
   const [flipped, setFlipped] = useState(false);
   const [done, setDone] = useState(false);
   const [sessionResults, setSessionResults] = useState({ easy: 0, hard: 0, miss: 0 });
+  const [sessionRatings, setSessionRatings] = useState<Record<string, "easy" | "hard" | "miss">>({});
   const [rating, setRating] = useState<string | null>(null);
   const [sharing, setSharing] = useState(false);
   const [shared, setShared] = useState(false);
@@ -102,6 +103,7 @@ export default function Flashcards() {
     setFlipped(false);
     setDone(false);
     setSessionResults({ easy: 0, hard: 0, miss: 0 });
+    setSessionRatings({});
     setRating(null);
   }
 
@@ -170,6 +172,7 @@ export default function Flashcards() {
     const card = activePack.cards[currentIndex];
     setRating(r);
     setSessionResults((prev) => ({ ...prev, [r]: prev[r] + 1 }));
+    setSessionRatings((prev) => ({ ...prev, [card.id]: r }));
     await fetch("/api/flashcards", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -243,11 +246,22 @@ export default function Flashcards() {
       setSharing(true);
       const resultEmoji = pct >= 80 ? "🏆" : pct >= 60 ? "💪" : "📚";
       const content = `${resultEmoji} Just reviewed ${total} flashcard${total !== 1 ? "s" : ""} from the pack "${activePack!.pack_name}"!\n\n✅ Knew it: ${sessionResults.easy}  😅 Was hard: ${sessionResults.hard}  ❌ Missed: ${sessionResults.miss}`;
+      const flashcardTranscript = JSON.stringify({
+        type: "flashcard_result",
+        pack_name: activePack!.pack_name,
+        cards: activePack!.cards.map((c) => ({
+          word: c.word,
+          translation: c.translation,
+          phonetic: c.phonetic,
+          example: c.example,
+          rating: sessionRatings[c.id] ?? null,
+        })),
+      });
       try {
         await fetch("/api/community/posts", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ content, isShare: true }),
+          body: JSON.stringify({ content, transcript: flashcardTranscript, isShare: true }),
         });
         setShared(true);
       } finally {

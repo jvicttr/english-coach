@@ -230,6 +230,128 @@ export function ReplyComposer({ postId, user, onDone }: { postId: string; user: 
   );
 }
 
+// ── Structured content renderers ──────────────────────────────────────────
+
+type QuizResultData = {
+  type: "quiz_result";
+  title: string;
+  score: number;
+  total: number;
+  questions: { question: string; options: string[]; correct: number; userAnswer: number | null; explanation: string }[];
+};
+
+type FlashcardResultData = {
+  type: "flashcard_result";
+  pack_name: string;
+  cards: { word: string; translation: string; phonetic: string | null; example: string | null; rating: "easy" | "hard" | "miss" | null }[];
+};
+
+function QuizResultEmbed({ data }: { data: QuizResultData }) {
+  const [open, setOpen] = React.useState(false);
+  const pct = data.total > 0 ? Math.round((data.score / data.total) * 100) : 0;
+  return (
+    <div style={{ background: "#0a0a0a", border: "1px solid #1e1e1e", borderRadius: 12, marginBottom: 10, overflow: "hidden" }}>
+      <button onClick={() => setOpen(v => !v)} style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 14px", background: "none", border: "none", cursor: "pointer", gap: 8 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <span style={{ fontSize: "0.75rem" }}>📝</span>
+          <span style={{ fontSize: "0.75rem", color: "#ccc", fontWeight: 600 }}>Quiz · {data.title}</span>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <span style={{ fontSize: "0.72rem", fontWeight: 700, color: pct >= 80 ? "#4ade80" : pct >= 60 ? "var(--yellow)" : "#f87171" }}>{pct}%</span>
+          <span style={{ color: "var(--gray)", fontSize: "0.7rem", transform: open ? "rotate(180deg)" : "none", display: "inline-block", transition: "transform 0.2s" }}>▼</span>
+        </div>
+      </button>
+      {open && (
+        <div style={{ borderTop: "1px solid #1e1e1e", padding: "10px 14px", display: "flex", flexDirection: "column", gap: 12 }}>
+          {data.questions.map((q, i) => {
+            const isCorrect = q.userAnswer === q.correct;
+            const notAnswered = q.userAnswer === null || q.userAnswer === undefined;
+            return (
+              <div key={i} style={{ background: "#111", borderRadius: 10, padding: "10px 12px", border: `1px solid ${notAnswered ? "#2a2a2a" : isCorrect ? "rgba(74,222,128,.2)" : "rgba(248,113,113,.2)"}` }}>
+                <p style={{ fontSize: "0.78rem", color: "#fff", fontWeight: 600, margin: "0 0 8px 0", lineHeight: 1.4 }}>{i + 1}. {q.question}</p>
+                <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                  {q.options.map((opt, j) => {
+                    const isUser = q.userAnswer === j;
+                    const isRight = q.correct === j;
+                    let bg = "transparent";
+                    let border = "#2a2a2a";
+                    let color = "var(--gray)";
+                    if (isRight) { bg = "rgba(74,222,128,.08)"; border = "rgba(74,222,128,.3)"; color = "#4ade80"; }
+                    if (isUser && !isRight) { bg = "rgba(248,113,113,.08)"; border = "rgba(248,113,113,.3)"; color = "#f87171"; }
+                    return (
+                      <div key={j} style={{ display: "flex", alignItems: "center", gap: 6, padding: "5px 8px", borderRadius: 8, background: bg, border: `1px solid ${border}` }}>
+                        <span style={{ fontSize: "0.65rem", width: 14, flexShrink: 0, color }}>
+                          {isRight ? "✓" : isUser ? "✗" : ""}
+                        </span>
+                        <span style={{ fontSize: "0.74rem", color, lineHeight: 1.3 }}>{opt}</span>
+                        {isUser && <span style={{ marginLeft: "auto", fontSize: "0.65rem", color, flexShrink: 0 }}>{isRight ? "✅" : "❌"}</span>}
+                      </div>
+                    );
+                  })}
+                </div>
+                {q.explanation && (
+                  <p style={{ fontSize: "0.68rem", color: "var(--gray)", margin: "8px 0 0 0", lineHeight: 1.4, fontStyle: "italic" }}>💡 {q.explanation}</p>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function FlashcardResultEmbed({ data }: { data: FlashcardResultData }) {
+  const [open, setOpen] = React.useState(false);
+  const total = data.cards.length;
+  const easy = data.cards.filter(c => c.rating === "easy").length;
+  return (
+    <div style={{ background: "#0a0a0a", border: "1px solid #1e1e1e", borderRadius: 12, marginBottom: 10, overflow: "hidden" }}>
+      <button onClick={() => setOpen(v => !v)} style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 14px", background: "none", border: "none", cursor: "pointer", gap: 8 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <span style={{ fontSize: "0.75rem" }}>🃏</span>
+          <span style={{ fontSize: "0.75rem", color: "#ccc", fontWeight: 600 }}>Flashcards · {data.pack_name}</span>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <span style={{ fontSize: "0.72rem", color: "var(--gray)" }}>{easy}/{total} ✅</span>
+          <span style={{ color: "var(--gray)", fontSize: "0.7rem", transform: open ? "rotate(180deg)" : "none", display: "inline-block", transition: "transform 0.2s" }}>▼</span>
+        </div>
+      </button>
+      {open && (
+        <div style={{ borderTop: "1px solid #1e1e1e", padding: "10px 14px", display: "flex", flexDirection: "column", gap: 8 }}>
+          {data.cards.map((c, i) => {
+            const ratingColor = c.rating === "easy" ? "#4ade80" : c.rating === "hard" ? "var(--yellow)" : c.rating === "miss" ? "#f87171" : "var(--gray)";
+            const ratingIcon = c.rating === "easy" ? "✅" : c.rating === "hard" ? "😅" : c.rating === "miss" ? "❌" : "·";
+            return (
+              <div key={i} style={{ background: "#111", borderRadius: 10, padding: "9px 12px", border: `1px solid #1e1e1e`, display: "flex", alignItems: "flex-start", gap: 10 }}>
+                <span style={{ fontSize: "0.75rem", flexShrink: 0, marginTop: 1 }}>{ratingIcon}</span>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: "flex", alignItems: "baseline", gap: 6, flexWrap: "wrap" }}>
+                    <span style={{ fontSize: "0.82rem", fontWeight: 700, color: "#fff" }}>{c.word}</span>
+                    {c.phonetic && <span style={{ fontSize: "0.68rem", color: "var(--gray)", fontStyle: "italic" }}>{c.phonetic}</span>}
+                  </div>
+                  <p style={{ fontSize: "0.74rem", color: ratingColor, margin: "2px 0 0 0" }}>{c.translation}</p>
+                  {c.example && <p style={{ fontSize: "0.68rem", color: "var(--gray)", margin: "4px 0 0 0", fontStyle: "italic", lineHeight: 1.4 }}>"{c.example}"</p>}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function StructuredContent({ transcript }: { transcript: string | null }) {
+  if (!transcript?.startsWith("{")) return null;
+  try {
+    const data = JSON.parse(transcript);
+    if (data.type === "quiz_result") return <QuizResultEmbed data={data as QuizResultData} />;
+    if (data.type === "flashcard_result") return <FlashcardResultEmbed data={data as FlashcardResultData} />;
+  } catch { /* not JSON */ }
+  return null;
+}
+
 export function PostCard({ post, myId, user, router, isReply = false, onReaction, onDeleted, onImageClick }: {
   post: Post; myId: string; user: ReturnType<typeof useUser>["user"];
   router: ReturnType<typeof useRouter>; isReply?: boolean;
@@ -402,6 +524,7 @@ export function PostCard({ post, myId, user, router, isReply = false, onReaction
           )}
         </div>
       )}
+      {!post.audio_url && <StructuredContent transcript={post.transcript} />}
       {editing ? (
         <div style={{ marginBottom: 12 }}>
           <textarea
