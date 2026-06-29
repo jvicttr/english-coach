@@ -424,9 +424,23 @@ function FlashcardResultEmbed({ data }: { data: FlashcardResultData }) {
   );
 }
 
-function RepostEmbed({ data }: { data: { original_user_id: string; original_display_name: string; original_avatar_url: string | null; original_content: string; original_image_url?: string | null; original_created_at: string } }) {
+function RepostEmbed({ data }: { data: { original_post_id?: string; original_user_id: string; original_display_name: string; original_avatar_url: string | null; original_content: string; original_image_url?: string | null; original_created_at: string } }) {
+  function goToOriginal() {
+    if (!data.original_post_id) return;
+    const el = document.getElementById(`post-${data.original_post_id}`);
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      el.style.outline = "2px solid var(--yellow)";
+      setTimeout(() => { el.style.outline = ""; }, 1500);
+    } else {
+      window.location.href = `/app/comunidade#post-${data.original_post_id}`;
+    }
+  }
   return (
-    <div style={{ background: "#0a0a0a", border: "1px solid #2a2a2a", borderRadius: 12, padding: "10px 12px", marginBottom: 10 }}>
+    <div onClick={goToOriginal} style={{ background: "#0a0a0a", border: "1px solid #2a2a2a", borderRadius: 12, padding: "10px 12px", marginBottom: 10, cursor: data.original_post_id ? "pointer" : "default", transition: "border-color 0.15s" }}
+      onMouseEnter={e => { if (data.original_post_id) (e.currentTarget as HTMLDivElement).style.borderColor = "#3a3a3a"; }}
+      onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.borderColor = "#2a2a2a"; }}
+    >
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
         <a href={`/app/comunidade/u/${data.original_user_id}`} style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: 8 }}>
           <div style={{ width: 24, height: 24, borderRadius: "50%", overflow: "hidden", background: "#1e1e1e", flexShrink: 0 }}>
@@ -657,7 +671,7 @@ export function PostCard({ post, myId, user, router, isReply = false, onReaction
   })();
 
   return (
-    <div style={{ background: isReply ? "#0d0d0d" : "var(--dark1)", border: "1px solid #1e1e1e", borderRadius: 16, padding: "14px 16px", marginBottom: isReply ? 8 : 10 }}>
+    <div id={`post-${post.id}`} style={{ background: isReply ? "#0d0d0d" : "var(--dark1)", border: "1px solid #1e1e1e", borderRadius: 16, padding: "14px 16px", marginBottom: isReply ? 8 : 10 }}>
       {repostMeta && (
         <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 8, fontSize: "0.68rem", color: "var(--gray)" }}>
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
