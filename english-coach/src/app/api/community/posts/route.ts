@@ -113,5 +113,28 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  // Notify mentioned users (@name)
+  const mentionedNames = [...new Set((content.match(/@(\w+)/g) ?? []).map((m: string) => m.slice(1)))];
+  if (mentionedNames.length > 0) {
+    const { data: mentionedPosts } = await supabase
+      .from("community_posts")
+      .select("user_id, display_name")
+      .in("display_name", mentionedNames);
+
+    const seen = new Set<string>();
+    for (const mp of mentionedPosts ?? []) {
+      if (mp.user_id === userId || seen.has(mp.user_id)) continue;
+      seen.add(mp.user_id);
+      await supabase.from("notifications").insert({
+        user_id: mp.user_id,
+        type: "mention",
+        post_id: post.id,
+        from_user_id: userId,
+        from_display_name: displayName,
+        from_avatar_url: avatarUrl,
+      });
+    }
+  }
+
   return NextResponse.json({ post });
 }

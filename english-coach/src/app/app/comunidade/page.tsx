@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useUser } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 
@@ -21,10 +21,23 @@ type Post = {
 
 const EMOJIS_REACT = ["❤️"];
 
+function MentionLink({ name }: { name: string }) {
+  const [href, setHref] = React.useState<string | null>(null);
+  React.useEffect(() => {
+    fetch(`/api/community/user-by-name?name=${encodeURIComponent(name.slice(1))}`)
+      .then(r => r.json())
+      .then(d => { if (d.userId) setHref(`/app/comunidade/u/${d.userId}`); })
+      .catch(() => {});
+  }, [name]);
+  return href
+    ? <a href={href} style={{ color: "var(--yellow)", fontWeight: 700, textDecoration: "none" }}>{name}</a>
+    : <span style={{ color: "var(--yellow)", fontWeight: 700 }}>{name}</span>;
+}
+
 function renderWithMentions(text: string): React.ReactNode[] {
   return text.split(/(@\w+)/g).map((part, i) =>
     /^@\w/.test(part)
-      ? <span key={i} style={{ color: "var(--yellow)", fontWeight: 700 }}>{part}</span>
+      ? <MentionLink key={i} name={part} />
       : part
   );
 }

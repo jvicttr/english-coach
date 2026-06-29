@@ -243,7 +243,7 @@ export function AppHeader() {
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <p style={{ fontSize: "0.78rem", color: "#fff", margin: 0, lineHeight: 1.4 }}>
                             <span style={{ fontWeight: 700 }}>{n.from_display_name}</span>{" "}
-                            <span style={{ color: "var(--gray)" }}>respondeu seu post</span>
+                            <span style={{ color: "var(--gray)" }}>{n.type === "mention" ? "te mencionou" : "respondeu seu post"}</span>
                           </p>
                           <p style={{ fontSize: "0.65rem", color: "var(--gray)", margin: "3px 0 0" }}>{timeAgo(n.created_at)}</p>
                         </div>
