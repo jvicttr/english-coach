@@ -1,7 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
-import { auth } from "@clerk/nextjs/server";
+import { auth, clerkClient } from "@clerk/nextjs/server";
 import { createClient } from "@supabase/supabase-js";
 import { getTier } from "@/lib/xp";
 
@@ -17,10 +17,30 @@ export async function GET() {
     .order("total_xp", { ascending: false })
     .limit(10);
 
+  // For rows missing display_name, fetch from Clerk and backfill
+  const missingIds = (top ?? []).filter(r => !r.display_name).map(r => r.user_id);
+  const clerkNames: Record<string, string> = {};
+  if (missingIds.length > 0) {
+    try {
+      const clerk = await clerkClient();
+      await Promise.all(missingIds.map(async (uid) => {
+        try {
+          const u = await clerk.users.getUser(uid);
+          const name = [u.firstName, u.lastName].filter(Boolean).join(" ").trim() || u.username;
+          if (name) {
+            clerkNames[uid] = name;
+            // Backfill so next load is fast
+            supabase.from("user_xp").update({ display_name: name }).eq("user_id", uid).then(() => {});
+          }
+        } catch { /* skip */ }
+      }));
+    } catch { /* non-fatal */ }
+  }
+
   const ranking = (top ?? []).map((row: { user_id: string; total_xp: number; display_name: string | null }, i: number) => ({
     position: i + 1,
     userId: row.user_id,
-    displayName: row.display_name ?? "Aluno",
+    displayName: row.display_name ?? clerkNames[row.user_id] ?? "Aluno",
     totalXp: row.total_xp,
     tier: getTier(row.total_xp),
     isMe: row.user_id === userId,

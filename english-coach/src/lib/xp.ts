@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
+import { clerkClient } from "@clerk/nextjs/server";
 import { TRAIL_STEPS } from "./trilha-steps";
 export { TIERS, getTier } from "./tiers";
 export type { Tier } from "./tiers";
@@ -91,16 +92,27 @@ export type XPEvent =
   | { type: "trail_step"; stepId: string };
 
 export async function grantXP(userId: string, event: XPEvent): Promise<{ newXp: number; newBadges: Badge[] }> {
-  // Get current state
+  // Get current state (also fetch display_name to know if it needs filling)
   const { data: current } = await supabase
     .from("user_xp")
-    .select("total_xp, message_count, flashcard_reviews")
+    .select("total_xp, message_count, flashcard_reviews, display_name")
     .eq("user_id", userId)
     .single();
 
   const prevXp = current?.total_xp ?? 0;
   const prevMessages = current?.message_count ?? 0;
   const prevFlashcards = current?.flashcard_reviews ?? 0;
+
+  // Resolve display_name from Clerk if missing
+  let displayName: string | undefined;
+  if (!current?.display_name) {
+    try {
+      const clerk = await clerkClient();
+      const user = await clerk.users.getUser(userId);
+      const name = [user.firstName, user.lastName].filter(Boolean).join(" ").trim() || user.username;
+      if (name) displayName = name;
+    } catch { /* non-fatal */ }
+  }
 
   // Calculate XP for this event
   let xpGained = 0;
@@ -238,7 +250,14 @@ export async function grantXP(userId: string, event: XPEvent): Promise<{ newXp: 
   const finalXp = prevXp + xpGained + bonusXp;
 
   await supabase.from("user_xp").upsert(
-    { user_id: userId, total_xp: finalXp, message_count: newMessages, flashcard_reviews: newFlashcards, updated_at: new Date().toISOString() },
+    {
+      user_id: userId,
+      total_xp: finalXp,
+      message_count: newMessages,
+      flashcard_reviews: newFlashcards,
+      updated_at: new Date().toISOString(),
+      ...(displayName ? { display_name: displayName } : {}),
+    },
     { onConflict: "user_id" }
   );
 
