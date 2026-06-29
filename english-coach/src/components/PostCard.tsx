@@ -850,8 +850,11 @@ export function PostCard({ post, myId, user, router, isReply = false, onReaction
 
       {showRepostModal && (
         <div onClick={() => { if (!reposting) { setShowRepostModal(false); resetRepostModal(); } }} style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.7)", display: "flex", alignItems: "flex-end", justifyContent: "center", zIndex: 1001 }}>
-          <div onClick={e => e.stopPropagation()} style={{ background: "var(--dark2)", borderRadius: "18px 18px 0 0", padding: "20px 18px calc(28px + env(safe-area-inset-bottom))", width: "100%", maxWidth: 520, border: "1px solid #2a2a2a", borderBottom: "none" }}>
-            <p style={{ fontSize: "1rem", fontWeight: 700, color: "#fff", margin: "0 0 12px 0" }}>Repostar</p>
+          <div onClick={e => e.stopPropagation()} style={{ background: "var(--dark2)", borderRadius: "18px 18px 0 0", width: "100%", maxWidth: 520, border: "1px solid #2a2a2a", borderBottom: "none", display: "flex", flexDirection: "column", maxHeight: "90vh" }}>
+            <div style={{ padding: "20px 18px 0", flexShrink: 0 }}>
+              <p style={{ fontSize: "1rem", fontWeight: 700, color: "#fff", margin: "0 0 12px 0" }}>Repostar</p>
+            </div>
+            <div style={{ overflowY: "auto", flex: 1, padding: "0 18px", WebkitOverflowScrolling: "touch" } as React.CSSProperties}>
 
             {/* Composer area */}
             <div style={{ background: "#111", border: "1px solid #2a2a2a", borderRadius: 12, padding: "10px 12px", marginBottom: 10 }}>
@@ -914,7 +917,8 @@ export function PostCard({ post, myId, user, router, isReply = false, onReaction
               {post.image_url && <img src={post.image_url} alt="" style={{ width: "100%", maxHeight: 100, objectFit: "cover", borderRadius: 8, marginTop: 6, opacity: 0.7 }} />}
             </div>
 
-            <div style={{ display: "flex", gap: 10 }}>
+            </div>{/* end scroll area */}
+            <div style={{ padding: "12px 18px calc(20px + env(safe-area-inset-bottom))", flexShrink: 0, borderTop: "1px solid #1e1e1e", display: "flex", gap: 10 }}>
               <button onClick={() => { setShowRepostModal(false); resetRepostModal(); }} disabled={reposting} style={{ flex: 1, padding: "11px", border: "1px solid #2a2a2a", background: "#1a1a1a", color: "var(--gray)", borderRadius: 10, fontSize: "0.9rem", fontWeight: 700, cursor: "pointer" }}>Cancelar</button>
               <button onClick={doRepost} disabled={reposting} style={{ flex: 1, padding: "11px", border: "none", background: "var(--yellow)", color: "#000", borderRadius: 10, fontSize: "0.9rem", fontWeight: 800, cursor: reposting ? "default" : "pointer", opacity: reposting ? 0.6 : 1 }}>
                 {reposting ? "Repostando…" : "Repostar"}
