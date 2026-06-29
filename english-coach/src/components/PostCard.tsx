@@ -36,25 +36,32 @@ export function timeAgo(dateStr: string) {
   return `${Math.floor(diff / 86400)}d`;
 }
 
-export function MentionLink({ name }: { name: string }) {
-  const [href, setHref] = React.useState<string | null>(null);
+export function MentionLink({ name, userId }: { name: string; userId?: string }) {
+  const [href, setHref] = React.useState<string | null>(userId ? `/app/comunidade/u/${userId}` : null);
   React.useEffect(() => {
+    if (userId) return;
     fetch(`/api/community/user-by-name?name=${encodeURIComponent(name.slice(1))}`)
       .then(r => r.json())
       .then(d => { if (d.userId) setHref(`/app/comunidade/u/${d.userId}`); })
       .catch(() => {});
-  }, [name]);
+  }, [name, userId]);
   return href
     ? <a href={href} style={{ color: "var(--yellow)", fontWeight: 700, textDecoration: "none" }}>{name}</a>
     : <span style={{ color: "var(--yellow)", fontWeight: 700 }}>{name}</span>;
 }
 
+export function stripMentionIds(text: string): string {
+  return text.replace(/@([\wÀ-ɏḀ-ỿ]+)\[[^\]]+\]/g, "@$1");
+}
+
+// Supports both legacy @Name and new @Name[userId] format
 export function renderWithMentions(text: string): React.ReactNode[] {
-  return text.split(/(@[\wÀ-ɏḀ-ỿ]+)/g).map((part, i) =>
-    /^@/.test(part) && part.length > 1
-      ? <MentionLink key={i} name={part} />
-      : part
-  );
+  return text.split(/(@[\wÀ-ɏḀ-ỿ]+(?:\[[^\]]+\])?)/g).map((part, i) => {
+    if (!part.startsWith("@") || part.length < 2) return part;
+    const match = part.match(/^(@[\wÀ-ɏḀ-ỿ]+)\[([^\]]+)\]$/);
+    if (match) return <MentionLink key={i} name={match[1]} userId={match[2]} />;
+    return <MentionLink key={i} name={part} />;
+  });
 }
 
 function getSupportedMime() {
@@ -451,7 +458,7 @@ function RepostEmbed({ data }: { data: { original_post_id?: string; original_use
           <span style={{ fontSize: "0.65rem", color: "var(--gray)" }}>{timeAgo(data.original_created_at)}</span>
         </a>
       </div>
-      {data.original_content?.trim() && <p style={{ fontSize: "0.82rem", color: "#ddd", margin: "0 0 6px 0", lineHeight: 1.5, whiteSpace: "pre-wrap" }}>{data.original_content}</p>}
+      {data.original_content?.trim() && <p style={{ fontSize: "0.82rem", color: "#ddd", margin: "0 0 6px 0", lineHeight: 1.5, whiteSpace: "pre-wrap" }}>{renderWithMentions(data.original_content)}</p>}
       {data.original_image_url && <img src={data.original_image_url} alt="" style={{ width: "100%", maxHeight: 200, objectFit: "contain", borderRadius: 8, background: "#0d0d0d" }} />}
     </div>
   );
@@ -473,7 +480,7 @@ function ShareButton({ postId, content }: { postId: string; content: string }) {
   async function share() {
     const url = `https://www.faleinglesjv.com/app/comunidade#post-${postId}`;
     const text = content?.trim()
-      ? `"${content.slice(0, 100)}${content.length > 100 ? "…" : ""}"`
+      ? `"${stripMentionIds(content).slice(0, 100)}${content.length > 100 ? "…" : ""}"`
       : "Confira este post na comunidade Fale Inglês JV!";
     if (typeof navigator !== "undefined" && (navigator as Navigator & { share?: (d: object) => Promise<void> }).share) {
       try { await (navigator as Navigator & { share: (d: object) => Promise<void> }).share({ title: "Fale Inglês JV", text, url }); return; } catch {}
@@ -511,7 +518,7 @@ export function PostCard({ post, myId, user, router, isReply = false, onReaction
   const [deleting, setDeleting] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [editing, setEditing] = useState(false);
-  const [editText, setEditText] = useState(post.content);
+  const [editText, setEditText] = useState(stripMentionIds(post.content));
   const [editError, setEditError] = useState("");
   const [saving, setSaving] = useState(false);
   const [currentContent, setCurrentContent] = useState(post.content);
@@ -1016,7 +1023,7 @@ export function PostCard({ post, myId, user, router, isReply = false, onReaction
                 </div>
                 <span style={{ fontSize: "0.72rem", fontWeight: 700, color: "#999" }}>{post.display_name}</span>
               </div>
-              {post.content?.trim() && <p style={{ fontSize: "0.78rem", color: "#777", margin: 0, lineHeight: 1.5, whiteSpace: "pre-wrap" }}>{post.content.slice(0, 100)}{post.content.length > 100 ? "…" : ""}</p>}
+              {post.content?.trim() && <p style={{ fontSize: "0.78rem", color: "#777", margin: 0, lineHeight: 1.5, whiteSpace: "pre-wrap" }}>{stripMentionIds(post.content).slice(0, 100)}{post.content.length > 100 ? "…" : ""}</p>}
               {post.image_url && <img src={post.image_url} alt="" style={{ width: "100%", maxHeight: 100, objectFit: "cover", borderRadius: 8, marginTop: 6, opacity: 0.7 }} />}
             </div>
 

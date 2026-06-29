@@ -187,13 +187,13 @@ export default function ComunidadePage() {
     }
   }
 
-  function insertMention(u: { name: string }) {
+  function insertMention(u: { id: string; name: string }) {
     const ta = textareaRef.current;
     const cursor = ta?.selectionStart ?? postText.length;
     const before = postText.slice(0, cursor);
     const atIdx = before.lastIndexOf("@");
     const firstName = u.name.split(" ")[0];
-    const newText = before.slice(0, atIdx) + `@${firstName} ` + postText.slice(cursor);
+    const newText = before.slice(0, atIdx) + `@${firstName}[${u.id}] ` + postText.slice(cursor);
     setPostText(newText);
     setMentionOpen(false);
     setTimeout(() => ta?.focus(), 0);
