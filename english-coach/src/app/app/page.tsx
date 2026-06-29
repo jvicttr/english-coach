@@ -87,7 +87,8 @@ export default function AppHome() {
     loadHome();
     const onVisible = () => { if (document.visibilityState === "visible") loadHome(); };
     document.addEventListener("visibilitychange", onVisible);
-    return () => document.removeEventListener("visibilitychange", onVisible);
+    const interval = setInterval(loadHome, 60_000);
+    return () => { document.removeEventListener("visibilitychange", onVisible); clearInterval(interval); };
   }, []);
 
   const streak = streakData?.streak ?? 0;

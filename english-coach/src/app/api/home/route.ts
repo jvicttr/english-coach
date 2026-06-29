@@ -46,6 +46,8 @@ export async function GET() {
     { data: trilhaSessions },
     { data: flashcards },
     { data: hardCards },
+    { data: communityData },
+    { data: xpHistory },
   ] = await Promise.all([
     currentUser(),
     supabase.from("subscriptions").select("plan, level, english_level").eq("user_id", userId).single(),
@@ -57,14 +59,16 @@ export async function GET() {
     supabase.from("trilha_sessions").select("step_id").eq("user_id", userId),
     supabase.from("flashcards").select("next_review").eq("user_id", userId).lte("next_review", today),
     supabase.from("flashcards").select("pack_id, pack_name, ease_factor").eq("user_id", userId).lt("ease_factor", 1.6),
+    supabase.from("community_posts").select("created_at").eq("user_id", userId).order("created_at", { ascending: false }).limit(60),
   ]);
 
   const isPro = sub?.plan === "pro";
 
-  // Streak
+  // Streak — conta qualquer atividade no app (chat IA, quiz, post na comunidade)
   const dateSet = new Set<string>();
   for (const r of usageData ?? []) dateSet.add(r.date);
   for (const r of quizData ?? []) dateSet.add((r.created_at as string).split("T")[0]);
+  for (const r of communityData ?? []) dateSet.add((r.created_at as string).split("T")[0]);
   const { streak, weekDays } = calcStreak(dateSet);
 
   // Recommendation — find the pack with the most hard cards (ease_factor < 1.6)
