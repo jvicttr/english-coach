@@ -13,13 +13,22 @@ export async function GET(req: NextRequest) {
   const name = req.nextUrl.searchParams.get("name");
   if (!name) return NextResponse.json({ error: "Missing name" }, { status: 400 });
 
-  const { data } = await supabase
+  // Try xp table first (has all users), fall back to community_posts
+  const { data: xpUser } = await supabase
+    .from("xp")
+    .select("user_id, display_name")
+    .ilike("display_name", name)
+    .limit(1)
+    .maybeSingle();
+
+  if (xpUser) return NextResponse.json({ userId: xpUser.user_id });
+
+  const { data: postUser } = await supabase
     .from("community_posts")
     .select("user_id, display_name")
     .ilike("display_name", name)
     .limit(1)
-    .single();
+    .maybeSingle();
 
-  if (!data) return NextResponse.json({ userId: null });
-  return NextResponse.json({ userId: data.user_id });
+  return NextResponse.json({ userId: postUser?.user_id ?? null });
 }
