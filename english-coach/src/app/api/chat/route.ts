@@ -109,7 +109,6 @@ Guide the conversation around this theme. Keep it natural and engaging, not like
     }
   }
 
-  const today = new Date().toISOString().split("T")[0];
   const webSearchTool = {
     name: "web_search",
     description: `Search the internet for real-time information. Today is ${today}. Your training data ends in early 2025 — you are at least one year out of date on everything. Use this tool for ANY topic that involves facts about the world: sports, news, politics, entertainment, technology, science, business, people, companies, movies, TV shows, music, economy, prices, weather, or any event/situation. When in doubt, search — do not guess from training data.`,
