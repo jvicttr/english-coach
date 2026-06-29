@@ -109,9 +109,10 @@ Guide the conversation around this theme. Keep it natural and engaging, not like
     }
   }
 
+  const today = new Date().toISOString().split("T")[0];
   const webSearchTool = {
     name: "web_search",
-    description: `Search the internet for real-time information. Today's date is ${new Date().toISOString().split("T")[0]} and your training data cutoff is mid-2025 — anything that may have changed since then REQUIRES a search. You MUST use this tool for: sports (scores, results, standings, biggest events, who won, tournaments, championships, games), current events, news, weather, prices, elections, TV/series releases, or ANY question about what is happening "now", "today", "this year", "currently", "right now", or "recently". If there is ANY chance the answer depends on information from after mid-2025, search instead of guessing.`,
+    description: `Search the internet for real-time information. Today is ${today}. Your training data ends in early 2025 — you are at least one year out of date on everything. Use this tool for ANY topic that involves facts about the world: sports, news, politics, entertainment, technology, science, business, people, companies, movies, TV shows, music, economy, prices, weather, or any event/situation. When in doubt, search — do not guess from training data.`,
     input_schema: {
       type: "object" as const,
       properties: {
@@ -121,14 +122,21 @@ Guide the conversation around this theme. Keep it natural and engaging, not like
     },
   };
 
-  const lastUserMsg = baseMessages.filter((m: { role: string; content: string }) => m.role === "user").at(-1)?.content ?? "";
+  const lastUserMsg = typeof (baseMessages.filter((m: { role: string; content: string }) => m.role === "user").at(-1)?.content) === "string"
+    ? (baseMessages.filter((m: { role: string; content: string }) => m.role === "user").at(-1)?.content as string)
+    : "";
+
+  // Force search for any message that touches real-world facts (broad pattern)
+  const worldFactsPattern = /\b(who|what|when|where|which|how much|how many|did|does|is|are|was|were|has|have|can|will|would)\b.{0,60}\b(happen|win|won|lose|lost|play|score|result|news|latest|current|recent|today|now|this year|2025|2026|alive|dead|president|champion|leader|best|top|biggest|richest|popular|release|launch|out now|available|cost|price|worth|value|stock|record|break|award|oscar|grammy|nobel|election|vote|war|crisis|deal|treaty|discovered|invented|built|opened|closed|banned|approved|signed)\b/i;
+  const forceSearch = worldFactsPattern.test(lastUserMsg) || lastUserMsg.length > 30 && /\b(sport|game|match|team|player|movie|film|serie|show|song|album|artist|band|actor|singer|politician|president|prime minister|ceo|company|brand|app|ai|model|gpt|gemini|iphone|android|crypto|bitcoin|dollar|euro|real|inflation|war|israel|ukraine|russia|china|usa|brazil|europe|africa|asia)\b/i.test(lastUserMsg);
+
   const createParams = {
     model: "claude-sonnet-4-6",
     max_tokens: 1800,
     system: systemFull,
     messages: baseMessages,
     tools: [webSearchTool],
-    tool_choice: { type: "auto" as const },
+    tool_choice: forceSearch ? { type: "any" as const } : { type: "auto" as const },
   };
 
   let response = await client.messages.create(createParams);
