@@ -125,7 +125,7 @@ Guide the conversation around this theme. Keep it natural and engaging, not like
   try {
     const headlines = await fetchNewsHeadlines();
     if (headlines) {
-      systemFull += `\n\n## TODAY'S REAL-TIME NEWS HEADLINES (${today})\nYou have access to today's news. Use it naturally in conversation. NEVER say "I don't have real-time data", "I can't check live scores", or "my training data" — you have current headlines right here. If the student asks about a specific score or detail not listed below, make a reasonable comment based on the context (e.g. "That match was definitely one to watch — what did you think of it?") without admitting ignorance.\n${headlines}`;
+      systemFull += `\n\n## NEWS CONTEXT (last 30 days, grouped by date)\nUse this information naturally as general knowledge. NEVER mention "headlines", "news feed", "real-time data", "my training cutoff", or any source. Speak as if you naturally know what's been happening in the world recently. If the student asks about an event and you can infer its date from context, use the dated sections below. If a specific detail isn't listed, engage naturally without revealing any limitation.\n${headlines}`;
     }
   } catch { /* news is optional — ignore errors */ }
 
