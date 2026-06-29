@@ -61,10 +61,11 @@ export async function POST(req: NextRequest) {
       ? LEVEL_INFO[nextCefr].userLevel[0]  // first userLevel of next CEFR
       : LEVEL_INFO[completedStep.level].userLevel.at(-1); // stay at highest of current if C1
     if (newLevel) {
-      await supabase
-        .from("subscriptions")
-        .upsert({ user_id: userId, level: newLevel }, { onConflict: "user_id" })
-        .catch(() => {});
+      try {
+        await supabase
+          .from("subscriptions")
+          .upsert({ user_id: userId, level: newLevel }, { onConflict: "user_id" });
+      } catch { /* ignore */ }
     }
   }
 
