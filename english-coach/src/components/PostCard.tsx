@@ -468,6 +468,34 @@ function StructuredContent({ transcript }: { transcript: string | null }) {
   return null;
 }
 
+function ShareButton({ postId, content }: { postId: string; content: string }) {
+  const [copied, setCopied] = useState(false);
+  async function share() {
+    const url = `https://www.faleinglesjv.com/app/comunidade#post-${postId}`;
+    const text = content?.trim()
+      ? `"${content.slice(0, 100)}${content.length > 100 ? "…" : ""}"`
+      : "Confira este post na comunidade Fale Inglês JV!";
+    if (typeof navigator !== "undefined" && (navigator as Navigator & { share?: (d: object) => Promise<void> }).share) {
+      try { await (navigator as Navigator & { share: (d: object) => Promise<void> }).share({ title: "Fale Inglês JV", text, url }); return; } catch {}
+    }
+    try { await navigator.clipboard.writeText(url); } catch {}
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
+  return (
+    <button
+      onClick={share}
+      style={{ display: "flex", alignItems: "center", gap: 4, padding: "4px 10px", borderRadius: 50, border: `1px solid ${copied ? "rgba(74,222,128,.3)" : "#2a2a2a"}`, background: copied ? "rgba(74,222,128,.08)" : "transparent", cursor: "pointer", fontSize: "0.78rem", color: copied ? "#4ade80" : "var(--gray)", fontWeight: 600, marginLeft: 2 }}
+    >
+      {copied
+        ? <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+        : <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+      }
+      {copied ? "Copiado!" : "Compartilhar"}
+    </button>
+  );
+}
+
 export function PostCard({ post, myId, user, router, isReply = false, onReaction, onDeleted, onImageClick }: {
   post: Post; myId: string; user: ReturnType<typeof useUser>["user"];
   router: ReturnType<typeof useRouter>; isReply?: boolean;
@@ -864,6 +892,9 @@ export function PostCard({ post, myId, user, router, isReply = false, onReaction
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
           Reply
         </button>
+
+        {/* Share button */}
+        {!isReply && <ShareButton postId={post.id} content={post.content} />}
 
         {/* Repost button — only on original posts (not reposts themselves) */}
         {!isReply && (() => {
