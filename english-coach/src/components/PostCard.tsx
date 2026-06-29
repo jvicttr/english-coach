@@ -470,7 +470,14 @@ export function PostCard({ post, myId, user, router, isReply = false, onReaction
         </button>
         <div style={{ flex: 1 }}>
           <button onClick={() => router.push(`/app/comunidade/u/${post.user_id}`)} style={{ background: "none", border: "none", padding: 0, cursor: "pointer" }}>
-            <p style={{ fontSize: isReply ? "0.78rem" : "0.82rem", fontWeight: 700, color: "#fff", margin: 0 }}>{post.display_name}</p>
+            <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
+              <span style={{ fontSize: isReply ? "0.78rem" : "0.82rem", fontWeight: 700, color: "#fff" }}>{post.display_name}</span>
+              {post.user_id === "user_3EzV0DXiskFt0wNSwNSXVHapiBC" && (
+                <span title="Criador do app" style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 16, height: 16, borderRadius: "50%", background: "var(--yellow)", flexShrink: 0 }}>
+                  <svg width="9" height="9" viewBox="0 0 24 24" fill="#000"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+                </span>
+              )}
+            </span>
           </button>
           <p style={{ fontSize: "0.65rem", color: "var(--gray)", margin: 0 }}>{timeAgo(post.created_at)}</p>
         </div>

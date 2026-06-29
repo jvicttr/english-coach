@@ -65,7 +65,14 @@ export default function UserProfilePage({ params }: { params: Promise<{ userId: 
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <p style={{ fontWeight: 800, fontSize: "1.1rem", color: "#fff", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{profile?.display_name ?? "Student"}</p>
+                <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <span style={{ fontWeight: 800, fontSize: "1.1rem", color: "#fff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{profile?.display_name ?? "Student"}</span>
+                  {userId === "user_3EzV0DXiskFt0wNSwNSXVHapiBC" && (
+                    <span title="Criador do app" style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 20, height: 20, borderRadius: "50%", background: "var(--yellow)", flexShrink: 0 }}>
+                      <svg width="11" height="11" viewBox="0 0 24 24" fill="#000"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+                    </span>
+                  )}
+                </span>
                 {me && me.id !== userId && (
                   <a
                     href={`/app/mensagens/${userId}`}
