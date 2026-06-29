@@ -63,8 +63,16 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ proRequired: true }, { status: 403 });
   }
 
-  const effectiveLevel = level || savedLevel || "intermediate";
-  let systemFull = `${SYSTEM_PROMPT}\n\nStudent level: ${effectiveLevel} (this is their saved profile level — trust it from the start, do not re-detect from scratch)`;
+  // Always use the profile-saved level — never let the AI's per-message detection override the user's explicit choice
+  const effectiveLevel = savedLevel || "intermediate";
+
+  const levelInstructions: Record<string, string> = {
+    beginner: "BEGINNER level — Use very short, simple sentences. Present tense only. Survival vocabulary. No idioms, no phrasal verbs. Speak slowly and clearly. If the student writes more than you expect, do NOT upgrade their level — they chose beginner.",
+    intermediate: "INTERMEDIATE level — Use past and future tenses naturally. Introduce phrasal verbs and common expressions. Medium-length sentences. Do NOT simplify to beginner just because a message is short, and do NOT upgrade to advanced just because a message is fluent.",
+    advanced: "ADVANCED level — Use rich vocabulary, idioms, varied tenses, conditionals, passive voice, nuance, humor. Never simplify your language. Treat them as near-native. Even if a message is short or has errors, keep your advanced-level output — the student has explicitly chosen this level.",
+  };
+
+  let systemFull = `${SYSTEM_PROMPT}\n\n## LOCKED STUDENT LEVEL: ${effectiveLevel.toUpperCase()}\n${levelInstructions[effectiveLevel] ?? levelInstructions.intermediate}\nThis level is set by the student's profile and CANNOT change mid-conversation. The [LEVEL:xxx] token you output is for logging only — it does NOT affect your vocabulary or complexity for this session.`;
 
   if (roleplay && scenario && ROLEPLAY_SCENARIOS[scenario]) {
     systemFull += buildRoleplayBlock(ROLEPLAY_SCENARIOS[scenario], scenario, effectiveLevel, !!topicStart);
