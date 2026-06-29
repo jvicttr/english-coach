@@ -3,6 +3,7 @@
 import { useState, useEffect, use } from "react";
 import { useUser } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
+import { getTier } from "@/lib/tiers";
 
 type Reaction = { emoji: string; user_id: string };
 type Post = {
@@ -36,7 +37,7 @@ export default function UserProfilePage({ params }: { params: Promise<{ userId: 
   const { user: me } = useUser();
   const router = useRouter();
   const [posts, setPosts] = useState<Post[]>([]);
-  const [profile, setProfile] = useState<{ display_name: string; avatar_url: string | null } | null>(null);
+  const [profile, setProfile] = useState<{ display_name: string; avatar_url: string | null; total_xp: number; level: string | null; level_label: string | null } | null>(null);
   const [totalPosts, setTotalPosts] = useState(0);
   const [loading, setLoading] = useState(true);
 
@@ -101,7 +102,26 @@ export default function UserProfilePage({ params }: { params: Promise<{ userId: 
                   </a>
                 )}
               </div>
-              <p style={{ fontSize: "0.75rem", color: "var(--gray)", margin: "4px 0 0" }}>{totalPosts} post{totalPosts !== 1 ? "s" : ""}</p>
+              <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 5, flexWrap: "wrap" }}>
+                <span style={{ fontSize: "0.72rem", color: "var(--gray)" }}>{totalPosts} post{totalPosts !== 1 ? "s" : ""}</span>
+                {profile && (() => {
+                  const tier = getTier(profile.total_xp);
+                  return (
+                    <>
+                      <span style={{ fontSize: "0.65rem", color: "#333" }}>·</span>
+                      <span style={{ fontSize: "0.7rem", fontWeight: 700, color: tier.color }}>{tier.emoji} {tier.label}</span>
+                      <span style={{ fontSize: "0.65rem", color: "#333" }}>·</span>
+                      <span style={{ fontSize: "0.7rem", color: "var(--gray)" }}>{profile.total_xp.toLocaleString("pt-BR")} XP</span>
+                      {profile.level_label && (
+                        <>
+                          <span style={{ fontSize: "0.65rem", color: "#333" }}>·</span>
+                          <span style={{ fontSize: "0.68rem", background: "rgba(245,200,0,.1)", color: "var(--yellow)", padding: "1px 7px", borderRadius: 50, fontWeight: 600 }}>{profile.level_label}</span>
+                        </>
+                      )}
+                    </>
+                  );
+                })()}
+              </div>
             </div>
           </div>
         </div>

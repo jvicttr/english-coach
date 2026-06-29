@@ -12,7 +12,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ use
 
   const { userId } = await params;
 
-  const [postsResult, countResult, clerkUser] = await Promise.all([
+  const [postsResult, countResult, clerkUser, xpResult, subResult] = await Promise.all([
     supabase
       .from("community_posts")
       .select("*, community_reactions(emoji, user_id)")
@@ -32,6 +32,8 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ use
         return null;
       }
     })(),
+    supabase.from("user_xp").select("total_xp").eq("user_id", userId).maybeSingle(),
+    supabase.from("subscriptions").select("level").eq("user_id", userId).maybeSingle(),
   ]);
 
   const display_name = clerkUser
@@ -40,9 +42,18 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ use
         : clerkUser.firstName ?? clerkUser.username ?? "Student")
     : null;
 
+  const LEVEL_LABEL: Record<string, string> = {
+    beginner: "Iniciante",
+    intermediate: "Intermediário",
+    advanced: "Avançado",
+  };
+
   const profile = {
     display_name: display_name ?? "Student",
     avatar_url: clerkUser?.imageUrl ?? null,
+    total_xp: xpResult.data?.total_xp ?? 0,
+    level: subResult.data?.level ?? null,
+    level_label: LEVEL_LABEL[subResult.data?.level ?? ""] ?? null,
   };
 
   return NextResponse.json({
