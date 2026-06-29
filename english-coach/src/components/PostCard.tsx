@@ -830,7 +830,7 @@ export function PostCard({ post, myId, user, router, isReply = false, onReaction
       )}
 
       {/* Actions */}
-      <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+      <div className="post-actions" style={{ display: "flex", alignItems: "center", gap: 6, overflowX: "auto", WebkitOverflowScrolling: "touch", scrollbarWidth: "none", msOverflowStyle: "none" } as React.CSSProperties}>
         {EMOJIS_REACT.map(emoji => {
           const count = post.community_reactions.filter(r => r.emoji === emoji).length;
           const reacted = post.community_reactions.some(r => r.emoji === emoji && r.user_id === myId);
@@ -888,7 +888,7 @@ export function PostCard({ post, myId, user, router, isReply = false, onReaction
         <button
           onClick={() => setShowReplyComposer(v => !v)}
           title="Reply"
-          style={{ display: "flex", alignItems: "center", gap: 4, padding: "4px 10px", borderRadius: 50, border: "1px solid #2a2a2a", background: showReplyComposer ? "rgba(255,255,255,.05)" : "transparent", cursor: "pointer", fontSize: "0.78rem", color: "var(--gray)", fontWeight: 600 }}
+          style={{ display: "flex", alignItems: "center", gap: 4, padding: "4px 10px", borderRadius: 50, border: "1px solid #2a2a2a", background: showReplyComposer ? "rgba(255,255,255,.05)" : "transparent", cursor: "pointer", fontSize: "0.78rem", color: "var(--gray)", fontWeight: 600, flexShrink: 0, whiteSpace: "nowrap" }}
         >
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
           <span style={{ fontSize: "0.76rem" }}>Reply</span>
@@ -918,7 +918,7 @@ export function PostCard({ post, myId, user, router, isReply = false, onReaction
 
         {/* Show replies */}
         {replyCount > 0 && (
-          <button onClick={toggleExpand} style={{ background: "none", border: "none", fontSize: "0.72rem", color: "var(--yellow)", fontWeight: 700, cursor: "pointer", marginLeft: 4 }}>
+          <button onClick={toggleExpand} style={{ background: "none", border: "none", fontSize: "0.72rem", color: "var(--yellow)", fontWeight: 700, cursor: "pointer", marginLeft: 4, flexShrink: 0, whiteSpace: "nowrap" }}>
             {loadingReplies ? "…" : expanded ? `Hide` : `${replyCount} repl${replyCount === 1 ? "y" : "ies"}`}
           </button>
         )}

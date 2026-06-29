@@ -388,3 +388,6 @@ input:-webkit-autofill:active {
   .landing .why-icon { width: 52px; height: 52px; font-size: 1.2rem; }
   .landing .bitcoin-banner { padding: 2.2rem 5vw; }
 }
+
+/* Hide scrollbar in action bars */
+.post-actions::-webkit-scrollbar { display: none; }
