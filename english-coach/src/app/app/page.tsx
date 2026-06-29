@@ -115,7 +115,7 @@ export default function AppHome() {
         </div>
 
         {/* ── Streak ─────────────────────────────────────────────────────────── */}
-        <a href="/app/progresso" style={{ background: "var(--dark1)", border: "1px solid #1e1e1e", borderRadius: 16, padding: "12px 14px", display: "flex", alignItems: "center", justifyContent: "space-between", textDecoration: "none", cursor: "pointer" }}>
+        <a href="/app/progresso" style={{ background: "var(--dark1)", border: "1px solid #1e1e1e", borderRadius: 16, padding: "12px 14px", display: "flex", alignItems: "center", justifyContent: "space-between", textDecoration: "none", cursor: "pointer", overflow: "hidden" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
               <span style={{ fontSize: "1.4rem" }}>🔥</span>
               <div>
@@ -129,10 +129,10 @@ export default function AppHome() {
                 )}
               </div>
             </div>
-            <div style={{ display: "flex", gap: 4 }}>
+            <div style={{ display: "flex", gap: 4, overflow: "hidden", flexShrink: 1 }}>
               {isPro === null
                 ? Array.from({ length: 7 }, (_, i) => (
-                    <div key={i} style={{ width: 24, height: 24, borderRadius: 7, background: "#1a1a1a" }} />
+                    <div key={i} style={{ width: 24, height: 24, borderRadius: 7, background: "#1a1a1a", flexShrink: 0 }} />
                   ))
                 : weekDays.map((done, i) => {
                     const isToday = i === todayIdx;
