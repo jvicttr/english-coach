@@ -44,6 +44,7 @@ export default function ConquistasPage() {
   const [ranking, setRanking] = useState<RankingData | null>(null);
   const [tab, setTab] = useState<"badges" | "ranking">("badges");
   const [loading, setLoading] = useState(true);
+  const [showTiers, setShowTiers] = useState(false);
 
   useEffect(() => {
     Promise.all([
@@ -81,7 +82,40 @@ export default function ConquistasPage() {
         @keyframes bounce { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
         @keyframes shimmer { 0%{background-position:-200% center} 100%{background-position:200% center} }
         @keyframes popIn { from{opacity:0;transform:scale(.85)} to{opacity:1;transform:scale(1)} }
+        @keyframes fadeIn { from{opacity:0} to{opacity:1} }
       `}</style>
+
+      {/* Tiers modal */}
+      {showTiers && (
+        <div onClick={() => setShowTiers(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.8)", zIndex: 100, display: "flex", alignItems: "flex-end", justifyContent: "center", animation: "fadeIn .2s ease" }}>
+          <div onClick={e => e.stopPropagation()} style={{ background: "#111", borderRadius: "24px 24px 0 0", width: "100%", maxWidth: 480, padding: "24px 20px 40px", animation: "popIn .25s ease" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
+              <p style={{ fontWeight: 900, fontSize: "1.1rem", color: "#fff", margin: 0 }}>Todos os Tiers</p>
+              <button onClick={() => setShowTiers(false)} style={{ background: "#222", border: "none", color: "var(--gray)", borderRadius: 50, width: 30, height: 30, cursor: "pointer", fontSize: "1rem", display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              {TIERS.map((t) => {
+                const isCurrentTier = t.id === tier.id;
+                const isUnlocked = totalXp >= t.min;
+                return (
+                  <div key={t.id} style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 16px", borderRadius: 16, border: isCurrentTier ? `1.5px solid ${t.color}` : `1px solid ${isUnlocked ? t.color + "40" : "#1e1e1e"}`, background: isCurrentTier ? `${t.color}12` : isUnlocked ? `${t.color}06` : "#0d0d0d", opacity: isUnlocked ? 1 : 0.5 }}>
+                    <span style={{ fontSize: "1.8rem", lineHeight: 1, filter: isUnlocked ? "none" : "grayscale(1)" }}>{t.emoji}</span>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                        <p style={{ fontWeight: 800, fontSize: "0.95rem", color: isUnlocked ? t.color : "var(--gray)", margin: 0 }}>{t.label}</p>
+                        {isCurrentTier && <span style={{ fontSize: "0.6rem", fontWeight: 700, color: t.color, background: `${t.color}25`, padding: "2px 7px", borderRadius: 20 }}>ATUAL</span>}
+                        {!isUnlocked && <span style={{ fontSize: "0.6rem", color: "#444", fontWeight: 600 }}>🔒 {t.min.toLocaleString("pt-BR")} XP</span>}
+                      </div>
+                      <p style={{ fontSize: "0.72rem", color: "var(--gray)", margin: "2px 0 0", lineHeight: 1.4 }}>{t.desc}</p>
+                    </div>
+                    {isUnlocked && !isCurrentTier && <span style={{ fontSize: "0.8rem" }}>✓</span>}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
 
       <div style={{ padding: "10px 16px", borderBottom: "1px solid #1e1e1e" }}>
         <span style={{ fontWeight: 800, fontSize: "0.95rem", color: "#fff" }}>🏅 Conquistas</span>
@@ -101,6 +135,9 @@ export default function ConquistasPage() {
             </div>
             <div style={{ textAlign: "right" }}>
               <p style={{ fontSize: "0.65rem", color: "var(--gray)", marginBottom: 4 }}>{earnedCount}/{badges.length} badges</p>
+              <button onClick={() => setShowTiers(true)} style={{ fontSize: "0.6rem", color: tier.color, background: `${tier.color}20`, border: `1px solid ${tier.color}40`, borderRadius: 20, padding: "3px 8px", cursor: "pointer", fontWeight: 700 }}>
+                Ver todos os tiers →
+              </button>
             </div>
           </div>
 
