@@ -98,7 +98,7 @@ export default function AppHome() {
 
       <style>{`@keyframes shimmer { 0%{background-position:-400px 0} 100%{background-position:400px 0} }`}</style>
 
-      <div style={{ padding: "16px", paddingTop: "calc(65px + 16px)", maxWidth: 640, margin: "0 auto", display: "flex", flexDirection: "column", gap: 16 }}>
+      <div style={{ padding: "16px", paddingTop: "calc(65px + 16px + env(safe-area-inset-top))", maxWidth: 640, margin: "0 auto", display: "flex", flexDirection: "column", gap: 16 }}>
 
         {/* ── Greeting ──────────────────────────────────────────────────────── */}
         <div>

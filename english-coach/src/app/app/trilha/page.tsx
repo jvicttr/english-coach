@@ -107,7 +107,7 @@ export default function TrilhaPage() {
 
   if (loading) {
     return (
-      <div style={{ background: "var(--black)", minHeight: "100dvh", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Inter', sans-serif", paddingTop: 65 }}>
+      <div style={{ background: "var(--black)", minHeight: "100dvh", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Inter', sans-serif", paddingTop: "calc(65px + env(safe-area-inset-top))" }}>
         <div style={{ display: "flex", gap: 6 }}>
           {[0, 150, 300].map((d) => (
             <span key={d} style={{ width: 10, height: 10, borderRadius: "50%", background: "var(--yellow)", display: "inline-block", animation: "bounce .8s infinite", animationDelay: `${d}ms` }} />
@@ -122,7 +122,7 @@ export default function TrilhaPage() {
   const completedCount = visibleLevels.reduce((acc, l) => acc + TRAIL_STEPS.filter((s) => s.level === l && completedIds.has(s.id)).length, 0);
 
   return (
-    <div className="app-scroll" style={{ background: "var(--black)", fontFamily: "'Inter', sans-serif", paddingTop: 65, paddingBottom: 80 }}>
+    <div className="app-scroll" style={{ background: "var(--black)", fontFamily: "'Inter', sans-serif", paddingTop: "calc(65px + env(safe-area-inset-top))", paddingBottom: 80 }}>
       <style>{`
         @keyframes pulse-ring { 0%,100%{transform:scale(1);opacity:1} 50%{transform:scale(1.15);opacity:.6} }
         @keyframes bounce { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }

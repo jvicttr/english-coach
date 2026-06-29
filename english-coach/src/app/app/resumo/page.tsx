@@ -374,13 +374,13 @@ export default function ResumoAula() {
 
   // ── Pro gate ─────────────────────────────────────────────────────────────
   if (isPro === null) return (
-    <div style={{ minHeight: "100vh", background: "var(--black)", display: "flex", alignItems: "center", justifyContent: "center", paddingTop: 65 }}>
+    <div style={{ minHeight: "100vh", background: "var(--black)", display: "flex", alignItems: "center", justifyContent: "center", paddingTop: "calc(65px + env(safe-area-inset-top))" }}>
       <div style={{ display: "flex", gap: 6 }}>{[0,150,300].map((d) => <span key={d} style={{ width: 10, height: 10, borderRadius: "50%", background: "var(--yellow)", display: "inline-block", animation: "bounce 0.8s infinite", animationDelay: `${d}ms` }} />)}</div>
     </div>
   );
 
   if (isPro === false) return (
-    <div style={{ minHeight: "100vh", background: "var(--black)", fontFamily: "'Inter', sans-serif", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "2rem 1.5rem", paddingTop: "calc(65px + 2rem)", textAlign: "center" }}>
+    <div style={{ minHeight: "100vh", background: "var(--black)", fontFamily: "'Inter', sans-serif", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "2rem 1.5rem", paddingTop: "calc(65px + 2rem + env(safe-area-inset-top))", textAlign: "center" }}>
       <div style={{ fontSize: "3rem", marginBottom: "1rem" }}>🔒</div>
       <h2 style={{ fontSize: "1.3rem", fontWeight: 800, color: "#fff", marginBottom: ".5rem" }}>Recurso exclusivo do Combo</h2>
       <p style={{ color: "var(--gray)", lineHeight: 1.6, maxWidth: 380, marginBottom: "1.75rem" }}>
@@ -392,7 +392,7 @@ export default function ResumoAula() {
 
   // ── Loading screens ───────────────────────────────────────────────────────
   if (screen === "loading-flashcards" || screen === "loading-quiz") return (
-    <div style={{ minHeight: "100vh", background: "var(--black)", fontFamily: "'Inter', sans-serif", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "1rem", paddingTop: 65 }}>
+    <div style={{ minHeight: "100vh", background: "var(--black)", fontFamily: "'Inter', sans-serif", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "1rem", paddingTop: "calc(65px + env(safe-area-inset-top))" }}>
       <div style={{ display: "flex", gap: 6 }}>{[0,150,300].map((d) => <span key={d} style={{ width: 10, height: 10, borderRadius: "50%", background: "var(--yellow)", display: "inline-block", animation: "bounce 0.8s infinite", animationDelay: `${d}ms` }} />)}</div>
       <p style={{ color: "var(--gray)", fontSize: ".9rem" }}>{screen === "loading-flashcards" ? "Criando seus flashcards..." : "Gerando seu quiz personalizado..."}</p>
     </div>
@@ -492,7 +492,7 @@ export default function ResumoAula() {
   // ── History Detail View ───────────────────────────────────────────────────
   if (view === "history-detail") {
     return (
-      <div className="flex flex-col items-center px-3 pb-4 sm:px-4 sm:pb-6" style={{ background: "var(--black)", fontFamily: "'Inter', sans-serif", height: "100dvh", overflow: "hidden", paddingTop: 65, paddingBottom: 65 }}>
+      <div className="flex flex-col items-center px-3 pb-4 sm:px-4 sm:pb-6" style={{ background: "var(--black)", fontFamily: "'Inter', sans-serif", height: "100dvh", overflow: "hidden", paddingTop: "calc(65px + env(safe-area-inset-top))", paddingBottom: 65 }}>
         <div className="w-full max-w-2xl mb-3 flex items-center gap-2">
           <button onClick={() => { setView("history"); setHistoryDetail(null); }} style={{ background: "var(--dark2)", border: "1px solid #2a2a2a", borderRadius: 10, height: 36, padding: "0 10px", display: "flex", alignItems: "center", gap: 5, fontSize: ".75rem", fontWeight: 600, color: "var(--gray)", cursor: "pointer" }}>
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M9 2L4 7L9 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
@@ -583,7 +583,7 @@ export default function ResumoAula() {
   // ── History List View ─────────────────────────────────────────────────────
   if (view === "history") {
     return (
-      <div className="flex flex-col items-center px-3 pb-4 sm:px-4 sm:pb-6" style={{ background: "var(--black)", fontFamily: "'Inter', sans-serif", height: "100dvh", overflow: "hidden", paddingTop: 65, paddingBottom: 65 }}>
+      <div className="flex flex-col items-center px-3 pb-4 sm:px-4 sm:pb-6" style={{ background: "var(--black)", fontFamily: "'Inter', sans-serif", height: "100dvh", overflow: "hidden", paddingTop: "calc(65px + env(safe-area-inset-top))", paddingBottom: 65 }}>
         <div className="w-full max-w-2xl mb-3 flex items-center gap-2">
           <button onClick={() => setView("chat")} style={{ background: "var(--dark2)", border: "1px solid #2a2a2a", borderRadius: 10, height: 36, padding: "0 10px", display: "flex", alignItems: "center", gap: 5, fontSize: ".75rem", fontWeight: 600, color: "var(--gray)", cursor: "pointer" }}>
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M9 2L4 7L9 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
@@ -656,7 +656,7 @@ export default function ResumoAula() {
   return (
     <div
       className="flex flex-col items-center px-3 pb-4 sm:px-4 sm:pb-6"
-      style={{ background: "var(--black)", fontFamily: "'Inter', sans-serif", height: "100dvh", overflow: "hidden", paddingTop: 65, paddingBottom: 65 }}
+      style={{ background: "var(--black)", fontFamily: "'Inter', sans-serif", height: "100dvh", overflow: "hidden", paddingTop: "calc(65px + env(safe-area-inset-top))", paddingBottom: 65 }}
     >
       <div className="w-full max-w-2xl mb-3 flex items-center gap-2 shrink-0">
         <button

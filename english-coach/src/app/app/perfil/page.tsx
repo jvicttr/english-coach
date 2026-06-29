@@ -61,7 +61,7 @@ export default function PerfilPage() {
     : 100;
 
   return (
-    <div className="app-scroll" style={{ background: "var(--black)", fontFamily: "'Inter', sans-serif", display: "flex", flexDirection: "column", alignItems: "center", paddingTop: 65, paddingBottom: 80 }}>
+    <div className="app-scroll" style={{ background: "var(--black)", fontFamily: "'Inter', sans-serif", display: "flex", flexDirection: "column", alignItems: "center", paddingTop: "calc(65px + env(safe-area-inset-top))", paddingBottom: 80 }}>
       <div style={{ width: "100%", padding: "10px 16px", borderBottom: "1px solid #1e1e1e" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: "1rem", fontWeight: 800, color: "var(--white)" }}>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>

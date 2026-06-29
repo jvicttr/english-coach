@@ -1563,7 +1563,7 @@ export default function Home() {
   // ── Topic Selection Screen ───────────────────────────────────────────────
   if (!topic && !isLoading && messages.length === 0 && !hasPendingTrilha) {
     return (
-      <div className="flex flex-col items-center px-3 sm:px-4" style={{ background: "var(--black)", fontFamily: "'Inter', sans-serif", height: "100dvh", paddingTop: 65, paddingBottom: 70 }}>
+      <div className="flex flex-col items-center px-3 sm:px-4" style={{ background: "var(--black)", fontFamily: "'Inter', sans-serif", height: "100dvh", paddingTop: "calc(65px + env(safe-area-inset-top))", paddingBottom: 70 }}>
         <div className="w-full max-w-2xl flex-1 flex flex-col justify-center">
           <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "0.6rem" }}>
             {TOPICS.map((t) => (
@@ -1590,7 +1590,7 @@ export default function Home() {
   return (
     <div
       className="flex flex-col items-center px-3 sm:px-4"
-      style={{ background: "var(--black)", fontFamily: "'Inter', sans-serif", height: "100dvh", overflow: "hidden", paddingTop: 65, paddingBottom: 65 }}
+      style={{ background: "var(--black)", fontFamily: "'Inter', sans-serif", height: "100dvh", overflow: "hidden", paddingTop: "calc(65px + env(safe-area-inset-top))", paddingBottom: 65 }}
     >
       {/* ── Subheader contextual: voltar aos tópicos ───────── */}
       {topic && !trilhaStep && (

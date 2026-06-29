@@ -191,7 +191,7 @@ export default function Progresso() {
 
   if (loading) {
     return (
-      <div style={{ background: "var(--black)", minHeight: "100dvh", display: "flex", alignItems: "center", justifyContent: "center", paddingTop: 65 }}>
+      <div style={{ background: "var(--black)", minHeight: "100dvh", display: "flex", alignItems: "center", justifyContent: "center", paddingTop: "calc(65px + env(safe-area-inset-top))" }}>
         <div style={{ display: "flex", gap: 6 }}>
           {[0, 150, 300].map((d) => <span key={d} style={{ width: 10, height: 10, borderRadius: "50%", background: "var(--yellow)", display: "inline-block", animation: "bounce .8s infinite", animationDelay: `${d}ms` }} />)}
         </div>
@@ -201,7 +201,7 @@ export default function Progresso() {
   }
 
   return (
-    <div className="app-scroll" style={{ background: "var(--black)", fontFamily: "'Inter', sans-serif", paddingTop: 65, paddingBottom: 100 }}>
+    <div className="app-scroll" style={{ background: "var(--black)", fontFamily: "'Inter', sans-serif", paddingTop: "calc(65px + env(safe-area-inset-top))", paddingBottom: 100 }}>
       <div style={{ padding: "10px 16px", borderBottom: "1px solid #1e1e1e" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8, fontWeight: 800, color: "#fff", fontSize: "0.95rem" }}>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="2" x2="12" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>

@@ -142,7 +142,10 @@ export function AppHeader() {
     <>
       <header
         style={{
-          padding: "14px 16px 12px",
+          paddingTop: "calc(14px + env(safe-area-inset-top))",
+          paddingBottom: 12,
+          paddingLeft: 16,
+          paddingRight: 16,
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",

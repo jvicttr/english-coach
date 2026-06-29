@@ -7,7 +7,10 @@
       "Bash(git push *)",
       "Bash(git rm *)",
       "Bash(git commit *)",
-      "Bash(npm run *)"
+      "Bash(npm run *)",
+      "Bash(mkdir -p \"C:\\\\Users\\\\jvict\\\\OneDrive - Fale Inglês JV\\\\saas\\\\english-coach\\\\src\\\\app\\\\api\\\\cron\\\\streak-reminder\")",
+      "mcp__visualize__read_me",
+      "Bash(xargs grep -l \"💬\\\\|message.*button\\\\|enviar.*mensagem\")"
     ]
   }
 }
