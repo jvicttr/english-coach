@@ -115,20 +115,31 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  // Notify mentioned users (@name) — resolve each mention to a user_id
+  // Notify mentioned users (@handle or @name) — resolve each mention to a user_id
   const mentionedNames = [...new Set((content.match(/@([\wÀ-ɏḀ-ỿ]+)/g) ?? []).map((m: string) => m.slice(1)))];
   const seen = new Set<string>();
   for (const name of mentionedNames) {
-    // Try user_xp first (all registered users)
-    const { data: xpUser } = await supabase
+    // 1. Exact handle match (unambiguous — handles are unique)
+    const { data: handleUser } = await supabase
       .from("user_xp")
       .select("user_id")
-      .ilike("display_name", `${name}%`)
-      .limit(1)
+      .ilike("handle", name)
       .maybeSingle();
 
-    // Fallback to community_posts (catches users not yet in user_xp)
-    let mentionedUserId = xpUser?.user_id ?? null;
+    let mentionedUserId = handleUser?.user_id ?? null;
+
+    // 2. Fallback: display_name prefix (legacy posts without handle)
+    if (!mentionedUserId) {
+      const { data: xpUser } = await supabase
+        .from("user_xp")
+        .select("user_id")
+        .ilike("display_name", `${name}%`)
+        .limit(1)
+        .maybeSingle();
+      mentionedUserId = xpUser?.user_id ?? null;
+    }
+
+    // 3. Last resort: community_posts
     if (!mentionedUserId) {
       const { data: postUser } = await supabase
         .from("community_posts")
@@ -150,6 +161,23 @@ export async function POST(req: NextRequest) {
       from_display_name: displayName,
       from_avatar_url: avatarUrl,
     });
+    // Push notification via OneSignal
+    if (process.env.ONESIGNAL_APP_ID && process.env.ONESIGNAL_API_KEY) {
+      fetch("https://onesignal.com/api/v1/notifications", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Basic ${process.env.ONESIGNAL_API_KEY}` },
+        body: JSON.stringify({
+          app_id: process.env.ONESIGNAL_APP_ID,
+          include_aliases: { external_id: [mentionedUserId] },
+          target_channel: "push",
+          headings: { en: `${displayName} te marcou!`, pt: `${displayName} te marcou!` },
+          contents: { en: content.slice(0, 100), pt: content.slice(0, 100) },
+          url: `https://www.faleinglesjv.com/app/comunidade#post-${post.id}`,
+          web_url: `https://www.faleinglesjv.com/app/comunidade#post-${post.id}`,
+          chrome_web_icon: avatarUrl || "https://www.faleinglesjv.com/favicon.png",
+        }),
+      }).catch(() => {});
+    }
   }
 
   // Community badges: check post count (only for original posts, not replies)
