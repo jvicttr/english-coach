@@ -370,10 +370,30 @@ function FlashcardResultEmbed({ data }: { data: FlashcardResultData }) {
   );
 }
 
+function RepostEmbed({ data }: { data: { original_user_id: string; original_display_name: string; original_avatar_url: string | null; original_content: string; original_image_url?: string | null; original_created_at: string } }) {
+  return (
+    <div style={{ background: "#0a0a0a", border: "1px solid #2a2a2a", borderRadius: 12, padding: "10px 12px", marginBottom: 10 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+        <a href={`/app/comunidade/u/${data.original_user_id}`} style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: 8 }}>
+          <div style={{ width: 24, height: 24, borderRadius: "50%", overflow: "hidden", background: "#1e1e1e", flexShrink: 0 }}>
+            {data.original_avatar_url ? <img src={data.original_avatar_url} style={{ width: "100%", height: "100%", objectFit: "cover" }} alt="" /> : <span style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", fontSize: "0.7rem" }}>👤</span>}
+          </div>
+          <span style={{ fontSize: "0.75rem", fontWeight: 700, color: "#ccc" }}>{data.original_display_name}</span>
+          {data.original_user_id === CREATOR_ID && <CreatorBadge size={14} />}
+          <span style={{ fontSize: "0.65rem", color: "var(--gray)" }}>{timeAgo(data.original_created_at)}</span>
+        </a>
+      </div>
+      {data.original_content?.trim() && <p style={{ fontSize: "0.82rem", color: "#ddd", margin: "0 0 6px 0", lineHeight: 1.5, whiteSpace: "pre-wrap" }}>{data.original_content}</p>}
+      {data.original_image_url && <img src={data.original_image_url} alt="" style={{ width: "100%", maxHeight: 200, objectFit: "contain", borderRadius: 8, background: "#0d0d0d" }} />}
+    </div>
+  );
+}
+
 function StructuredContent({ transcript }: { transcript: string | null }) {
   if (!transcript?.startsWith("{")) return null;
   try {
     const data = JSON.parse(transcript);
+    if (data.type === "repost") return <RepostEmbed data={data} />;
     if (data.type === "quiz_result") return <QuizResultEmbed data={data as QuizResultData} />;
     if (data.type === "flashcard_result") return <FlashcardResultEmbed data={data as FlashcardResultData} />;
   } catch { /* not JSON */ }
@@ -408,6 +428,10 @@ export function PostCard({ post, myId, user, router, isReply = false, onReaction
   const [loadingLikers, setLoadingLikers] = useState(false);
   const likersRef = useRef<HTMLDivElement>(null);
   const likersCloseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [showRepostModal, setShowRepostModal] = useState(false);
+  const [repostComment, setRepostComment] = useState("");
+  const [reposting, setReposting] = useState(false);
+  const [reposted, setReposted] = useState(false);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -440,6 +464,31 @@ export function PostCard({ post, myId, user, router, isReply = false, onReaction
     setTranslationPt(data.translation ?? null);
     setShowTranslation(true);
     setTranslating(false);
+  }
+
+  async function doRepost() {
+    if (reposting || reposted) return;
+    setReposting(true);
+    const repostData = JSON.stringify({
+      type: "repost",
+      original_post_id: post.id,
+      original_user_id: post.user_id,
+      original_display_name: post.display_name,
+      original_avatar_url: post.avatar_url,
+      original_content: post.content,
+      original_image_url: post.image_url,
+      original_audio_url: post.audio_url,
+      original_created_at: post.created_at,
+    });
+    await fetch("/api/community/posts", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ content: repostComment.trim() || " ", transcript: repostData, isShare: true }),
+    });
+    setReposting(false);
+    setReposted(true);
+    setShowRepostModal(false);
+    setRepostComment("");
   }
 
   async function confirmDeletePost() {
@@ -487,8 +536,19 @@ export function PostCard({ post, myId, user, router, isReply = false, onReaction
     setReplyCount(c => c + 1);
   }
 
+  const repostMeta = (() => {
+    try { if (post.transcript) { const p = JSON.parse(post.transcript); if (p.type === "repost") return p; } } catch {}
+    return null;
+  })();
+
   return (
     <div style={{ background: isReply ? "#0d0d0d" : "var(--dark1)", border: "1px solid #1e1e1e", borderRadius: 16, padding: "14px 16px", marginBottom: isReply ? 8 : 10 }}>
+      {repostMeta && (
+        <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 8, fontSize: "0.68rem", color: "var(--gray)" }}>
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+          <span>{post.display_name} repostou</span>
+        </div>
+      )}
       {/* Author */}
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
         <button onClick={() => router.push(`/app/comunidade/u/${post.user_id}`)} style={{ background: "none", border: "none", padding: 0, cursor: "pointer", flexShrink: 0 }}>
@@ -676,6 +736,22 @@ export function PostCard({ post, myId, user, router, isReply = false, onReaction
           Reply
         </button>
 
+        {/* Repost button — only on original posts (not reposts themselves) */}
+        {!isReply && (() => {
+          let isRepostPost = false;
+          try { if (post.transcript) { const p = JSON.parse(post.transcript); if (p.type === "repost") isRepostPost = true; } } catch {}
+          return !isRepostPost && (
+            <button
+              onClick={() => !reposted && setShowRepostModal(true)}
+              disabled={reposted}
+              style={{ display: "flex", alignItems: "center", gap: 4, padding: "4px 10px", borderRadius: 50, border: `1px solid ${reposted ? "rgba(74,222,128,.3)" : "#2a2a2a"}`, background: reposted ? "rgba(74,222,128,.08)" : "transparent", cursor: reposted ? "default" : "pointer", fontSize: "0.78rem", color: reposted ? "#4ade80" : "var(--gray)", fontWeight: 600, marginLeft: 2 }}
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+              {reposted ? "Repostado!" : "Repost"}
+            </button>
+          );
+        })()}
+
         {/* Show replies */}
         {replyCount > 0 && (
           <button onClick={toggleExpand} style={{ background: "none", border: "none", fontSize: "0.72rem", color: "var(--yellow)", fontWeight: 700, cursor: "pointer", marginLeft: 4 }}>
@@ -706,6 +782,38 @@ export function PostCard({ post, myId, user, router, isReply = false, onReaction
             <div style={{ display: "flex", gap: 10 }}>
               <button onClick={() => setConfirmDelete(false)} disabled={deleting} style={{ flex: 1, padding: "10px 14px", border: "1px solid #2a2a2a", background: "#1a1a1a", color: "var(--gray)", borderRadius: 8, fontSize: "0.9rem", fontWeight: 700, cursor: deleting ? "default" : "pointer", opacity: deleting ? 0.5 : 1 }}>Cancelar</button>
               <button onClick={confirmDeletePost} disabled={deleting} style={{ flex: 1, padding: "10px 14px", border: "none", background: "#ff4444", color: "#fff", borderRadius: 8, fontSize: "0.9rem", fontWeight: 700, cursor: deleting ? "default" : "pointer", opacity: deleting ? 0.5 : 1 }}>Deletar</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showRepostModal && (
+        <div onClick={() => !reposting && setShowRepostModal(false)} style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.7)", display: "flex", alignItems: "flex-end", justifyContent: "center", zIndex: 1001, paddingBottom: "env(safe-area-inset-bottom)" }}>
+          <div onClick={e => e.stopPropagation()} style={{ background: "var(--dark2)", borderRadius: "18px 18px 0 0", padding: "20px 18px 28px", width: "100%", maxWidth: 520, border: "1px solid #2a2a2a", borderBottom: "none" }}>
+            <p style={{ fontSize: "1rem", fontWeight: 700, color: "#fff", margin: "0 0 14px 0" }}>Repostar</p>
+            <div style={{ background: "#0d0d0d", border: "1px solid #2a2a2a", borderRadius: 12, padding: "10px 12px", marginBottom: 14 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+                <div style={{ width: 24, height: 24, borderRadius: "50%", overflow: "hidden", background: "#1e1e1e", flexShrink: 0 }}>
+                  {post.avatar_url ? <img src={post.avatar_url} style={{ width: "100%", height: "100%", objectFit: "cover" }} alt="" /> : <span style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", fontSize: "0.7rem" }}>👤</span>}
+                </div>
+                <span style={{ fontSize: "0.75rem", fontWeight: 700, color: "#ccc" }}>{post.display_name}</span>
+              </div>
+              {post.content?.trim() && <p style={{ fontSize: "0.8rem", color: "#aaa", margin: 0, lineHeight: 1.5, whiteSpace: "pre-wrap" }}>{post.content.slice(0, 120)}{post.content.length > 120 ? "…" : ""}</p>}
+              {post.image_url && <img src={post.image_url} alt="" style={{ width: "100%", maxHeight: 120, objectFit: "cover", borderRadius: 8, marginTop: 8 }} />}
+            </div>
+            <textarea
+              value={repostComment}
+              onChange={e => setRepostComment(e.target.value)}
+              placeholder="Adicione um comentário... (opcional)"
+              maxLength={280}
+              rows={3}
+              style={{ width: "100%", background: "#111", border: "1px solid #2a2a2a", borderRadius: 10, color: "#fff", fontSize: "0.9rem", padding: "10px 12px", resize: "none", fontFamily: "'Inter', sans-serif", lineHeight: 1.5, outline: "none", boxSizing: "border-box", marginBottom: 14 }}
+            />
+            <div style={{ display: "flex", gap: 10 }}>
+              <button onClick={() => setShowRepostModal(false)} disabled={reposting} style={{ flex: 1, padding: "11px", border: "1px solid #2a2a2a", background: "#1a1a1a", color: "var(--gray)", borderRadius: 10, fontSize: "0.9rem", fontWeight: 700, cursor: "pointer" }}>Cancelar</button>
+              <button onClick={doRepost} disabled={reposting} style={{ flex: 1, padding: "11px", border: "none", background: "var(--yellow)", color: "#000", borderRadius: 10, fontSize: "0.9rem", fontWeight: 800, cursor: reposting ? "default" : "pointer", opacity: reposting ? 0.6 : 1 }}>
+                {reposting ? "Repostando…" : "Repostar"}
+              </button>
             </div>
           </div>
         </div>
