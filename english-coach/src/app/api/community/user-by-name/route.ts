@@ -13,9 +13,9 @@ export async function GET(req: NextRequest) {
   const name = req.nextUrl.searchParams.get("name");
   if (!name) return NextResponse.json({ error: "Missing name" }, { status: 400 });
 
-  // Try xp table first (has ALL registered users with display_name)
+  // Try user_xp table first (has ALL registered users with display_name)
   const { data: xpUser } = await supabase
-    .from("xp")
+    .from("user_xp")
     .select("user_id, display_name")
     .ilike("display_name", `${name}%`)
     .limit(1)
@@ -23,7 +23,7 @@ export async function GET(req: NextRequest) {
 
   if (xpUser?.user_id) return NextResponse.json({ userId: xpUser.user_id });
 
-  // Fallback: community_posts (catches users who have posted but aren't in xp table)
+  // Fallback: community_posts (catches users not yet in user_xp)
   const { data: postUser } = await supabase
     .from("community_posts")
     .select("user_id, display_name")
