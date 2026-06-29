@@ -1,5 +1,4 @@
 import Anthropic from "@anthropic-ai/sdk";
-import { tavily } from "@tavily/core";
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { auth } from "@clerk/nextjs/server";
@@ -156,17 +155,29 @@ Guide the conversation around this theme. Keep it natural and engaging, not like
       const query = (toolUseBlock.input as { query: string }).query;
 
       let searchResults = "No results found.";
-      console.log("[TAVILY] query:", query, "key present:", !!process.env.TAVILY_API_KEY);
+      console.log("[PERPLEXITY] query:", query, "key present:", !!process.env.PERPLEXITY_API_KEY);
       try {
-        const tvly = tavily({ apiKey: process.env.TAVILY_API_KEY! });
-        const tavilyData = await tvly.search(query, { searchDepth: "basic", maxResults: 5, includeAnswer: true });
-        console.log("[TAVILY] answer:", tavilyData.answer?.slice(0, 100));
-        const answer = tavilyData.answer ? `Summary: ${tavilyData.answer}\n\n` : "";
-        const results = (tavilyData.results ?? [])
-          .map((r: { title: string; url: string; content: string }) => `- ${r.title}: ${r.content}`)
-          .join("\n");
-        searchResults = (answer + results).trim() || "No results found.";
-      } catch (e) { console.log("[TAVILY] error:", e); }
+        const pplxRes = await fetch("https://api.perplexity.ai/chat/completions", {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${process.env.PERPLEXITY_API_KEY}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model: "sonar",
+            messages: [
+              { role: "system", content: "You are a factual search assistant. Answer the query with up-to-date, accurate information. Be concise but complete. Include relevant facts, names, dates, and numbers. Today's date: " + today },
+              { role: "user", content: query },
+            ],
+            max_tokens: 400,
+            temperature: 0.1,
+          }),
+        });
+        const pplxData = await pplxRes.json();
+        const answer = pplxData.choices?.[0]?.message?.content ?? "";
+        console.log("[PERPLEXITY] answer:", answer.slice(0, 100));
+        searchResults = answer.trim() || "No results found.";
+      } catch (e) { console.log("[PERPLEXITY] error:", e); }
 
       const messagesWithTool = [
         ...baseMessages,
