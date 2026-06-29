@@ -2,7 +2,6 @@ export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { clerkClient } from "@clerk/nextjs/server";
 
 const supabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SECRET_KEY!);
 
@@ -18,22 +17,31 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ pos
 
   const uniqueUserIds = [...new Set(reactions.map(r => r.user_id))];
 
-  const clerk = await clerkClient();
-  const users = await clerk.users.getUserList({ userId: uniqueUserIds, limit: 100 });
+  // Fetch names from user_xp (has display_name for all users)
+  const { data: xpRows } = await supabase
+    .from("user_xp")
+    .select("user_id, display_name")
+    .in("user_id", uniqueUserIds);
 
-  const userMap: Record<string, { name: string; avatar: string }> = {};
-  for (const u of users.data) {
-    userMap[u.id] = {
-      name: u.firstName ? `${u.firstName} ${u.lastName ?? ""}`.trim() : (u.username ?? "User"),
-      avatar: u.imageUrl,
-    };
+  // Fallback: fetch from users table
+  const { data: userRows } = await supabase
+    .from("users")
+    .select("id, name, image_url")
+    .in("id", uniqueUserIds);
+
+  const nameMap: Record<string, { name: string; avatar: string | null }> = {};
+  for (const u of userRows ?? []) {
+    nameMap[u.id] = { name: u.name ?? "User", avatar: u.image_url ?? null };
+  }
+  for (const x of xpRows ?? []) {
+    if (x.display_name) nameMap[x.user_id] = { ...nameMap[x.user_id], name: x.display_name };
   }
 
   const result = reactions.map(r => ({
     emoji: r.emoji,
     user_id: r.user_id,
-    name: userMap[r.user_id]?.name ?? "User",
-    avatar: userMap[r.user_id]?.avatar ?? null,
+    name: nameMap[r.user_id]?.name ?? "User",
+    avatar: nameMap[r.user_id]?.avatar ?? null,
   }));
 
   return NextResponse.json(result);
