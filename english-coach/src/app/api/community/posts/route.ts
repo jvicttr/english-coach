@@ -138,5 +138,35 @@ export async function POST(req: NextRequest) {
     });
   }
 
+  // Community badges: check post count (only for original posts, not replies)
+  if (!parentId) {
+    try {
+      const { count: postCount } = await supabase
+        .from("community_posts")
+        .select("*", { count: "exact", head: true })
+        .eq("user_id", userId)
+        .is("parent_id", null);
+
+      const { data: xpRow } = await supabase.from("user_xp").select("total_xp").eq("user_id", userId).maybeSingle();
+      const currentXp = xpRow?.total_xp ?? 0;
+      let bonusXp = 0;
+
+      const earnedBadges = await supabase.from("user_badges").select("badge_id").eq("user_id", userId);
+      const earnedSet = new Set((earnedBadges.data ?? []).map((b: { badge_id: string }) => b.badge_id));
+
+      if ((postCount ?? 0) === 1 && !earnedSet.has("community_first_post")) {
+        await supabase.from("user_badges").insert({ user_id: userId, badge_id: "community_first_post" });
+        bonusXp += 20;
+      }
+      if ((postCount ?? 0) >= 10 && !earnedSet.has("community_10_posts")) {
+        await supabase.from("user_badges").insert({ user_id: userId, badge_id: "community_10_posts" });
+        bonusXp += 80;
+      }
+      if (bonusXp > 0) {
+        await supabase.from("user_xp").upsert({ user_id: userId, total_xp: currentXp + bonusXp, updated_at: new Date().toISOString() }, { onConflict: "user_id" });
+      }
+    } catch { /* badges are non-critical */ }
+  }
+
   return NextResponse.json({ post });
 }
