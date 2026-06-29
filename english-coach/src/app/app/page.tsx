@@ -145,16 +145,6 @@ export default function AppHome() {
             </div>
         </a>
 
-        {/* ── Streak warning ─────────────────────────────────────────────────── */}
-        {isPro !== null && streak > 0 && !weekDays[todayIdx] && (
-          <a href="/app/conversar" style={{ background: "rgba(245,200,0,.06)", border: "1px solid rgba(245,200,0,.3)", borderRadius: 14, padding: "10px 14px", display: "flex", alignItems: "center", gap: 10, textDecoration: "none" }}>
-            <span style={{ fontSize: "1.3rem" }}>⚡</span>
-            <div style={{ flex: 1 }}>
-              <p style={{ fontSize: "0.78rem", fontWeight: 800, color: "var(--yellow)", margin: 0 }}>Sua sequência de {streak} dia{streak !== 1 ? "s" : ""} está em risco!</p>
-              <p style={{ fontSize: "0.68rem", color: "rgba(245,200,0,.65)", margin: "1px 0 0" }}>Pratique agora para não perder →</p>
-            </div>
-          </a>
-        )}
 
         {/* ── Recommendation ─────────────────────────────────────────────────── */}
         {isPro !== null && recommendation && (
