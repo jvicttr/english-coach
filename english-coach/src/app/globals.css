@@ -39,8 +39,8 @@ input:-webkit-autofill:hover,
 input:-webkit-autofill:focus,
 input:-webkit-autofill:active {
   -webkit-box-shadow: 0 0 0 1000px #1a1a1a inset !important;
-  -webkit-text-fill-color: #000000 !important;
-  caret-color: #000000;
+  -webkit-text-fill-color: #ffffff !important;
+  caret-color: #ffffff;
   transition: background-color 9999s ease-in-out 0s;
 }
 
