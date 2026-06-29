@@ -1,5 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { NextRequest, NextResponse } from "next/server";
+import { fetchNewsHeadlines } from "@/lib/news";
 import { createClient } from "@supabase/supabase-js";
 import { auth } from "@clerk/nextjs/server";
 import { grantXP } from "@/lib/xp";
@@ -116,101 +117,31 @@ Guide the conversation around this theme. Keep it natural and engaging, not like
     }
   }
 
-  const webSearchTool = {
-    name: "web_search",
-    description: `Search the internet for real-time information. Today is ${today}. Your training data ends in early 2025 — you are at least one year out of date on everything. Use this tool for ANY topic that involves facts about the world: sports, news, politics, entertainment, technology, science, business, people, companies, movies, TV shows, music, economy, prices, weather, or any event/situation. When in doubt, search — do not guess from training data.`,
-    input_schema: {
-      type: "object" as const,
-      properties: {
-        query: { type: "string", description: "The search query in English" },
-      },
-      required: ["query"],
-    },
-  };
-
   const lastUserMsg = typeof (baseMessages.filter((m: { role: string; content: string }) => m.role === "user").at(-1)?.content) === "string"
     ? (baseMessages.filter((m: { role: string; content: string }) => m.role === "user").at(-1)?.content as string)
     : "";
 
-  // Force search for any message that touches real-world facts (broad pattern)
-  const worldFactsPattern = /\b(who|what|when|where|which|how much|how many|did|does|is|are|was|were|has|have|can|will|would)\b.{0,60}\b(happen|win|won|lose|lost|play|score|result|news|latest|current|recent|today|now|this year|2025|2026|alive|dead|president|champion|leader|best|top|biggest|richest|popular|release|launch|out now|available|cost|price|worth|value|stock|record|break|award|oscar|grammy|nobel|election|vote|war|crisis|deal|treaty|discovered|invented|built|opened|closed|banned|approved|signed)\b/i;
-  const forceSearch = worldFactsPattern.test(lastUserMsg) || lastUserMsg.length > 30 && /\b(sport|game|match|team|player|movie|film|serie|show|song|album|artist|band|actor|singer|politician|president|prime minister|ceo|company|brand|app|ai|model|gpt|gemini|iphone|android|crypto|bitcoin|dollar|euro|real|inflation|war|israel|ukraine|russia|china|usa|brazil|europe|africa|asia)\b/i.test(lastUserMsg);
+  // Inject real-time news headlines when the conversation touches current events
+  const needsNews = /\b(news|what('s| is) happening|current(ly)?|latest|today|this week|recently|right now|world|politics|sport|game|match|economy|technology|entertainment|celebrity|election|war|crisis)\b/i.test(lastUserMsg)
+    || lastUserMsg.length < 30; // short messages = likely small talk = benefit from news context
 
-  const createParams = {
+  if (needsNews) {
+    try {
+      const headlines = await fetchNewsHeadlines();
+      if (headlines) {
+        systemFull += `\n\n## TODAY'S REAL-TIME NEWS HEADLINES (${today})\nUse these to discuss current events naturally. You have up-to-date information on these topics — do NOT say you don't know recent news.\n${headlines}`;
+      }
+    } catch { /* ignore — news is optional context */ }
+  }
+
+  const response = await client.messages.create({
     model: "claude-sonnet-4-6",
     max_tokens: 1800,
     system: systemFull,
     messages: baseMessages,
-    tools: [webSearchTool],
-    tool_choice: forceSearch ? { type: "any" as const } : { type: "auto" as const },
-  };
-
-  let response = await client.messages.create(createParams);
-
-  console.log("[SEARCH DEBUG] stop_reason:", response.stop_reason, "content types:", response.content.map(b => b.type));
-  // Handle tool use (Pro only — web search)
-  if (response.stop_reason === "tool_use") {
-    const toolUseBlock = response.content.find(b => b.type === "tool_use");
-    if (toolUseBlock && toolUseBlock.type === "tool_use" && toolUseBlock.name === "web_search") {
-      const query = (toolUseBlock.input as { query: string }).query;
-
-      let searchResults = "No results found.";
-      console.log("[PERPLEXITY] query:", query, "key present:", !!process.env.PERPLEXITY_API_KEY);
-      try {
-        const pplxRes = await fetch("https://api.perplexity.ai/chat/completions", {
-          method: "POST",
-          headers: {
-            "Authorization": `Bearer ${process.env.PERPLEXITY_API_KEY}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            model: "sonar",
-            messages: [
-              { role: "system", content: "You are a factual search assistant. Answer the query with up-to-date, accurate information. Be concise but complete. Include relevant facts, names, dates, and numbers. Today's date: " + today },
-              { role: "user", content: query },
-            ],
-            max_tokens: 400,
-            temperature: 0.1,
-          }),
-        });
-        const pplxData = await pplxRes.json();
-        const answer = pplxData.choices?.[0]?.message?.content ?? "";
-        console.log("[PERPLEXITY] answer:", answer.slice(0, 100));
-        searchResults = answer.trim() || "No results found.";
-      } catch (e) { console.log("[PERPLEXITY] error:", e); }
-
-      const messagesWithTool = [
-        ...baseMessages,
-        { role: "assistant" as const, content: response.content },
-        {
-          role: "user" as const,
-          content: [{ type: "tool_result" as const, tool_use_id: toolUseBlock.id, content: searchResults }],
-        },
-      ];
-
-      // Force text response — no tools on second call to avoid infinite tool_use loop
-      response = await client.messages.create({
-        model: "claude-sonnet-4-6",
-        max_tokens: 1800,
-        system: systemFull,
-        messages: messagesWithTool,
-        tool_choice: { type: "none" },
-        tools: [webSearchTool],
-      });
-    }
-  }
+  });
 
   let textBlock = response.content.find(b => b.type === "text");
-  // Fallback: if tool_use cycle produced no text, retry without tools
-  if (!textBlock) {
-    const fallbackResponse = await client.messages.create({
-      model: "claude-sonnet-4-6",
-      max_tokens: 1800,
-      system: systemFull,
-      messages: baseMessages,
-    });
-    textBlock = fallbackResponse.content.find(b => b.type === "text");
-  }
   const raw = textBlock && textBlock.type === "text" ? textBlock.text.trim() : "";
   const rawNoBR = raw.replace(/\[BR:([^\]]+)\]/g, "$1");
   const levelMatch = rawNoBR.match(/\[LEVEL:(beginner|intermediate|advanced)\]/);
