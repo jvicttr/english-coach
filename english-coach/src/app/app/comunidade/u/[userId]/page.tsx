@@ -40,6 +40,8 @@ export default function UserProfilePage({ params }: { params: Promise<{ userId: 
   const [profile, setProfile] = useState<{ display_name: string; avatar_url: string | null; total_xp: number; level: string | null; level_label: string | null } | null>(null);
   const [totalPosts, setTotalPosts] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [imageZoom, setImageZoom] = useState(1);
 
   useEffect(() => {
     fetch(`/api/community/user/${userId}`)
@@ -154,7 +156,7 @@ export default function UserProfilePage({ params }: { params: Promise<{ userId: 
                   <p style={{ fontSize: "0.65rem", color: "var(--gray)", margin: 0 }}>{timeAgo(post.created_at)}</p>
                 </div>
               </div>
-              {post.image_url && <img src={post.image_url} alt="post" style={{ width: "100%", maxHeight: 280, objectFit: "cover", borderRadius: 10, marginBottom: 10 }} />}
+              {post.image_url && <img src={post.image_url} alt="post" onClick={() => { setSelectedImage(post.image_url!); setImageZoom(1); }} style={{ width: "100%", maxHeight: 280, objectFit: "contain", borderRadius: 10, marginBottom: 10, background: "#0d0d0d", cursor: "pointer", display: "block" }} />}
               {post.audio_url && <div style={{ background: "#0d0d0d", borderRadius: 10, padding: "8px 12px", marginBottom: 10 }}><audio src={post.audio_url} controls style={{ width: "100%", height: 32 }} /></div>}
               {post.content && <p style={{ fontSize: "0.9rem", color: "#fff", lineHeight: 1.6, marginBottom: 12, whiteSpace: "pre-wrap" }}>{post.content}</p>}
               <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
@@ -173,6 +175,29 @@ export default function UserProfilePage({ params }: { params: Promise<{ userId: 
         })}
       </div>
       <style>{`@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}`}</style>
+
+      {selectedImage && (
+        <div onClick={() => { setSelectedImage(null); setImageZoom(1); }} style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.95)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 2000 }}>
+          <div onClick={e => e.stopPropagation()} style={{ position: "relative", width: "90%", height: "90%", display: "flex", alignItems: "center", justifyContent: "center" }}
+            onTouchStart={e => { if (e.touches.length === 2) { const dx = e.touches[0].clientX - e.touches[1].clientX; const dy = e.touches[0].clientY - e.touches[1].clientY; (e.currentTarget as any).initialDistance = Math.sqrt(dx*dx+dy*dy); } }}
+            onTouchMove={e => { if (e.touches.length === 2 && (e.currentTarget as any).initialDistance) { const dx = e.touches[0].clientX - e.touches[1].clientX; const dy = e.touches[0].clientY - e.touches[1].clientY; const dist = Math.sqrt(dx*dx+dy*dy); setImageZoom(prev => Math.min(Math.max(prev * (dist / (e.currentTarget as any).initialDistance), 1), 3)); (e.currentTarget as any).initialDistance = dist; } }}
+            onTouchEnd={e => { (e.currentTarget as any).initialDistance = null; }}
+          >
+            <img
+              src={selectedImage}
+              alt="fullscreen"
+              style={{ maxWidth: "100%", maxHeight: "100%", transform: `scale(${imageZoom})`, transition: "transform 0.2s", cursor: imageZoom > 1 ? "grab" : "zoom-in", touchAction: "none" }}
+              onWheel={e => { e.preventDefault(); setImageZoom(prev => Math.min(Math.max(prev + (e.deltaY > 0 ? -0.1 : 0.1), 1), 3)); }}
+            />
+            <button onClick={() => { setSelectedImage(null); setImageZoom(1); }} style={{ position: "absolute", top: 20, right: 20, background: "rgba(255,255,255,0.2)", border: "none", color: "#fff", fontSize: "1.5rem", cursor: "pointer", width: 40, height: 40, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
+            <div style={{ position: "absolute", bottom: 20, display: "flex", gap: 10, background: "rgba(0,0,0,0.5)", padding: "10px 15px", borderRadius: 50 }}>
+              <button onClick={() => setImageZoom(prev => Math.max(prev - 0.2, 1))} style={{ background: "none", border: "none", color: "#fff", fontSize: "1rem", cursor: "pointer" }}>−</button>
+              <span style={{ color: "#fff", fontSize: "0.9rem", minWidth: 40, textAlign: "center" }}>{Math.round(imageZoom * 100)}%</span>
+              <button onClick={() => setImageZoom(prev => Math.min(prev + 0.2, 3))} style={{ background: "none", border: "none", color: "#fff", fontSize: "1rem", cursor: "pointer" }}>+</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
