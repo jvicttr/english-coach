@@ -26,15 +26,22 @@ export default function PerfilPage() {
   const [plan, setPlan] = useState<"free" | "pro">("free");
   const [changingLevel, setChangingLevel] = useState(false);
   const [savingLevel, setSavingLevel] = useState(false);
+  const [handle, setHandle] = useState<string | null>(null);
+  const [editingHandle, setEditingHandle] = useState(false);
+  const [handleInput, setHandleInput] = useState("");
+  const [handleError, setHandleError] = useState("");
+  const [savingHandle, setSavingHandle] = useState(false);
 
   useEffect(() => {
     Promise.all([
       fetch("/api/me").then((r) => r.json()),
       fetch("/api/home").then((r) => r.json()),
-    ]).then(([me, home]) => {
+      fetch("/api/community/handle").then((r) => r.json()),
+    ]).then(([me, home, h]) => {
       setPlan(me.plan ?? "free");
       setLevel(me.level ?? localStorage.getItem("userLevel") ?? "intermediate");
       setData(home);
+      setHandle(h.handle ?? null);
     });
   }, []);
 
@@ -51,6 +58,24 @@ export default function PerfilPage() {
       setChangingLevel(false);
     } finally {
       setSavingLevel(false);
+    }
+  }
+
+  async function saveHandle() {
+    setHandleError("");
+    setSavingHandle(true);
+    try {
+      const res = await fetch("/api/community/handle", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ handle: handleInput }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setHandleError(data.error ?? "Erro ao salvar"); return; }
+      setHandle(data.handle);
+      setEditingHandle(false);
+    } finally {
+      setSavingHandle(false);
     }
   }
 
@@ -128,6 +153,47 @@ export default function PerfilPage() {
                   {level === key && <span style={{ marginLeft: "auto", fontSize: "0.75rem", color: info.color }}>✓</span>}
                 </button>
               ))}
+            </div>
+          )}
+        </div>
+
+        {/* Handle de menção */}
+        <div style={{ background: "var(--dark2)", borderRadius: 16, padding: "16px 18px" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <div>
+              <p style={{ fontSize: "0.65rem", fontWeight: 700, color: "var(--gray2)", margin: 0, textTransform: "uppercase", letterSpacing: "0.5px" }}>Seu @ na comunidade</p>
+              <p style={{ fontSize: "0.95rem", fontWeight: 800, color: "var(--yellow)", margin: "3px 0 0" }}>
+                {handle ? `@${handle}` : <span style={{ color: "var(--gray2)", fontWeight: 400, fontSize: "0.85rem" }}>Nenhum definido</span>}
+              </p>
+            </div>
+            <button
+              onClick={() => { setEditingHandle(v => !v); setHandleInput(handle ?? ""); setHandleError(""); }}
+              style={{ fontSize: "0.7rem", fontWeight: 700, color: "var(--yellow)", background: "rgba(245,200,0,.08)", border: "1px solid rgba(245,200,0,.25)", borderRadius: 8, padding: "5px 12px", cursor: "pointer" }}
+            >
+              {editingHandle ? "Cancelar" : handle ? "Trocar" : "Definir"}
+            </button>
+          </div>
+
+          {editingHandle && (
+            <div style={{ marginTop: 14, display: "flex", flexDirection: "column", gap: 8 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 0, background: "#111", border: `1px solid ${handleError ? "#ef4444" : "#2a2a2a"}`, borderRadius: 10, overflow: "hidden" }}>
+                <span style={{ padding: "10px 10px 10px 14px", fontSize: "0.9rem", color: "var(--yellow)", fontWeight: 700, userSelect: "none" }}>@</span>
+                <input
+                  value={handleInput}
+                  onChange={e => setHandleInput(e.target.value.toLowerCase().replace(/[^a-z0-9._]/g, "").slice(0, 30))}
+                  placeholder="seunome"
+                  style={{ flex: 1, background: "transparent", border: "none", outline: "none", fontSize: "0.9rem", color: "var(--white)", padding: "10px 12px 10px 0" }}
+                />
+              </div>
+              {handleError && <p style={{ fontSize: "0.72rem", color: "#ef4444", margin: 0 }}>{handleError}</p>}
+              <p style={{ fontSize: "0.68rem", color: "var(--gray2)", margin: 0 }}>Só letras, números, pontos e underscores. Mínimo 2 caracteres.</p>
+              <button
+                onClick={saveHandle}
+                disabled={savingHandle || handleInput.length < 2}
+                style={{ background: "var(--yellow)", color: "#000", fontWeight: 800, fontSize: "0.82rem", border: "none", borderRadius: 10, padding: "10px", cursor: "pointer", opacity: savingHandle || handleInput.length < 2 ? 0.5 : 1 }}
+              >
+                {savingHandle ? "Salvando…" : "Salvar @"}
+              </button>
             </div>
           )}
         </div>

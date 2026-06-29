@@ -31,7 +31,7 @@ export default function ComunidadePage() {
   const [usersLoading, setUsersLoading] = useState(false);
   const [mentionOpen, setMentionOpen] = useState(false);
   const [mentionQuery, setMentionQuery] = useState("");
-  const [mentionAllUsers, setMentionAllUsers] = useState<Array<{ id: string; name: string; image_url: string | null }>>([]);
+  const [mentionAllUsers, setMentionAllUsers] = useState<Array<{ id: string; name: string; image_url: string | null; handle: string | null }>>([]);
   const [postText, setPostText] = useState("");
   const [posting, setPosting] = useState(false);
   const [postError, setPostError] = useState("");
@@ -187,20 +187,20 @@ export default function ComunidadePage() {
     }
   }
 
-  function insertMention(u: { id: string; name: string }) {
+  function insertMention(u: { id: string; name: string; handle: string | null }) {
     const ta = textareaRef.current;
     const cursor = ta?.selectionStart ?? postText.length;
     const before = postText.slice(0, cursor);
     const atIdx = before.lastIndexOf("@");
-    const firstName = u.name.split(" ")[0];
-    const newText = before.slice(0, atIdx) + `@${firstName}[${u.id}] ` + postText.slice(cursor);
+    const tag = u.handle ?? u.name.split(" ")[0];
+    const newText = before.slice(0, atIdx) + `@${tag} ` + postText.slice(cursor);
     setPostText(newText);
     setMentionOpen(false);
     setTimeout(() => ta?.focus(), 0);
   }
 
   const filteredMentions = mentionAllUsers
-    .filter(u => u.name.toLowerCase().includes(mentionQuery))
+    .filter(u => u.name.toLowerCase().includes(mentionQuery) || (u.handle ?? "").toLowerCase().includes(mentionQuery))
     .slice(0, 5);
 
   function insertEmoji(e: string) {
@@ -375,8 +375,10 @@ export default function ComunidadePage() {
                               <div style={{ width: 28, height: 28, borderRadius: "50%", overflow: "hidden", background: "#2a2a2a", flexShrink: 0 }}>
                                 {u.image_url ? <img src={u.image_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <span style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", fontSize: "0.8rem" }}>👤</span>}
                               </div>
-                              <span style={{ fontSize: "0.85rem", color: "var(--yellow)", fontWeight: 700 }}>@{u.name.split(" ")[0]}</span>
-                              <span style={{ fontSize: "0.75rem", color: "var(--gray)" }}>{u.name}</span>
+                              <div style={{ display: "flex", flexDirection: "column", gap: 1 }}>
+                                <span style={{ fontSize: "0.85rem", color: "var(--yellow)", fontWeight: 700 }}>@{u.handle ?? u.name.split(" ")[0]}</span>
+                                <span style={{ fontSize: "0.75rem", color: "var(--gray)" }}>{u.name}</span>
+                              </div>
                             </button>
                           ))}
                         </div>

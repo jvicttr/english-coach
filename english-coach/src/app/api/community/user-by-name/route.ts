@@ -13,7 +13,16 @@ export async function GET(req: NextRequest) {
   const name = req.nextUrl.searchParams.get("name");
   if (!name) return NextResponse.json({ error: "Missing name" }, { status: 400 });
 
-  // Try user_xp table first (has ALL registered users with display_name)
+  // Try exact handle match first (unambiguous)
+  const { data: handleUser } = await supabase
+    .from("user_xp")
+    .select("user_id")
+    .ilike("handle", name)
+    .maybeSingle();
+
+  if (handleUser?.user_id) return NextResponse.json({ userId: handleUser.user_id });
+
+  // Fallback: display_name prefix match (legacy posts without handle)
   const { data: xpUser } = await supabase
     .from("user_xp")
     .select("user_id, display_name")
@@ -23,10 +32,10 @@ export async function GET(req: NextRequest) {
 
   if (xpUser?.user_id) return NextResponse.json({ userId: xpUser.user_id });
 
-  // Fallback: community_posts (catches users not yet in user_xp)
+  // Last resort: community_posts
   const { data: postUser } = await supabase
     .from("community_posts")
-    .select("user_id, display_name")
+    .select("user_id")
     .ilike("display_name", `${name}%`)
     .order("created_at", { ascending: false })
     .limit(1)
