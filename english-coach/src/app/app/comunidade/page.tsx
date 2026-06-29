@@ -913,7 +913,7 @@ export default function ComunidadePage() {
                   {!recording && (
                     <div style={{ position: "relative" }}>
                       {mentionOpen && filteredMentions.length > 0 && (
-                        <div style={{ position: "absolute", bottom: "calc(100% + 4px)", left: 0, right: 0, background: "#1a1a1a", border: "1px solid #2a2a2a", borderRadius: 12, overflow: "hidden", zIndex: 50, boxShadow: "0 -8px 24px rgba(0,0,0,0.5)" }}>
+                        <div style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0, background: "#1a1a1a", border: "1px solid #2a2a2a", borderRadius: 12, overflow: "hidden", zIndex: 50, boxShadow: "0 8px 24px rgba(0,0,0,0.5)" }}>
                           {filteredMentions.map(u => (
                             <button key={u.id} onMouseDown={e => { e.preventDefault(); insertMention(u); }}
                               style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", background: "transparent", border: "none", borderBottom: "1px solid #1e1e1e", cursor: "pointer", width: "100%", textAlign: "left" }}
