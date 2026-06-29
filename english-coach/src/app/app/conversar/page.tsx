@@ -1484,12 +1484,12 @@ export default function Home() {
       if (sharing || shared) return;
       setSharing(true);
       const resultEmoji = pct >= 80 ? "🏆" : pct >= 60 ? "💪" : "📚";
-      const content = `${resultEmoji} Acabei de fazer um quiz e acertei ${score}/${total} (${pct}%)!\n\n"${quiz!.title}"`;
+      const content = `${resultEmoji} Just scored ${score}/${total} (${pct}%) on a quiz!\n\n"${quiz!.title}"`;
       try {
         await fetch("/api/community/posts", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ content }),
+          body: JSON.stringify({ content, isShare: true }),
         });
         setShared(true);
       } finally {

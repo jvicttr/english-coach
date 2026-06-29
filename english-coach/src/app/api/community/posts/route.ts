@@ -50,13 +50,14 @@ export async function POST(req: NextRequest) {
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await req.json();
-  const { content = "", audioUrl = null, imageUrl = null, transcript = null, validateOnly = false, parentId = null } = body;
+  const { content = "", audioUrl = null, imageUrl = null, transcript = null, validateOnly = false, parentId = null, isShare = false } = body;
 
   if (!content.trim() && !audioUrl && !imageUrl) {
     return NextResponse.json({ error: "Empty post" }, { status: 400 });
   }
 
-  if (content.trim()) {
+  // Skip English validation for auto-generated share posts
+  if (content.trim() && !isShare) {
     const english = await checkEnglish(content);
     if (!english) {
       return NextResponse.json({ error: "not_english", message: "Please write in English! 🇺🇸" }, { status: 422 });
@@ -72,7 +73,8 @@ export async function POST(req: NextRequest) {
 
   const isPro = sub.data?.plan === "pro" || sub.data?.plan === "combo";
 
-  if (!isPro && !parentId) {
+  // Share posts bypass the free post limit
+  if (!isPro && !parentId && !isShare) {
     const { count } = await supabase
       .from("community_posts")
       .select("*", { count: "exact", head: true })

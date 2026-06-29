@@ -242,12 +242,12 @@ export default function Flashcards() {
       if (sharing || shared) return;
       setSharing(true);
       const resultEmoji = pct >= 80 ? "🏆" : pct >= 60 ? "💪" : "📚";
-      const content = `${resultEmoji} Revisei ${total} flashcard${total !== 1 ? "s" : ""} do pack "${activePack!.pack_name}"!\n\n✅ Sabia bem: ${sessionResults.easy}  😅 Difícil: ${sessionResults.hard}  ❌ Errei: ${sessionResults.miss}`;
+      const content = `${resultEmoji} Just reviewed ${total} flashcard${total !== 1 ? "s" : ""} from the pack "${activePack!.pack_name}"!\n\n✅ Knew it: ${sessionResults.easy}  😅 Was hard: ${sessionResults.hard}  ❌ Missed: ${sessionResults.miss}`;
       try {
         await fetch("/api/community/posts", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ content }),
+          body: JSON.stringify({ content, isShare: true }),
         });
         setShared(true);
       } finally {
@@ -279,9 +279,9 @@ export default function Flashcards() {
           <button
             onClick={shareFlashcardResult}
             disabled={sharing || shared}
-            style={{ background: shared ? "rgba(74,222,128,.15)" : "rgba(255,255,255,.06)", color: shared ? "#4ade80" : "var(--gray)", border: `1px solid ${shared ? "rgba(74,222,128,.3)" : "#2a2a2a"}`, padding: "0.75rem 1.5rem", borderRadius: "50px", fontWeight: 800, fontSize: "0.85rem", cursor: sharing || shared ? "default" : "pointer", width: "100%" }}
+            style={{ background: shared ? "rgba(74,222,128,.15)" : "var(--dark1)", color: shared ? "#4ade80" : "#fff", border: `1.5px solid ${shared ? "rgba(74,222,128,.5)" : "#2a2a2a"}`, padding: "0.85rem 1.5rem", borderRadius: "50px", fontWeight: 800, fontSize: "0.9rem", cursor: sharing || shared ? "default" : "pointer", width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}
           >
-            {shared ? "✓ Compartilhado na comunidade!" : sharing ? "Compartilhando..." : "🌐 Compartilhar resultado na comunidade"}
+            {shared ? "✅ Compartilhado na comunidade!" : sharing ? "Compartilhando..." : <><span>🌐</span><span>Compartilhar na comunidade</span></>}
           </button>
           <button onClick={backToList} style={{ background: "var(--yellow)", color: "#000", padding: "0.75rem 2rem", borderRadius: "50px", border: "none", fontWeight: 800, fontSize: "0.9rem", cursor: "pointer" }}>
             Ver todos os packs
