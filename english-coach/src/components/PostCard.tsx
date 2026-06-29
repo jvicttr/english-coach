@@ -485,13 +485,13 @@ function ShareButton({ postId, content }: { postId: string; content: string }) {
   return (
     <button
       onClick={share}
-      style={{ display: "flex", alignItems: "center", gap: 4, padding: "4px 10px", borderRadius: 50, border: `1px solid ${copied ? "rgba(74,222,128,.3)" : "#2a2a2a"}`, background: copied ? "rgba(74,222,128,.08)" : "transparent", cursor: "pointer", fontSize: "0.78rem", color: copied ? "#4ade80" : "var(--gray)", fontWeight: 600, marginLeft: 2 }}
+      title={copied ? "Link copiado!" : "Compartilhar"}
+      style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 32, height: 32, borderRadius: "50%", border: `1px solid ${copied ? "rgba(74,222,128,.3)" : "#2a2a2a"}`, background: copied ? "rgba(74,222,128,.08)" : "transparent", cursor: "pointer", color: copied ? "#4ade80" : "var(--gray)", flexShrink: 0 }}
     >
       {copied
-        ? <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>
-        : <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+        ? <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+        : <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
       }
-      {copied ? "Copiado!" : "Compartilhar"}
     </button>
   );
 }
@@ -887,10 +887,11 @@ export function PostCard({ post, myId, user, router, isReply = false, onReaction
         {/* Reply button */}
         <button
           onClick={() => setShowReplyComposer(v => !v)}
-          style={{ display: "flex", alignItems: "center", gap: 4, padding: "4px 10px", borderRadius: 50, border: "1px solid #2a2a2a", background: showReplyComposer ? "rgba(255,255,255,.05)" : "transparent", cursor: "pointer", fontSize: "0.78rem", color: "var(--gray)", fontWeight: 600, marginLeft: 2 }}
+          title="Reply"
+          style={{ display: "flex", alignItems: "center", gap: 4, padding: "4px 10px", borderRadius: 50, border: "1px solid #2a2a2a", background: showReplyComposer ? "rgba(255,255,255,.05)" : "transparent", cursor: "pointer", fontSize: "0.78rem", color: "var(--gray)", fontWeight: 600 }}
         >
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-          Reply
+          <span style={{ fontSize: "0.76rem" }}>Reply</span>
         </button>
 
         {/* Share button */}
@@ -904,10 +905,13 @@ export function PostCard({ post, myId, user, router, isReply = false, onReaction
             <button
               onClick={() => !reposted && setShowRepostModal(true)}
               disabled={reposted}
-              style={{ display: "flex", alignItems: "center", gap: 4, padding: "4px 10px", borderRadius: 50, border: `1px solid ${reposted ? "rgba(74,222,128,.3)" : "#2a2a2a"}`, background: reposted ? "rgba(74,222,128,.08)" : "transparent", cursor: reposted ? "default" : "pointer", fontSize: "0.78rem", color: reposted ? "#4ade80" : "var(--gray)", fontWeight: 600, marginLeft: 2 }}
+              title={reposted ? "Repostado!" : "Repostar"}
+              style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 32, height: 32, borderRadius: "50%", border: `1px solid ${reposted ? "rgba(74,222,128,.3)" : "#2a2a2a"}`, background: reposted ? "rgba(74,222,128,.08)" : "transparent", cursor: reposted ? "default" : "pointer", color: reposted ? "#4ade80" : "var(--gray)", flexShrink: 0 }}
             >
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
-              {reposted ? "Repostado!" : "Repost"}
+              {reposted
+                ? <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+                : <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+              }
             </button>
           );
         })()}
