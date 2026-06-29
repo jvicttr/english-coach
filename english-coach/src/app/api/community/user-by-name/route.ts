@@ -13,11 +13,12 @@ export async function GET(req: NextRequest) {
   const name = req.nextUrl.searchParams.get("name");
   if (!name) return NextResponse.json({ error: "Missing name" }, { status: 400 });
 
-  // Search community_posts by display_name — match exact or starts-with (handles "Nicolas" matching "Nicolas Ferreira")
+  // Match display_name starting with the mention (handles "Nicolas" → "Nicolas Ferreira")
   const { data: postUser } = await supabase
     .from("community_posts")
     .select("user_id, display_name")
-    .or(`display_name.ilike.${name},display_name.ilike.${name} %`)
+    .ilike("display_name", `${name}%`)
+    .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();
 
