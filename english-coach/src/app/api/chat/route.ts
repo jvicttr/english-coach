@@ -176,11 +176,7 @@ Guide the conversation around this theme. Keep it natural and engaging, not like
     } catch { /* ignore */ }
   }
 
-  if (detectedLevel && detectedLevel !== savedLevel) {
-    void Promise.resolve(
-      supabase.from("subscriptions").upsert({ user_id: userId, level: detectedLevel }, { onConflict: "user_id" })
-    ).catch(() => {});
-  }
+  // Level is never auto-updated from chat detection — only changes via learning path progression
 
   if (!topicStart) {
     await grantXP(userId, { type: "message", detectedLevel: detectedLevel ?? undefined }).catch(() => {});
