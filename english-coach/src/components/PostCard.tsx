@@ -432,6 +432,19 @@ export function PostCard({ post, myId, user, router, isReply = false, onReaction
   const [repostComment, setRepostComment] = useState("");
   const [reposting, setReposting] = useState(false);
   const [reposted, setReposted] = useState(false);
+  const [repostAudioBlob, setRepostAudioBlob] = useState<Blob | null>(null);
+  const [repostAudioUrl, setRepostAudioUrl] = useState<string | null>(null);
+  const [repostRecording, setRepostRecording] = useState(false);
+  const [repostSeconds, setRepostSeconds] = useState(0);
+  const [repostImageFile, setRepostImageFile] = useState<File | null>(null);
+  const [repostImagePreview, setRepostImagePreview] = useState<string | null>(null);
+  const [repostShowEmoji, setRepostShowEmoji] = useState(false);
+  const [repostError, setRepostError] = useState("");
+  const repostMrRef = useRef<MediaRecorder | null>(null);
+  const repostChunksRef = useRef<Blob[]>([]);
+  const repostTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const repostFileRef = useRef<HTMLInputElement>(null);
+  const repostTaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -466,29 +479,77 @@ export function PostCard({ post, myId, user, router, isReply = false, onReaction
     setTranslating(false);
   }
 
+  function resetRepostModal() {
+    setRepostComment(""); setRepostAudioBlob(null); setRepostAudioUrl(null);
+    setRepostImageFile(null); setRepostImagePreview(null);
+    setRepostShowEmoji(false); setRepostError(""); setRepostRecording(false); setRepostSeconds(0);
+    if (repostTimerRef.current) clearInterval(repostTimerRef.current);
+  }
+
+  async function startRepostRec() {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mime = getSupportedMime();
+      const mr = new MediaRecorder(stream, mime ? { mimeType: mime } : undefined);
+      repostChunksRef.current = [];
+      mr.ondataavailable = e => { if (e.data.size > 0) repostChunksRef.current.push(e.data); };
+      mr.onstop = () => {
+        stream.getTracks().forEach(t => t.stop());
+        const blob = new Blob(repostChunksRef.current, { type: mr.mimeType });
+        setRepostAudioBlob(blob); setRepostAudioUrl(URL.createObjectURL(blob)); setRepostRecording(false);
+        if (repostTimerRef.current) clearInterval(repostTimerRef.current);
+      };
+      mr.start(); repostMrRef.current = mr; setRepostRecording(true); setRepostSeconds(0);
+      repostTimerRef.current = setInterval(() => setRepostSeconds(s => s + 1), 1000);
+    } catch { setRepostError("Não foi possível acessar o microfone."); }
+  }
+
+  function insertRepostEmoji(e: string) {
+    const ta = repostTaRef.current;
+    const s = ta?.selectionStart ?? repostComment.length;
+    const end = ta?.selectionEnd ?? repostComment.length;
+    const next = repostComment.slice(0, s) + e + repostComment.slice(end);
+    setRepostComment(next);
+    setTimeout(() => { ta?.focus(); ta?.setSelectionRange(s + e.length, s + e.length); }, 0);
+  }
+
   async function doRepost() {
     if (reposting || reposted) return;
-    setReposting(true);
-    const repostData = JSON.stringify({
-      type: "repost",
-      original_post_id: post.id,
-      original_user_id: post.user_id,
-      original_display_name: post.display_name,
-      original_avatar_url: post.avatar_url,
-      original_content: post.content,
-      original_image_url: post.image_url,
-      original_audio_url: post.audio_url,
-      original_created_at: post.created_at,
-    });
-    await fetch("/api/community/posts", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ content: repostComment.trim() || " ", transcript: repostData, isShare: true }),
-    });
-    setReposting(false);
-    setReposted(true);
-    setShowRepostModal(false);
-    setRepostComment("");
+    setReposting(true); setRepostError("");
+    try {
+      let uploadedAudio: string | null = null;
+      let uploadedImage: string | null = null;
+      if (repostAudioBlob) {
+        const ext = mimeToExt(repostAudioBlob.type);
+        const uf = new FormData();
+        uf.append("file", new File([repostAudioBlob], `audio.${ext}`, { type: repostAudioBlob.type })); uf.append("type", "audio");
+        uploadedAudio = (await (await fetch("/api/community/upload", { method: "POST", body: uf })).json()).url;
+      }
+      if (repostImageFile) {
+        const uf = new FormData();
+        uf.append("file", repostImageFile); uf.append("type", "image");
+        uploadedImage = (await (await fetch("/api/community/upload", { method: "POST", body: uf })).json()).url;
+      }
+      const repostData = JSON.stringify({
+        type: "repost",
+        original_post_id: post.id,
+        original_user_id: post.user_id,
+        original_display_name: post.display_name,
+        original_avatar_url: post.avatar_url,
+        original_content: post.content,
+        original_image_url: post.image_url,
+        original_audio_url: post.audio_url,
+        original_created_at: post.created_at,
+      });
+      await fetch("/api/community/posts", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content: repostComment.trim() || " ", audioUrl: uploadedAudio, imageUrl: uploadedImage, transcript: repostData, isShare: true }),
+      });
+      setReposted(true);
+      setShowRepostModal(false);
+      resetRepostModal();
+    } catch { setRepostError("Algo deu errado. Tente novamente."); }
+    finally { setReposting(false); }
   }
 
   async function confirmDeletePost() {
@@ -788,29 +849,73 @@ export function PostCard({ post, myId, user, router, isReply = false, onReaction
       )}
 
       {showRepostModal && (
-        <div onClick={() => !reposting && setShowRepostModal(false)} style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.7)", display: "flex", alignItems: "flex-end", justifyContent: "center", zIndex: 1001, paddingBottom: "env(safe-area-inset-bottom)" }}>
-          <div onClick={e => e.stopPropagation()} style={{ background: "var(--dark2)", borderRadius: "18px 18px 0 0", padding: "20px 18px 28px", width: "100%", maxWidth: 520, border: "1px solid #2a2a2a", borderBottom: "none" }}>
-            <p style={{ fontSize: "1rem", fontWeight: 700, color: "#fff", margin: "0 0 14px 0" }}>Repostar</p>
-            <div style={{ background: "#0d0d0d", border: "1px solid #2a2a2a", borderRadius: 12, padding: "10px 12px", marginBottom: 14 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
-                <div style={{ width: 24, height: 24, borderRadius: "50%", overflow: "hidden", background: "#1e1e1e", flexShrink: 0 }}>
-                  {post.avatar_url ? <img src={post.avatar_url} style={{ width: "100%", height: "100%", objectFit: "cover" }} alt="" /> : <span style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", fontSize: "0.7rem" }}>👤</span>}
+        <div onClick={() => { if (!reposting) { setShowRepostModal(false); resetRepostModal(); } }} style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.7)", display: "flex", alignItems: "flex-end", justifyContent: "center", zIndex: 1001 }}>
+          <div onClick={e => e.stopPropagation()} style={{ background: "var(--dark2)", borderRadius: "18px 18px 0 0", padding: "20px 18px calc(28px + env(safe-area-inset-bottom))", width: "100%", maxWidth: 520, border: "1px solid #2a2a2a", borderBottom: "none" }}>
+            <p style={{ fontSize: "1rem", fontWeight: 700, color: "#fff", margin: "0 0 12px 0" }}>Repostar</p>
+
+            {/* Composer area */}
+            <div style={{ background: "#111", border: "1px solid #2a2a2a", borderRadius: 12, padding: "10px 12px", marginBottom: 10 }}>
+              {repostRecording ? (
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                  <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#f87171", display: "inline-block", animation: "pulse 1s infinite" }} />
+                  <span style={{ fontSize: "0.8rem", color: "#f87171", fontWeight: 700 }}>{Math.floor(repostSeconds / 60).toString().padStart(2, "0")}:{(repostSeconds % 60).toString().padStart(2, "0")}</span>
+                  <button onClick={() => repostMrRef.current?.stop()} style={{ marginLeft: "auto", background: "#f87171", border: "none", borderRadius: 50, padding: "3px 10px", fontWeight: 700, fontSize: "0.72rem", color: "#fff", cursor: "pointer" }}>Stop</button>
                 </div>
-                <span style={{ fontSize: "0.75rem", fontWeight: 700, color: "#ccc" }}>{post.display_name}</span>
+              ) : repostAudioBlob ? (
+                <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
+                  <audio src={repostAudioUrl!} controls style={{ flex: 1, height: 28, minWidth: 0 }} />
+                  <button onClick={() => { setRepostAudioBlob(null); setRepostAudioUrl(null); }} style={{ background: "none", border: "none", color: "#f87171", cursor: "pointer", fontSize: "0.9rem" }}>✕</button>
+                </div>
+              ) : repostImagePreview ? (
+                <div style={{ marginBottom: 8, position: "relative", display: "flex", justifyContent: "center" }}>
+                  <img src={repostImagePreview} alt="" style={{ maxWidth: "100%", maxHeight: 160, objectFit: "contain", borderRadius: 8 }} />
+                  <button onClick={() => { setRepostImageFile(null); setRepostImagePreview(null); }} style={{ position: "absolute", top: 4, right: 4, background: "#f87171", border: "none", color: "#fff", cursor: "pointer", fontSize: "0.8rem", width: 20, height: 20, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700 }}>✕</button>
+                </div>
+              ) : (
+                <textarea
+                  ref={repostTaRef}
+                  value={repostComment}
+                  onChange={e => setRepostComment(e.target.value)}
+                  placeholder="Adicione um comentário... (opcional)"
+                  maxLength={280}
+                  rows={3}
+                  style={{ width: "100%", background: "transparent", border: "none", outline: "none", color: "#fff", fontSize: "0.88rem", resize: "none", fontFamily: "'Inter', sans-serif", lineHeight: 1.5, boxSizing: "border-box", padding: 0 }}
+                />
+              )}
+              {repostShowEmoji && (
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 3, background: "#0d0d0d", borderRadius: 8, padding: "6px 8px", marginBottom: 6 }}>
+                  {EMOJI_LIST.map(e => <button key={e} onClick={() => insertRepostEmoji(e)} style={{ background: "none", border: "none", fontSize: "1rem", cursor: "pointer", padding: "1px 3px", borderRadius: 4 }}>{e}</button>)}
+                </div>
+              )}
+              {repostError && <p style={{ fontSize: "0.72rem", color: "#f87171", margin: "4px 0 0" }}>{repostError}</p>}
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8 }}>
+                <button onClick={() => { if (!repostRecording && !repostAudioBlob) startRepostRec(); }} disabled={repostRecording || !!repostAudioBlob} style={{ display: "flex", alignItems: "center", padding: "4px 10px", borderRadius: 50, border: `1px solid ${repostAudioBlob ? "rgba(245,200,0,.5)" : "#2a2a2a"}`, background: repostAudioBlob ? "rgba(245,200,0,.08)" : "transparent", cursor: "pointer", color: repostAudioBlob ? "var(--yellow)" : "var(--gray)" }}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+                </button>
+                <button onClick={() => repostFileRef.current?.click()} disabled={!!repostImageFile} style={{ display: "flex", alignItems: "center", padding: "4px 10px", borderRadius: 50, border: `1px solid ${repostImageFile ? "rgba(245,200,0,.5)" : "#2a2a2a"}`, background: repostImageFile ? "rgba(245,200,0,.08)" : "transparent", cursor: "pointer", color: repostImageFile ? "var(--yellow)" : "var(--gray)" }}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                </button>
+                <input ref={repostFileRef} type="file" accept="image/*" onChange={e => { const f = e.target.files?.[0]; if (f) { setRepostImageFile(f); setRepostImagePreview(URL.createObjectURL(f)); } }} style={{ display: "none" }} />
+                <button onClick={() => setRepostShowEmoji(v => !v)} style={{ display: "flex", alignItems: "center", padding: "4px 10px", borderRadius: 50, border: `1px solid ${repostShowEmoji ? "rgba(245,200,0,.5)" : "#2a2a2a"}`, background: repostShowEmoji ? "rgba(245,200,0,.08)" : "transparent", cursor: "pointer", color: repostShowEmoji ? "var(--yellow)" : "var(--gray)" }}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><circle cx="9" cy="9" r="1"/><circle cx="15" cy="9" r="1"/></svg>
+                </button>
               </div>
-              {post.content?.trim() && <p style={{ fontSize: "0.8rem", color: "#aaa", margin: 0, lineHeight: 1.5, whiteSpace: "pre-wrap" }}>{post.content.slice(0, 120)}{post.content.length > 120 ? "…" : ""}</p>}
-              {post.image_url && <img src={post.image_url} alt="" style={{ width: "100%", maxHeight: 120, objectFit: "cover", borderRadius: 8, marginTop: 8 }} />}
             </div>
-            <textarea
-              value={repostComment}
-              onChange={e => setRepostComment(e.target.value)}
-              placeholder="Adicione um comentário... (opcional)"
-              maxLength={280}
-              rows={3}
-              style={{ width: "100%", background: "#111", border: "1px solid #2a2a2a", borderRadius: 10, color: "#fff", fontSize: "0.9rem", padding: "10px 12px", resize: "none", fontFamily: "'Inter', sans-serif", lineHeight: 1.5, outline: "none", boxSizing: "border-box", marginBottom: 14 }}
-            />
+
+            {/* Preview do post original */}
+            <div style={{ background: "#0a0a0a", border: "1px solid #1e1e1e", borderRadius: 10, padding: "10px 12px", marginBottom: 14 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+                <div style={{ width: 22, height: 22, borderRadius: "50%", overflow: "hidden", background: "#1e1e1e", flexShrink: 0 }}>
+                  {post.avatar_url ? <img src={post.avatar_url} style={{ width: "100%", height: "100%", objectFit: "cover" }} alt="" /> : <span style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", fontSize: "0.65rem" }}>👤</span>}
+                </div>
+                <span style={{ fontSize: "0.72rem", fontWeight: 700, color: "#999" }}>{post.display_name}</span>
+              </div>
+              {post.content?.trim() && <p style={{ fontSize: "0.78rem", color: "#777", margin: 0, lineHeight: 1.5, whiteSpace: "pre-wrap" }}>{post.content.slice(0, 100)}{post.content.length > 100 ? "…" : ""}</p>}
+              {post.image_url && <img src={post.image_url} alt="" style={{ width: "100%", maxHeight: 100, objectFit: "cover", borderRadius: 8, marginTop: 6, opacity: 0.7 }} />}
+            </div>
+
             <div style={{ display: "flex", gap: 10 }}>
-              <button onClick={() => setShowRepostModal(false)} disabled={reposting} style={{ flex: 1, padding: "11px", border: "1px solid #2a2a2a", background: "#1a1a1a", color: "var(--gray)", borderRadius: 10, fontSize: "0.9rem", fontWeight: 700, cursor: "pointer" }}>Cancelar</button>
+              <button onClick={() => { setShowRepostModal(false); resetRepostModal(); }} disabled={reposting} style={{ flex: 1, padding: "11px", border: "1px solid #2a2a2a", background: "#1a1a1a", color: "var(--gray)", borderRadius: 10, fontSize: "0.9rem", fontWeight: 700, cursor: "pointer" }}>Cancelar</button>
               <button onClick={doRepost} disabled={reposting} style={{ flex: 1, padding: "11px", border: "none", background: "var(--yellow)", color: "#000", borderRadius: 10, fontSize: "0.9rem", fontWeight: 800, cursor: reposting ? "default" : "pointer", opacity: reposting ? 0.6 : 1 }}>
                 {reposting ? "Repostando…" : "Repostar"}
               </button>
