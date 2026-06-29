@@ -67,6 +67,60 @@ function mimeToExt(mime: string) {
   return "webm";
 }
 
+function AudioPlayer({ src }: { src: string }) {
+  const audioRef = useRef<HTMLAudioElement>(null);
+  const [playing, setPlaying] = useState(false);
+  const [current, setCurrent] = useState(0);
+  const [duration, setDuration] = useState(0);
+
+  function toggle() {
+    const a = audioRef.current;
+    if (!a) return;
+    if (playing) { a.pause(); } else { a.play(); }
+    setPlaying(!playing);
+  }
+
+  function fmt(s: number) {
+    if (!isFinite(s)) return "0:00";
+    const m = Math.floor(s / 60);
+    const sec = Math.floor(s % 60);
+    return `${m}:${sec.toString().padStart(2, "0")}`;
+  }
+
+  const pct = duration > 0 ? (current / duration) * 100 : 0;
+
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 10, background: "#0d0d0d", borderRadius: 50, padding: "8px 14px" }}>
+      <audio
+        ref={audioRef}
+        src={src}
+        onTimeUpdate={e => setCurrent((e.target as HTMLAudioElement).currentTime)}
+        onLoadedMetadata={e => setDuration((e.target as HTMLAudioElement).duration)}
+        onEnded={() => setPlaying(false)}
+        style={{ display: "none" }}
+      />
+      <button onClick={toggle} style={{ width: 32, height: 32, borderRadius: "50%", background: "var(--yellow)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }}>
+        {playing
+          ? <svg width="12" height="12" viewBox="0 0 24 24" fill="#000"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+          : <svg width="12" height="12" viewBox="0 0 24 24" fill="#000"><polygon points="5,3 19,12 5,21"/></svg>
+        }
+      </button>
+      <div style={{ flex: 1, position: "relative", height: 3, background: "#2a2a2a", borderRadius: 2, cursor: "pointer" }}
+        onClick={e => {
+          const rect = e.currentTarget.getBoundingClientRect();
+          const ratio = (e.clientX - rect.left) / rect.width;
+          if (audioRef.current && duration > 0) { audioRef.current.currentTime = ratio * duration; setCurrent(ratio * duration); }
+        }}
+      >
+        <div style={{ position: "absolute", left: 0, top: 0, height: "100%", width: `${pct}%`, background: "var(--yellow)", borderRadius: 2, transition: "width 0.1s linear" }} />
+      </div>
+      <span style={{ fontSize: "0.68rem", color: "var(--gray)", flexShrink: 0, minWidth: 32, textAlign: "right" }}>
+        {playing || current > 0 ? fmt(current) : fmt(duration)}
+      </span>
+    </div>
+  );
+}
+
 export function ReplyComposer({ postId, user, onDone }: { postId: string; user: ReturnType<typeof useUser>["user"]; onDone: () => void }) {
   const [text, setText] = useState("");
   const [recording, setRecording] = useState(false);
@@ -182,7 +236,7 @@ export function ReplyComposer({ postId, user, onDone }: { postId: string; user: 
             </div>
           ) : audioBlob ? (
             <div style={{ display: "flex", alignItems: "center", gap: 6, background: "#0d0d0d", borderRadius: 8, padding: "6px 10px", marginBottom: 6 }}>
-              <audio src={audioUrl!} controls style={{ flex: 1, height: 28, minWidth: 0 }} />
+              <div style={{ flex: 1, minWidth: 0 }}><AudioPlayer src={audioUrl!} /></div>
               <button onClick={() => { setAudioBlob(null); setAudioUrl(null); }} style={{ background: "none", border: "none", color: "#f87171", cursor: "pointer", fontSize: "0.8rem" }}>✕</button>
             </div>
           ) : imagePreview ? (
@@ -654,7 +708,7 @@ export function PostCard({ post, myId, user, router, isReply = false, onReaction
       )}
       {post.audio_url && (
         <div style={{ background: "#0d0d0d", borderRadius: 10, padding: "8px 12px", marginBottom: 10 }}>
-          <audio src={post.audio_url} controls style={{ width: "100%", height: 32 }} />
+          <AudioPlayer src={post.audio_url} />
           {post.transcript && (
             <div style={{ marginTop: 8 }}>
               <p style={{ fontSize: "0.78rem", color: "#ccc", lineHeight: 1.5, margin: 0, fontStyle: "italic" }}>"{post.transcript}"</p>
@@ -866,7 +920,7 @@ export function PostCard({ post, myId, user, router, isReply = false, onReaction
                 </div>
               ) : repostAudioBlob ? (
                 <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
-                  <audio src={repostAudioUrl!} controls style={{ flex: 1, height: 28, minWidth: 0 }} />
+                  <div style={{ flex: 1, minWidth: 0 }}><AudioPlayer src={repostAudioUrl!} /></div>
                   <button onClick={() => { setRepostAudioBlob(null); setRepostAudioUrl(null); }} style={{ background: "none", border: "none", color: "#f87171", cursor: "pointer", fontSize: "0.9rem" }}>✕</button>
                 </div>
               ) : repostImagePreview ? (
