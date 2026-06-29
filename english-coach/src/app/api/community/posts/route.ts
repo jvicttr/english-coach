@@ -115,17 +115,31 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  // Notify mentioned users (@name) — resolve each mention to a user_id via user_xp (ilike prefix match)
+  // Notify mentioned users (@name) — resolve each mention to a user_id
   const mentionedNames = [...new Set((content.match(/@([\wÀ-ɏḀ-ỿ]+)/g) ?? []).map((m: string) => m.slice(1)))];
   const seen = new Set<string>();
   for (const name of mentionedNames) {
+    // Try user_xp first (all registered users)
     const { data: xpUser } = await supabase
       .from("user_xp")
       .select("user_id")
       .ilike("display_name", `${name}%`)
       .limit(1)
       .maybeSingle();
-    const mentionedUserId = xpUser?.user_id ?? null;
+
+    // Fallback to community_posts (catches users not yet in user_xp)
+    let mentionedUserId = xpUser?.user_id ?? null;
+    if (!mentionedUserId) {
+      const { data: postUser } = await supabase
+        .from("community_posts")
+        .select("user_id")
+        .ilike("display_name", `${name}%`)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      mentionedUserId = postUser?.user_id ?? null;
+    }
+
     if (!mentionedUserId || mentionedUserId === userId || seen.has(mentionedUserId)) continue;
     seen.add(mentionedUserId);
     await supabase.from("notifications").insert({
