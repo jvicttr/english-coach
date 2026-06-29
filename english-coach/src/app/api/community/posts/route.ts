@@ -116,7 +116,7 @@ export async function POST(req: NextRequest) {
   }
 
   // Notify mentioned users (@name) — resolve each mention to a user_id via user_xp (ilike prefix match)
-  const mentionedNames = [...new Set((content.match(/@(\w+)/g) ?? []).map((m: string) => m.slice(1)))];
+  const mentionedNames = [...new Set((content.match(/@([\wÀ-ɏḀ-ỿ]+)/g) ?? []).map((m: string) => m.slice(1)))];
   const seen = new Set<string>();
   for (const name of mentionedNames) {
     const { data: xpUser } = await supabase

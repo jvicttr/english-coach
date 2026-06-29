@@ -35,8 +35,8 @@ function MentionLink({ name }: { name: string }) {
 }
 
 function renderWithMentions(text: string): React.ReactNode[] {
-  return text.split(/(@\w+)/g).map((part, i) =>
-    /^@\w/.test(part)
+  return text.split(/(@[\wÀ-ɏḀ-ỿ]+)/g).map((part, i) =>
+    /^@/.test(part) && part.length > 1
       ? <MentionLink key={i} name={part} />
       : part
   );
