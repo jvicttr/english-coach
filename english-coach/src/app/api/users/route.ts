@@ -35,6 +35,20 @@ export async function GET(req: NextRequest) {
       : { data: [] };
     const handleMap = Object.fromEntries((xpRows || []).map(r => [r.user_id, r.handle]));
 
+    // Auto-generate handle for users who don't have one yet
+    const needsHandle = (users || []).filter(u => !handleMap[u.id]);
+    if (needsHandle.length > 0) {
+      const generated = needsHandle.map(u => {
+        const firstName = (u.name || "user").split(" ")[0].toLowerCase().replace(/[^a-z0-9]/g, "");
+        const suffix = u.id.slice(-4).toLowerCase().replace(/[^a-z0-9]/g, "");
+        const handle = `${firstName}_${suffix}`;
+        handleMap[u.id] = handle;
+        return { user_id: u.id, handle };
+      });
+      // Save in background — non-blocking
+      supabase.from("user_xp").upsert(generated, { onConflict: "user_id" }).then(() => {});
+    }
+
     const formattedUsers = (users || []).map((u) => ({
       id: u.id,
       email: u.email,
