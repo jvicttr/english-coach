@@ -4,33 +4,7 @@ import { useState, useEffect, use } from "react";
 import { useUser } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import { getTier } from "@/lib/tiers";
-
-type Reaction = { emoji: string; user_id: string };
-type Post = {
-  id: string;
-  user_id: string;
-  display_name: string;
-  avatar_url: string | null;
-  content: string;
-  audio_url: string | null;
-  image_url: string | null;
-  created_at: string;
-  community_reactions: Reaction[];
-};
-
-const HEART_EMOJI = "❤️";
-
-function HeartIcon() {
-  return <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>;
-}
-
-function timeAgo(dateStr: string) {
-  const diff = Math.floor((Date.now() - new Date(dateStr).getTime()) / 1000);
-  if (diff < 60) return "agora";
-  if (diff < 3600) return `${Math.floor(diff / 60)}min`;
-  if (diff < 86400) return `${Math.floor(diff / 3600)}h`;
-  return `${Math.floor(diff / 86400)}d`;
-}
+import { PostCard, type Post } from "@/components/PostCard";
 
 export default function UserProfilePage({ params }: { params: Promise<{ userId: string }> }) {
   const { userId } = use(params);
@@ -143,36 +117,18 @@ export default function UserProfilePage({ params }: { params: Promise<{ userId: 
           </div>
         )}
 
-        {posts.map(post => {
-          const myId = me?.id ?? "";
-          return (
-            <div key={post.id} style={{ background: "var(--dark1)", border: "1px solid #1e1e1e", borderRadius: 16, padding: "14px 16px", marginBottom: 10 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
-                <div style={{ width: 36, height: 36, borderRadius: "50%", overflow: "hidden", background: "#1e1e1e", flexShrink: 0 }}>
-                  {post.avatar_url ? <img src={post.avatar_url} alt={post.display_name} style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <span style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", fontSize: "1rem" }}>👤</span>}
-                </div>
-                <div>
-                  <p style={{ fontSize: "0.82rem", fontWeight: 700, color: "#fff", margin: 0 }}>{post.display_name}</p>
-                  <p style={{ fontSize: "0.65rem", color: "var(--gray)", margin: 0 }}>{timeAgo(post.created_at)}</p>
-                </div>
-              </div>
-              {post.image_url && <img src={post.image_url} alt="post" onClick={() => { setSelectedImage(post.image_url!); setImageZoom(1); }} style={{ width: "100%", maxHeight: 280, objectFit: "contain", borderRadius: 10, marginBottom: 10, background: "#0d0d0d", cursor: "pointer", display: "block" }} />}
-              {post.audio_url && <div style={{ background: "#0d0d0d", borderRadius: 10, padding: "8px 12px", marginBottom: 10 }}><audio src={post.audio_url} controls style={{ width: "100%", height: 32 }} /></div>}
-              {post.content && <p style={{ fontSize: "0.9rem", color: "#fff", lineHeight: 1.6, marginBottom: 12, whiteSpace: "pre-wrap" }}>{post.content}</p>}
-              <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                {(() => {
-                  const count = post.community_reactions.filter(r => r.emoji === HEART_EMOJI).length;
-                  const reacted = post.community_reactions.some(r => r.emoji === HEART_EMOJI && r.user_id === myId);
-                  return (
-                    <button onClick={() => toggleReaction(post.id, HEART_EMOJI)} style={{ display: "flex", alignItems: "center", gap: 4, padding: "4px 10px", borderRadius: 50, border: `1px solid ${reacted ? "rgba(245,200,0,.5)" : "#2a2a2a"}`, background: reacted ? "rgba(245,200,0,.08)" : "transparent", cursor: "pointer", fontSize: "0.78rem", color: reacted ? "var(--yellow)" : "var(--gray)", fontWeight: 600 }}>
-                      <HeartIcon />{count > 0 && <span>{count}</span>}
-                    </button>
-                  );
-                })()}
-              </div>
-            </div>
-          );
-        })}
+        {posts.map(post => (
+          <PostCard
+            key={post.id}
+            post={post}
+            myId={me?.id ?? ""}
+            user={me}
+            router={router}
+            onReaction={toggleReaction}
+            onImageClick={(url) => { setSelectedImage(url); setImageZoom(1); }}
+            onDeleted={(id) => setPosts(prev => prev.filter(p => p.id !== id))}
+          />
+        ))}
       </div>
       <style>{`@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}`}</style>
 
