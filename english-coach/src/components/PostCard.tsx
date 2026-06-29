@@ -1021,7 +1021,7 @@ export function PostCard({ post, myId, user, router, isReply = false, onReaction
             </div>
 
             </div>{/* end scroll area */}
-            <div style={{ padding: "12px 18px calc(20px + env(safe-area-inset-bottom))", flexShrink: 0, borderTop: "1px solid #1e1e1e", display: "flex", gap: 10 }}>
+            <div style={{ padding: "12px 18px calc(80px + env(safe-area-inset-bottom))", flexShrink: 0, borderTop: "1px solid #1e1e1e", display: "flex", gap: 10 }}>
               <button onClick={() => { setShowRepostModal(false); resetRepostModal(); }} disabled={reposting} style={{ flex: 1, padding: "11px", border: "1px solid #2a2a2a", background: "#1a1a1a", color: "var(--gray)", borderRadius: 10, fontSize: "0.9rem", fontWeight: 700, cursor: "pointer" }}>Cancelar</button>
               <button onClick={doRepost} disabled={reposting} style={{ flex: 1, padding: "11px", border: "none", background: "var(--yellow)", color: "#000", borderRadius: 10, fontSize: "0.9rem", fontWeight: 800, cursor: reposting ? "default" : "pointer", opacity: reposting ? 0.6 : 1 }}>
                 {reposting ? "Repostando…" : "Repostar"}
