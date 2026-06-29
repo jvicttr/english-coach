@@ -947,7 +947,24 @@ export function PostCard({ post, myId, user, router, isReply = false, onReaction
       {expanded && replies.length > 0 && (
         <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid #1e1e1e", borderLeft: "2px solid #2a2a2a", paddingLeft: 12, display: "flex", flexDirection: "column", gap: 0 }}>
           {replies.map(r => (
-            <PostCard key={r.id} post={r} myId={user?.id ?? ""} user={user} router={router} isReply onReaction={onReaction} onDeleted={id => { setReplies(prev => prev.filter(x => x.id !== id)); setReplyCount(c => Math.max(0, c - 1)); }} />
+            <PostCard key={r.id} post={r} myId={user?.id ?? ""} user={user} router={router} isReply
+              onReaction={(postId, emoji) => {
+                setReplies(prev => prev.map(p => {
+                  if (p.id !== postId) return p;
+                  const cr = p.community_reactions ?? [];
+                  const hasIt = cr.some(x => x.emoji === emoji && x.user_id === myId);
+                  return { ...p, community_reactions: hasIt ? cr.filter(x => !(x.emoji === emoji && x.user_id === myId)) : [...cr, { emoji, user_id: myId }] };
+                }));
+                fetch("/api/community/react", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ postId, emoji }) }).catch(() => {
+                  setReplies(prev => prev.map(p => {
+                    if (p.id !== postId) return p;
+                    const cr = p.community_reactions ?? [];
+                    const hasIt = cr.some(x => x.emoji === emoji && x.user_id === myId);
+                    return { ...p, community_reactions: hasIt ? cr.filter(x => !(x.emoji === emoji && x.user_id === myId)) : [...cr, { emoji, user_id: myId }] };
+                  }));
+                });
+              }}
+              onDeleted={id => { setReplies(prev => prev.filter(x => x.id !== id)); setReplyCount(c => Math.max(0, c - 1)); }} />
           ))}
         </div>
       )}
