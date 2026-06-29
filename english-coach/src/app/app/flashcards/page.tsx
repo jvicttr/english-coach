@@ -38,6 +38,8 @@ export default function Flashcards() {
   const [done, setDone] = useState(false);
   const [sessionResults, setSessionResults] = useState({ easy: 0, hard: 0, miss: 0 });
   const [rating, setRating] = useState<string | null>(null);
+  const [sharing, setSharing] = useState(false);
+  const [shared, setShared] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [showExampleTranslation, setShowExampleTranslation] = useState(false);
   const [exampleTranslationText, setExampleTranslationText] = useState<string | null>(null);
@@ -234,6 +236,25 @@ export default function Flashcards() {
   // ── Session done ─────────────────────────────────────────────────────────
   if (done && activePack) {
     const total = sessionResults.easy + sessionResults.hard + sessionResults.miss;
+    const pct = total > 0 ? Math.round((sessionResults.easy / total) * 100) : 0;
+
+    async function shareFlashcardResult() {
+      if (sharing || shared) return;
+      setSharing(true);
+      const resultEmoji = pct >= 80 ? "🏆" : pct >= 60 ? "💪" : "📚";
+      const content = `${resultEmoji} Revisei ${total} flashcard${total !== 1 ? "s" : ""} do pack "${activePack!.pack_name}"!\n\n✅ Sabia bem: ${sessionResults.easy}  😅 Difícil: ${sessionResults.hard}  ❌ Errei: ${sessionResults.miss}`;
+      try {
+        await fetch("/api/community/posts", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ content }),
+        });
+        setShared(true);
+      } finally {
+        setSharing(false);
+      }
+    }
+
     return (
       <div className="app-scroll" style={{ background: "var(--black)", fontFamily: "'Inter', sans-serif", paddingTop: "calc(65px + env(safe-area-inset-top))", paddingBottom: 70 }}>
         <Header onBack={backToList} title="🃏 Flashcards" />
@@ -255,6 +276,13 @@ export default function Flashcards() {
               </div>
             ))}
           </div>
+          <button
+            onClick={shareFlashcardResult}
+            disabled={sharing || shared}
+            style={{ background: shared ? "rgba(74,222,128,.15)" : "rgba(255,255,255,.06)", color: shared ? "#4ade80" : "var(--gray)", border: `1px solid ${shared ? "rgba(74,222,128,.3)" : "#2a2a2a"}`, padding: "0.75rem 1.5rem", borderRadius: "50px", fontWeight: 800, fontSize: "0.85rem", cursor: sharing || shared ? "default" : "pointer", width: "100%" }}
+          >
+            {shared ? "✓ Compartilhado na comunidade!" : sharing ? "Compartilhando..." : "🌐 Compartilhar resultado na comunidade"}
+          </button>
           <button onClick={backToList} style={{ background: "var(--yellow)", color: "#000", padding: "0.75rem 2rem", borderRadius: "50px", border: "none", fontWeight: 800, fontSize: "0.9rem", cursor: "pointer" }}>
             Ver todos os packs
           </button>

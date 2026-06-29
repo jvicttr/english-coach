@@ -121,6 +121,8 @@ export default function Home() {
   const [answers, setAnswers] = useState<(number | null)[]>([]);
   const [showExplanation, setShowExplanation] = useState(false);
   const [score, setScore] = useState(0);
+  const [sharing, setSharing] = useState(false);
+  const [shared, setShared] = useState(false);
 
   const bottomRef = useRef<HTMLDivElement>(null);
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -1477,6 +1479,23 @@ export default function Home() {
     const emoji = pct >= 80 ? "🏆" : pct >= 60 ? "💪" : "📚";
     const msg = pct >= 80 ? "Excelente! Você dominou essa conversa." : pct >= 60 ? "Bom trabalho! Continue praticando." : "Continue assim! Cada conversa te deixa melhor.";
     const scoreColor = pct >= 80 ? "#4ade80" : pct >= 60 ? "var(--yellow)" : "#f87171";
+
+    async function shareQuizResult() {
+      if (sharing || shared) return;
+      setSharing(true);
+      const resultEmoji = pct >= 80 ? "🏆" : pct >= 60 ? "💪" : "📚";
+      const content = `${resultEmoji} Acabei de fazer um quiz e acertei ${score}/${total} (${pct}%)!\n\n"${quiz!.title}"`;
+      try {
+        await fetch("/api/community/posts", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ content }),
+        });
+        setShared(true);
+      } finally {
+        setSharing(false);
+      }
+    }
     const trilhaChat1Passed = false; // quiz is now after flashcards; always proceed to chat2
     const trilhaPassed = !!(trilhaStep && trilhaPhase !== "chat1" && pct >= 70);
 
@@ -1527,7 +1546,16 @@ export default function Home() {
             </div>
           )}
 
-          <div className="flex gap-3 w-full mt-2">
+          <button
+            onClick={shareQuizResult}
+            disabled={sharing || shared}
+            className="w-full py-3 rounded-xl font-bold text-sm"
+            style={{ background: shared ? "rgba(74,222,128,.15)" : "rgba(255,255,255,.06)", color: shared ? "#4ade80" : "var(--gray)", border: `1px solid ${shared ? "rgba(74,222,128,.3)" : "#2a2a2a"}`, cursor: sharing || shared ? "default" : "pointer" }}
+          >
+            {shared ? "✓ Compartilhado na comunidade!" : sharing ? "Compartilhando..." : "🌐 Compartilhar resultado na comunidade"}
+          </button>
+
+          <div className="flex gap-3 w-full">
             {trilhaStep ? (
               <button
                 onClick={startChat2}
