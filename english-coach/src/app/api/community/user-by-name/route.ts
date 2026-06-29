@@ -16,8 +16,8 @@ export async function GET(req: NextRequest) {
   // Try exact handle match first (unambiguous)
   const { data: handleUser } = await supabase
     .from("user_xp")
-    .select("user_id, handle")
-    .ilike("handle", name)
+    .select("user_id")
+    .filter("handle", "ilike", name)
     .maybeSingle();
 
   if (handleUser?.user_id) return NextResponse.json({ userId: handleUser.user_id });

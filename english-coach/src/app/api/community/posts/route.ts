@@ -122,8 +122,8 @@ export async function POST(req: NextRequest) {
     // 1. Exact handle match (unambiguous — handles are unique)
     const { data: handleUser } = await supabase
       .from("user_xp")
-      .select("user_id, handle")
-      .ilike("handle", name)
+      .select("user_id")
+      .filter("handle", "ilike", name)
       .maybeSingle();
 
     let mentionedUserId = handleUser?.user_id ?? null;

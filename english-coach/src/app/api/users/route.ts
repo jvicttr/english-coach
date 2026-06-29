@@ -31,9 +31,9 @@ export async function GET(req: NextRequest) {
     // Fetch handles from user_xp
     const ids = (users || []).map(u => u.id);
     const { data: xpRows } = ids.length
-      ? await supabase.from("user_xp").select("user_id, handle").in("user_id", ids)
+      ? await (supabase.from("user_xp") as any).select("user_id, handle").in("user_id", ids)
       : { data: [] };
-    const handleMap = Object.fromEntries((xpRows || []).map(r => [r.user_id, r.handle]));
+    const handleMap = Object.fromEntries(((xpRows as any[]) || []).map((r: any) => [r.user_id, r.handle]));
 
     // Auto-generate handle for users who don't have one yet
     const needsHandle = (users || []).filter(u => !handleMap[u.id]);
@@ -46,7 +46,7 @@ export async function GET(req: NextRequest) {
         return { user_id: u.id, handle };
       });
       // Save in background — non-blocking
-      supabase.from("user_xp").upsert(generated, { onConflict: "user_id" }).then(() => {});
+      (supabase.from("user_xp") as any).upsert(generated, { onConflict: "user_id" }).then(() => {});
     }
 
     const formattedUsers = (users || []).map((u) => ({

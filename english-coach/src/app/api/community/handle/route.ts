@@ -5,17 +5,15 @@ import { auth } from "@clerk/nextjs/server";
 import { createClient } from "@supabase/supabase-js";
 
 const supabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SECRET_KEY!);
+// Use untyped client to avoid TypeScript errors on the `handle` column (added via raw SQL)
+const db = supabase as any;
 
 // GET: fetch current user's handle
 export async function GET() {
   const { userId } = await auth();
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { data } = await supabase
-    .from("user_xp")
-    .select("handle")
-    .eq("user_id", userId)
-    .maybeSingle();
+  const { data } = await db.from("user_xp").select("handle").eq("user_id", userId).maybeSingle();
 
   return NextResponse.json({ handle: data?.handle ?? null });
 }
@@ -36,19 +34,13 @@ export async function POST(req: NextRequest) {
   }
 
   // Check uniqueness
-  const { data: existing } = await supabase
-    .from("user_xp")
-    .select("user_id")
-    .ilike("handle", clean)
-    .maybeSingle();
+  const { data: existing } = await db.from("user_xp").select("user_id").filter("handle", "ilike", clean).maybeSingle();
 
   if (existing && existing.user_id !== userId) {
     return NextResponse.json({ error: "Esse handle já está em uso" }, { status: 409 });
   }
 
-  await supabase
-    .from("user_xp")
-    .upsert({ user_id: userId, handle: clean }, { onConflict: "user_id" });
+  await db.from("user_xp").upsert({ user_id: userId, handle: clean }, { onConflict: "user_id" });
 
   return NextResponse.json({ handle: clean });
 }
