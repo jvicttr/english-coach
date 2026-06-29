@@ -111,6 +111,8 @@ export default function Progresso() {
   const [showAllFlashcards, setShowAllFlashcards] = useState(false);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [sharedIds, setSharedIds] = useState<Set<string>>(new Set());
+  const [sharingId, setSharingId] = useState<string | null>(null);
   const [realStreak, setRealStreak] = useState<number | null>(null);
 
   useEffect(() => {
@@ -467,6 +469,24 @@ export default function Progresso() {
 
                   {isOpen && (
                     <div style={{ borderTop: "1px solid #1e1e1e", padding: "14px 16px" }}>
+                      {pct != null && (
+                        <button
+                          onClick={async (e) => {
+                            e.stopPropagation();
+                            if (sharingId === r.id || sharedIds.has(r.id)) return;
+                            setSharingId(r.id);
+                            const resultEmoji = pct >= 80 ? "🏆" : pct >= 60 ? "💪" : "📚";
+                            const content = `${resultEmoji} Acabei de fazer um quiz e acertei ${r.score}/${total} (${pct}%)!\n\n"${r.title}"`;
+                            await fetch("/api/community/posts", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ content }) });
+                            setSharingId(null);
+                            setSharedIds((prev) => new Set([...prev, r.id]));
+                          }}
+                          disabled={sharingId === r.id || sharedIds.has(r.id)}
+                          style={{ width: "100%", marginBottom: 14, padding: "9px 0", borderRadius: 10, border: `1px solid ${sharedIds.has(r.id) ? "rgba(74,222,128,.3)" : "#2a2a2a"}`, background: sharedIds.has(r.id) ? "rgba(74,222,128,.1)" : "rgba(255,255,255,.04)", color: sharedIds.has(r.id) ? "#4ade80" : "var(--gray)", fontSize: "0.78rem", fontWeight: 700, cursor: sharingId === r.id || sharedIds.has(r.id) ? "default" : "pointer" }}
+                        >
+                          {sharedIds.has(r.id) ? "✓ Compartilhado na comunidade!" : sharingId === r.id ? "Compartilhando..." : "🌐 Compartilhar resultado na comunidade"}
+                        </button>
+                      )}
                       <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
                         {r.questions.map((q, i) => {
                           const chosen = r.answers?.[i] ?? null;
