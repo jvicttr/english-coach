@@ -247,11 +247,7 @@ export default function ConquistasPage() {
                 >
                   {/* Position */}
                   <div style={{ width: 28, textAlign: "center", flexShrink: 0 }}>
-                    {entry.position <= 3 ? (
-                      <span style={{ fontSize: "1.2rem" }}>{["🥇","🥈","🥉"][entry.position - 1]}</span>
-                    ) : (
-                      <span style={{ fontSize: "0.8rem", fontWeight: 700, color: "var(--gray)" }}>#{entry.position}</span>
-                    )}
+                    <span style={{ fontSize: "0.8rem", fontWeight: 700, color: entry.position <= 3 ? "var(--yellow)" : "var(--gray)" }}>#{entry.position}</span>
                   </div>
 
                   {/* Tier emoji */}
