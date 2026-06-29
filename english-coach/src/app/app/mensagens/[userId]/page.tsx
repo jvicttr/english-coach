@@ -188,10 +188,21 @@ export default function ChatPage() {
     return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
   }, [user?.id, otherUserId]);
 
+  const initialScrollDone = useRef(false);
+
   useEffect(() => {
+    if (messages.length === 0) return;
     const container = chatScrollRef.current;
     if (!container) return;
-    // Only auto-scroll if user is within 120px of the bottom
+
+    if (!initialScrollDone.current) {
+      // First load: always jump to bottom instantly
+      bottomRef.current?.scrollIntoView({ behavior: "instant" as ScrollBehavior });
+      initialScrollDone.current = true;
+      return;
+    }
+
+    // Subsequent updates: only scroll if user is near the bottom
     const distanceFromBottom = container.scrollHeight - container.scrollTop - container.clientHeight;
     if (distanceFromBottom <= 120) {
       bottomRef.current?.scrollIntoView({ behavior: "smooth" });
