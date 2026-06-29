@@ -68,8 +68,11 @@ export default function UserProfilePage({ params }: { params: Promise<{ userId: 
                 <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
                   <span style={{ fontWeight: 800, fontSize: "1.1rem", color: "#fff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{profile?.display_name ?? "Student"}</span>
                   {userId === "user_3EzV0DXiskFt0wNSwNSXVHapiBC" && (
-                    <span title="Criador do app" style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 20, height: 20, borderRadius: "50%", background: "var(--yellow)", flexShrink: 0 }}>
-                      <svg width="11" height="11" viewBox="0 0 24 24" fill="#000"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+                    <span
+                      title="Criador do app"
+                      style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 22, height: 22, borderRadius: "50%", background: "linear-gradient(135deg, #f5c800 0%, #ff9500 100%)", boxShadow: "0 1px 8px rgba(245,180,0,0.6)", flexShrink: 0 }}
+                    >
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="#000"><path d="M2 19h20v2H2zM2 6l5 7 5-7 5 7 5-7v11H2z"/></svg>
                     </span>
                   )}
                 </span>

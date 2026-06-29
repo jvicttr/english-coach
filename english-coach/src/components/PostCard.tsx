@@ -230,6 +230,34 @@ export function ReplyComposer({ postId, user, onDone }: { postId: string; user: 
   );
 }
 
+// ── Creator badge ─────────────────────────────────────────────────────────
+
+const CREATOR_ID = "user_3EzV0DXiskFt0wNSwNSXVHapiBC";
+
+function CreatorBadge({ size = 18 }: { size?: number }) {
+  return (
+    <span
+      title="Criador do app"
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        width: size,
+        height: size,
+        borderRadius: "50%",
+        background: "linear-gradient(135deg, #f5c800 0%, #ff9500 100%)",
+        boxShadow: "0 1px 6px rgba(245,180,0,0.55)",
+        flexShrink: 0,
+      }}
+    >
+      {/* crown */}
+      <svg width={size * 0.58} height={size * 0.58} viewBox="0 0 24 24" fill="#000">
+        <path d="M2 19h20v2H2zM2 6l5 7 5-7 5 7 5-7v11H2z"/>
+      </svg>
+    </span>
+  );
+}
+
 // ── Structured content renderers ──────────────────────────────────────────
 
 type QuizResultData = {
@@ -472,11 +500,7 @@ export function PostCard({ post, myId, user, router, isReply = false, onReaction
           <button onClick={() => router.push(`/app/comunidade/u/${post.user_id}`)} style={{ background: "none", border: "none", padding: 0, cursor: "pointer" }}>
             <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
               <span style={{ fontSize: isReply ? "0.78rem" : "0.82rem", fontWeight: 700, color: "#fff" }}>{post.display_name}</span>
-              {post.user_id === "user_3EzV0DXiskFt0wNSwNSXVHapiBC" && (
-                <span title="Criador do app" style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 16, height: 16, borderRadius: "50%", background: "var(--yellow)", flexShrink: 0 }}>
-                  <svg width="9" height="9" viewBox="0 0 24 24" fill="#000"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
-                </span>
-              )}
+              {post.user_id === CREATOR_ID && <CreatorBadge size={isReply ? 15 : 18} />}
             </span>
           </button>
           <p style={{ fontSize: "0.65rem", color: "var(--gray)", margin: 0 }}>{timeAgo(post.created_at)}</p>
