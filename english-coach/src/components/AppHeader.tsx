@@ -8,7 +8,8 @@ import Image from "next/image";
 type Notif = {
   id: string;
   type: string;
-  post_id: string;
+  post_id: string | null;
+  from_user_id: string;
   from_display_name: string;
   from_avatar_url: string | null;
   read: boolean;
@@ -111,7 +112,11 @@ export function AppHeader() {
 
   async function goToPost(n: Notif) {
     setNotifOpen(false);
-    router.push(`/app/comunidade`);
+    if (n.type === "direct_message") {
+      router.push(`/app/mensagens/${n.from_user_id}`);
+    } else {
+      router.push(`/app/comunidade`);
+    }
   }
 
   async function openPortal() {
@@ -243,7 +248,7 @@ export function AppHeader() {
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <p style={{ fontSize: "0.78rem", color: "#fff", margin: 0, lineHeight: 1.4 }}>
                             <span style={{ fontWeight: 700 }}>{n.from_display_name}</span>{" "}
-                            <span style={{ color: "var(--gray)" }}>{n.type === "mention" ? "te mencionou" : "respondeu seu post"}</span>
+                            <span style={{ color: "var(--gray)" }}>{n.type === "mention" ? "te mencionou em um post" : n.type === "direct_message" ? "te enviou uma mensagem" : "respondeu seu post"}</span>
                           </p>
                           <p style={{ fontSize: "0.65rem", color: "var(--gray)", margin: "3px 0 0" }}>{timeAgo(n.created_at)}</p>
                         </div>

@@ -129,6 +129,30 @@ export async function POST(req: NextRequest) {
     .update({ updated_at: new Date().toISOString() })
     .eq("id", conversationId);
 
+  // Criar notificação no sininho para o destinatário
+  try {
+    const { data: conv } = await supabase
+      .from("conversations")
+      .select("user1_id, user2_id")
+      .eq("id", conversationId)
+      .single();
+    if (conv) {
+      const recipientId = conv.user1_id === userId ? conv.user2_id : conv.user1_id;
+      const { data: senderXp } = await supabase.from("user_xp").select("display_name").eq("user_id", userId).maybeSingle();
+      const { data: senderClerk } = await supabase.from("subscriptions").select("name").eq("user_id", userId).maybeSingle();
+      const senderName = senderXp?.display_name ?? senderClerk?.name ?? "Alguém";
+      const { data: senderSub } = await supabase.from("subscriptions").select("avatar_url").eq("user_id", userId).maybeSingle();
+      await supabase.from("notifications").insert({
+        user_id: recipientId,
+        type: "direct_message",
+        post_id: null,
+        from_user_id: userId,
+        from_display_name: senderName,
+        from_avatar_url: senderSub?.avatar_url ?? null,
+      });
+    }
+  } catch { /* notifications are non-critical */ }
+
   // Enviar push notification para o destinatário via OneSignal external_id
   try {
     if (process.env.ONESIGNAL_APP_ID && process.env.ONESIGNAL_API_KEY) {
