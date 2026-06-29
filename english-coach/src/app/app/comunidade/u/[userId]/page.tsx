@@ -86,8 +86,21 @@ export default function UserProfilePage({ params }: { params: Promise<{ userId: 
                 ? <img src={profile.avatar_url} alt={profile.display_name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                 : <span style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", fontSize: "1.6rem" }}>👤</span>}
             </div>
-            <div>
-              <p style={{ fontWeight: 800, fontSize: "1.1rem", color: "#fff", margin: 0 }}>{profile?.display_name ?? "Student"}</p>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <p style={{ fontWeight: 800, fontSize: "1.1rem", color: "#fff", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{profile?.display_name ?? "Student"}</p>
+                {me && me.id !== userId && (
+                  <a
+                    href={`/app/mensagens/${userId}`}
+                    title="Enviar mensagem direta"
+                    style={{ flexShrink: 0, width: 32, height: 32, borderRadius: "50%", background: "rgba(245,200,0,.12)", border: "1px solid rgba(245,200,0,.3)", display: "flex", alignItems: "center", justifyContent: "center", textDecoration: "none" }}
+                  >
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
+                      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" stroke="var(--yellow)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </a>
+                )}
+              </div>
               <p style={{ fontSize: "0.75rem", color: "var(--gray)", margin: "4px 0 0" }}>{totalPosts} post{totalPosts !== 1 ? "s" : ""}</p>
             </div>
           </div>
