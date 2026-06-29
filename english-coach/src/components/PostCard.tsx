@@ -560,16 +560,22 @@ export function PostCard({ post, myId, user, router, isReply = false, onReaction
   }, [likersPopover]);
 
   async function showLikers(emoji: string) {
-    const count = post.community_reactions.filter(r => r.emoji === emoji).length;
+    const reactions = post.community_reactions ?? [];
+    const count = reactions.filter(r => r.emoji === emoji).length;
     if (count === 0) return;
     if (likersPopover?.emoji === emoji) { setLikersPopover(null); return; }
     setLoadingLikers(true);
     setLikersPopover({ emoji, users: [] });
-    const res = await fetch(`/api/community/reactions/${post.id}`);
-    const all = await res.json();
-    const filtered = all.filter((r: { emoji: string }) => r.emoji === emoji);
-    setLikersPopover({ emoji, users: filtered });
-    setLoadingLikers(false);
+    try {
+      const res = await fetch(`/api/community/reactions/${post.id}`);
+      const all = await res.json();
+      const filtered = Array.isArray(all) ? all.filter((r: { emoji: string }) => r.emoji === emoji) : [];
+      setLikersPopover({ emoji, users: filtered });
+    } catch {
+      setLikersPopover({ emoji, users: [] });
+    } finally {
+      setLoadingLikers(false);
+    }
   }
 
   async function fetchTranslation(text: string) {
@@ -839,8 +845,9 @@ export function PostCard({ post, myId, user, router, isReply = false, onReaction
       {/* Actions */}
       <div className="post-actions" style={{ display: "flex", alignItems: "center", gap: 6, overflowX: "auto", WebkitOverflowScrolling: "touch", scrollbarWidth: "none", msOverflowStyle: "none" } as React.CSSProperties}>
         {EMOJIS_REACT.map(emoji => {
-          const count = post.community_reactions.filter(r => r.emoji === emoji).length;
-          const reacted = post.community_reactions.some(r => r.emoji === emoji && r.user_id === myId);
+          const reactions = post.community_reactions ?? [];
+          const count = reactions.filter(r => r.emoji === emoji).length;
+          const reacted = reactions.some(r => r.emoji === emoji && r.user_id === myId);
           const getIcon = () => (
             <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
           );
