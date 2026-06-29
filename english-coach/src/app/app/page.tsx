@@ -38,7 +38,7 @@ export default function AppHome() {
     const saved = localStorage.getItem("lastTopic");
     if (saved) { try { setLastTopic(JSON.parse(saved)); } catch {} }
 
-    fetch("/api/home").then((r) => r.json()).then((d) => {
+    function loadHome() { fetch("/api/home").then((r) => r.json()).then((d) => {
       setUserName(d.firstName ?? "");
       setIsPro(d.isPro ?? false);
       setStreakData({ streak: d.streak ?? 0, weekDays: d.weekDays ?? [] });
@@ -82,7 +82,12 @@ export default function AppHome() {
       }
       if (!nextStep) nextStep = TRAIL_STEPS.find((s) => !completedIds.has(s.id) && isStepUnlocked(s.id, completedIds, startingLevel));
       setTrilhaCta(nextStep ? { type: "next", step: nextStep } : null);
-    }).catch(() => { setIsPro(false); setTrilhaCta(null); });
+    }).catch(() => { setIsPro(false); setTrilhaCta(null); }); }
+
+    loadHome();
+    const onVisible = () => { if (document.visibilityState === "visible") loadHome(); };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
   }, []);
 
   const streak = streakData?.streak ?? 0;
