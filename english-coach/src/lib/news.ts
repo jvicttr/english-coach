@@ -3,8 +3,10 @@ const FEEDS = [
   { url: "https://feeds.bbci.co.uk/news/business/rss.xml", label: "Business & Economy" },
   { url: "https://feeds.bbci.co.uk/news/technology/rss.xml", label: "Technology" },
   { url: "https://feeds.bbci.co.uk/news/entertainment_and_arts/rss.xml", label: "Entertainment" },
+  { url: "https://feeds.bbci.co.uk/sport/football/rss.xml", label: "Football/Soccer" },
   { url: "https://feeds.bbci.co.uk/sport/rss.xml", label: "Sports" },
   { url: "https://feeds.bbci.co.uk/news/science_and_environment/rss.xml", label: "Science" },
+  { url: "https://feeds.bbci.co.uk/news/politics/rss.xml", label: "Politics" },
 ];
 
 function extractTitles(xml: string): string[] {

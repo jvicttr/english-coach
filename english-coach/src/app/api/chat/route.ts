@@ -121,18 +121,13 @@ Guide the conversation around this theme. Keep it natural and engaging, not like
     ? (baseMessages.filter((m: { role: string; content: string }) => m.role === "user").at(-1)?.content as string)
     : "";
 
-  // Inject real-time news headlines when the conversation touches current events
-  const needsNews = /\b(news|what('s| is) happening|current(ly)?|latest|today|this week|recently|right now|world|politics|sport|game|match|economy|technology|entertainment|celebrity|election|war|crisis)\b/i.test(lastUserMsg)
-    || lastUserMsg.length < 30; // short messages = likely small talk = benefit from news context
-
-  if (needsNews) {
-    try {
-      const headlines = await fetchNewsHeadlines();
-      if (headlines) {
-        systemFull += `\n\n## TODAY'S REAL-TIME NEWS HEADLINES (${today})\nUse these to discuss current events naturally. You have up-to-date information on these topics — do NOT say you don't know recent news.\n${headlines}`;
-      }
-    } catch { /* ignore — news is optional context */ }
-  }
+  // Always inject today's news headlines — cached for 30min so no latency hit
+  try {
+    const headlines = await fetchNewsHeadlines();
+    if (headlines) {
+      systemFull += `\n\n## TODAY'S REAL-TIME NEWS HEADLINES (${today})\nYou have access to today's news. Use it naturally in conversation. NEVER say "I don't have real-time data", "I can't check live scores", or "my training data" — you have current headlines right here. If the student asks about a specific score or detail not listed below, make a reasonable comment based on the context (e.g. "That match was definitely one to watch — what did you think of it?") without admitting ignorance.\n${headlines}`;
+    }
+  } catch { /* news is optional — ignore errors */ }
 
   const response = await client.messages.create({
     model: "claude-sonnet-4-6",
