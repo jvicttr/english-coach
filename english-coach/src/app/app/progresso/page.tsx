@@ -231,33 +231,6 @@ export default function Progresso() {
           ))}
         </div>
 
-        {/* Topics breakdown */}
-        {topTopics.length > 0 && (
-          <div style={{ background: "var(--dark1)", border: "1px solid #1e1e1e", borderRadius: 16, padding: "16px" }}>
-            <p style={{ fontWeight: 700, color: "#fff", fontSize: "0.9rem", margin: "0 0 14px" }}>📚 Tópicos mais praticados</p>
-            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              {topTopics.map(({ name, count, avg }) => {
-                const scoreColor = avg >= 80 ? "#4ade80" : avg >= 60 ? "var(--yellow)" : "#f87171";
-                const maxCount = topTopics[0].count;
-                return (
-                  <div key={name}>
-                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4, alignItems: "center" }}>
-                      <span style={{ fontSize: "0.78rem", color: "#fff", fontWeight: 600, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginRight: 8 }}>{name}</span>
-                      <div style={{ display: "flex", gap: 8, alignItems: "center", flexShrink: 0 }}>
-                        <span style={{ fontSize: "0.65rem", color: "var(--gray)" }}>{count}x</span>
-                        <span style={{ fontSize: "0.65rem", fontWeight: 700, color: scoreColor }}>{avg}% média</span>
-                      </div>
-                    </div>
-                    <div style={{ height: 5, background: "#2a2a2a", borderRadius: 99, overflow: "hidden" }}>
-                      <div style={{ height: "100%", width: `${Math.round((count / maxCount) * 100)}%`, background: "var(--yellow)", borderRadius: 99, opacity: 0.7 }} />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
         {/* Flashcards list */}
         {flashcards.length > 0 && (
           <div style={{ background: "var(--dark1)", border: "1px solid #1e1e1e", borderRadius: 16, padding: "16px" }}>
