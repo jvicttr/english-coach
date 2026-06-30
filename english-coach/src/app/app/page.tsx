@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import OnboardingTour from "@/components/OnboardingTour";
 import LevelSelect from "@/components/LevelSelect";
 import { StartConversationModal } from "@/components/StartConversationModal";
+import QuickTranslator from "@/components/QuickTranslator";
 import { TRAIL_STEPS, isStepUnlocked, getStartingLevel, type TrailStep } from "@/lib/trilha-steps";
 
 type TierInfo = { id: string; label: string; emoji: string; color: string; min: number; max: number };
@@ -313,6 +314,9 @@ export default function AppHome() {
           </div>
           )}
         </div>
+
+        {/* ── Quick Translator ───────────────────────────────────────────────── */}
+        <QuickTranslator />
 
         {/* ── PRO exclusive ──────────────────────────────────────────────────── */}
         {isPro === true && (
