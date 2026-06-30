@@ -30,7 +30,6 @@ export default function ChatTranslator({ onUse }: Props) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const inputRef = useRef<HTMLTextAreaElement>(null);
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const panelRef = useRef<HTMLDivElement>(null);
 
   // Close on Escape
@@ -71,15 +70,12 @@ export default function ChatTranslator({ onUse }: Props) {
     const val = e.target.value;
     setInput(val);
     setError("");
-    if (!val.trim()) { setResult(null); return; }
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => translate(val), 700);
+    if (!val.trim()) setResult(null);
   }
 
   function handleKeyDown(e: React.KeyboardEvent) {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
-      if (debounceRef.current) clearTimeout(debounceRef.current);
       translate(input);
     }
   }
@@ -158,7 +154,7 @@ export default function ChatTranslator({ onUse }: Props) {
           {/* Translate row */}
           <div style={{ display: "flex", justifyContent: "flex-end", padding: "4px 12px 8px", borderBottom: (result || loading || error) ? "1px solid #1e1e1e" : "none" }}>
             <button
-              onClick={() => { if (debounceRef.current) clearTimeout(debounceRef.current); translate(input); }}
+              onClick={() => translate(input)}
               disabled={!input.trim() || loading}
               style={{ background: input.trim() && !loading ? "var(--yellow)" : "#1e1e1e", color: input.trim() && !loading ? "#000" : "#444", border: "none", borderRadius: 50, padding: "4px 14px", fontSize: "0.72rem", fontWeight: 800, cursor: input.trim() && !loading ? "pointer" : "default", transition: "all 0.15s" }}
             >
