@@ -109,6 +109,8 @@ export default function Progresso() {
   const [flashcards, setFlashcards] = useState<Flashcard[]>([]);
   const [trilhaProgress, setTrilhaProgress] = useState<TrilhaProgress[]>([]);
   const [showAllFlashcards, setShowAllFlashcards] = useState(false);
+  const [showFlashcardsSection, setShowFlashcardsSection] = useState(false);
+  const [showQuizSection, setShowQuizSection] = useState(false);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [sharedIds, setSharedIds] = useState<Set<string>>(new Set());
@@ -231,52 +233,74 @@ export default function Progresso() {
           ))}
         </div>
 
-        {/* Flashcards list */}
+        {/* Flashcards list — toggle */}
         {flashcards.length > 0 && (
-          <div style={{ background: "var(--dark1)", border: "1px solid #1e1e1e", borderRadius: 16, padding: "16px" }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
-              <p style={{ fontWeight: 700, color: "#fff", fontSize: "0.9rem", margin: 0 }}>🃏 Flashcards criados</p>
-              <a href="/app/flashcards" style={{ fontSize: "0.75rem", color: "var(--yellow)", textDecoration: "none", fontWeight: 600 }}>Revisar →</a>
-            </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              {(showAllFlashcards ? flashcards : flashcards.slice(0, 5)).map((fc) => {
-                const today = new Date().toISOString().split("T")[0];
-                const isPending = fc.next_review <= today;
-                return (
-                  <div key={fc.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 12px", background: "var(--dark2)", borderRadius: 10, border: "1px solid #2a2a2a" }}>
-                    <div>
-                      <p style={{ fontSize: "0.85rem", fontWeight: 700, color: "#fff", margin: 0 }}>{fc.word}</p>
-                      <p style={{ fontSize: "0.72rem", color: "var(--gray)", margin: "2px 0 0" }}>{fc.translation}</p>
-                    </div>
-                    <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 3 }}>
-                      {fc.topic && (
-                        <span style={{ fontSize: "0.6rem", background: "rgba(96,165,250,.12)", color: "#60a5fa", borderRadius: 6, padding: "2px 7px", fontWeight: 600 }}>#{fc.topic}</span>
-                      )}
-                      <span style={{ fontSize: "0.6rem", color: isPending ? "#f97316" : "var(--gray2)", fontWeight: 600 }}>
-                        {isPending ? "Revisar hoje" : `Próxima: ${new Date(fc.next_review + "T12:00:00").toLocaleDateString("pt-BR")}`}
-                      </span>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-            {flashcards.length > 5 && (
-              <button
-                onClick={() => setShowAllFlashcards((v) => !v)}
-                style={{ marginTop: 12, width: "100%", background: "none", border: "1px solid #2a2a2a", borderRadius: 10, color: "var(--gray)", fontSize: "0.75rem", fontWeight: 600, padding: "8px 0", cursor: "pointer" }}
-              >
-                {showAllFlashcards ? "Ver menos" : `Ver todos os ${flashcards.length} flashcards`}
-              </button>
+          <div style={{ background: "var(--dark1)", border: "1px solid #1e1e1e", borderRadius: 16, overflow: "hidden" }}>
+            <button
+              onClick={() => setShowFlashcardsSection(v => !v)}
+              style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px", background: "transparent", border: "none", cursor: "pointer" }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <span style={{ fontWeight: 700, color: "#fff", fontSize: "0.9rem" }}>🃏 Flashcards criados</span>
+                <span style={{ fontSize: "0.7rem", background: "#2a2a2a", color: "var(--gray)", borderRadius: 20, padding: "2px 8px", fontWeight: 600 }}>{flashcards.length}</span>
+              </div>
+              <span style={{ color: "var(--gray)", fontSize: "0.8rem", display: "inline-block", transform: showFlashcardsSection ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s" }}>▼</span>
+            </button>
+            {showFlashcardsSection && (
+              <div style={{ padding: "0 16px 16px" }}>
+                <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 10 }}>
+                  <a href="/app/flashcards" style={{ fontSize: "0.75rem", color: "var(--yellow)", textDecoration: "none", fontWeight: 600 }}>Revisar →</a>
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  {(showAllFlashcards ? flashcards : flashcards.slice(0, 5)).map((fc) => {
+                    const today = new Date().toISOString().split("T")[0];
+                    const isPending = fc.next_review <= today;
+                    return (
+                      <div key={fc.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 12px", background: "var(--dark2)", borderRadius: 10, border: "1px solid #2a2a2a" }}>
+                        <div>
+                          <p style={{ fontSize: "0.85rem", fontWeight: 700, color: "#fff", margin: 0 }}>{fc.word}</p>
+                          <p style={{ fontSize: "0.72rem", color: "var(--gray)", margin: "2px 0 0" }}>{fc.translation}</p>
+                        </div>
+                        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 3 }}>
+                          {fc.topic && (
+                            <span style={{ fontSize: "0.6rem", background: "rgba(96,165,250,.12)", color: "#60a5fa", borderRadius: 6, padding: "2px 7px", fontWeight: 600 }}>#{fc.topic}</span>
+                          )}
+                          <span style={{ fontSize: "0.6rem", color: isPending ? "#f97316" : "var(--gray2)", fontWeight: 600 }}>
+                            {isPending ? "Revisar hoje" : `Próxima: ${new Date(fc.next_review + "T12:00:00").toLocaleDateString("pt-BR")}`}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+                {flashcards.length > 5 && (
+                  <button
+                    onClick={() => setShowAllFlashcards(v => !v)}
+                    style={{ marginTop: 12, width: "100%", background: "none", border: "1px solid #2a2a2a", borderRadius: 10, color: "var(--gray)", fontSize: "0.75rem", fontWeight: 600, padding: "8px 0", cursor: "pointer" }}
+                  >
+                    {showAllFlashcards ? "Ver menos" : `Ver todos os ${flashcards.length} flashcards`}
+                  </button>
+                )}
+              </div>
             )}
           </div>
         )}
 
-        {/* Quiz list */}
+        {/* Quiz list — toggle */}
         {results.length > 0 && (
-          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            <p style={{ fontSize: "0.78rem", fontWeight: 700, color: "var(--gray)", textTransform: "uppercase", letterSpacing: "0.5px", margin: 0 }}>
-              Histórico de quizzes
-            </p>
+          <div style={{ background: "var(--dark1)", border: "1px solid #1e1e1e", borderRadius: 16, overflow: "hidden" }}>
+            <button
+              onClick={() => setShowQuizSection(v => !v)}
+              style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px", background: "transparent", border: "none", cursor: "pointer" }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <span style={{ fontWeight: 700, color: "#fff", fontSize: "0.9rem" }}>📝 Histórico de quizzes</span>
+                <span style={{ fontSize: "0.7rem", background: "#2a2a2a", color: "var(--gray)", borderRadius: 20, padding: "2px 8px", fontWeight: 600 }}>{results.length}</span>
+              </div>
+              <span style={{ color: "var(--gray)", fontSize: "0.8rem", display: "inline-block", transform: showQuizSection ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s" }}>▼</span>
+            </button>
+            {showQuizSection && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 12, padding: "0 16px 16px" }}>
             {results.map((r) => {
               const total = r.questions?.length ?? 0;
               const pct = r.score != null && total > 0 ? Math.round((r.score / total) * 100) : null;
@@ -398,6 +422,8 @@ export default function Progresso() {
                 </div>
               );
             })}
+            </div>
+            )}
           </div>
         )}
 
