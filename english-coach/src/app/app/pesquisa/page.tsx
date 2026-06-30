@@ -136,6 +136,7 @@ export default function PesquisaPage() {
         borderBottom: "1px solid #1e1e1e",
         padding: "14px 16px 12px",
       }}>
+        <div style={{ maxWidth: 600, margin: "0 auto" }}>
         <h1 style={{ margin: "0 0 14px", fontSize: "1.2rem", fontWeight: 700 }}>Pesquisa</h1>
         <div style={{
           display: "flex",
@@ -186,10 +187,11 @@ export default function PesquisaPage() {
             </button>
           )}
         </div>
+        </div>
       </div>
 
       {/* Content */}
-      <div style={{ padding: "8px 0" }}>
+      <div style={{ maxWidth: 600, margin: "0 auto", padding: "8px 0" }}>
         {!searched && !loadingAll && allUsers.length > 0 && (
           <p style={{ margin: "10px 16px 4px", fontSize: "0.75rem", fontWeight: 700, color: "#444", textTransform: "uppercase", letterSpacing: "0.06em" }}>
             Todos os usuários
