@@ -264,6 +264,37 @@ export default function PerfilPage() {
         {/* Gerenciar assinatura (pro only) */}
         {plan === "pro" && <ManageSubscriptionButton />}
 
+        {/* Links rápidos */}
+        <div style={{ background: "var(--dark2)", borderRadius: 16, overflow: "hidden" }}>
+          {[
+            { href: "/app/progresso", emoji: "📊", label: "Progresso" },
+            { href: "/app/resumo", emoji: "📄", label: "Revisão de Aula" },
+            { href: "/planos", emoji: "⭐", label: "Planos" },
+          ].map((item, i, arr) => (
+            <a
+              key={item.href}
+              href={item.href}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 14,
+                padding: "15px 18px",
+                textDecoration: "none",
+                borderBottom: i < arr.length - 1 ? "1px solid #1e1e1e" : "none",
+                transition: "background 0.12s",
+              }}
+              onMouseEnter={e => { e.currentTarget.style.background = "#1e1e1e"; }}
+              onMouseLeave={e => { e.currentTarget.style.background = "transparent"; }}
+            >
+              <span style={{ fontSize: "1.1rem", width: 24, textAlign: "center" }}>{item.emoji}</span>
+              <span style={{ flex: 1, fontSize: "0.9rem", fontWeight: 600, color: "var(--white)" }}>{item.label}</span>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="9 18 15 12 9 6"/>
+              </svg>
+            </a>
+          ))}
+        </div>
+
       </div>
 
     </div>
