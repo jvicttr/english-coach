@@ -550,7 +550,7 @@ export default function RolePlay() {
 
   // ── Chat ─────────────────────────────────────────────────────────────────
   return (
-    <div className="flex flex-col items-center px-3 sm:px-4" style={{ background: "var(--black)", fontFamily: "'Inter', sans-serif", height: "100dvh", overflow: "hidden", paddingTop: "calc(65px + env(safe-area-inset-top))", paddingBottom: 65 }}>
+    <div className="flex flex-col items-center px-3 sm:px-4" style={{ background: "var(--black)", fontFamily: "'Inter', sans-serif", height: "100dvh", overflow: "hidden", paddingTop: "calc(65px + env(safe-area-inset-top))", paddingBottom: 0 }}>
       <div className="w-full max-w-2xl mb-3 flex items-center gap-2 shrink-0">
         <button onClick={() => { setScreen("scenarios"); setMessages([]); setScenario(null); }} style={{ background: "var(--dark2)", border: "1px solid #2a2a2a", borderRadius: "10px", height: "36px", padding: "0 10px", display: "flex", alignItems: "center", gap: "5px", fontSize: "0.75rem", fontWeight: 600, color: "var(--gray)", cursor: "pointer" }}>
           <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M9 2L4 7L9 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
@@ -564,7 +564,7 @@ export default function RolePlay() {
         )}
       </div>
 
-      <div className="w-full max-w-2xl flex-1 min-h-0 p-3 sm:p-4 mb-3 overflow-y-auto" style={{ background: "var(--dark1)", border: "1px solid #1f1f1f", borderRadius: "var(--radius)", boxShadow: "var(--shadow)" }}>
+      <div className="w-full max-w-2xl flex-1 min-h-0 p-3 sm:p-4 overflow-y-auto" style={{ background: "var(--dark1)", border: "1px solid #1f1f1f", borderRadius: "var(--radius)", boxShadow: "var(--shadow)", marginBottom: "calc(70px + env(safe-area-inset-bottom, 0px))" }}>
         {messages.length === 0 && isLoading && (
           <div className="flex flex-col items-center justify-center gap-3" style={{ minHeight: "60%", paddingBottom: "20%" }}>
             <div className="text-3xl">{scenario?.emoji}</div>
@@ -731,22 +731,44 @@ export default function RolePlay() {
         </div>
       )}
 
-      <div className="-mx-3 sm:mx-auto w-full sm:max-w-2xl flex gap-2 items-end px-3 sm:px-0 pb-1 sm:pb-0" style={{ background: "var(--black)" }}>
-        <textarea value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(input); } }} placeholder="Digite aqui..." disabled={limitReached} rows={1} className="flex-1 resize-none outline-none transition" style={{ background: "var(--dark1)", color: "var(--white)", border: "1px solid #2a2a2a", borderRadius: "var(--radius)", padding: "12px 16px", fontFamily: "'Inter', sans-serif", fontSize: "16px" }} onFocus={(e) => (e.currentTarget.style.borderColor = "var(--yellow)")} onBlur={(e) => (e.currentTarget.style.borderColor = "#2a2a2a")} />
-        <button onClick={isListening ? stopListening : startListening} disabled={isLoading || isSpeaking || isTranscribing || limitReached} className="w-12 h-12 flex items-center justify-center transition-all shrink-0 disabled:opacity-40" style={{ background: isListening ? "#ef4444" : isTranscribing ? "var(--dark2)" : "var(--yellow)", borderRadius: "var(--radius)", boxShadow: isListening ? "0 0 20px rgba(239,68,68,0.5)" : "none" }}>
-          {isTranscribing ? <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24" style={{ color: "var(--yellow)" }}><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" /></svg>
-            : <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24" style={{ color: isListening ? "white" : "var(--black)" }}>{isListening ? <rect x="6" y="6" width="12" height="12" rx="2" /> : <path d="M12 1a4 4 0 0 1 4 4v6a4 4 0 0 1-8 0V5a4 4 0 0 1 4-4zm0 2a2 2 0 0 0-2 2v6a2 2 0 0 0 4 0V5a2 2 0 0 0-2-2zm-7 9h2a5 5 0 0 0 10 0h2a7 7 0 0 1-6 6.93V21h2v2H9v-2h2v-2.07A7 7 0 0 1 5 12z" />}</svg>}
-        </button>
-        <button onClick={() => sendMessage(input)} disabled={isLoading || !input.trim() || limitReached} className="w-12 h-12 flex items-center justify-center transition-all shrink-0 disabled:opacity-40" style={{ background: "var(--dark2)", border: "1px solid #2a2a2a", borderRadius: "var(--radius)" }}>
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: "var(--yellow)" }}><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19V5m-7 7 7-7 7 7" /></svg>
-        </button>
-      </div>
-
-      <div className="mt-1.5 h-3.5 text-[11px] text-center">
-        {isListening ? <span style={{ color: "#ef4444" }}>● Gravando — toque em ⏹ para enviar</span>
-          : isTranscribing ? <span style={{ color: "var(--yellow)" }}>● Reconhecendo sua voz...</span>
-          : isSpeaking ? <span style={{ color: "var(--yellow)" }}>● Coach falando...</span>
-          : <span style={{ color: "var(--gray2)", opacity: 0.6 }}>● Toque em 🎙️ para gravar sua voz</span>}
+      {/* Input bar fixo — estilo WhatsApp */}
+      <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, background: "#111", borderTop: "1px solid #1e1e1e", padding: "8px 12px", paddingBottom: "calc(8px + env(safe-area-inset-bottom, 0px))", zIndex: 100 }}>
+        {(isListening || isTranscribing || isSpeaking) && (
+          <div style={{ textAlign: "center", fontSize: "11px", marginBottom: 6 }}>
+            {isListening ? <span style={{ color: "#ef4444" }}>● Gravando — toque em ⏹ para enviar</span>
+              : isTranscribing ? <span style={{ color: "var(--yellow)" }}>● Reconhecendo sua voz...</span>
+              : <span style={{ color: "var(--yellow)" }}>● Coach falando...</span>}
+          </div>
+        )}
+        <div style={{ display: "flex", gap: 8, alignItems: "flex-end" }}>
+          <div style={{ flex: 1, background: "#1e1e1e", borderRadius: 24, minHeight: 44, display: "flex", alignItems: "flex-end" }}>
+            <textarea
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(input); } }}
+              placeholder="Digite uma mensagem..."
+              disabled={limitReached}
+              rows={1}
+              className="w-full resize-none outline-none"
+              style={{ background: "transparent", color: "var(--white)", border: "none", borderRadius: 24, padding: "11px 16px", fontFamily: "'Inter', sans-serif", fontSize: "15px", lineHeight: "1.4", maxHeight: 120, overflowY: "auto" }}
+            />
+          </div>
+          <button
+            onClick={input.trim() ? () => sendMessage(input) : (isListening ? stopListening : startListening)}
+            disabled={isLoading || isSpeaking || isTranscribing || limitReached}
+            style={{ width: 44, height: 44, borderRadius: "50%", border: "none", background: isListening ? "#ef4444" : "var(--yellow)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0, boxShadow: isListening ? "0 0 16px rgba(239,68,68,0.5)" : "none", transition: "background 0.15s", opacity: (isLoading || isSpeaking || isTranscribing || limitReached) ? 0.4 : 1 }}
+          >
+            {isTranscribing ? (
+              <svg width="18" height="18" className="animate-spin" fill="none" viewBox="0 0 24 24" style={{ color: "var(--yellow)" }}><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" /></svg>
+            ) : isListening ? (
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="white"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>
+            ) : input.trim() ? (
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 19V5M5 12l7-7 7 7" stroke="#000" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            ) : (
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="#000"><path d="M12 1a4 4 0 0 1 4 4v6a4 4 0 0 1-8 0V5a4 4 0 0 1 4-4zm0 2a2 2 0 0 0-2 2v6a2 2 0 0 0 4 0V5a2 2 0 0 0-2-2zm-7 9h2a5 5 0 0 0 10 0h2a7 7 0 0 1-6 6.93V21h2v2H9v-2h2v-2.07A7 7 0 0 1 5 12z"/></svg>
+            )}
+          </button>
+        </div>
       </div>
 
     </div>

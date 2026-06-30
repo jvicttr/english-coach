@@ -83,7 +83,13 @@ const NAV_STYLE = { background: "#0d0d0d", borderTop: "1px solid #1e1e1e", paddi
 
 export function BottomNavFixed() {
   const pathname = usePathname();
-  if (/^\/app\/mensagens\//.test(pathname) || /^\/app\/conversar\//.test(pathname)) return null;
+  if (
+    /^\/app\/mensagens\//.test(pathname) ||
+    pathname === "/app/conversar" ||
+    pathname.startsWith("/app/conversar/") ||
+    pathname === "/app/roleplay" ||
+    pathname.startsWith("/app/roleplay/")
+  ) return null;
   return (
     <nav style={{ ...NAV_STYLE, position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 50 }}>
       <NavItems />
