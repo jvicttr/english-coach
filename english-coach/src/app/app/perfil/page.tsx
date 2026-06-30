@@ -231,7 +231,7 @@ export default function PerfilPage() {
             <span style={{ fontSize: "1.6rem" }}>⭐</span>
             <div style={{ flex: 1 }}>
               <p style={{ fontSize: "0.85rem", fontWeight: 800, color: "var(--yellow)", margin: 0 }}>Assine o JV IA PRO</p>
-              <p style={{ fontSize: "0.7rem", color: "rgba(245,200,0,.65)", margin: "2px 0 0" }}>Trilha, roleplay, flashcards e sem limites — R$ 47/mês</p>
+              <p style={{ fontSize: "0.7rem", color: "rgba(245,200,0,.65)", margin: "2px 0 0" }}>Trilha, roleplay, flashcards e sem limites — R$ 97/mês</p>
             </div>
             <span style={{ fontSize: "0.85rem", color: "var(--yellow)" }}>→</span>
           </a>
@@ -240,19 +240,6 @@ export default function PerfilPage() {
         {/* Gerenciar assinatura (pro only) */}
         {plan === "pro" && <ManageSubscriptionButton />}
 
-        {/* Link planos */}
-        <a
-          href="/planos"
-          style={{ background: "var(--dark2)", borderRadius: 16, display: "flex", alignItems: "center", gap: 14, padding: "15px 18px", textDecoration: "none" }}
-          onMouseEnter={e => { e.currentTarget.style.background = "#1e1e1e"; }}
-          onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.background = "var(--dark2)"; }}
-        >
-          <span style={{ fontSize: "1.1rem", width: 24, textAlign: "center" }}>⭐</span>
-          <span style={{ flex: 1, fontSize: "0.9rem", fontWeight: 600, color: "var(--white)" }}>Planos</span>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="9 18 15 12 9 6"/>
-          </svg>
-        </a>
 
       </div>
 
