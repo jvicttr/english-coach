@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { TIERS, getTier as getTierFromXp } from "@/lib/tiers";
 
 type TierInfo = { id: string; label: string; emoji: string; color: string; min: number; max: number };
@@ -40,6 +41,7 @@ type RankingData = {
 };
 
 export default function ConquistasPage() {
+  const router = useRouter();
   const [data, setData] = useState<ConquistasData | null>(null);
   const [ranking, setRanking] = useState<RankingData | null>(null);
   const [tab, setTab] = useState<"badges" | "ranking">("badges");
@@ -238,12 +240,16 @@ export default function ConquistasPage() {
               {ranking.ranking.map((entry) => (
                 <div
                   key={entry.userId}
+                  onClick={() => router.push(`/app/comunidade/u/${entry.userId}`)}
                   style={{
                     display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", borderRadius: 14,
                     background: entry.isMe ? "rgba(245,200,0,0.08)" : "var(--dark1)",
                     border: `1px solid ${entry.isMe ? "rgba(245,200,0,0.35)" : "#1f1f1f"}`,
                     transition: "all .15s",
+                    cursor: "pointer",
                   }}
+                  onMouseEnter={(e) => { e.currentTarget.style.borderColor = "rgba(245,200,0,0.25)"; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.borderColor = entry.isMe ? "rgba(245,200,0,0.35)" : "#1f1f1f"; }}
                 >
                   {/* Position */}
                   <div style={{ width: 28, textAlign: "center", flexShrink: 0 }}>
