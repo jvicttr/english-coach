@@ -4,8 +4,8 @@ import { usePathname, useRouter } from "next/navigation";
 
 const NAV_ITEMS = [
   { href: "/app", icon: "home", label: "Início" },
-  { href: "/app/trilha", icon: "trilha", label: "Trilha" },
   { href: "/app/pesquisa", icon: "pesquisa", label: "Pesquisa" },
+  { href: "/app/comunidade", icon: "comunidade", label: "Comunidade" },
   { href: "/app/progresso", icon: "progresso", label: "Progresso" },
   { href: "/app/perfil", icon: "perfil", label: "Perfil" },
 ];
@@ -28,6 +28,11 @@ function NavIcon({ name, active }: { name: string; active: boolean }) {
     pesquisa: (
       <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
         <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+      </svg>
+    ),
+    comunidade: (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
       </svg>
     ),
     progresso: (
