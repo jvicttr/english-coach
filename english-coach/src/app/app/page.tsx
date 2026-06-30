@@ -32,6 +32,7 @@ export default function AppHome() {
   const [showLevelSelect, setShowLevelSelect] = useState(false);
   const [xpData, setXpData] = useState<XpData | null>(null);
   const [trilhaCta, setTrilhaCta] = useState<{ type: "continue" | "next"; step: TrailStep } | null | undefined>(undefined);
+  const [trilhaStarted, setTrilhaStarted] = useState(false);
   const [recommendation, setRecommendation] = useState<{ packName: string; hardCount: number } | null>(null);
   const [showStartChat, setShowStartChat] = useState(false);
 
@@ -52,6 +53,7 @@ export default function AppHome() {
       const completedList: { step_id: string; completed_at: string }[] = d.trilhaCompleted ?? [];
       const completedIds = new Set<string>(completedList.map((c) => c.step_id));
       let activeSessions: string[] = d.trilhaActiveSessions ?? [];
+      setTrilhaStarted(completedList.length > 0 || activeSessions.length > 0);
 
       // Check localStorage for a pending trilha step that overrides the database
       const pendingStep = typeof window !== "undefined" ? localStorage.getItem("pendingTrilhaStep") : null;
@@ -174,7 +176,7 @@ export default function AppHome() {
           >
             <div>
               <p style={{ fontSize: "0.65rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: ".08em", color: "rgba(0,0,0,.5)", margin: 0 }}>
-                {trilhaCta.type === "continue" ? "▶ Continuar trilha" : "🗺️ Próximo tópico"}
+                {!trilhaStarted ? "🎓 Começar trilha de aprendizado" : trilhaCta.type === "continue" ? "▶ Continuar trilha" : "🗺️ Próximo tópico"}
               </p>
               <p style={{ fontSize: "1rem", fontWeight: 800, color: "#000", margin: "2px 0 0" }}>
                 {trilhaCta.step.emoji} {trilhaCta.step.title}
