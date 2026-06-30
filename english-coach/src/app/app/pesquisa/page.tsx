@@ -59,15 +59,15 @@ export default function PesquisaPage() {
   }
 
   return (
-    <div style={{ minHeight: "100dvh", background: "#0d0d0d", color: "#fff" }}>
+    <div style={{ minHeight: "100dvh", background: "#0d0d0d", color: "#fff", paddingTop: "calc(65px + env(safe-area-inset-top))", paddingBottom: 80 }}>
       {/* Header */}
       <div style={{
         position: "sticky",
-        top: 0,
+        top: "calc(65px + env(safe-area-inset-top))",
         zIndex: 10,
         background: "#0d0d0d",
         borderBottom: "1px solid #1e1e1e",
-        padding: "16px 16px 12px",
+        padding: "14px 16px 12px",
       }}>
         <h1 style={{ margin: "0 0 14px", fontSize: "1.2rem", fontWeight: 700 }}>Pesquisa</h1>
 
