@@ -114,8 +114,10 @@ export function AppHeader() {
     setNotifOpen(false);
     if (n.type === "direct_message") {
       router.push(`/app/mensagens/${n.from_user_id}`);
+    } else if (n.type === "follow") {
+      router.push(`/app/comunidade/u/${n.from_user_id}`);
     } else {
-      router.push(`/app/comunidade`);
+      router.push(`/app/comunidade${n.post_id ? `#post-${n.post_id}` : ""}`);
     }
   }
 
@@ -248,7 +250,7 @@ export function AppHeader() {
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <p style={{ fontSize: "0.78rem", color: "#fff", margin: 0, lineHeight: 1.4 }}>
                             <span style={{ fontWeight: 700 }}>{n.from_display_name}</span>{" "}
-                            <span style={{ color: "var(--gray)" }}>{n.type === "mention" ? "te mencionou em um post" : n.type === "direct_message" ? "te enviou uma mensagem" : "respondeu seu post"}</span>
+                            <span style={{ color: "var(--gray)" }}>{n.type === "mention" ? "te mencionou em um post" : n.type === "direct_message" ? "te enviou uma mensagem" : n.type === "follow" ? "começou a te seguir" : "respondeu seu post"}</span>
                           </p>
                           <p style={{ fontSize: "0.65rem", color: "var(--gray)", margin: "3px 0 0" }}>{timeAgo(n.created_at)}</p>
                         </div>
