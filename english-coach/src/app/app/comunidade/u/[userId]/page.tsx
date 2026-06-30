@@ -18,6 +18,13 @@ type Profile = {
   is_following: boolean;
 };
 
+type FollowUser = {
+  user_id: string;
+  display_name: string;
+  avatar_url: string | null;
+  handle: string | null;
+};
+
 export default function UserProfilePage({ params }: { params: Promise<{ userId: string }> }) {
   const { userId } = use(params);
   const { user: me } = useUser();
@@ -30,6 +37,7 @@ export default function UserProfilePage({ params }: { params: Promise<{ userId: 
   const [imageZoom, setImageZoom] = useState(1);
   const [followLoading, setFollowLoading] = useState(false);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [followModal, setFollowModal] = useState<{ type: "followers" | "following"; users: FollowUser[]; loading: boolean } | null>(null);
 
   function loadProfile() {
     return fetch(`/api/community/user/${userId}`)
@@ -103,6 +111,17 @@ export default function UserProfilePage({ params }: { params: Promise<{ userId: 
     }));
   }
 
+  async function openFollowModal(type: "followers" | "following") {
+    setFollowModal({ type, users: [], loading: true });
+    try {
+      const res = await fetch(`/api/community/followers?userId=${userId}&type=${type}`);
+      const data = await res.json();
+      setFollowModal({ type, users: data.users ?? [], loading: false });
+    } catch {
+      setFollowModal(prev => prev ? { ...prev, loading: false } : null);
+    }
+  }
+
   const isMe = me?.id === userId;
 
   return (
@@ -148,12 +167,12 @@ export default function UserProfilePage({ params }: { params: Promise<{ userId: 
                 <span style={{ fontSize: "0.72rem", color: "var(--gray)" }}>
                   <strong style={{ color: "#fff" }}>{totalPosts}</strong> post{totalPosts !== 1 ? "s" : ""}
                 </span>
-                <span style={{ fontSize: "0.72rem", color: "var(--gray)" }}>
+                <button onClick={() => openFollowModal("followers")} style={{ background: "none", border: "none", padding: 0, cursor: "pointer", fontSize: "0.72rem", color: "var(--gray)" }}>
                   <strong style={{ color: "#fff" }}>{profile?.follower_count ?? 0}</strong> seguidor{(profile?.follower_count ?? 0) !== 1 ? "es" : ""}
-                </span>
-                <span style={{ fontSize: "0.72rem", color: "var(--gray)" }}>
+                </button>
+                <button onClick={() => openFollowModal("following")} style={{ background: "none", border: "none", padding: 0, cursor: "pointer", fontSize: "0.72rem", color: "var(--gray)" }}>
                   <strong style={{ color: "#fff" }}>{profile?.following_count ?? 0}</strong> seguindo
-                </span>
+                </button>
               </div>
 
               {/* Tier + XP */}
@@ -239,6 +258,53 @@ export default function UserProfilePage({ params }: { params: Promise<{ userId: 
         ))}
       </div>
       <style>{`@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}`}</style>
+
+      {/* Followers / Following modal */}
+      {followModal && (
+        <div onClick={() => setFollowModal(null)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", display: "flex", alignItems: "flex-end", justifyContent: "center", zIndex: 2000 }}>
+          <div onClick={e => e.stopPropagation()} style={{ background: "var(--dark2)", borderRadius: "18px 18px 0 0", width: "100%", maxWidth: 520, maxHeight: "70vh", display: "flex", flexDirection: "column", border: "1px solid #2a2a2a", borderBottom: "none" }}>
+            {/* Header */}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 18px", borderBottom: "1px solid #1e1e1e", flexShrink: 0 }}>
+              <span style={{ fontWeight: 800, fontSize: "0.95rem", color: "#fff" }}>
+                {followModal.type === "followers" ? "Seguidores" : "Seguindo"}
+              </span>
+              <button onClick={() => setFollowModal(null)} style={{ background: "none", border: "none", color: "var(--gray)", cursor: "pointer", fontSize: "1.2rem", lineHeight: 1 }}>✕</button>
+            </div>
+            {/* List */}
+            <div style={{ overflowY: "auto", flex: 1 }}>
+              {followModal.loading ? (
+                <div style={{ display: "flex", justifyContent: "center", padding: 32 }}>
+                  <div style={{ display: "flex", gap: 6 }}>
+                    {[0, 150, 300].map(d => <span key={d} style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--yellow)", display: "inline-block", animation: "bounce .8s infinite", animationDelay: `${d}ms` }} />)}
+                  </div>
+                </div>
+              ) : followModal.users.length === 0 ? (
+                <p style={{ textAlign: "center", color: "var(--gray)", fontSize: "0.85rem", padding: 32 }}>
+                  {followModal.type === "followers" ? "Nenhum seguidor ainda." : "Não está seguindo ninguém ainda."}
+                </p>
+              ) : (
+                followModal.users.map(u => (
+                  <a key={u.user_id} href={`/app/comunidade/u/${u.user_id}`} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 18px", textDecoration: "none", borderBottom: "1px solid #1e1e1e" }}
+                    onMouseEnter={e => (e.currentTarget.style.background = "#1a1a1a")}
+                    onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
+                  >
+                    <div style={{ width: 40, height: 40, borderRadius: "50%", overflow: "hidden", background: "#1e1e1e", flexShrink: 0 }}>
+                      {u.avatar_url
+                        ? <img src={u.avatar_url} alt={u.display_name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                        : <span style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", fontSize: "1rem" }}>👤</span>}
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p style={{ margin: 0, fontWeight: 700, fontSize: "0.88rem", color: "#fff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{u.display_name}</p>
+                      {u.handle && <p style={{ margin: "1px 0 0", fontSize: "0.72rem", color: "var(--yellow)", opacity: 0.8 }}>@{u.handle}</p>}
+                    </div>
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M5 2L10 7L5 12" stroke="var(--gray)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  </a>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {selectedImage && (
         <div onClick={() => { setSelectedImage(null); setImageZoom(1); }} style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.95)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 2000 }}>

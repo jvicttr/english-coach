@@ -172,8 +172,8 @@ export async function POST(req: NextRequest) {
           target_channel: "push",
           headings: { en: `${displayName} te marcou!`, pt: `${displayName} te marcou!` },
           contents: { en: content.slice(0, 100), pt: content.slice(0, 100) },
-          url: `https://www.faleinglesjv.com/app/comunidade#post-${post.id}`,
-          web_url: `https://www.faleinglesjv.com/app/comunidade#post-${post.id}`,
+          url: `https://www.faleinglesjv.com/app/comunidade#post-${parentId ?? post.id}`,
+          web_url: `https://www.faleinglesjv.com/app/comunidade#post-${parentId ?? post.id}`,
           chrome_web_icon: avatarUrl || "https://www.faleinglesjv.com/favicon.png",
         }),
       }).catch(() => {});

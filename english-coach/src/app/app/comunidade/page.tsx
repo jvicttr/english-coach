@@ -50,6 +50,22 @@ export default function ComunidadePage() {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const touchStartRef = useRef(0);
 
+  function highlightHashPost() {
+    const hash = window.location.hash;
+    if (!hash.startsWith("#post-")) return;
+    const el = document.getElementById(hash.slice(1));
+    if (!el) return;
+    el.scrollIntoView({ behavior: "smooth", block: "center" });
+    el.style.outline = "2px solid var(--yellow)";
+    el.style.outlineOffset = "3px";
+    el.style.borderRadius = "16px";
+    el.style.transition = "outline 0.3s";
+    setTimeout(() => {
+      el.style.outline = "";
+      el.style.outlineOffset = "";
+    }, 2500);
+  }
+
   async function loadPosts(checkNew = false) {
     const res = await fetch("/api/community/posts");
     const data = await res.json();
@@ -65,6 +81,11 @@ export default function ComunidadePage() {
     setLoading(false);
     setRefreshing(false);
     setNewPostsCount(0);
+
+    // After posts render, scroll to and highlight the post from the notification URL hash
+    if (window.location.hash.startsWith("#post-")) {
+      setTimeout(highlightHashPost, 400);
+    }
   }
 
   async function loadNewPosts() {
