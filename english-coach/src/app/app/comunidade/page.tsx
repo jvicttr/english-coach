@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useUser } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import { PostCard, type Post, EMOJI_LIST } from "@/components/PostCard";
+import { StartConversationModal } from "@/components/StartConversationModal";
 
 function getSupportedMime() {
   const types = ["audio/webm;codecs=opus", "audio/webm", "audio/mp4", "audio/ogg"];
@@ -26,6 +27,7 @@ export default function ComunidadePage() {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [imageZoom, setImageZoom] = useState(1);
   const [composerOpen, setComposerOpen] = useState(false);
+  const [showChat, setShowChat] = useState(false);
 
   const [mentionOpen, setMentionOpen] = useState(false);
   const [mentionQuery, setMentionQuery] = useState("");
@@ -520,9 +522,9 @@ export default function ComunidadePage() {
         </div>
       )}
 
-      {/* Botão compor post */}
+      {/* Botão conversas */}
       <button
-        onClick={() => setComposerOpen(true)}
+        onClick={() => setShowChat(true)}
         style={{
           position: "fixed",
           bottom: "100px",
@@ -530,25 +532,28 @@ export default function ComunidadePage() {
           width: "46px",
           height: "46px",
           borderRadius: "14px",
-          background: "var(--yellow)",
-          border: "none",
+          background: "rgba(17,17,17,0.6)",
+          backdropFilter: "blur(10px)",
+          WebkitBackdropFilter: "blur(10px)",
+          border: "1px solid rgba(255,255,255,0.07)",
           cursor: "pointer",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          boxShadow: "0 4px 20px rgba(0,0,0,0.4)",
+          boxShadow: "0 4px 20px rgba(0,0,0,0.35)",
           zIndex: 40,
-          transition: "transform 0.15s, opacity 0.15s",
+          transition: "border-color 0.15s, background 0.15s",
         }}
-        onMouseEnter={e => { e.currentTarget.style.transform = "scale(1.08)"; e.currentTarget.style.opacity = "0.9"; }}
-        onMouseLeave={e => { e.currentTarget.style.transform = "scale(1)"; e.currentTarget.style.opacity = "1"; }}
-        title="Novo post"
+        onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(245,200,0,0.3)"; e.currentTarget.style.background = "rgba(30,30,30,0.75)"; }}
+        onMouseLeave={e => { e.currentTarget.style.borderColor = "rgba(255,255,255,0.07)"; e.currentTarget.style.background = "rgba(17,17,17,0.6)"; }}
+        title="Conversas"
       >
-        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#000" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="var(--yellow)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
         </svg>
       </button>
+
+      <StartConversationModal isOpen={showChat} onClose={() => setShowChat(false)} />
 
       <style>{`
         @keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
