@@ -286,52 +286,6 @@ export default function Progresso() {
           </div>
         )}
 
-        {/* Trilha progress */}
-        <div style={{ background: "var(--dark1)", border: "1px solid #1e1e1e", borderRadius: 16, padding: "16px" }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
-            <p style={{ fontWeight: 700, color: "#fff", fontSize: "0.9rem", margin: 0 }}>🗺️ Trilha de aprendizado</p>
-            <span style={{ fontSize: "0.72rem", color: "var(--gray)" }}>{trilhaTotal} {trilhaTotal !== 1 ? "passos" : "passo"} concluídos</span>
-          </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            {trilhaByLevel.map(({ lvl, done, total }) => {
-              const pct = Math.round((done / total) * 100);
-              const colors: Record<string, string> = { A1: "#60a5fa", A2: "#a78bfa", B1: "#F5C800", B2: "#fb923c", C1: "#4ade80" };
-              const color = colors[lvl] ?? "var(--yellow)";
-              return (
-                <div key={lvl}>
-                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                    <span style={{ fontSize: "0.75rem", fontWeight: 700, color }}>{lvl}</span>
-                    <span style={{ fontSize: "0.7rem", color: "var(--gray)" }}>{done}/{total}</span>
-                  </div>
-                  <div style={{ height: 6, background: "#2a2a2a", borderRadius: 99, overflow: "hidden" }}>
-                    <div style={{ height: "100%", width: `${pct}%`, background: color, borderRadius: 99, transition: "width .4s ease" }} />
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-          {trilhaTotal === 0 && (
-            <p style={{ fontSize: "0.78rem", color: "var(--gray)", marginTop: 10, textAlign: "center" }}>
-              Comece a trilha para ver seu progresso aqui.{" "}
-              <a href="/app/trilha" style={{ color: "var(--yellow)", textDecoration: "none", fontWeight: 700 }}>Ir para a trilha →</a>
-            </p>
-          )}
-        </div>
-
-        {/* Conquistas CTA */}
-        <a href="/app/conquistas" style={{ display: "block", textDecoration: "none", background: "linear-gradient(135deg, rgba(245,200,0,0.1) 0%, rgba(205,127,50,0.08) 100%)", border: "1px solid rgba(245,200,0,0.3)", borderRadius: 16, padding: "16px", cursor: "pointer" }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              <span style={{ fontSize: "1.8rem" }}>🏅</span>
-              <div>
-                <p style={{ fontWeight: 700, color: "#fff", fontSize: "0.9rem", margin: 0 }}>Conquistas & Ranking</p>
-                <p style={{ fontSize: "0.72rem", color: "var(--gray)", margin: "2px 0 0" }}>Badges, tiers e top 10 global</p>
-              </div>
-            </div>
-            <span style={{ fontSize: "0.8rem", color: "var(--yellow)", fontWeight: 700 }}>Ver →</span>
-          </div>
-        </a>
-
         {/* Flashcard stats */}
         {flashcards.length > 0 && (
           <div style={{ background: "var(--dark1)", border: "1px solid #1e1e1e", borderRadius: 16, padding: "16px" }}>
