@@ -44,7 +44,7 @@ export default function ConquistasPage() {
   const router = useRouter();
   const [data, setData] = useState<ConquistasData | null>(null);
   const [ranking, setRanking] = useState<RankingData | null>(null);
-  const [tab, setTab] = useState<"badges" | "ranking">("badges");
+  const [tab, setTab] = useState<"badges" | "ranking">("ranking");
   const [loading, setLoading] = useState(true);
   const [showTiers, setShowTiers] = useState(false);
 
@@ -183,7 +183,7 @@ export default function ConquistasPage() {
 
         {/* Tabs */}
         <div style={{ display: "flex", gap: 6, marginBottom: 16 }}>
-          {(["badges", "ranking"] as const).map((t) => (
+          {(["ranking", "badges"] as const).map((t) => (
             <button
               key={t}
               onClick={() => setTab(t)}
