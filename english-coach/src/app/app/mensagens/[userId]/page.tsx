@@ -977,8 +977,8 @@ export default function ChatPage() {
         <ChatTranslator onUse={(text) => { setInput(prev => prev ? prev + " " + text : text); setTimeout(() => textareaRef.current?.focus(), 50); }} />
 
         {/* Foto btn */}
-        <button onClick={() => fileInputRef.current?.click()} style={{ width: 44, height: 44, background: "var(--dark2)", border: "1px solid #2a2a2a", borderRadius: "var(--radius)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }}>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--gray)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <button onClick={() => fileInputRef.current?.click()} style={{ width: 38, height: 38, background: "var(--dark2)", border: "1px solid #2a2a2a", borderRadius: "var(--radius)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }}>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--gray)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/>
           </svg>
         </button>
@@ -1020,7 +1020,7 @@ export default function ChatPage() {
         {/* Mic btn */}
         <button
           onClick={recording ? stopRecording : startRecording}
-          style={{ width: 44, height: 44, background: recording ? "#ef4444" : "var(--yellow)", borderRadius: "var(--radius)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0, boxShadow: recording ? "0 0 16px rgba(239,68,68,0.5)" : "none" }}
+          style={{ width: 40, height: 40, background: recording ? "#ef4444" : "var(--yellow)", borderRadius: "var(--radius)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0, boxShadow: recording ? "0 0 16px rgba(239,68,68,0.5)" : "none" }}
         >
           {recording ? (
             <svg width="16" height="16" viewBox="0 0 24 24" fill="white"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>
@@ -1031,8 +1031,7 @@ export default function ChatPage() {
 
         {/* Send btn */}
         <button onClick={() => send(input)} disabled={!input.trim() || sending}
-          className="w-12 h-12 flex items-center justify-center shrink-0 disabled:opacity-40"
-          style={{ background: "var(--dark2)", border: "1px solid #2a2a2a", borderRadius: "var(--radius)", cursor: input.trim() ? "pointer" : "default" }}
+          style={{ width: 40, height: 40, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, opacity: (!input.trim() || sending) ? 0.4 : 1, background: "var(--dark2)", border: "1px solid #2a2a2a", borderRadius: "var(--radius)", cursor: input.trim() ? "pointer" : "default" }}
         >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" style={{ color: "var(--yellow)" }}>
             <path d="M12 19V5M5 12l7-7 7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>

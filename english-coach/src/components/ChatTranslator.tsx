@@ -177,8 +177,8 @@ export default function ChatTranslator({ onUse }: Props) {
         onClick={toggle}
         title="Tradutor rápido"
         style={{
-          width: 44,
-          height: 44,
+          width: 38,
+          height: 38,
           background: open ? "rgba(245,200,0,.15)" : "var(--dark2)",
           border: open ? "1px solid rgba(245,200,0,.4)" : "1px solid #2a2a2a",
           borderRadius: "var(--radius)",
@@ -193,9 +193,9 @@ export default function ChatTranslator({ onUse }: Props) {
         onMouseLeave={e => { if (!open) { e.currentTarget.style.borderColor = "#2a2a2a"; e.currentTarget.style.background = "var(--dark2)"; } }}
       >
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--yellow)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M5 8l6 6"/>
-          <path d="M4 6h7M7 4v2"/>
-          <path d="M2 16h7m4 0 1-2m3 4-1-2m-2-4-2 6"/>
+          <circle cx="12" cy="12" r="10"/>
+          <path d="M2 12h20"/>
+          <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
         </svg>
       </button>
     </div>
