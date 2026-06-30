@@ -1,24 +1,38 @@
 "use client";
 
-import { useState, useEffect, use } from "react";
+import { useState, useEffect, use, useRef } from "react";
 import { useUser } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import { getTier } from "@/lib/tiers";
 import { PostCard, type Post } from "@/components/PostCard";
+
+type Profile = {
+  display_name: string;
+  avatar_url: string | null;
+  total_xp: number;
+  level: string | null;
+  level_label: string | null;
+  handle: string | null;
+  follower_count: number;
+  following_count: number;
+  is_following: boolean;
+};
 
 export default function UserProfilePage({ params }: { params: Promise<{ userId: string }> }) {
   const { userId } = use(params);
   const { user: me } = useUser();
   const router = useRouter();
   const [posts, setPosts] = useState<Post[]>([]);
-  const [profile, setProfile] = useState<{ display_name: string; avatar_url: string | null; total_xp: number; level: string | null; level_label: string | null } | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
   const [totalPosts, setTotalPosts] = useState(0);
   const [loading, setLoading] = useState(true);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [imageZoom, setImageZoom] = useState(1);
+  const [followLoading, setFollowLoading] = useState(false);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  useEffect(() => {
-    fetch(`/api/community/user/${userId}`)
+  function loadProfile() {
+    return fetch(`/api/community/user/${userId}`)
       .then(r => r.json())
       .then(d => {
         setPosts(d.posts ?? []);
@@ -26,7 +40,51 @@ export default function UserProfilePage({ params }: { params: Promise<{ userId: 
         setTotalPosts(d.totalPosts ?? 0);
         setLoading(false);
       });
+  }
+
+  useEffect(() => {
+    loadProfile();
+    // Poll follower count every 20s for real-time updates from other users
+    pollRef.current = setInterval(() => {
+      fetch(`/api/community/follow?userId=${userId}`)
+        .then(r => r.json())
+        .then(d => {
+          setProfile(prev => prev ? { ...prev, follower_count: d.followerCount, is_following: d.isFollowing } : prev);
+        })
+        .catch(() => {});
+    }, 20000);
+    return () => { if (pollRef.current) clearInterval(pollRef.current); };
   }, [userId]);
+
+  async function toggleFollow() {
+    if (!profile || followLoading) return;
+    setFollowLoading(true);
+    // Optimistic update
+    const wasFollowing = profile.is_following;
+    setProfile(prev => prev ? {
+      ...prev,
+      is_following: !wasFollowing,
+      follower_count: wasFollowing ? prev.follower_count - 1 : prev.follower_count + 1,
+    } : prev);
+    try {
+      const res = await fetch("/api/community/follow", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId }),
+      });
+      const data = await res.json();
+      setProfile(prev => prev ? { ...prev, is_following: data.isFollowing, follower_count: data.followerCount } : prev);
+    } catch {
+      // Revert on error
+      setProfile(prev => prev ? {
+        ...prev,
+        is_following: wasFollowing,
+        follower_count: wasFollowing ? prev.follower_count + 1 : prev.follower_count - 1,
+      } : prev);
+    } finally {
+      setFollowLoading(false);
+    }
+  }
 
   async function toggleReaction(postId: string, emoji: string) {
     await fetch("/api/community/react", {
@@ -45,6 +103,8 @@ export default function UserProfilePage({ params }: { params: Promise<{ userId: 
     }));
   }
 
+  const isMe = me?.id === userId;
+
   return (
     <div style={{ background: "var(--black)", minHeight: "100dvh", fontFamily: "'Inter', sans-serif", paddingTop: "calc(65px + env(safe-area-inset-top))", paddingBottom: 80, overflowX: "hidden" }}>
       <div style={{ position: "fixed", top: 0, left: 0, right: 0, paddingTop: "calc(10px + env(safe-area-inset-top))", paddingBottom: 10, paddingLeft: 16, paddingRight: 16, borderBottom: "1px solid #1e1e1e", display: "flex", alignItems: "center", gap: 10, background: "var(--black)", zIndex: 1000 }}>
@@ -56,58 +116,96 @@ export default function UserProfilePage({ params }: { params: Promise<{ userId: 
 
       <div style={{ maxWidth: 600, margin: "0 auto", padding: "0 16px" }}>
         {/* Profile header */}
-        <div style={{ padding: "24px 0 16px", borderBottom: "1px solid #1e1e1e", marginBottom: 16 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-            <div style={{ width: 60, height: 60, borderRadius: "50%", overflow: "hidden", background: "#1e1e1e", flexShrink: 0 }}>
+        <div style={{ padding: "24px 0 20px", borderBottom: "1px solid #1e1e1e", marginBottom: 16 }}>
+          <div style={{ display: "flex", alignItems: "flex-start", gap: 16 }}>
+            <div style={{ width: 64, height: 64, borderRadius: "50%", overflow: "hidden", background: "#1e1e1e", flexShrink: 0 }}>
               {profile?.avatar_url
                 ? <img src={profile.avatar_url} alt={profile.display_name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                 : <span style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", fontSize: "1.6rem" }}>👤</span>}
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                  <span style={{ fontWeight: 800, fontSize: "1.1rem", color: "#fff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{profile?.display_name ?? "Student"}</span>
-                  {userId === "user_3EzV0DXiskFt0wNSwNSXVHapiBC" && (
-                    <span
-                      title="Criador do app"
-                      style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 22, height: 22, borderRadius: "50%", background: "linear-gradient(135deg, #f5c800 0%, #ff9500 100%)", boxShadow: "0 1px 8px rgba(245,180,0,0.6)", flexShrink: 0 }}
-                    >
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="#000"><path d="M2 19h20v2H2zM2 6l5 7 5-7 5 7 5-7v11H2z"/></svg>
-                    </span>
-                  )}
+              {/* Name row */}
+              <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                <span style={{ fontWeight: 800, fontSize: "1.1rem", color: "#fff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {profile?.display_name ?? "Student"}
                 </span>
-                {me && me.id !== userId && (
+                {userId === "user_3EzV0DXiskFt0wNSwNSXVHapiBC" && (
+                  <span title="Criador do app" style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 22, height: 22, borderRadius: "50%", background: "linear-gradient(135deg, #f5c800 0%, #ff9500 100%)", boxShadow: "0 1px 8px rgba(245,180,0,0.6)", flexShrink: 0 }}>
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="#000"><path d="M2 19h20v2H2zM2 6l5 7 5-7 5 7 5-7v11H2z"/></svg>
+                  </span>
+                )}
+              </div>
+
+              {/* Handle */}
+              {profile?.handle && (
+                <p style={{ fontSize: "0.78rem", color: "var(--yellow)", fontWeight: 600, margin: "2px 0 0", opacity: 0.85 }}>
+                  @{profile.handle}
+                </p>
+              )}
+
+              {/* Stats row */}
+              <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 8, flexWrap: "wrap" }}>
+                <span style={{ fontSize: "0.72rem", color: "var(--gray)" }}>
+                  <strong style={{ color: "#fff" }}>{totalPosts}</strong> post{totalPosts !== 1 ? "s" : ""}
+                </span>
+                <span style={{ fontSize: "0.72rem", color: "var(--gray)" }}>
+                  <strong style={{ color: "#fff" }}>{profile?.follower_count ?? 0}</strong> seguidor{(profile?.follower_count ?? 0) !== 1 ? "es" : ""}
+                </span>
+                <span style={{ fontSize: "0.72rem", color: "var(--gray)" }}>
+                  <strong style={{ color: "#fff" }}>{profile?.following_count ?? 0}</strong> seguindo
+                </span>
+              </div>
+
+              {/* Tier + XP */}
+              {profile && (() => {
+                const tier = getTier(profile.total_xp);
+                return (
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 6, flexWrap: "wrap" }}>
+                    <span style={{ fontSize: "0.7rem", fontWeight: 700, color: tier.color }}>{tier.emoji} {tier.label}</span>
+                    <span style={{ fontSize: "0.65rem", color: "#333" }}>·</span>
+                    <span style={{ fontSize: "0.7rem", color: "var(--gray)" }}>{profile.total_xp.toLocaleString("pt-BR")} XP</span>
+                    {profile.level_label && (
+                      <>
+                        <span style={{ fontSize: "0.65rem", color: "#333" }}>·</span>
+                        <span style={{ fontSize: "0.68rem", background: "rgba(245,200,0,.1)", color: "var(--yellow)", padding: "1px 7px", borderRadius: 50, fontWeight: 600 }}>{profile.level_label}</span>
+                      </>
+                    )}
+                  </div>
+                );
+              })()}
+
+              {/* Action buttons */}
+              {!isMe && me && (
+                <div style={{ display: "flex", gap: 8, marginTop: 14 }}>
+                  <button
+                    onClick={toggleFollow}
+                    disabled={followLoading}
+                    style={{
+                      padding: "8px 20px",
+                      borderRadius: 50,
+                      border: profile?.is_following ? "1px solid #3a3a3a" : "none",
+                      background: profile?.is_following ? "transparent" : "var(--yellow)",
+                      color: profile?.is_following ? "var(--gray)" : "#000",
+                      fontWeight: 800,
+                      fontSize: "0.82rem",
+                      cursor: followLoading ? "default" : "pointer",
+                      opacity: followLoading ? 0.7 : 1,
+                      transition: "all 0.15s",
+                    }}
+                  >
+                    {followLoading ? "…" : profile?.is_following ? "Seguindo" : "Seguir"}
+                  </button>
                   <a
                     href={`/app/mensagens/${userId}`}
-                    title="Enviar mensagem direta"
-                    style={{ flexShrink: 0, width: 32, height: 32, borderRadius: "50%", background: "rgba(245,200,0,.12)", border: "1px solid rgba(245,200,0,.3)", display: "flex", alignItems: "center", justifyContent: "center", textDecoration: "none" }}
+                    style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 38, height: 38, borderRadius: "50%", background: "rgba(245,200,0,.1)", border: "1px solid rgba(245,200,0,.25)", textDecoration: "none", flexShrink: 0 }}
+                    title="Enviar mensagem"
                   >
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
                       <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" stroke="var(--yellow)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                     </svg>
                   </a>
-                )}
-              </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 5, flexWrap: "wrap" }}>
-                <span style={{ fontSize: "0.72rem", color: "var(--gray)" }}>{totalPosts} post{totalPosts !== 1 ? "s" : ""}</span>
-                {profile && (() => {
-                  const tier = getTier(profile.total_xp);
-                  return (
-                    <>
-                      <span style={{ fontSize: "0.65rem", color: "#333" }}>·</span>
-                      <span style={{ fontSize: "0.7rem", fontWeight: 700, color: tier.color }}>{tier.emoji} {tier.label}</span>
-                      <span style={{ fontSize: "0.65rem", color: "#333" }}>·</span>
-                      <span style={{ fontSize: "0.7rem", color: "var(--gray)" }}>{profile.total_xp.toLocaleString("pt-BR")} XP</span>
-                      {profile.level_label && (
-                        <>
-                          <span style={{ fontSize: "0.65rem", color: "#333" }}>·</span>
-                          <span style={{ fontSize: "0.68rem", background: "rgba(245,200,0,.1)", color: "var(--yellow)", padding: "1px 7px", borderRadius: 50, fontWeight: 600 }}>{profile.level_label}</span>
-                        </>
-                      )}
-                    </>
-                  );
-                })()}
-              </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -123,7 +221,7 @@ export default function UserProfilePage({ params }: { params: Promise<{ userId: 
 
         {!loading && posts.length === 0 && (
           <div style={{ textAlign: "center", paddingTop: 60 }}>
-            <p style={{ fontSize: "0.9rem", color: "var(--gray)" }}>No posts yet.</p>
+            <p style={{ fontSize: "0.9rem", color: "var(--gray)" }}>Nenhum post ainda.</p>
           </div>
         )}
 

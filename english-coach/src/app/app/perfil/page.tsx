@@ -31,6 +31,16 @@ export default function PerfilPage() {
   const [handleInput, setHandleInput] = useState("");
   const [handleError, setHandleError] = useState("");
   const [savingHandle, setSavingHandle] = useState(false);
+  const [followerCount, setFollowerCount] = useState<number | null>(null);
+  const [followingCount, setFollowingCount] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    fetch(`/api/community/follow?userId=${user.id}`)
+      .then(r => r.json())
+      .then(d => { setFollowerCount(d.followerCount ?? 0); setFollowingCount(d.followingCount ?? 0); })
+      .catch(() => {});
+  }, [user?.id]);
 
   useEffect(() => {
     Promise.all([
@@ -107,9 +117,26 @@ export default function PerfilPage() {
             <p style={{ fontSize: "1rem", fontWeight: 800, color: "var(--white)", margin: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
               {user?.firstName ?? user?.fullName ?? "Aluno"}
             </p>
+            {handle && (
+              <p style={{ fontSize: "0.78rem", color: "var(--yellow)", fontWeight: 600, margin: "2px 0 0", opacity: 0.85 }}>@{handle}</p>
+            )}
             <p style={{ fontSize: "0.72rem", color: "var(--gray2)", margin: "2px 0 0" }}>
               {user?.primaryEmailAddress?.emailAddress ?? ""}
             </p>
+            {(followerCount !== null || followingCount !== null) && (
+              <div style={{ display: "flex", gap: 12, marginTop: 6 }}>
+                {followerCount !== null && (
+                  <span style={{ fontSize: "0.7rem", color: "var(--gray2)" }}>
+                    <strong style={{ color: "var(--white)" }}>{followerCount}</strong> seguidor{followerCount !== 1 ? "es" : ""}
+                  </span>
+                )}
+                {followingCount !== null && (
+                  <span style={{ fontSize: "0.7rem", color: "var(--gray2)" }}>
+                    <strong style={{ color: "var(--white)" }}>{followingCount}</strong> seguindo
+                  </span>
+                )}
+              </div>
+            )}
           </div>
           <span style={{ fontSize: "0.65rem", fontWeight: 800, padding: "3px 10px", borderRadius: 50, background: plan === "pro" ? "var(--yellow)" : "#1e1e1e", color: plan === "pro" ? "#000" : "var(--gray2)", border: plan === "pro" ? "none" : "1px solid #333", flexShrink: 0 }}>
             {plan === "pro" ? "PRO" : "FREE"}
