@@ -232,24 +232,6 @@ export default function AppHome() {
                 iconColor: "#a78bfa",
                 badge: isPro === false ? { label: "🔒 Pro", color: "var(--yellow)", bg: "rgba(245,200,0,.1)" } : null,
               },
-              {
-                href: isPro === true ? "/app/flashcards" : "/planos",
-                emoji: "🃏",
-                title: "Flashcards",
-                desc: isPro === true ? (flashcardPending > 0 ? `${flashcardPending} para revisar` : "Revisar vocabulário") : "Exclusivo Pro",
-                iconBg: "rgba(74,222,128,.12)",
-                iconColor: "#4ade80",
-                badge: isPro === false ? { label: "🔒 Pro", color: "var(--yellow)", bg: "rgba(245,200,0,.1)" } : (flashcardPending > 0 ? { label: `${flashcardPending} pendentes`, color: "#4ade80", bg: "rgba(74,222,128,.12)" } : null),
-              },
-              {
-                href: "/app/progresso",
-                emoji: "📊",
-                title: "Progresso",
-                desc: "Relatório semanal",
-                iconBg: "rgba(251,191,36,.12)",
-                iconColor: "#fbbf24",
-                badge: null,
-              },
             ].map((card) => (
               <a key={card.title} href={card.href} style={{ background: "var(--dark1)", border: "1px solid #1e1e1e", borderRadius: 16, padding: "14px 14px 12px", textDecoration: "none", display: "flex", flexDirection: "column", gap: 8, transition: "border-color .2s" }}
                 onMouseEnter={(e) => (e.currentTarget.style.borderColor = "rgba(245,200,0,.2)")}
