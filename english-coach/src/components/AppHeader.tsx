@@ -41,8 +41,6 @@ export function AppHeader() {
     if (typeof window === "undefined") return false;
     return localStorage.getItem("isPro") === "true";
   });
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [portalLoading, setPortalLoading] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
   const [notifs, setNotifs] = useState<Notif[]>([]);
   const [unread, setUnread] = useState(0);
@@ -98,7 +96,6 @@ export function AppHeader() {
 
   async function openNotifs() {
     setNotifOpen((v) => !v);
-    setMenuOpen(false);
     if (!notifOpen && unread > 0) {
       setUnread(0);
       setNotifs((prev) => prev.map((n) => ({ ...n, read: true })));
@@ -126,26 +123,8 @@ export function AppHeader() {
     }
   }
 
-  async function openPortal() {
-    setPortalLoading(true);
-    try {
-      const res = await fetch("/api/portal", { method: "POST" });
-      if (!res.ok) {
-        const d = await res.json();
-        alert(d.error ?? `Erro ${res.status}`);
-        return;
-      }
-      const data = await res.json();
-      if (data.url) window.location.href = data.url;
-      else alert(data.error ?? "Sem URL retornada");
-    } catch (e) {
-      alert("Erro ao abrir portal: " + String(e));
-    } finally {
-      setPortalLoading(false);
-    }
-  }
 
-  const isHome = pathname === "/app";
+const isHome = pathname === "/app";
   const hideHeader = /^\/app\/comunidade\/u\//.test(pathname) || /^\/app\/mensagens\/[^/]+/.test(pathname);
 
   if (hideHeader) return null;
@@ -294,24 +273,7 @@ export function AppHeader() {
             )}
           </div>
 
-          <button
-            onClick={() => setMenuOpen((v) => !v)}
-            style={{ background: "var(--dark2)", border: "1px solid #2a2a2a", borderRadius: 8, width: 32, height: 32, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4, cursor: "pointer", flexShrink: 0 }}
-          >
-            {menuOpen ? (
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                <path d="M2 2L12 12M12 2L2 12" stroke="var(--gray)" strokeWidth="2" strokeLinecap="round" />
-              </svg>
-            ) : (
-              <>
-                <span style={{ width: 14, height: 2, background: "var(--gray)", borderRadius: 2 }} />
-                <span style={{ width: 14, height: 2, background: "var(--gray)", borderRadius: 2 }} />
-                <span style={{ width: 14, height: 2, background: "var(--gray)", borderRadius: 2 }} />
-              </>
-            )}
-          </button>
-
-          <div style={{ position: "relative", display: "inline-flex", flexShrink: 0 }}>
+<div style={{ position: "relative", display: "inline-flex", flexShrink: 0 }}>
             <UserButton appearance={{ elements: { avatarBox: { width: 38, height: 38 } } }} />
             {isPro && (
               <span style={{ position: "absolute", bottom: -4, left: "50%", transform: "translateX(-50%)", fontSize: "0.52rem", fontWeight: 800, letterSpacing: "0.4px", background: "linear-gradient(135deg, #f5c800, #e0a800)", color: "#000", padding: "1px 5px", borderRadius: "50px", whiteSpace: "nowrap", lineHeight: 1.4, pointerEvents: "none" }}>
@@ -322,50 +284,6 @@ export function AppHeader() {
         </div>
       </header>
 
-      {menuOpen && (
-        <>
-          <div onClick={() => setMenuOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 90 }} />
-          <div style={{ position: "fixed", top: "calc(62px + env(safe-area-inset-top))", right: 16, background: "#1a1a1a", border: "1px solid #2a2a2a", borderRadius: 14, padding: "6px 0", zIndex: 95, minWidth: 200, boxShadow: "0 8px 32px rgba(0,0,0,.6)" }}>
-            {/* Close button */}
-            <div style={{ display: "flex", justifyContent: "flex-end", padding: "2px 8px 0" }}>
-              <button onClick={() => setMenuOpen(false)} style={{ background: "none", border: "none", color: "#555", cursor: "pointer", fontSize: "1rem", lineHeight: 1, padding: "4px 6px", borderRadius: 6 }}
-                onMouseEnter={e => (e.currentTarget.style.color = "#aaa")}
-                onMouseLeave={e => (e.currentTarget.style.color = "#555")}
-              >✕</button>
-            </div>
-            {isPro && (
-              <button
-                onClick={() => { setMenuOpen(false); openPortal(); }}
-                disabled={portalLoading}
-                style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", color: "#fff", fontSize: "0.9rem", fontWeight: 600, background: "transparent", border: "none", cursor: "pointer", width: "100%" }}
-                onMouseEnter={(e) => (e.currentTarget.style.background = "#2a2a2a")}
-                onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
-              >
-                <span style={{ fontSize: "1.1rem" }}>👤</span>
-                {portalLoading ? "Abrindo..." : "Portal do Aluno"}
-              </button>
-            )}
-            {[
-              { href: "/planos", icon: "⭐", label: "Planos", mobileOnly: true },
-              { href: "/app/progresso", icon: "🏆", label: "Progresso" },
-              { href: "/app/resumo", icon: "📄", label: "Revisão de Aula" },
-            ].map((item) => (
-              <a
-                key={item.href}
-                href={item.href}
-                onClick={() => setMenuOpen(false)}
-                className={item.mobileOnly ? "menu-mobile-only" : undefined}
-                style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", textDecoration: "none", color: "#fff", fontSize: "0.9rem", fontWeight: 600 }}
-                onMouseEnter={(e) => (e.currentTarget.style.background = "#2a2a2a")}
-                onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
-              >
-                <span style={{ fontSize: "1.1rem" }}>{item.icon}</span>
-                {item.label}
-              </a>
-            ))}
-          </div>
-        </>
-      )}
     </>
   );
 }
