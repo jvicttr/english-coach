@@ -2067,127 +2067,66 @@ export default function Home() {
         </div>
       )}
 
-      {/* ── Áudio bloqueado ────────────────────────────────── */}
-      {pendingSpeak && !isSpeaking && (
-        <div className="w-full max-w-2xl mb-2">
-          <button
-            onClick={() => { const t = pendingSpeak; setPendingSpeak(null); speak(t); }}
-            className="w-full py-2.5 rounded-xl text-sm font-bold"
-            style={{ background: "rgba(245,200,0,0.1)", border: "1px solid rgba(245,200,0,0.35)", color: "var(--yellow)" }}
-          >
-            🔊 Toque para ouvir a resposta
-          </button>
-        </div>
-      )}
-
-      {/* ── Botões de ação ─────────────────────────────────── */}
-      {trilhaPhase === "chat1" && !limitReached && (
-        <div className="w-full max-w-2xl mb-2 flex flex-col gap-2">
-          <p className="text-center text-xs font-semibold" style={{ color: "var(--gray)" }}>
-            {trilhaMsgCount}/8 mensagens enviadas
-            {trilhaMsgCount < 8 ? " — continue conversando!" : " — pronto para avançar!"}
-          </p>
-          <button
-            onClick={proceedToFlashcards}
-            disabled={isLoading || trilhaMsgCount < 8}
-            className="w-full py-2.5 rounded-xl text-sm font-bold transition-all disabled:opacity-40"
-            style={{ background: trilhaMsgCount >= 8 ? "var(--yellow)" : "rgba(245,200,0,0.08)", border: "1px solid rgba(245,200,0,0.35)", color: trilhaMsgCount >= 8 ? "var(--black)" : "var(--yellow)" }}
-          >
-            {trilhaMsgCount >= 8 ? "🃏 Ir para vocabulário →" : "🔒 Ir para vocabulário (faltam " + (8 - trilhaMsgCount) + ")"}
-          </button>
-        </div>
-      )}
-      {trilhaPhase === "chat2" && !limitReached && (
-        <div className="w-full max-w-2xl mb-2 flex flex-col gap-2">
-          <p className="text-center text-xs font-semibold" style={{ color: "var(--gray)" }}>
-            {trilhaMsgCount}/4 mensagens enviadas
-            {trilhaMsgCount < 4 ? " — pratique mais um pouco!" : " — pronto para concluir!"}
-          </p>
-          <button
-            onClick={finalizePractice}
-            disabled={isLoading || trilhaMsgCount < 4}
-            className="w-full py-2.5 rounded-xl text-sm font-bold transition-all disabled:opacity-40"
-            style={{ background: trilhaMsgCount >= 4 ? "rgba(74,222,128,0.15)" : "rgba(74,222,128,0.06)", border: "1px solid rgba(74,222,128,0.4)", color: "#4ade80" }}
-          >
-            {trilhaMsgCount >= 4 ? "✅ Finalizar prática e concluir etapa" : "🔒 Finalizar prática (faltam " + (4 - trilhaMsgCount) + ")"}
-          </button>
-        </div>
-      )}
-      {/* ── Encerrar conversa (modo livre/temático) ────────── */}
-      {!trilhaStep && messages.length >= 2 && !limitReached && (
-        <div className="w-full max-w-2xl mb-2 flex gap-2">
-          <button
-            onClick={() => endConversation("quiz")}
-            disabled={isLoading}
-            className="flex-1 py-2.5 rounded-xl text-sm font-bold transition-all disabled:opacity-40"
-            style={{ background: "transparent", border: "1px solid rgba(245,200,0,0.3)", color: "var(--yellow)" }}
-          >
-            🎯 Fazer quiz
-          </button>
-          <button
-            onClick={() => isPro ? endConversation("flashcards") : router.push("/planos")}
-            disabled={isLoading}
-            className="flex-1 py-2.5 rounded-xl text-sm font-bold transition-all disabled:opacity-40"
-            style={{ background: "transparent", border: `1px solid ${isPro ? "rgba(255,255,255,0.15)" : "rgba(245,200,0,0.2)"}`, color: isPro ? "var(--white)" : "var(--yellow)" }}
-          >
-            {isPro ? "🃏 Criar flashcards" : "🔒 Criar flashcards"}
-          </button>
-        </div>
-      )}
-
-      {/* ── Contador free tier ────────────────────────────── */}
-      {!isPro && !limitReached && messagesUsed > 0 && (
-        <div style={{ width: "100%", maxWidth: 672, display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 6, marginBottom: 4, paddingRight: 2 }}>
-          {[1,2,3,4,5].map((i) => (
-            <div key={i} style={{ width: 28, height: 5, borderRadius: 3, background: i <= messagesUsed ? (messagesUsed >= 4 ? "#f87171" : messagesUsed >= 3 ? "var(--yellow)" : "#4ade80") : "rgba(255,255,255,0.1)", transition: "background 0.3s" }} />
-          ))}
-          <span style={{ fontSize: "0.68rem", fontWeight: 700, color: messagesUsed >= 4 ? "#f87171" : "var(--gray2)", marginLeft: 4 }}>
-            {5 - messagesUsed} msg{5 - messagesUsed !== 1 ? "s" : ""} restante{5 - messagesUsed !== 1 ? "s" : ""}
-          </span>
-        </div>
-      )}
-
-      {/* ── Limite diário ─────────────────────────────────── */}
-      {limitReached && (
-        <div className="w-full max-w-2xl mb-3 px-4 py-5 flex flex-col items-center gap-3 text-center" style={{ background: "var(--dark2)", border: "1px solid rgba(245,200,0,.3)", borderRadius: "var(--radius)" }}>
-          <div className="text-2xl">🎯</div>
-          <div>
-            <p className="font-bold text-white text-sm">Você usou suas 5 mensagens de hoje</p>
-            <p className="text-xs mt-1" style={{ color: "var(--gray)" }}>Assine o JV IA por R$ 47/mês e pratique sem limites todos os dias.</p>
-          </div>
-          <a href="/planos" className="px-5 py-2 rounded-full text-sm font-bold transition-all" style={{ background: "var(--yellow)", color: "var(--black)" }}>
-            Assinar JV IA — R$ 47/mês
-          </a>
-        </div>
-      )}
-
-      {/* ── Mic error ──────────────────────────────────────── */}
-      {micError && (
-        <div className="w-full max-w-2xl mb-3 px-3 sm:px-4 py-2.5 flex gap-2 items-start text-sm" style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)", borderRadius: "var(--radius)" }}>
-          <span>🎙️</span>
-          <span style={{ color: "#fca5a5" }}>{micError}</span>
-          <button onClick={() => setMicError("")} className="ml-auto text-xs shrink-0" style={{ color: "var(--gray2)" }}>✕</button>
-        </div>
-      )}
-
-      {/* ── Review mode banner ─────────────────────────────── */}
-      {trilhaPhase === "review" && (
-        <div className="w-full max-w-2xl mb-2 flex flex-col gap-2">
-          <div style={{ padding: "10px 14px", background: "rgba(74,222,128,0.08)", border: "1px solid rgba(74,222,128,0.25)", borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
-            <span style={{ fontSize: "0.8rem", color: "#4ade80", fontWeight: 600 }}>👁 Modo revisão — conversa salva</span>
-            <button
-              onClick={() => router.push("/app/trilha")}
-              style={{ fontSize: "0.75rem", fontWeight: 700, color: "var(--gray)", background: "var(--dark2)", border: "none", borderRadius: 8, padding: "6px 12px", cursor: "pointer" }}
-            >
-              ← Voltar à trilha
-            </button>
-          </div>
-        </div>
-      )}
-
       {/* ── Input bar fixo — estilo WhatsApp ───────────────── */}
       {trilhaPhase !== "review" && (
         <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, background: "#111", borderTop: "1px solid #1e1e1e", padding: "8px 12px", paddingBottom: "calc(8px + env(safe-area-inset-bottom, 0px))", zIndex: 100 }}>
+
+          {/* Áudio bloqueado */}
+          {pendingSpeak && !isSpeaking && (
+            <button onClick={() => { const t = pendingSpeak; setPendingSpeak(null); speak(t); }} style={{ width: "100%", marginBottom: 8, padding: "8px 0", borderRadius: 12, background: "rgba(245,200,0,0.1)", border: "1px solid rgba(245,200,0,0.35)", color: "var(--yellow)", fontSize: "0.82rem", fontWeight: 700, cursor: "pointer" }}>
+              🔊 Toque para ouvir a resposta
+            </button>
+          )}
+
+          {/* Botões de ação da trilha */}
+          {trilhaPhase === "chat1" && !limitReached && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 8 }}>
+              <p style={{ textAlign: "center", fontSize: "0.72rem", fontWeight: 600, color: "var(--gray)", margin: 0 }}>
+                {trilhaMsgCount}/8 mensagens enviadas{trilhaMsgCount < 8 ? " — continue conversando!" : " — pronto para avançar!"}
+              </p>
+              <button onClick={proceedToFlashcards} disabled={isLoading || trilhaMsgCount < 8} style={{ width: "100%", padding: "8px 0", borderRadius: 12, background: trilhaMsgCount >= 8 ? "var(--yellow)" : "rgba(245,200,0,0.08)", border: "1px solid rgba(245,200,0,0.35)", color: trilhaMsgCount >= 8 ? "var(--black)" : "var(--yellow)", fontSize: "0.82rem", fontWeight: 700, cursor: trilhaMsgCount >= 8 ? "pointer" : "default", opacity: (isLoading || trilhaMsgCount < 8) ? 0.5 : 1 }}>
+                {trilhaMsgCount >= 8 ? "🃏 Ir para vocabulário →" : "🔒 Ir para vocabulário (faltam " + (8 - trilhaMsgCount) + ")"}
+              </button>
+            </div>
+          )}
+          {trilhaPhase === "chat2" && !limitReached && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 8 }}>
+              <p style={{ textAlign: "center", fontSize: "0.72rem", fontWeight: 600, color: "var(--gray)", margin: 0 }}>
+                {trilhaMsgCount}/4 mensagens enviadas{trilhaMsgCount < 4 ? " — pratique mais um pouco!" : " — pronto para concluir!"}
+              </p>
+              <button onClick={finalizePractice} disabled={isLoading || trilhaMsgCount < 4} style={{ width: "100%", padding: "8px 0", borderRadius: 12, background: trilhaMsgCount >= 4 ? "rgba(74,222,128,0.15)" : "rgba(74,222,128,0.06)", border: "1px solid rgba(74,222,128,0.4)", color: "#4ade80", fontSize: "0.82rem", fontWeight: 700, cursor: trilhaMsgCount >= 4 ? "pointer" : "default", opacity: (isLoading || trilhaMsgCount < 4) ? 0.5 : 1 }}>
+                {trilhaMsgCount >= 4 ? "✅ Finalizar prática e concluir etapa" : "🔒 Finalizar prática (faltam " + (4 - trilhaMsgCount) + ")"}
+              </button>
+            </div>
+          )}
+
+          {/* Encerrar conversa livre */}
+          {!trilhaStep && messages.length >= 2 && !limitReached && (
+            <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
+              <button onClick={() => endConversation("quiz")} disabled={isLoading} style={{ flex: 1, padding: "8px 0", borderRadius: 12, background: "transparent", border: "1px solid rgba(245,200,0,0.3)", color: "var(--yellow)", fontSize: "0.82rem", fontWeight: 700, cursor: "pointer", opacity: isLoading ? 0.4 : 1 }}>🎯 Fazer quiz</button>
+              <button onClick={() => isPro ? endConversation("flashcards") : router.push("/planos")} disabled={isLoading} style={{ flex: 1, padding: "8px 0", borderRadius: 12, background: "transparent", border: `1px solid ${isPro ? "rgba(255,255,255,0.15)" : "rgba(245,200,0,0.2)"}`, color: isPro ? "var(--white)" : "var(--yellow)", fontSize: "0.82rem", fontWeight: 700, cursor: "pointer", opacity: isLoading ? 0.4 : 1 }}>
+                {isPro ? "🃏 Criar flashcards" : "🔒 Criar flashcards"}
+              </button>
+            </div>
+          )}
+
+          {/* Contador free tier */}
+          {!isPro && !limitReached && messagesUsed > 0 && (
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 6, marginBottom: 6 }}>
+              {[1,2,3,4,5].map((i) => (<div key={i} style={{ width: 28, height: 5, borderRadius: 3, background: i <= messagesUsed ? (messagesUsed >= 4 ? "#f87171" : messagesUsed >= 3 ? "var(--yellow)" : "#4ade80") : "rgba(255,255,255,0.1)", transition: "background 0.3s" }} />))}
+              <span style={{ fontSize: "0.68rem", fontWeight: 700, color: messagesUsed >= 4 ? "#f87171" : "var(--gray2)", marginLeft: 4 }}>{5 - messagesUsed} msg{5 - messagesUsed !== 1 ? "s" : ""} restante{5 - messagesUsed !== 1 ? "s" : ""}</span>
+            </div>
+          )}
+
+          {/* Mic error */}
+          {micError && (
+            <div style={{ display: "flex", gap: 8, alignItems: "center", background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)", borderRadius: 10, padding: "7px 10px", marginBottom: 8, fontSize: "0.82rem" }}>
+              <span>🎙️</span><span style={{ color: "#fca5a5", flex: 1 }}>{micError}</span>
+              <button onClick={() => setMicError("")} style={{ background: "none", border: "none", color: "var(--gray2)", cursor: "pointer", fontSize: "0.85rem" }}>✕</button>
+            </div>
+          )}
+
+          {/* Status de voz */}
           {(isListening || isTranscribing || isSpeaking) && (
             <div style={{ textAlign: "center", fontSize: "11px", marginBottom: 6 }}>
               {isListening ? <span style={{ color: "#ef4444" }}>● Gravando — toque em ⏹ para enviar</span>
@@ -2195,6 +2134,7 @@ export default function Home() {
                 : <span style={{ color: "var(--yellow)" }}>● Coach falando...</span>}
             </div>
           )}
+
           <div style={{ display: "flex", gap: 8, alignItems: "flex-end" }}>
             <div style={{ display: "flex", alignItems: "center", paddingBottom: 6, flexShrink: 0 }}>
               <ChatTranslator onUse={(text) => { setInput(prev => prev ? prev + " " + text : text); }} />
