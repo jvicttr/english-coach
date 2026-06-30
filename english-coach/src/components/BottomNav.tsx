@@ -86,6 +86,8 @@ function NavItems() {
 const NAV_STYLE = { background: "#0d0d0d", borderTop: "1px solid #1e1e1e", paddingBottom: "env(safe-area-inset-bottom, 0px)" } as const;
 
 export function BottomNavFixed() {
+  const pathname = usePathname();
+  if (/^\/app\/mensagens\//.test(pathname) || /^\/app\/conversar\//.test(pathname)) return null;
   return (
     <nav style={{ ...NAV_STYLE, position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 50 }}>
       <NavItems />

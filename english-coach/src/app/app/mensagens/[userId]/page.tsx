@@ -966,85 +966,76 @@ export default function ChatPage() {
         </div>
       )}
 
-      {/* Input */}
-      <div className="-mx-3 sm:mx-auto w-full sm:max-w-2xl flex gap-2 items-center px-3 sm:px-0 pb-1 sm:pb-0 shrink-0" style={{ background: "var(--black)" }}>
-        {/* Emoji btn - apenas desktop */}
-        <button onClick={() => setShowEmoji(s => !s)} className="hidden sm:flex" style={{ width: 44, height: 44, background: showEmoji ? "var(--yellow)" : "var(--dark2)", border: "1px solid #2a2a2a", borderRadius: "var(--radius)", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0, fontSize: "1.2rem" }}>
-          😊
-        </button>
+      {/* Input bar — estilo WhatsApp */}
+      <div className="-mx-3 sm:mx-auto w-full sm:max-w-2xl shrink-0" style={{ background: "#111", borderTop: "1px solid #1e1e1e", padding: "8px 12px", paddingBottom: "calc(8px + env(safe-area-inset-bottom, 0px))" }}>
+        {recording && (
+          <div style={{ textAlign: "center", fontSize: "11px", marginBottom: 6 }}>
+            <span style={{ color: "#ef4444" }}>● Gravando {recSeconds}s — toque em ⏹ para parar</span>
+          </div>
+        )}
+        <div style={{ display: "flex", gap: 8, alignItems: "flex-end" }}>
 
-        {/* Translator btn */}
-        <ChatTranslator onUse={(text) => { setInput(prev => prev ? prev + " " + text : text); setTimeout(() => textareaRef.current?.focus(), 50); }} />
+          {/* Ícones esquerdos: tradutor + foto */}
+          <div style={{ display: "flex", gap: 6, alignItems: "center", paddingBottom: 6, flexShrink: 0 }}>
+            <ChatTranslator onUse={(text) => { setInput(prev => prev ? prev + " " + text : text); setTimeout(() => textareaRef.current?.focus(), 50); }} />
+            <button onClick={() => fileInputRef.current?.click()} style={{ width: 36, height: 36, background: "transparent", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }}>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#666" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/>
+              </svg>
+            </button>
+            <input ref={fileInputRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handleImage} />
+          </div>
 
-        {/* Foto btn */}
-        <button onClick={() => fileInputRef.current?.click()} style={{ width: 38, height: 38, background: "var(--dark2)", border: "1px solid #2a2a2a", borderRadius: "var(--radius)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }}>
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--gray)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/>
-          </svg>
-        </button>
-        <input ref={fileInputRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handleImage} />
+          {/* Pill input */}
+          <div style={{ flex: 1, position: "relative", background: "#1e1e1e", borderRadius: 24, minHeight: 44, display: "flex", alignItems: "flex-end" }}>
+            {mentionOpen && filteredMentions.length > 0 && (
+              <div style={{ position: "absolute", bottom: "calc(100% + 6px)", left: 0, right: 0, background: "#1a1a1a", border: "1px solid #2a2a2a", borderRadius: 12, overflow: "hidden", zIndex: 50, boxShadow: "0 -8px 24px rgba(0,0,0,0.5)" }}>
+                {filteredMentions.map(u => (
+                  <button key={u.id} onMouseDown={e => { e.preventDefault(); insertMention(u); }}
+                    style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", background: "transparent", border: "none", borderBottom: "1px solid #1e1e1e", cursor: "pointer", width: "100%", textAlign: "left" }}
+                    onMouseEnter={e => (e.currentTarget.style.background = "#2a2a2a")}
+                    onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
+                  >
+                    <div style={{ width: 28, height: 28, borderRadius: "50%", overflow: "hidden", background: "#2a2a2a", flexShrink: 0 }}>
+                      {u.image_url ? <img src={u.image_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <span style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", fontSize: "0.8rem" }}>👤</span>}
+                    </div>
+                    <span style={{ fontSize: "0.85rem", color: "var(--yellow)", fontWeight: 700 }}>@{u.name.split(" ")[0]}</span>
+                    <span style={{ fontSize: "0.75rem", color: "var(--gray)" }}>{u.name}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+            <textarea
+              ref={textareaRef}
+              value={input}
+              onChange={handleInputChange}
+              onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(input); } }}
+              placeholder="Digite uma mensagem..."
+              rows={1}
+              className="w-full resize-none outline-none"
+              style={{ background: "transparent", color: "var(--white)", border: "none", borderRadius: 24, padding: "11px 16px", fontFamily: "'Inter', sans-serif", fontSize: "15px", lineHeight: "1.4", maxHeight: 120, overflowY: "auto" }}
+            />
+          </div>
 
-        {/* Textarea */}
-        <div className="flex-1" style={{ position: "relative" }}>
-          {mentionOpen && filteredMentions.length > 0 && (
-            <div style={{ position: "absolute", bottom: "calc(100% + 6px)", left: 0, right: 0, background: "#1a1a1a", border: "1px solid #2a2a2a", borderRadius: 12, overflow: "hidden", zIndex: 50, boxShadow: "0 -8px 24px rgba(0,0,0,0.5)" }}>
-              {filteredMentions.map(u => (
-                <button key={u.id} onMouseDown={e => { e.preventDefault(); insertMention(u); }}
-                  style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", background: "transparent", border: "none", borderBottom: "1px solid #1e1e1e", cursor: "pointer", width: "100%", textAlign: "left" }}
-                  onMouseEnter={e => (e.currentTarget.style.background = "#2a2a2a")}
-                  onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
-                >
-                  <div style={{ width: 28, height: 28, borderRadius: "50%", overflow: "hidden", background: "#2a2a2a", flexShrink: 0 }}>
-                    {u.image_url ? <img src={u.image_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <span style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", fontSize: "0.8rem" }}>👤</span>}
-                  </div>
-                  <span style={{ fontSize: "0.85rem", color: "var(--yellow)", fontWeight: 700 }}>@{u.name.split(" ")[0]}</span>
-                  <span style={{ fontSize: "0.75rem", color: "var(--gray)" }}>{u.name}</span>
-                </button>
-              ))}
-            </div>
-          )}
-          <textarea
-            ref={textareaRef}
-            value={input}
-            onChange={handleInputChange}
-            onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(input); } }}
-            placeholder="Digite aqui..."
-            rows={1}
-            className="w-full resize-none outline-none"
-            style={{ background: "var(--dark1)", color: "var(--white)", border: "1px solid #2a2a2a", borderRadius: "var(--radius)", padding: "12px 16px", fontFamily: "'Inter', sans-serif", fontSize: "16px" }}
-            onFocus={(e) => (e.currentTarget.style.borderColor = "var(--yellow)")}
-            onBlur={(e) => (e.currentTarget.style.borderColor = "#2a2a2a")}
-          />
+          {/* Mic ou Send — círculo amarelo */}
+          <button
+            onClick={input.trim() ? () => send(input) : (recording ? stopRecording : startRecording)}
+            disabled={sending}
+            style={{ width: 44, height: 44, borderRadius: "50%", border: "none", background: recording ? "#ef4444" : "var(--yellow)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0, boxShadow: recording ? "0 0 16px rgba(239,68,68,0.5)" : "none", transition: "background 0.15s" }}
+          >
+            {recording ? (
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="white"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>
+            ) : input.trim() ? (
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <path d="M12 19V5M5 12l7-7 7 7" stroke="#000" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            ) : (
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="#000"><path d="M12 1a4 4 0 0 1 4 4v6a4 4 0 0 1-8 0V5a4 4 0 0 1 4-4zm0 2a2 2 0 0 0-2 2v6a2 2 0 0 0 4 0V5a2 2 0 0 0-2-2zm-7 9h2a5 5 0 0 0 10 0h2a7 7 0 0 1-6 6.93V21h2v2H9v-2h2v-3.07A7 7 0 0 1 5 12z"/></svg>
+            )}
+          </button>
+
         </div>
-
-        {/* Mic btn */}
-        <button
-          onClick={recording ? stopRecording : startRecording}
-          style={{ width: 40, height: 40, background: recording ? "#ef4444" : "var(--yellow)", borderRadius: "var(--radius)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0, boxShadow: recording ? "0 0 16px rgba(239,68,68,0.5)" : "none" }}
-        >
-          {recording ? (
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="white"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>
-          ) : (
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="var(--black)"><path d="M12 1a4 4 0 0 1 4 4v6a4 4 0 0 1-8 0V5a4 4 0 0 1 4-4zm0 2a2 2 0 0 0-2 2v6a2 2 0 0 0 4 0V5a2 2 0 0 0-2-2zm-7 9h2a5 5 0 0 0 10 0h2a7 7 0 0 1-6 6.93V21h2v2H9v-2h2v-3.07A7 7 0 0 1 5 12z"/></svg>
-          )}
-        </button>
-
-        {/* Send btn */}
-        <button onClick={() => send(input)} disabled={!input.trim() || sending}
-          style={{ width: 40, height: 40, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, opacity: (!input.trim() || sending) ? 0.4 : 1, background: "var(--dark2)", border: "1px solid #2a2a2a", borderRadius: "var(--radius)", cursor: input.trim() ? "pointer" : "default" }}
-        >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" style={{ color: "var(--yellow)" }}>
-            <path d="M12 19V5M5 12l7-7 7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-          </svg>
-        </button>
       </div>
-
-      {/* Status gravação */}
-      {recording && (
-        <div className="mt-1.5 h-3.5 text-center" style={{ fontSize: "11px" }}>
-          <span style={{ color: "#ef4444" }}>● Gravando {recSeconds}s — toque em ⏹ para parar</span>
-        </div>
-      )}
     </div>
   );
 }
