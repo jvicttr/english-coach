@@ -90,12 +90,12 @@ export default function ConquistasPage() {
       {/* Tiers modal */}
       {showTiers && (
         <div onClick={() => setShowTiers(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.8)", zIndex: 100, display: "flex", alignItems: "flex-end", justifyContent: "center", animation: "fadeIn .2s ease" }}>
-          <div onClick={e => e.stopPropagation()} style={{ background: "#111", borderRadius: "24px 24px 0 0", width: "100%", maxWidth: 480, padding: "24px 20px 40px", animation: "popIn .25s ease" }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
+          <div onClick={e => e.stopPropagation()} style={{ background: "#111", borderRadius: "24px 24px 0 0", width: "100%", maxWidth: 480, maxHeight: "82dvh", display: "flex", flexDirection: "column", animation: "popIn .25s ease" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "20px 20px 16px", flexShrink: 0 }}>
               <p style={{ fontWeight: 900, fontSize: "1.1rem", color: "#fff", margin: 0 }}>Todos os Tiers</p>
               <button onClick={() => setShowTiers(false)} style={{ background: "#222", border: "none", color: "var(--gray)", borderRadius: 50, width: 30, height: 30, cursor: "pointer", fontSize: "1rem", display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
             </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            <div style={{ overflowY: "auto", padding: "0 20px calc(32px + env(safe-area-inset-bottom))", display: "flex", flexDirection: "column", gap: 10 }}>
               {TIERS.map((t) => {
                 const isCurrentTier = t.id === tier.id;
                 const isUnlocked = totalXp >= t.min;
