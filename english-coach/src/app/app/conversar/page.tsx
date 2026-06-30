@@ -1621,18 +1621,6 @@ export default function Home() {
       className="flex flex-col items-center px-3 sm:px-4"
       style={{ background: "var(--black)", fontFamily: "'Inter', sans-serif", height: "100dvh", overflow: "hidden", paddingTop: "calc(65px + env(safe-area-inset-top))", paddingBottom: 0 }}
     >
-      {/* ── Subheader contextual: voltar aos tópicos ───────── */}
-      {topic && !trilhaStep && (
-        <div className="w-full max-w-2xl mb-3 flex items-center gap-2 shrink-0">
-          <button
-            onClick={restartChat}
-            style={{ background: "var(--dark2)", border: "1px solid #2a2a2a", borderRadius: "10px", height: "36px", padding: "0 10px", display: "flex", alignItems: "center", gap: "5px", fontSize: "0.75rem", fontWeight: 600, color: "var(--gray)", cursor: "pointer" }}
-          >
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M9 2L4 7L9 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-            <span className="hidden sm:inline">Tópicos</span>
-          </button>
-        </div>
-      )}
 
       {/* ── Trilha phase banner ────────────────────────────── */}
       {trilhaStep && trilhaPhase && (

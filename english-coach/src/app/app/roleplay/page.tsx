@@ -551,18 +551,12 @@ export default function RolePlay() {
   // ── Chat ─────────────────────────────────────────────────────────────────
   return (
     <div className="flex flex-col items-center px-3 sm:px-4" style={{ background: "var(--black)", fontFamily: "'Inter', sans-serif", height: "100dvh", overflow: "hidden", paddingTop: "calc(65px + env(safe-area-inset-top))", paddingBottom: 0 }}>
-      <div className="w-full max-w-2xl mb-3 flex items-center gap-2 shrink-0">
-        <button onClick={() => { setScreen("scenarios"); setMessages([]); setScenario(null); }} style={{ background: "var(--dark2)", border: "1px solid #2a2a2a", borderRadius: "10px", height: "36px", padding: "0 10px", display: "flex", alignItems: "center", gap: "5px", fontSize: "0.75rem", fontWeight: 600, color: "var(--gray)", cursor: "pointer" }}>
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M9 2L4 7L9 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-          <span className="hidden sm:inline">Cenários</span>
-        </button>
-        {scenario && (
-          <div style={{ display: "flex", alignItems: "center", gap: 6, flex: 1, justifyContent: "center" }}>
-            <span style={{ fontSize: "1rem" }}>{scenario.emoji}</span>
-            <span style={{ fontSize: "0.78rem", fontWeight: 700, color: scenario.color }}>{scenario.name}</span>
-          </div>
-        )}
-      </div>
+      {scenario && (
+        <div className="w-full max-w-2xl mb-3 flex items-center justify-center gap-2 shrink-0">
+          <span style={{ fontSize: "1rem" }}>{scenario.emoji}</span>
+          <span style={{ fontSize: "0.78rem", fontWeight: 700, color: scenario.color }}>{scenario.name}</span>
+        </div>
+      )}
 
       <div className="w-full max-w-2xl flex-1 min-h-0 p-3 sm:p-4 overflow-y-auto" style={{ background: "var(--dark1)", border: "1px solid #1f1f1f", borderRadius: "var(--radius)", boxShadow: "var(--shadow)", marginBottom: "calc(70px + env(safe-area-inset-bottom, 0px))" }}>
         {messages.length === 0 && isLoading && (
