@@ -25,10 +25,10 @@
 
 html, body {
   height: 100%;
+  background: var(--black);
 }
 
 body {
-  background: var(--black);
   color: var(--white);
   font-family: 'Inter', sans-serif;
 }
