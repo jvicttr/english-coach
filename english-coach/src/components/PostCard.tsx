@@ -527,7 +527,7 @@ export function PostCard({ post, myId, user, router, isReply = false, onReaction
   const [translationPt, setTranslationPt] = useState<string | null>(null);
   const [translating, setTranslating] = useState(false);
   const [showTranslation, setShowTranslation] = useState<boolean>(false);
-  const [likersPopover, setLikersPopover] = useState<{ emoji: string; users: { user_id: string; name: string; avatar: string | null }[] } | null>(null);
+  const [likersPopover, setLikersPopover] = useState<{ emoji: string; users: { user_id: string; name: string; avatar: string | null }[]; x: number; y: number } | null>(null);
   const [loadingLikers, setLoadingLikers] = useState(false);
   const likersRef = useRef<HTMLDivElement>(null);
   const likersCloseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -559,20 +559,23 @@ export function PostCard({ post, myId, user, router, isReply = false, onReaction
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [likersPopover]);
 
-  async function showLikers(emoji: string) {
+  async function showLikers(emoji: string, triggerEl?: HTMLElement) {
     const reactions = post.community_reactions ?? [];
     const count = reactions.filter(r => r.emoji === emoji).length;
     if (count === 0) return;
     if (likersPopover?.emoji === emoji) { setLikersPopover(null); return; }
+    const rect = triggerEl?.getBoundingClientRect();
+    const x = rect ? rect.left : 0;
+    const y = rect ? rect.top - 8 : 0;
     setLoadingLikers(true);
-    setLikersPopover({ emoji, users: [] });
+    setLikersPopover({ emoji, users: [], x, y });
     try {
       const res = await fetch(`/api/community/reactions/${post.id}`);
       const all = await res.json();
       const filtered = Array.isArray(all) ? all.filter((r: { emoji: string }) => r.emoji === emoji) : [];
-      setLikersPopover({ emoji, users: filtered });
+      setLikersPopover(prev => prev ? { ...prev, users: filtered } : null);
     } catch {
-      setLikersPopover({ emoji, users: [] });
+      setLikersPopover(prev => prev ? { ...prev, users: [] } : null);
     } finally {
       setLoadingLikers(false);
     }
@@ -852,48 +855,21 @@ export function PostCard({ post, myId, user, router, isReply = false, onReaction
             <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
           );
           return (
-            <div key={emoji} style={{ position: "relative" }} ref={likersPopover?.emoji === emoji ? likersRef : undefined} onMouseLeave={() => { likersCloseTimer.current = setTimeout(() => setLikersPopover(null), 150); }} onMouseEnter={() => { if (likersCloseTimer.current) { clearTimeout(likersCloseTimer.current); likersCloseTimer.current = null; } }}>
+            <div key={emoji} ref={likersPopover?.emoji === emoji ? likersRef : undefined} onMouseLeave={() => { likersCloseTimer.current = setTimeout(() => setLikersPopover(null), 150); }} onMouseEnter={() => { if (likersCloseTimer.current) { clearTimeout(likersCloseTimer.current); likersCloseTimer.current = null; } }}>
               <div style={{ display: "flex", alignItems: "center", gap: 0, borderRadius: 50, border: `1px solid ${reacted ? "rgba(245,200,0,.5)" : "#2a2a2a"}`, background: reacted ? "rgba(245,200,0,.08)" : "transparent", overflow: "hidden" }}>
                 <button onClick={() => onReaction(post.id, emoji)} style={{ display: "flex", alignItems: "center", gap: 4, padding: count > 0 ? "4px 8px 4px 10px" : "4px 10px", background: "transparent", border: "none", cursor: "pointer", fontSize: "0.78rem", color: reacted ? "var(--yellow)" : "var(--gray)", fontWeight: 600 }}>
                   {getIcon()}
                 </button>
                 {count > 0 && (
                   <button
-                    onClick={() => showLikers(emoji)}
-                    onMouseEnter={() => { if (likersCloseTimer.current) { clearTimeout(likersCloseTimer.current); likersCloseTimer.current = null; } showLikers(emoji); }}
+                    onClick={e => showLikers(emoji, e.currentTarget)}
+                    onMouseEnter={e => { if (likersCloseTimer.current) { clearTimeout(likersCloseTimer.current); likersCloseTimer.current = null; } showLikers(emoji, e.currentTarget); }}
                     style={{ background: "transparent", border: "none", borderLeft: `1px solid ${reacted ? "rgba(245,200,0,.3)" : "#2a2a2a"}`, padding: "4px 10px 4px 8px", cursor: "pointer", fontSize: "0.78rem", color: reacted ? "var(--yellow)" : "var(--gray)", fontWeight: 600 }}
                   >
                     {count}
                   </button>
                 )}
               </div>
-
-              {/* Likers popover */}
-              {likersPopover?.emoji === emoji && (
-                <div style={{ position: "absolute", bottom: "calc(100% + 8px)", left: 0, background: "#1a1a1a", border: "1px solid #2a2a2a", borderRadius: 12, padding: "10px 12px", minWidth: 180, maxWidth: 260, zIndex: 50, boxShadow: "0 8px 24px rgba(0,0,0,.5)" }}>
-                  <div style={{ fontSize: "0.72rem", color: "var(--gray)", marginBottom: 8, fontWeight: 600 }}>Liked by</div>
-                  {loadingLikers ? (
-                    <div style={{ fontSize: "0.78rem", color: "var(--gray)" }}>Loading…</div>
-                  ) : likersPopover.users.length === 0 ? (
-                    <div style={{ fontSize: "0.78rem", color: "var(--gray)" }}>No one yet</div>
-                  ) : (
-                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                      {likersPopover.users.map(u => (
-                        <a key={u.user_id} href={`/app/comunidade/u/${u.user_id}`} style={{ display: "flex", alignItems: "center", gap: 8, textDecoration: "none", borderRadius: 8, padding: "2px 4px", margin: "-2px -4px", transition: "background 0.15s" }} onMouseEnter={e => (e.currentTarget.style.background = "#2a2a2a")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
-                          {u.avatar ? (
-                            <img src={u.avatar} alt={u.name} style={{ width: 28, height: 28, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} />
-                          ) : (
-                            <div style={{ width: 28, height: 28, borderRadius: "50%", background: "#2a2a2a", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.75rem", color: "var(--gray)", flexShrink: 0 }}>
-                              {u.name[0]?.toUpperCase()}
-                            </div>
-                          )}
-                          <span style={{ fontSize: "0.82rem", color: "#e0e0e0", fontWeight: 500, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{u.name}</span>
-                        </a>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
             </div>
           );
         })}
@@ -966,6 +942,33 @@ export function PostCard({ post, myId, user, router, isReply = false, onReaction
               }}
               onDeleted={id => { setReplies(prev => prev.filter(x => x.id !== id)); setReplyCount(c => Math.max(0, c - 1)); }} />
           ))}
+        </div>
+      )}
+
+      {/* Likers popover — fixed to avoid overflow:auto clipping */}
+      {likersPopover && (
+        <div ref={likersRef} style={{ position: "fixed", left: Math.min(likersPopover.x, window.innerWidth - 270), top: likersPopover.y - 8, transform: "translateY(-100%)", background: "#1a1a1a", border: "1px solid #2a2a2a", borderRadius: 12, padding: "10px 12px", minWidth: 180, maxWidth: 260, zIndex: 9999, boxShadow: "0 8px 24px rgba(0,0,0,.5)" }} onMouseEnter={() => { if (likersCloseTimer.current) { clearTimeout(likersCloseTimer.current); likersCloseTimer.current = null; } }} onMouseLeave={() => { likersCloseTimer.current = setTimeout(() => setLikersPopover(null), 150); }}>
+          <div style={{ fontSize: "0.72rem", color: "var(--gray)", marginBottom: 8, fontWeight: 600 }}>Curtido por</div>
+          {loadingLikers ? (
+            <div style={{ fontSize: "0.78rem", color: "var(--gray)" }}>Carregando…</div>
+          ) : likersPopover.users.length === 0 ? (
+            <div style={{ fontSize: "0.78rem", color: "var(--gray)" }}>Ninguém ainda</div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {likersPopover.users.map(u => (
+                <a key={u.user_id} href={`/app/comunidade/u/${u.user_id}`} style={{ display: "flex", alignItems: "center", gap: 8, textDecoration: "none", borderRadius: 8, padding: "2px 4px", margin: "-2px -4px", transition: "background 0.15s" }} onMouseEnter={e => (e.currentTarget.style.background = "#2a2a2a")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
+                  {u.avatar ? (
+                    <img src={u.avatar} alt={u.name} style={{ width: 28, height: 28, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} />
+                  ) : (
+                    <div style={{ width: 28, height: 28, borderRadius: "50%", background: "#2a2a2a", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.75rem", color: "var(--gray)", flexShrink: 0 }}>
+                      {u.name[0]?.toUpperCase()}
+                    </div>
+                  )}
+                  <span style={{ fontSize: "0.82rem", color: "#e0e0e0", fontWeight: 500, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{u.name}</span>
+                </a>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
