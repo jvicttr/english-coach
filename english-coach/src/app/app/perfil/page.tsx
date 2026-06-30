@@ -225,30 +225,6 @@ export default function PerfilPage() {
           )}
         </div>
 
-        {/* Stats */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-          <StatCard emoji="🔥" label="Sequência" value={data ? `${data.streak} dia${data.streak !== 1 ? "s" : ""}` : "—"} />
-          <StatCard emoji="⚡" label="XP total" value={data ? `${data.totalXp} XP` : "—"} />
-          <StatCard emoji={data?.tier?.emoji ?? "🏅"} label="Ranking" value={data?.tier?.label ?? "—"} />
-          <StatCard emoji="🗺️" label="Etapas na trilha" value={data ? `${data.trilhaCompleted.length}` : "—"} />
-        </div>
-
-        {/* XP progress */}
-        {data && (
-          <div style={{ background: "var(--dark2)", borderRadius: 16, padding: "16px 18px" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 8 }}>
-              <span style={{ fontSize: "0.75rem", fontWeight: 800, color: "var(--white)" }}>{data.tier.emoji} {data.tier.label}</span>
-              {data.nextTier && (
-                <span style={{ fontSize: "0.65rem", color: "var(--gray2)" }}>{xpToNext} XP para {data.nextTier.label}</span>
-              )}
-            </div>
-            <div style={{ height: 7, background: "#1e1e1e", borderRadius: 99, overflow: "hidden" }}>
-              <div style={{ height: "100%", width: `${xpPct}%`, background: data.tier.label === "Ouro" ? "linear-gradient(90deg, #F5C800, #e0a800)" : data.tier.label === "Prata" ? "linear-gradient(90deg, #C0C0C0, #A8A8A8)" : "linear-gradient(90deg, #CD7F32, #B87333)", borderRadius: 99, transition: "width 0.6s" }} />
-            </div>
-            <p style={{ fontSize: "0.65rem", color: "var(--gray2)", margin: "6px 0 0", textAlign: "right" }}>{data.totalXp} XP</p>
-          </div>
-        )}
-
         {/* Upgrade (free only) */}
         {plan === "free" && (
           <a href="/planos" style={{ background: "rgba(245,200,0,.06)", border: "1px solid rgba(245,200,0,.3)", borderRadius: 16, padding: "16px 18px", display: "flex", alignItems: "center", gap: 14, textDecoration: "none" }}>
