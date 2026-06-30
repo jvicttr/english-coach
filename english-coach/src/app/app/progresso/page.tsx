@@ -260,25 +260,6 @@ export default function Progresso() {
           </div>
         </div>
 
-        {/* Flashcard stats */}
-        {flashcards.length > 0 && (
-          <div style={{ background: "var(--dark1)", border: "1px solid #1e1e1e", borderRadius: 16, padding: "16px" }}>
-            <p style={{ fontWeight: 700, color: "#fff", fontSize: "0.9rem", margin: "0 0 14px" }}>🃏 Vocabulário</p>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10 }}>
-              {[
-                { label: "Total", value: flashcards.length, color: "#fff" },
-                { label: "Para revisar", value: fcPending, color: fcPending > 0 ? "#f97316" : "#4ade80" },
-                { label: "Em dia", value: fcMastered, color: "#4ade80" },
-              ].map((s) => (
-                <div key={s.label} style={{ background: "var(--dark2)", borderRadius: 12, padding: "10px 12px", textAlign: "center" }}>
-                  <p style={{ fontSize: "1.4rem", fontWeight: 900, color: s.color, margin: 0 }}>{s.value}</p>
-                  <p style={{ fontSize: "0.62rem", color: "var(--gray)", margin: "4px 0 0", fontWeight: 600 }}>{s.label}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
         {/* Topics breakdown */}
         {topTopics.length > 0 && (
           <div style={{ background: "var(--dark1)", border: "1px solid #1e1e1e", borderRadius: 16, padding: "16px" }}>
