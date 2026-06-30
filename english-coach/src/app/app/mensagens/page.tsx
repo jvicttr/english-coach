@@ -113,9 +113,9 @@ export default function MensagensPage() {
   }
 
   return (
-    <div style={{ display: "flex", height: "100vh", background: "var(--black)", fontFamily: "'Inter', sans-serif" }}>
+    <div style={{ display: "flex", height: "100dvh", paddingTop: "calc(65px + env(safe-area-inset-top))", paddingBottom: 65, background: "var(--black)", fontFamily: "'Inter', sans-serif", boxSizing: "border-box" }}>
       {/* Sidebar - Usuários */}
-      <div style={{ width: "100%", maxWidth: "400px", borderRight: "1px solid #1e1e1e", display: "flex", flexDirection: "column" }}>
+      <div style={{ width: "100%", maxWidth: "400px", borderRight: "1px solid #1e1e1e", display: "flex", flexDirection: "column", minHeight: 0 }}>
         <div style={{ padding: "16px", borderBottom: "1px solid #1e1e1e" }}>
           <h1 style={{ fontSize: "1.2rem", fontWeight: 800, color: "#fff", margin: 0 }}>💬 Mensagens</h1>
         </div>
