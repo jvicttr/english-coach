@@ -951,27 +951,26 @@ export default function ChatPage() {
         </div>
       )}
 
-      {/* Reply preview bar */}
-      {replyTo && (
-        <div className="w-full max-w-2xl mb-2 shrink-0 flex items-center gap-3" style={{ background: "var(--dark2)", border: "1px solid #2a2a2a", borderLeft: "3px solid var(--yellow)", borderRadius: "var(--radius)", padding: "8px 12px" }}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--yellow)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
-            <path d="M9 17H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11a2 2 0 0 1 2 2v3"/>
-            <path d="M13 21l-4-4 4-4"/><path d="M9 17h8a2 2 0 0 0 2-2v-5"/>
-          </svg>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: "0.7rem", color: "var(--yellow)", fontWeight: 700, marginBottom: 1 }}>
-              {replyTo.sender_id === user?.id ? "Respondendo a você mesmo" : `Respondendo a ${otherUserName}`}
-            </div>
-            <div style={{ fontSize: "0.78rem", color: "var(--gray)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-              {getReplyContent(replyTo)}
-            </div>
-          </div>
-          <button onClick={() => setReplyTo(null)} style={{ background: "none", border: "none", color: "var(--gray)", cursor: "pointer", fontSize: "1.1rem", flexShrink: 0, lineHeight: 1 }}>✕</button>
-        </div>
-      )}
-
       {/* Input bar — estilo WhatsApp, fixo no fundo */}
       <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, background: "#111", borderTop: "1px solid #1e1e1e", padding: "8px 12px", paddingBottom: "calc(8px + env(safe-area-inset-bottom, 0px))", zIndex: 100 }}>
+        {/* Reply preview bar */}
+        {replyTo && (
+          <div style={{ display: "flex", alignItems: "center", gap: 10, background: "#1a1a1a", border: "1px solid #2a2a2a", borderLeft: "3px solid var(--yellow)", borderRadius: 10, padding: "7px 10px", marginBottom: 8 }}>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--yellow)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+              <path d="M9 17H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11a2 2 0 0 1 2 2v3"/>
+              <path d="M13 21l-4-4 4-4"/><path d="M9 17h8a2 2 0 0 0 2-2v-5"/>
+            </svg>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: "0.68rem", color: "var(--yellow)", fontWeight: 700, marginBottom: 1 }}>
+                {replyTo.sender_id === user?.id ? "Respondendo a você mesmo" : `Respondendo a ${otherUserName}`}
+              </div>
+              <div style={{ fontSize: "0.75rem", color: "var(--gray)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {getReplyContent(replyTo)}
+              </div>
+            </div>
+            <button onClick={() => setReplyTo(null)} style={{ background: "none", border: "none", color: "var(--gray)", cursor: "pointer", fontSize: "1.1rem", flexShrink: 0, lineHeight: 1 }}>✕</button>
+          </div>
+        )}
         {recording && (
           <div style={{ textAlign: "center", fontSize: "11px", marginBottom: 6 }}>
             <span style={{ color: "#ef4444" }}>● Gravando {recSeconds}s — toque em ⏹ para parar</span>
