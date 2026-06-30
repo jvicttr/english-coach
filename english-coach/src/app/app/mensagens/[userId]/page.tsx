@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useUser } from "@clerk/nextjs";
+import ChatTranslator from "@/components/ChatTranslator";
 
 const EMOJIS = ["😀","😂","😍","🥰","😎","🤔","😅","🙌","👏","🔥","💯","❤️","🎉","✨","💪","🙏","👍","😊","🤩","😏","🥳","💬","🌍","📚","🎯","🚀","⭐","💡","🎶","✅"];
 const QUICK_EMOJIS = ["❤️","😂","😮","😢","🙏","👍","🔥","😍"];
@@ -971,6 +972,9 @@ export default function ChatPage() {
         <button onClick={() => setShowEmoji(s => !s)} className="hidden sm:flex" style={{ width: 44, height: 44, background: showEmoji ? "var(--yellow)" : "var(--dark2)", border: "1px solid #2a2a2a", borderRadius: "var(--radius)", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0, fontSize: "1.2rem" }}>
           😊
         </button>
+
+        {/* Translator btn */}
+        <ChatTranslator onUse={(text) => { setInput(prev => prev ? prev + " " + text : text); setTimeout(() => textareaRef.current?.focus(), 50); }} />
 
         {/* Foto btn */}
         <button onClick={() => fileInputRef.current?.click()} style={{ width: 44, height: 44, background: "var(--dark2)", border: "1px solid #2a2a2a", borderRadius: "var(--radius)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }}>

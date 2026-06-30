@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import type { TrailStep } from "@/lib/trilha-steps";
 import { shuffleQuizOptions } from "@/lib/quiz";
+import ChatTranslator from "@/components/ChatTranslator";
 
 type Correction = { wrong: string; right: string; phonetic: string; wrongSentence?: string; rightSentence?: string };
 type CorrectionList = Correction[];
@@ -2198,6 +2199,7 @@ export default function Home() {
 
       {/* ── Input ──────────────────────────────────────────── */}
       {trilhaPhase !== "review" && <div className="-mx-3 sm:mx-auto w-full sm:max-w-2xl flex gap-2 items-end px-3 sm:px-0 pb-1 sm:pb-0" style={{ background: "var(--black)" }}>
+        <ChatTranslator onUse={(text) => { setInput(prev => prev ? prev + " " + text : text); }} />
         <textarea
           value={input}
           onChange={(e) => setInput(e.target.value)}
