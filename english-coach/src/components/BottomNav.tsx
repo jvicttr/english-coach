@@ -79,7 +79,7 @@ function NavItems() {
   );
 }
 
-const NAV_STYLE = { background: "#0d0d0d", borderTop: "1px solid #1e1e1e", paddingBottom: "env(safe-area-inset-bottom, 0px)" } as const;
+const NAV_STYLE = { background: "#0d0d0d", borderTop: "1px solid #1e1e1e" } as const;
 
 export function BottomNavFixed() {
   const pathname = usePathname();
@@ -91,13 +91,9 @@ export function BottomNavFixed() {
     pathname.startsWith("/app/roleplay/")
   ) return null;
   return (
-    <>
-      <nav style={{ ...NAV_STYLE, position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 50 }}>
-        <NavItems />
-      </nav>
-      {/* Cobre a safe area abaixo do nav no iOS */}
-      <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, height: "env(safe-area-inset-bottom, 0px)", background: "#0d0d0d", zIndex: 49 }} />
-    </>
+    <nav className="bottom-nav-safe" style={{ ...NAV_STYLE, position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 50 }}>
+      <NavItems />
+    </nav>
   );
 }
 

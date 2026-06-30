@@ -23,14 +23,25 @@
   --color-jv-gray2: var(--gray2);
 }
 
-html, body {
+html {
   height: 100%;
   background: #0d0d0d;
 }
 
 body {
+  height: 100%;
+  background: #0d0d0d;
   color: var(--white);
   font-family: 'Inter', sans-serif;
+  /* Preenche a safe area inferior com a cor do fundo no iOS */
+  padding-bottom: constant(safe-area-inset-bottom);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* Safe area abaixo do bottom nav no iOS */
+.bottom-nav-safe {
+  padding-bottom: constant(safe-area-inset-bottom);
+  padding-bottom: env(safe-area-inset-bottom);
 }
 
 /* Fix browser autofill overriding dark theme — force dark bg + black text */
