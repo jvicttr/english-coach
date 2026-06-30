@@ -34,7 +34,6 @@ export default function QuickTranslator() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const inputRef = useRef<HTMLTextAreaElement>(null);
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Derive display labels
   const fromLabel = direction === "auto"
@@ -69,11 +68,7 @@ export default function QuickTranslator() {
     const val = e.target.value;
     setInput(val);
     setError("");
-    if (!val.trim()) { setResult(null); return; }
-    if (val.trim().length <= 60) {
-      if (debounceRef.current) clearTimeout(debounceRef.current);
-      debounceRef.current = setTimeout(() => translate(val, direction), 800);
-    }
+    if (!val.trim()) setResult(null);
   }
 
   function handleKeyDown(e: React.KeyboardEvent) {
@@ -88,10 +83,6 @@ export default function QuickTranslator() {
     const next: Direction = direction === "auto" ? "pt-en" : direction === "pt-en" ? "en-pt" : "auto";
     setDirection(next);
     setResult(null);
-    if (input.trim()) {
-      if (debounceRef.current) clearTimeout(debounceRef.current);
-      debounceRef.current = setTimeout(() => translate(input, next), 300);
-    }
     setTimeout(() => inputRef.current?.focus(), 50);
   }
 
@@ -100,11 +91,8 @@ export default function QuickTranslator() {
     const newDir: Direction = direction === "pt-en" ? "en-pt" : "pt-en";
     setDirection(newDir);
     if (result?.translation) {
-      const newInput = result.translation;
-      setInput(newInput);
+      setInput(result.translation);
       setResult(null);
-      if (debounceRef.current) clearTimeout(debounceRef.current);
-      debounceRef.current = setTimeout(() => translate(newInput, newDir), 300);
     } else {
       setResult(null);
     }
@@ -177,7 +165,7 @@ export default function QuickTranslator() {
       {/* Translate button */}
       <div style={{ display: "flex", justifyContent: "flex-end", padding: "6px 14px 10px", borderBottom: hasResult || loading || error ? "1px solid #1a1a1a" : "none" }}>
         <button
-          onClick={() => { if (debounceRef.current) clearTimeout(debounceRef.current); translate(input, direction); }}
+          onClick={() => translate(input, direction)}
           disabled={!input.trim() || loading}
           style={{ background: input.trim() && !loading ? "var(--yellow)" : "#1e1e1e", color: input.trim() && !loading ? "#000" : "#444", border: "none", borderRadius: 50, padding: "5px 16px", fontSize: "0.78rem", fontWeight: 800, cursor: input.trim() && !loading ? "pointer" : "default", transition: "all 0.15s" }}
         >
