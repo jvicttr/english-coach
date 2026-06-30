@@ -98,7 +98,7 @@ export default function ChatTranslator({ onUse }: Props) {
   const toFlag   = result?.detected_lang ? LANG_INFO[result.detected_lang === "pt" ? "en" : "pt"].flag : "✨";
 
   return (
-    <div style={{ position: "relative" }}>
+    <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
       {/* Floating panel */}
       {open && (
         <div
