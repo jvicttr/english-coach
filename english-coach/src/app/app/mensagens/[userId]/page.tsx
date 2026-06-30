@@ -262,8 +262,12 @@ export default function ChatPage() {
     if (!container) return;
 
     if (!initialScrollDone.current) {
-      // First load: always jump to bottom instantly
-      bottomRef.current?.scrollIntoView({ behavior: "instant" as ScrollBehavior });
+      // First load: jump to bottom after layout is painted
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          if (chatScrollRef.current) chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
+        });
+      });
       initialScrollDone.current = true;
       return;
     }
@@ -271,7 +275,7 @@ export default function ChatPage() {
     // Subsequent updates: only scroll if user is near the bottom
     const distanceFromBottom = container.scrollHeight - container.scrollTop - container.clientHeight;
     if (distanceFromBottom <= 120) {
-      bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+      container.scrollTop = container.scrollHeight;
     }
   }, [messages]);
 
