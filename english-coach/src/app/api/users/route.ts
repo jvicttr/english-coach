@@ -19,7 +19,7 @@ export async function GET(req: NextRequest) {
     let query = supabase.from("users").select("id, email, name, image_url");
 
     if (search) {
-      query = query.eq("id", search);
+      query = query.neq("id", userId).ilike("name", `%${search}%`);
     } else {
       query = query.neq("id", userId);
     }

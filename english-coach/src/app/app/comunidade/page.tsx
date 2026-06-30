@@ -26,9 +26,7 @@ export default function ComunidadePage() {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [imageZoom, setImageZoom] = useState(1);
   const [composerOpen, setComposerOpen] = useState(false);
-  const [showUsersModal, setShowUsersModal] = useState(false);
-  const [users, setUsers] = useState<Array<{ id: string; name: string; email: string; image_url: string | null }>>([]);
-  const [usersLoading, setUsersLoading] = useState(false);
+
   const [mentionOpen, setMentionOpen] = useState(false);
   const [mentionQuery, setMentionQuery] = useState("");
   const [mentionAllUsers, setMentionAllUsers] = useState<Array<{ id: string; name: string; image_url: string | null; handle: string | null }>>([]);
@@ -93,36 +91,6 @@ export default function ComunidadePage() {
     await loadPosts();
   }
 
-  async function openUsersModal() {
-    setShowUsersModal(true);
-    if (users.length === 0) {
-      setUsersLoading(true);
-      try {
-        const res = await fetch("/api/users");
-        const data = await res.json();
-        setUsers(data.users || []);
-      } catch (error) {
-        console.error("Erro ao carregar usuários:", error);
-      } finally {
-        setUsersLoading(false);
-      }
-    }
-  }
-
-  async function startChat(otherUserId: string) {
-    try {
-      const res = await fetch("/api/messages/start", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ otherUserId }),
-      });
-      const data = await res.json();
-      setShowUsersModal(false);
-      router.push(`/app/mensagens/${otherUserId}`);
-    } catch (error) {
-      console.error("Erro ao iniciar chat:", error);
-    }
-  }
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -481,7 +449,6 @@ export default function ComunidadePage() {
         ))}
       </div>
 
-      <button id="community-fab" onClick={() => setComposerOpen(true)} style={{ display: "none" }} />
 
       {selectedImage && (
         <div onClick={() => { setSelectedImage(null); setImageZoom(1); }} style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.95)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}>
@@ -553,9 +520,9 @@ export default function ComunidadePage() {
         </div>
       )}
 
-      {/* FAB Mensagens */}
+      {/* Botão compor post */}
       <button
-        onClick={openUsersModal}
+        onClick={() => setComposerOpen(true)}
         style={{
           position: "fixed",
           bottom: "100px",
@@ -563,155 +530,30 @@ export default function ComunidadePage() {
           width: "46px",
           height: "46px",
           borderRadius: "14px",
-          background: "rgba(17,17,17,0.6)",
-          backdropFilter: "blur(10px)",
-          WebkitBackdropFilter: "blur(10px)",
-          border: "1px solid rgba(255,255,255,0.07)",
+          background: "var(--yellow)",
+          border: "none",
           cursor: "pointer",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          boxShadow: "0 4px 20px rgba(0,0,0,0.35)",
+          boxShadow: "0 4px 20px rgba(0,0,0,0.4)",
           zIndex: 40,
-          transition: "border-color 0.15s, background 0.15s",
+          transition: "transform 0.15s, opacity 0.15s",
         }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.borderColor = "rgba(245,200,0,0.3)";
-          e.currentTarget.style.background = "rgba(30,30,30,0.75)";
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.borderColor = "rgba(255,255,255,0.07)";
-          e.currentTarget.style.background = "rgba(17,17,17,0.6)";
-        }}
-        title="Mensagens"
+        onMouseEnter={e => { e.currentTarget.style.transform = "scale(1.08)"; e.currentTarget.style.opacity = "0.9"; }}
+        onMouseLeave={e => { e.currentTarget.style.transform = "scale(1)"; e.currentTarget.style.opacity = "1"; }}
+        title="Novo post"
       >
-        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="var(--yellow)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#000" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
         </svg>
       </button>
-
-      {/* Painel lateral de usuários */}
-      {showUsersModal && (
-        <>
-          <div
-            onClick={() => setShowUsersModal(false)}
-            style={{
-              position: "fixed",
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              background: "rgba(0,0,0,0.5)",
-              zIndex: 90,
-            }}
-          />
-          <div
-            style={{
-              position: "fixed",
-              top: 0,
-              right: 0,
-              width: "100%",
-              maxWidth: "350px",
-              height: "100vh",
-              background: "var(--black)",
-              borderLeft: "1px solid #1e1e1e",
-              zIndex: 100,
-              display: "flex",
-              flexDirection: "column",
-              animation: "slideIn 0.3s ease-out",
-            }}
-          >
-            <div style={{ padding: "16px", borderBottom: "1px solid #1e1e1e", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <h2 style={{ margin: 0, color: "#fff", fontSize: "1rem", fontWeight: 700 }}>Iniciar conversa</h2>
-              <button
-                onClick={() => setShowUsersModal(false)}
-                style={{
-                  background: "none",
-                  border: "none",
-                  color: "#999",
-                  fontSize: "1.5rem",
-                  cursor: "pointer",
-                  width: "32px",
-                  height: "32px",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                ✕
-              </button>
-            </div>
-
-            <div style={{ flex: 1, overflowY: "auto", padding: "12px" }}>
-              {usersLoading ? (
-                <div style={{ textAlign: "center", color: "#666", paddingTop: "40px" }}>Carregando usuários...</div>
-              ) : users.length === 0 ? (
-                <div style={{ textAlign: "center", color: "#666", paddingTop: "40px" }}>Nenhum usuário disponível</div>
-              ) : (
-                <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                  {users.map((u) => (
-                    <button
-                      key={u.id}
-                      onClick={() => startChat(u.id)}
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "12px",
-                        padding: "12px",
-                        background: "transparent",
-                        border: "1px solid transparent",
-                        borderRadius: "12px",
-                        cursor: "pointer",
-                        transition: "all 0.15s",
-                        textAlign: "left",
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.background = "rgba(245,200,0,.08)";
-                        e.currentTarget.style.borderColor = "rgba(245,200,0,.2)";
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.background = "transparent";
-                        e.currentTarget.style.borderColor = "transparent";
-                      }}
-                    >
-                      <div
-                        style={{
-                          width: "40px",
-                          height: "40px",
-                          borderRadius: "50%",
-                          background: u.image_url ? "transparent" : "var(--yellow)",
-                          backgroundSize: "cover",
-                          backgroundPosition: "center",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          fontSize: "1.2rem",
-                          flexShrink: 0,
-                          overflow: "hidden",
-                        }}
-                      >
-                        {u.image_url
-                          ? <img src={u.image_url} alt={u.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                          : "👤"}
-                      </div>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: "0.9rem", fontWeight: 600, color: "#fff" }}>{u.name}</div>
-                        <div style={{ fontSize: "0.75rem", color: "#666" }}>{u.email}</div>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        </>
-      )}
 
       <style>{`
         @keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
         @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}
-        @keyframes slideIn{from{transform:translateX(100%)}to{transform:translateX(0)}}
-        [style*="border: 2px solid #fff"]::-webkit-scrollbar { width: 6px; }
+[style*="border: 2px solid #fff"]::-webkit-scrollbar { width: 6px; }
         [style*="border: 2px solid #fff"]::-webkit-scrollbar-track { background: transparent; }
         [style*="border: 2px solid #fff"]::-webkit-scrollbar-thumb { background: #555; border-radius: 3px; }
         [style*="border: 2px solid #fff"]::-webkit-scrollbar-thumb:hover { background: #777; }
