@@ -102,7 +102,6 @@ export default function QuickTranslator() {
     setInput("");
     setResult(null);
     setError("");
-    if (debounceRef.current) clearTimeout(debounceRef.current);
     setTimeout(() => inputRef.current?.focus(), 50);
   }
 
