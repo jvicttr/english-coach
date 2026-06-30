@@ -169,14 +169,7 @@ export default function AppHome() {
           </div>
         ) : trilhaCta ? (
           <button
-            onClick={() => {
-              if (trilhaCta.type === "continue") {
-                localStorage.setItem("pendingTrilhaStep", JSON.stringify({ ...trilhaCta.step, phase: "chat1" }));
-                router.push("/app/conversar");
-              } else {
-                router.push("/app/trilha");
-              }
-            }}
+            onClick={() => router.push("/app/trilha")}
             style={{ background: "var(--yellow)", borderRadius: 16, padding: "14px 16px", display: "flex", alignItems: "center", justifyContent: "space-between", textDecoration: "none", width: "100%", border: "none", cursor: "pointer", textAlign: "left" }}
           >
             <div>
