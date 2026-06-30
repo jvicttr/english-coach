@@ -298,7 +298,7 @@ export function AppHeader() {
       {menuOpen && (
         <>
           <div onClick={() => setMenuOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 90 }} />
-          <div style={{ position: "fixed", top: 62, right: 16, background: "#1a1a1a", border: "1px solid #2a2a2a", borderRadius: 14, padding: "6px 0", zIndex: 95, minWidth: 200, boxShadow: "0 8px 32px rgba(0,0,0,.6)" }}>
+          <div style={{ position: "fixed", top: "calc(62px + env(safe-area-inset-top))", right: 16, background: "#1a1a1a", border: "1px solid #2a2a2a", borderRadius: 14, padding: "6px 0", zIndex: 95, minWidth: 200, boxShadow: "0 8px 32px rgba(0,0,0,.6)" }}>
             {isPro && (
               <button
                 onClick={() => { setMenuOpen(false); openPortal(); }}
