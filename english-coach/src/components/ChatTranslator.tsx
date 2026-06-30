@@ -188,12 +188,15 @@ export default function ChatTranslator({ onUse }: Props) {
           cursor: "pointer",
           flexShrink: 0,
           transition: "all 0.15s",
-          fontSize: "1.1rem",
         }}
         onMouseEnter={e => { if (!open) { e.currentTarget.style.borderColor = "rgba(245,200,0,.3)"; e.currentTarget.style.background = "rgba(245,200,0,.08)"; } }}
         onMouseLeave={e => { if (!open) { e.currentTarget.style.borderColor = "#2a2a2a"; e.currentTarget.style.background = "var(--dark2)"; } }}
       >
-        🔤
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--yellow)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M5 8l6 6"/>
+          <path d="M4 6h7M7 4v2"/>
+          <path d="M2 16h7m4 0 1-2m3 4-1-2m-2-4-2 6"/>
+        </svg>
       </button>
     </div>
   );
