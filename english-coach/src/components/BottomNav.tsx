@@ -3,7 +3,7 @@
 import { usePathname, useRouter } from "next/navigation";
 
 const NAV_ITEMS = [
-  { href: "/app", icon: "home", label: "Início" },
+  { href: "/app", icon: "home", label: "Conversar" },
   { href: "/app/pesquisa", icon: "pesquisa", label: "Pesquisa" },
   { href: "/app/comunidade", icon: "comunidade", label: "Comunidade" },
   { href: "/app/progresso", icon: "progresso", label: "Progresso" },
