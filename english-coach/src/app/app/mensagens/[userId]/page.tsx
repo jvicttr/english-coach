@@ -942,17 +942,17 @@ export default function ChatPage() {
         </div>
       )}
 
-      {/* Audio preview */}
-      {audioUrl && (
-        <div className="w-full max-w-2xl mb-2 flex items-center gap-2 shrink-0" style={{ background: "var(--dark2)", border: "1px solid #2a2a2a", borderRadius: "var(--radius)", padding: "8px 12px" }}>
-          <div style={{ flex: 1 }}><ChatAudioPlayer src={audioUrl} isOwn={false} /></div>
-          <button onClick={sendAudio} disabled={sending} style={{ background: "var(--yellow)", color: "#000", border: "none", borderRadius: 8, padding: "6px 14px", fontWeight: 700, cursor: "pointer", fontSize: "0.85rem" }}>Enviar</button>
-          <button onClick={() => { setAudioBlob(null); setAudioUrl(null); }} style={{ background: "none", border: "none", color: "var(--gray)", cursor: "pointer", fontSize: "1.2rem" }}>✕</button>
-        </div>
-      )}
-
       {/* Input bar — estilo WhatsApp, fixo no fundo */}
       <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, background: "#111", borderTop: "1px solid #1e1e1e", padding: "8px 12px", paddingBottom: "calc(8px + env(safe-area-inset-bottom, 0px))", zIndex: 100 }}>
+        {/* Audio preview */}
+        {audioUrl && (
+          <div style={{ display: "flex", alignItems: "center", gap: 8, background: "#1a1a1a", border: "1px solid #2a2a2a", borderRadius: 10, padding: "7px 10px", marginBottom: 8 }}>
+            <div style={{ flex: 1 }}><ChatAudioPlayer src={audioUrl} isOwn={false} /></div>
+            <button onClick={sendAudio} disabled={sending} style={{ background: "var(--yellow)", color: "#000", border: "none", borderRadius: 8, padding: "6px 14px", fontWeight: 700, cursor: "pointer", fontSize: "0.85rem", flexShrink: 0 }}>Enviar</button>
+            <button onClick={() => { setAudioBlob(null); setAudioUrl(null); }} style={{ background: "none", border: "none", color: "var(--gray)", cursor: "pointer", fontSize: "1.2rem", flexShrink: 0 }}>✕</button>
+          </div>
+        )}
+
         {/* Reply preview bar */}
         {replyTo && (
           <div style={{ display: "flex", alignItems: "center", gap: 10, background: "#1a1a1a", border: "1px solid #2a2a2a", borderLeft: "3px solid var(--yellow)", borderRadius: 10, padding: "7px 10px", marginBottom: 8 }}>
