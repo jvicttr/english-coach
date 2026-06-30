@@ -260,32 +260,6 @@ export default function Progresso() {
           </div>
         </div>
 
-        {/* Sparkline evolution */}
-        {last10.length >= 2 && (
-          <div style={{ background: "var(--dark1)", border: "1px solid #1e1e1e", borderRadius: 16, padding: "16px" }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
-              <div>
-                <p style={{ fontWeight: 700, fontSize: "0.9rem", color: "#fff", margin: 0 }}>Evolução dos quizzes</p>
-                <p style={{ fontSize: "0.72rem", color: "var(--gray)", marginTop: 2 }}>Últimos {last10.length} resultados</p>
-              </div>
-              <span style={{
-                fontSize: "0.72rem", fontWeight: 700, padding: "2px 8px", borderRadius: "50px",
-                background: last10[last10.length - 1] >= last10[0] ? "rgba(74,222,128,0.15)" : "rgba(248,113,113,0.15)",
-                color: last10[last10.length - 1] >= last10[0] ? "#4ade80" : "#f87171",
-              }}>
-                {last10[last10.length - 1] >= last10[0] ? "↑" : "↓"} {Math.abs(last10[last10.length - 1] - last10[0])}pp
-              </span>
-            </div>
-            <div style={{ overflowX: "auto" }}>
-              <Sparkline data={last10} />
-            </div>
-            <div style={{ display: "flex", justifyContent: "space-between", marginTop: 6 }}>
-              <span style={{ fontSize: "0.65rem", color: "var(--gray2)" }}>mais antigo</span>
-              <span style={{ fontSize: "0.65rem", color: "var(--gray2)" }}>mais recente</span>
-            </div>
-          </div>
-        )}
-
         {/* Flashcard stats */}
         {flashcards.length > 0 && (
           <div style={{ background: "var(--dark1)", border: "1px solid #1e1e1e", borderRadius: 16, padding: "16px" }}>
