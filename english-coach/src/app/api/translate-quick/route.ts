@@ -49,7 +49,8 @@ Respond in this exact JSON format (no markdown, no explanation outside JSON):
     messages: [{ role: "user", content: prompt }],
   });
 
-  const raw = (res.content[0] as { text: string }).text.trim();
+  const raw = (res.content[0] as { text: string }).text.trim()
+    .replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
 
   try {
     const data = JSON.parse(raw);
