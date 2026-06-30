@@ -231,35 +231,6 @@ export default function Progresso() {
           ))}
         </div>
 
-        {/* Weekly chart */}
-        <div style={{ background: "var(--dark1)", border: "1px solid #1e1e1e", borderRadius: 16, padding: "16px" }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
-            <p style={{ fontWeight: 700, color: "#fff", fontSize: "0.9rem", margin: 0 }}>Esta semana</p>
-            <span style={{ fontSize: "0.75rem", color: "var(--gray)" }}>{weekTotal} {weekTotal !== 1 ? "sessões" : "sessão"}</span>
-          </div>
-          <div style={{ display: "flex", alignItems: "flex-end", gap: 6, height: 100, paddingTop: 20 }}>
-            {weekDays.map((day, i) => {
-              const score = weekScores[i];
-              const isToday = day.toDateString() === new Date().toDateString();
-              const height = score !== null ? Math.max(8, (score / 100) * 72) : 6;
-              const color = score === null ? "#1e1e1e" : score >= 80 ? "#4ade80" : score >= 60 ? "var(--yellow)" : "#f87171";
-              return (
-                <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
-                  <div style={{ width: "100%", position: "relative", display: "flex", flexDirection: "column", justifyContent: "flex-end", height: 72 }}>
-                    <div style={{ background: color, borderRadius: 4, height, transition: "height .3s ease", width: "100%" }} />
-                    {score !== null && (
-                      <span style={{ position: "absolute", top: -18, left: "50%", transform: "translateX(-50%)", fontSize: "0.6rem", fontWeight: 700, color, whiteSpace: "nowrap" }}>{score}%</span>
-                    )}
-                  </div>
-                  <span style={{ fontSize: "0.6rem", color: isToday ? "var(--yellow)" : "var(--gray)", fontWeight: isToday ? 700 : 400 }}>
-                    {DAY_LABEL[day.getDay()]}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
         {/* Topics breakdown */}
         {topTopics.length > 0 && (
           <div style={{ background: "var(--dark1)", border: "1px solid #1e1e1e", borderRadius: 16, padding: "16px" }}>
