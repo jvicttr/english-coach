@@ -544,7 +544,7 @@ export default function ChatPage() {
   return (
     <div
       className="flex flex-col items-center px-3 sm:px-4"
-      style={{ background: "var(--black)", fontFamily: "'Inter', sans-serif", height: "100dvh", overflow: "hidden", paddingTop: "calc(65px + env(safe-area-inset-top))", paddingBottom: 65 }}
+      style={{ background: "var(--black)", fontFamily: "'Inter', sans-serif", height: "100dvh", overflow: "hidden", paddingTop: "calc(65px + env(safe-area-inset-top))", paddingBottom: 0 }}
       onClick={() => longPressMenu && setLongPressMenu(null)}
     >
 
@@ -565,8 +565,8 @@ export default function ChatPage() {
       {/* Chat area */}
       <div
         ref={chatScrollRef}
-        className="w-full max-w-2xl flex-1 min-h-0 p-3 sm:p-4 mb-3 overflow-y-auto"
-        style={{ background: "var(--dark1)", border: "1px solid #1f1f1f", borderRadius: "var(--radius)", boxShadow: "var(--shadow)", overflowX: "hidden" }}
+        className="w-full max-w-2xl flex-1 min-h-0 p-3 sm:p-4 overflow-y-auto"
+        style={{ background: "var(--dark1)", border: "1px solid #1f1f1f", borderRadius: "var(--radius)", boxShadow: "var(--shadow)", overflowX: "hidden", marginBottom: "calc(70px + env(safe-area-inset-bottom, 0px))" }}
       >
         {messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center gap-3">
@@ -970,8 +970,8 @@ export default function ChatPage() {
         </div>
       )}
 
-      {/* Input bar — estilo WhatsApp */}
-      <div className="-mx-3 sm:mx-auto w-full sm:max-w-2xl shrink-0" style={{ background: "#111", borderTop: "1px solid #1e1e1e", padding: "8px 12px", paddingBottom: "calc(8px + env(safe-area-inset-bottom, 0px))" }}>
+      {/* Input bar — estilo WhatsApp, fixo no fundo */}
+      <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, background: "#111", borderTop: "1px solid #1e1e1e", padding: "8px 12px", paddingBottom: "calc(8px + env(safe-area-inset-bottom, 0px))", zIndex: 100 }}>
         {recording && (
           <div style={{ textAlign: "center", fontSize: "11px", marginBottom: 6 }}>
             <span style={{ color: "#ef4444" }}>● Gravando {recSeconds}s — toque em ⏹ para parar</span>
