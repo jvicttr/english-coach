@@ -105,7 +105,10 @@ export default function AppHome() {
     <div className="app-scroll" style={{ background: "var(--black)", fontFamily: "'Inter', sans-serif", paddingBottom: "calc(70px + env(safe-area-inset-bottom))" }}>
       <style>{`@keyframes fadeUp { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }`}</style>
 
-      <style>{`@keyframes shimmer { 0%{background-position:-400px 0} 100%{background-position:400px 0} }`}</style>
+      <style>{`
+        @keyframes shimmer { 0%{background-position:-400px 0} 100%{background-position:400px 0} }
+        .sk { background: linear-gradient(90deg,#1a1a1a 25%,#252525 50%,#1a1a1a 75%); background-size: 600px 100%; animation: shimmer 1.4s infinite; border-radius: 6px; }
+      `}</style>
 
       <div style={{ padding: "16px", paddingTop: "calc(65px + 16px + env(safe-area-inset-top))", maxWidth: 640, margin: "0 auto", display: "flex", flexDirection: "column", gap: 16 }}>
 
@@ -118,35 +121,42 @@ export default function AppHome() {
         </div>
 
         {/* ── Streak ─────────────────────────────────────────────────────────── */}
+        {isPro === null ? (
+          <div style={{ background: "var(--dark1)", border: "1px solid #1e1e1e", borderRadius: 16, padding: "12px 14px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <div className="sk" style={{ width: 28, height: 28, borderRadius: 8 }} />
+              <div>
+                <div className="sk" style={{ height: 10, width: 90, marginBottom: 6 }} />
+                <div className="sk" style={{ height: 14, width: 130 }} />
+              </div>
+            </div>
+            <div style={{ display: "flex", gap: 4 }}>
+              {Array.from({ length: 7 }, (_, i) => <div key={i} className="sk" style={{ width: 24, height: 24, borderRadius: 7 }} />)}
+            </div>
+          </div>
+        ) : (
         <a href="/app/progresso" style={{ background: "var(--dark1)", border: "1px solid #1e1e1e", borderRadius: 16, padding: "12px 14px", display: "flex", alignItems: "center", justifyContent: "space-between", textDecoration: "none", cursor: "pointer", overflow: "hidden" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
               <span style={{ fontSize: "1.4rem" }}>🔥</span>
               <div>
                 <p style={{ fontSize: "0.65rem", color: "var(--gray)", margin: 0, fontWeight: 600 }}>Sequência atual</p>
-                {isPro === null ? (
-                  <div style={{ height: 14, width: 120, borderRadius: 6, background: "linear-gradient(90deg,#1e1e1e 25%,#2a2a2a 50%,#1e1e1e 75%)", backgroundSize: "400px 100%", animation: "shimmer 1.2s infinite", marginTop: 3 }} />
-                ) : (
-                  <p style={{ fontSize: "0.9rem", fontWeight: 800, color: "#fff", margin: 0 }}>
-                    {streak > 0 ? `${streak} dia${streak !== 1 ? "s seguidos" : " seguido"}` : "Pratique hoje para começar!"}
-                  </p>
-                )}
+                <p style={{ fontSize: "0.9rem", fontWeight: 800, color: "#fff", margin: 0 }}>
+                  {streak > 0 ? `${streak} dia${streak !== 1 ? "s seguidos" : " seguido"}` : "Pratique hoje para começar!"}
+                </p>
               </div>
             </div>
             <div style={{ display: "flex", gap: 4, overflow: "hidden", flexShrink: 1 }}>
-              {isPro === null
-                ? Array.from({ length: 7 }, (_, i) => (
-                    <div key={i} style={{ width: 24, height: 24, borderRadius: 7, background: "#1a1a1a", flexShrink: 0 }} />
-                  ))
-                : weekDays.map((done, i) => {
-                    const isToday = i === todayIdx;
-                    return (
-                      <div key={i} style={{ width: 24, height: 24, borderRadius: 7, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.58rem", fontWeight: 700, background: done ? "var(--yellow)" : isToday ? "rgba(245,200,0,.15)" : "#1a1a1a", color: done ? "#000" : isToday ? "var(--yellow)" : "#333", border: isToday && !done ? "1px solid rgba(245,200,0,.4)" : "none" }}>
-                        {DAYS[((i + 1) % 7)].charAt(0)}
-                      </div>
-                    );
-                  })}
+              {weekDays.map((done, i) => {
+                const isToday = i === todayIdx;
+                return (
+                  <div key={i} style={{ width: 24, height: 24, borderRadius: 7, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.58rem", fontWeight: 700, background: done ? "var(--yellow)" : isToday ? "rgba(245,200,0,.15)" : "#1a1a1a", color: done ? "#000" : isToday ? "var(--yellow)" : "#333", border: isToday && !done ? "1px solid rgba(245,200,0,.4)" : "none" }}>
+                    {DAYS[((i + 1) % 7)].charAt(0)}
+                  </div>
+                );
+              })}
             </div>
         </a>
+        )}
 
 
         {/* ── Recommendation ─────────────────────────────────────────────────── */}
@@ -165,8 +175,8 @@ export default function AppHome() {
         {isPro === null ? (
           <div style={{ background: "#1a1400", borderRadius: 16, padding: "14px 16px", height: 68, display: "flex", alignItems: "center", gap: 12 }}>
             <div style={{ flex: 1 }}>
-              <div style={{ height: 10, width: 80, borderRadius: 6, background: "linear-gradient(90deg,#2a2000 25%,#3a2e00 50%,#2a2000 75%)", backgroundSize: "400px 100%", animation: "shimmer 1.2s infinite", marginBottom: 8 }} />
-              <div style={{ height: 14, width: 160, borderRadius: 6, background: "linear-gradient(90deg,#2a2000 25%,#3a2e00 50%,#2a2000 75%)", backgroundSize: "400px 100%", animation: "shimmer 1.2s infinite" }} />
+              <div style={{ height: 10, width: 80, borderRadius: 6, background: "linear-gradient(90deg,#2a2000 25%,#3a2e00 50%,#2a2000 75%)", backgroundSize: "600px 100%", animation: "shimmer 1.4s infinite", marginBottom: 8 }} />
+              <div style={{ height: 15, width: 180, borderRadius: 6, background: "linear-gradient(90deg,#2a2000 25%,#3a2e00 50%,#2a2000 75%)", backgroundSize: "600px 100%", animation: "shimmer 1.4s infinite" }} />
             </div>
           </div>
         ) : trilhaCta ? (
@@ -201,12 +211,12 @@ export default function AppHome() {
           <p style={{ fontSize: "0.65rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: ".08em", color: "var(--gray)", marginBottom: 10 }}>Atividades</p>
           {isPro === null ? (
             <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 10 }}>
-              {Array.from({ length: 4 }, (_, i) => (
+              {Array.from({ length: 2 }, (_, i) => (
                 <div key={i} style={{ background: "var(--dark1)", border: "1px solid #1e1e1e", borderRadius: 16, padding: "14px 14px 12px", display: "flex", flexDirection: "column", gap: 10 }}>
-                  <div style={{ width: 36, height: 36, borderRadius: 10, background: "linear-gradient(90deg,#1e1e1e 25%,#2a2a2a 50%,#1e1e1e 75%)", backgroundSize: "400px 100%", animation: "shimmer 1.2s infinite" }} />
+                  <div className="sk" style={{ width: 36, height: 36, borderRadius: 10 }} />
                   <div>
-                    <div style={{ height: 12, width: "60%", borderRadius: 6, background: "linear-gradient(90deg,#1e1e1e 25%,#2a2a2a 50%,#1e1e1e 75%)", backgroundSize: "400px 100%", animation: "shimmer 1.2s infinite", marginBottom: 6 }} />
-                    <div style={{ height: 10, width: "80%", borderRadius: 6, background: "linear-gradient(90deg,#1e1e1e 25%,#2a2a2a 50%,#1e1e1e 75%)", backgroundSize: "400px 100%", animation: "shimmer 1.2s infinite" }} />
+                    <div className="sk" style={{ height: 12, width: "55%", marginBottom: 6 }} />
+                    <div className="sk" style={{ height: 10, width: "75%" }} />
                   </div>
                 </div>
               ))}
