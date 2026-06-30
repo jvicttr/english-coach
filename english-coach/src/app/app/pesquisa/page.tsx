@@ -119,7 +119,7 @@ export default function PesquisaPage() {
   }
 
   function goToProfile(userId: string) {
-    router.push(`/app/comunidade/perfil/${userId}`);
+    router.push(`/app/comunidade/u/${userId}`);
   }
 
   const displayUsers = searched ? results : allUsers;
