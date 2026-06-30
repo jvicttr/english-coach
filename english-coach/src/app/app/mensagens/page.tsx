@@ -113,7 +113,7 @@ export default function MensagensPage() {
   }
 
   return (
-    <div style={{ display: "flex", height: "100dvh", paddingTop: "calc(70px + env(safe-area-inset-top))", paddingBottom: 70, background: "var(--black)", fontFamily: "'Inter', sans-serif", boxSizing: "border-box" }}>
+    <div style={{ display: "flex", height: "100dvh", paddingTop: "calc(70px + env(safe-area-inset-top))", paddingBottom: "calc(70px + env(safe-area-inset-bottom))", background: "var(--black)", fontFamily: "'Inter', sans-serif", boxSizing: "border-box" }}>
       {/* Sidebar - Usuários */}
       <div style={{ width: "100%", maxWidth: "400px", borderRight: "1px solid #1e1e1e", display: "flex", flexDirection: "column", minHeight: 0 }}>
         <div style={{ padding: "16px", borderBottom: "1px solid #1e1e1e" }}>
