@@ -74,7 +74,6 @@ export default function QuickTranslator() {
   function handleKeyDown(e: React.KeyboardEvent) {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
-      if (debounceRef.current) clearTimeout(debounceRef.current);
       translate(input, direction);
     }
   }
