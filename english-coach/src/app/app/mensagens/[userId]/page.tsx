@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useUser } from "@clerk/nextjs";
 
@@ -38,6 +38,71 @@ function UserAvatar({ src, name, size = 32 }: { src: string; name: string; size?
 function getSupportedMime() {
   const types = ["audio/webm;codecs=opus", "audio/webm", "audio/mp4", "audio/ogg"];
   return types.find(t => typeof MediaRecorder !== "undefined" && MediaRecorder.isTypeSupported(t)) ?? "";
+}
+
+function ChatAudioPlayer({ src, isOwn }: { src: string; isOwn: boolean }) {
+  const audioRef = React.useRef<HTMLAudioElement>(null);
+  const [playing, setPlaying] = React.useState(false);
+  const [current, setCurrent] = React.useState(0);
+  const [duration, setDuration] = React.useState(0);
+
+  function toggle() {
+    const a = audioRef.current;
+    if (!a) return;
+    if (playing) { a.pause(); } else { a.play(); }
+    setPlaying(!playing);
+  }
+
+  function fmt(s: number) {
+    if (!isFinite(s) || s === 0) return "0:00";
+    const m = Math.floor(s / 60);
+    const sec = Math.floor(s % 60);
+    return `${m}:${sec.toString().padStart(2, "0")}`;
+  }
+
+  const pct = duration > 0 ? (current / duration) * 100 : 0;
+  const btnBg = isOwn ? "rgba(0,0,0,0.25)" : "var(--yellow)";
+  const btnColor = isOwn ? "#000" : "#000";
+  const trackBg = isOwn ? "rgba(0,0,0,0.2)" : "#2a2a2a";
+  const fillBg = isOwn ? "rgba(0,0,0,0.55)" : "var(--yellow)";
+  const timeColor = isOwn ? "rgba(0,0,0,0.55)" : "var(--gray)";
+
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 180, maxWidth: 260, marginBottom: 4 }}>
+      <audio
+        ref={audioRef}
+        src={src}
+        onTimeUpdate={e => setCurrent((e.target as HTMLAudioElement).currentTime)}
+        onLoadedMetadata={e => setDuration((e.target as HTMLAudioElement).duration)}
+        onEnded={() => { setPlaying(false); setCurrent(0); }}
+        style={{ display: "none" }}
+      />
+      <button
+        onClick={toggle}
+        style={{ width: 30, height: 30, borderRadius: "50%", background: btnBg, border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }}
+      >
+        {playing
+          ? <svg width="11" height="11" viewBox="0 0 24 24" fill={btnColor}><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+          : <svg width="11" height="11" viewBox="0 0 24 24" fill={btnColor}><polygon points="5,3 19,12 5,21"/></svg>
+        }
+      </button>
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 3 }}>
+        <div
+          style={{ position: "relative", height: 3, background: trackBg, borderRadius: 2, cursor: "pointer" }}
+          onClick={e => {
+            const rect = e.currentTarget.getBoundingClientRect();
+            const ratio = (e.clientX - rect.left) / rect.width;
+            if (audioRef.current && duration > 0) { audioRef.current.currentTime = ratio * duration; setCurrent(ratio * duration); }
+          }}
+        >
+          <div style={{ position: "absolute", left: 0, top: 0, height: "100%", width: `${pct}%`, background: fillBg, borderRadius: 2, transition: "width 0.1s linear" }} />
+        </div>
+        <span style={{ fontSize: "0.62rem", color: timeColor }}>
+          {playing || current > 0 ? fmt(current) : fmt(duration)}
+        </span>
+      </div>
+    </div>
+  );
 }
 
 function parseDate(dateStr: string): Date {
@@ -657,7 +722,7 @@ export default function ChatPage() {
                       style={{ maxWidth: "100%", borderRadius: 8, marginBottom: 4, cursor: "zoom-in", display: "block" }}
                     />
                   )}
-                  {msg.audio_url && <audio src={msg.audio_url} controls style={{ width: "100%", marginBottom: 4 }} />}
+                  {msg.audio_url && <ChatAudioPlayer src={msg.audio_url} isOwn={isOwn} />}
 
                   {/* Timestamp + status */}
                   <div style={{ fontSize: "0.62rem", opacity: 0.65, display: "flex", alignItems: "center", gap: 4, justifyContent: "flex-end", marginTop: 2 }}>
@@ -875,7 +940,7 @@ export default function ChatPage() {
       {/* Audio preview */}
       {audioUrl && (
         <div className="w-full max-w-2xl mb-2 flex items-center gap-2 shrink-0" style={{ background: "var(--dark2)", border: "1px solid #2a2a2a", borderRadius: "var(--radius)", padding: "8px 12px" }}>
-          <audio src={audioUrl} controls style={{ flex: 1, height: 36 }} />
+          <div style={{ flex: 1 }}><ChatAudioPlayer src={audioUrl} isOwn={false} /></div>
           <button onClick={sendAudio} disabled={sending} style={{ background: "var(--yellow)", color: "#000", border: "none", borderRadius: 8, padding: "6px 14px", fontWeight: 700, cursor: "pointer", fontSize: "0.85rem" }}>Enviar</button>
           <button onClick={() => { setAudioBlob(null); setAudioUrl(null); }} style={{ background: "none", border: "none", color: "var(--gray)", cursor: "pointer", fontSize: "1.2rem" }}>✕</button>
         </div>
