@@ -158,43 +158,6 @@ export default function AppHome() {
           </a>
         )}
 
-        {/* ── XP & Tier ─────────────────────────────────────────────────────── */}
-        {isPro === null ? (
-          <div style={{ background: "var(--dark1)", border: "1px solid #1e1e1e", borderRadius: 16, padding: "12px 14px", display: "flex", alignItems: "center", gap: 12 }}>
-            <div style={{ width: 32, height: 32, borderRadius: 8, background: "linear-gradient(90deg,#1e1e1e 25%,#2a2a2a 50%,#1e1e1e 75%)", backgroundSize: "400px 100%", animation: "shimmer 1.2s infinite", flexShrink: 0 }} />
-            <div style={{ flex: 1 }}>
-              <div style={{ height: 12, width: "50%", borderRadius: 6, background: "linear-gradient(90deg,#1e1e1e 25%,#2a2a2a 50%,#1e1e1e 75%)", backgroundSize: "400px 100%", animation: "shimmer 1.2s infinite", marginBottom: 8 }} />
-              <div style={{ height: 5, borderRadius: 99, background: "linear-gradient(90deg,#1e1e1e 25%,#2a2a2a 50%,#1e1e1e 75%)", backgroundSize: "400px 100%", animation: "shimmer 1.2s infinite" }} />
-            </div>
-          </div>
-        ) : xpData && (
-          <a href="/app/conquistas" style={{ textDecoration: "none", display: "block" }}>
-            <div style={{ background: "var(--dark1)", border: `1px solid ${xpData.tier.color}35`, borderRadius: 16, padding: "12px 14px", display: "flex", alignItems: "center", gap: 12 }}>
-              <span style={{ fontSize: "1.6rem", lineHeight: 1 }}>{xpData.tier.emoji}</span>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 5 }}>
-                  <p style={{ fontSize: "0.75rem", fontWeight: 800, color: xpData.tier.color, margin: 0 }}>{xpData.tier.label} · {xpData.totalXp.toLocaleString("pt-BR")} XP</p>
-                  <p style={{ fontSize: "0.65rem", color: "var(--gray)", margin: 0 }}>
-                    {xpData.badges.filter((b) => b.earned).length}/{xpData.badges.length} badges 🏅
-                  </p>
-                </div>
-                {xpData.nextTier ? (
-                  <div style={{ height: 5, background: "#1f1f1f", borderRadius: 99, overflow: "hidden" }}>
-                    <div style={{ height: 5, background: xpData.tier.color, borderRadius: 99, width: `${Math.min(100, ((xpData.totalXp - xpData.tier.min) / (xpData.nextTier.min - xpData.tier.min)) * 100)}%`, transition: "width .8s ease" }} />
-                  </div>
-                ) : (
-                  <p style={{ fontSize: "0.65rem", color: xpData.tier.color, margin: 0, fontWeight: 700 }}>✨ Tier máximo!</p>
-                )}
-                {xpData.nextTier && (
-                  <p style={{ fontSize: "0.6rem", color: "var(--gray2)", margin: "3px 0 0" }}>
-                    faltam {(xpData.nextTier.min - xpData.totalXp).toLocaleString("pt-BR")} XP para {xpData.nextTier.emoji} {xpData.nextTier.label}
-                  </p>
-                )}
-              </div>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--gray)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-            </div>
-          </a>
-        )}
 
         {/* ── Trilha CTA (smart) ─────────────────────────────────────────────── */}
         {isPro === null ? (

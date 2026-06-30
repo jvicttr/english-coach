@@ -48,9 +48,14 @@ export function AppHeader() {
   const [unread, setUnread] = useState(0);
   const [msgNotifs, setMsgNotifs] = useState<MsgNotif[]>([]);
   const [unreadMsgs, setUnreadMsgs] = useState(0);
+  const [tierChip, setTierChip] = useState<{ emoji: string; label: string; color: string; totalXp: number } | null>(null);
   const notifRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    fetch("/api/home").then((r) => r.json()).then((d) => {
+      if (d.tier) setTierChip({ emoji: d.tier.emoji, label: d.tier.label, color: d.tier.color, totalXp: d.totalXp ?? 0 });
+    }).catch(() => {});
+
     fetch("/api/me").then((r) => r.json()).then((me) => {
       const pro = me.plan === "pro" || me.plan === "combo";
       setIsPro(pro);
@@ -183,6 +188,28 @@ export function AppHeader() {
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          {tierChip && (
+            <a
+              href="/app/conquistas"
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 5,
+                textDecoration: "none",
+                background: "var(--dark2)",
+                border: `1px solid ${tierChip.color}40`,
+                borderRadius: 50,
+                padding: "4px 10px 4px 6px",
+                transition: "border-color 0.15s",
+              }}
+              title="Ver conquistas"
+            >
+              <span style={{ fontSize: "1rem", lineHeight: 1 }}>{tierChip.emoji}</span>
+              <span style={{ fontSize: "0.65rem", fontWeight: 700, color: tierChip.color }}>
+                {tierChip.totalXp.toLocaleString("pt-BR")} XP
+              </span>
+            </a>
+          )}
           <a
             href="/planos"
             className="planos-btn"
