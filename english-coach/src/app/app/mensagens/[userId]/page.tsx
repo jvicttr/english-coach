@@ -298,6 +298,12 @@ export default function ChatPage() {
       const foundUser = usersData.users?.find((u: any) => u.id === otherUserId);
       if (foundUser) { setOtherUserName(foundUser.name); setOtherUserImage(foundUser.image_url || ""); }
       setAllUsers(usersData.users || []);
+      if (!foundUser?.image_url) {
+        // Fallback: imagem no Supabase pode estar desatualizada — busca direto do Clerk
+        fetch(`/api/community/user/${otherUserId}`).then(r => r.json()).then(d => {
+          if (d.profile?.avatar_url) setOtherUserImage(d.profile.avatar_url);
+        }).catch(() => {});
+      }
       if (startData.conversationId) {
         setConversationId(startData.conversationId);
         loadMessages(startData.conversationId);
