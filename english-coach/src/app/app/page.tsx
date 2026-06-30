@@ -102,7 +102,7 @@ export default function AppHome() {
     <>
     {showLevelSelect && <LevelSelect onDone={() => setShowLevelSelect(false)} />}
     <OnboardingTour />
-    <div className="app-scroll" style={{ background: "var(--black)", fontFamily: "'Inter', sans-serif", paddingBottom: "calc(70px + env(safe-area-inset-bottom))" }}>
+    <div className="app-scroll" style={{ background: "var(--black)", fontFamily: "'Inter', sans-serif", paddingBottom: "calc(56px + env(safe-area-inset-bottom, 0px))" }}>
       <style>{`@keyframes fadeUp { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }`}</style>
 
       <style>{`

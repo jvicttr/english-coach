@@ -126,7 +126,7 @@ export default function PesquisaPage() {
   const isLoading = searched ? loadingSearch : loadingAll;
 
   return (
-    <div style={{ minHeight: "100dvh", background: "#0d0d0d", color: "#fff", paddingTop: "calc(65px + env(safe-area-inset-top))", paddingBottom: 80 }}>
+    <div style={{ minHeight: "100dvh", background: "#0d0d0d", color: "#fff", paddingTop: "calc(65px + env(safe-area-inset-top))", paddingBottom: "calc(56px + env(safe-area-inset-bottom, 0px))" }}>
       {/* Header */}
       <div style={{
         position: "sticky",
