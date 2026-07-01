@@ -1988,7 +1988,8 @@ export default function Home() {
 
       {/* ── Input bar fixo — estilo WhatsApp ───────────────── */}
       {trilhaPhase !== "review" && (
-        <div ref={inputBarRef} style={{ position: "fixed", bottom: 0, left: 0, right: 0, background: "#111", borderTop: "1px solid #1e1e1e", padding: "8px 12px", paddingBottom: "calc(8px + env(safe-area-inset-bottom, 0px))", zIndex: 100 }}>
+        <div ref={inputBarRef} style={{ position: "fixed", bottom: 0, left: 0, right: 0, background: "#111", borderTop: "1px solid #1e1e1e", paddingBottom: "env(safe-area-inset-bottom, 0px)", zIndex: 100 }}>
+          <div style={{ maxWidth: "42rem", margin: "0 auto", padding: "8px 12px" }}>
 
           {/* Áudio bloqueado */}
           {pendingSpeak && !isSpeaking && (
@@ -2095,6 +2096,7 @@ export default function Home() {
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="#000"><path d="M12 1a4 4 0 0 1 4 4v6a4 4 0 0 1-8 0V5a4 4 0 0 1 4-4zm0 2a2 2 0 0 0-2 2v6a2 2 0 0 0 4 0V5a2 2 0 0 0-2-2zm-7 9h2a5 5 0 0 0 10 0h2a7 7 0 0 1-6 6.93V21h2v2H9v-2h2v-3.27A7 7 0 0 1 5 12z"/></svg>
               )}
             </button>
+          </div>
           </div>
         </div>
       )}
