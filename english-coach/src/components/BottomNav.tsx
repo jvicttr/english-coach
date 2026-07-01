@@ -87,8 +87,7 @@ export function BottomNavFixed() {
   const navRef = useRef<HTMLElement>(null);
 
   if (
-    pathname === "/app/mensagens" ||
-    /^\/app\/mensagens\//.test(pathname) ||
+    /^\/app\/mensagens\/.+/.test(pathname) ||
     pathname === "/app/conversar" ||
     pathname.startsWith("/app/conversar/") ||
     pathname === "/app/roleplay" ||
