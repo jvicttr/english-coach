@@ -58,6 +58,7 @@ export default function RolePlay() {
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputBarRef = useRef<HTMLDivElement>(null);
+  const chatRef = useRef<HTMLDivElement>(null);
   const [inputBarHeight, setInputBarHeight] = useState(70);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const audioUnlockedRef = useRef(false);
@@ -70,12 +71,17 @@ export default function RolePlay() {
   useEffect(() => {
     const el = inputBarRef.current;
     if (!el) return;
-    const ro = new ResizeObserver(() => {
-      setInputBarHeight(el.offsetHeight);
-      requestAnimationFrame(() => bottomRef.current?.scrollIntoView({ behavior: "instant" as ScrollBehavior }));
-    });
+    const syncBar = () => {
+      const h = el.offsetHeight;
+      setInputBarHeight(h);
+      if (chatRef.current) chatRef.current.style.marginBottom = `${h}px`;
+      requestAnimationFrame(() => {
+        if (chatRef.current) chatRef.current.scrollTop = chatRef.current.scrollHeight;
+      });
+    };
+    const ro = new ResizeObserver(syncBar);
     ro.observe(el);
-    setInputBarHeight(el.offsetHeight);
+    syncBar();
     return () => ro.disconnect();
   }, []);
 
@@ -96,7 +102,7 @@ export default function RolePlay() {
   }, []);
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (chatRef.current) chatRef.current.scrollTop = chatRef.current.scrollHeight;
   }, [messages]);
 
   useEffect(() => {
@@ -572,7 +578,7 @@ export default function RolePlay() {
         </div>
       )}
 
-      <div className="w-full max-w-2xl flex-1 min-h-0 p-3 sm:p-4 overflow-y-auto flex flex-col" style={{ background: "var(--dark1)", border: "1px solid #1f1f1f", borderRadius: "var(--radius)", boxShadow: "var(--shadow)", marginBottom: inputBarHeight }}>
+      <div ref={chatRef} className="w-full max-w-2xl flex-1 min-h-0 p-3 sm:p-4 overflow-y-auto flex flex-col" style={{ background: "var(--dark1)", border: "1px solid #1f1f1f", borderRadius: "var(--radius)", boxShadow: "var(--shadow)", marginBottom: inputBarHeight }}>
         {messages.length === 0 && isLoading && (
           <div className="flex flex-col items-center justify-center gap-3" style={{ minHeight: "60%", paddingBottom: "20%" }}>
             <div className="text-3xl">{scenario?.emoji}</div>

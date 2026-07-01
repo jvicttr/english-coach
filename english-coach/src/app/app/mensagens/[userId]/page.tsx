@@ -253,12 +253,17 @@ export default function ChatPage() {
   useEffect(() => {
     const el = inputBarRef.current;
     if (!el) return;
-    const ro = new ResizeObserver(() => {
-      setInputBarHeight(el.offsetHeight);
-      requestAnimationFrame(() => bottomRef.current?.scrollIntoView({ behavior: "instant" as ScrollBehavior }));
-    });
+    const syncBar = () => {
+      const h = el.offsetHeight;
+      setInputBarHeight(h);
+      if (chatScrollRef.current) chatScrollRef.current.style.marginBottom = `${h}px`;
+      requestAnimationFrame(() => {
+        if (chatScrollRef.current) chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
+      });
+    };
+    const ro = new ResizeObserver(syncBar);
     ro.observe(el);
-    setInputBarHeight(el.offsetHeight);
+    syncBar();
     return () => ro.disconnect();
   }, []);
 
