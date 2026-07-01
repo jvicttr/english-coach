@@ -273,7 +273,6 @@ export default function AppHome() {
             <div>
               <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                 <p style={{ fontSize: "0.85rem", fontWeight: 700, color: "#fff", margin: 0 }}>Revisão de Aula</p>
-                <span style={{ background: "rgba(245,200,0,.12)", color: "var(--yellow)", fontSize: "0.62rem", fontWeight: 700, padding: "1px 7px", borderRadius: "50px" }}>Exclusivo Combo</span>
               </div>
               <p style={{ fontSize: "0.72rem", color: "var(--gray)", margin: "2px 0 0" }}>Envie o PDF da sua aula e tire dúvidas</p>
             </div>
