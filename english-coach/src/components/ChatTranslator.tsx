@@ -94,8 +94,8 @@ export default function ChatTranslator({ onUse }: Props) {
     });
   }
 
-  const fromFlag = result?.detected_lang ? LANG_INFO[result.detected_lang].flag : "🌐";
-  const toFlag   = result?.detected_lang ? LANG_INFO[result.detected_lang === "pt" ? "en" : "pt"].flag : "✨";
+  const fromFlag = result?.detected_lang ? LANG_INFO[result.detected_lang].flag : "";
+  const toFlag   = result?.detected_lang ? LANG_INFO[result.detected_lang === "pt" ? "en" : "pt"].flag : "";
 
   return (
     <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
@@ -119,15 +119,11 @@ export default function ChatTranslator({ onUse }: Props) {
           {/* Panel header */}
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 12px 6px", borderBottom: "1px solid #1e1e1e" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
-              <span style={{ fontSize: "0.7rem" }}>🔤</span>
-              <span style={{ fontSize: "0.68rem", fontWeight: 700, color: "var(--gray)", textTransform: "uppercase", letterSpacing: "0.06em" }}>Tradução</span>
+              <span style={{ fontSize: "0.68rem", fontWeight: 700, color: "var(--gray)", textTransform: "uppercase", letterSpacing: "0.06em" }}>Tradução rápida</span>
               {result?.detected_lang && (
                 <span style={{ fontSize: "0.68rem", color: "#555" }}>
                   {fromFlag} → {toFlag}
                 </span>
-              )}
-              {!result?.detected_lang && (
-                <span style={{ fontSize: "0.65rem", color: "#444", fontStyle: "italic" }}>auto-detect</span>
               )}
             </div>
             <button onClick={() => setOpen(false)} style={{ background: "none", border: "none", color: "#444", cursor: "pointer", fontSize: "0.9rem", lineHeight: 1, padding: 2 }}>✕</button>
