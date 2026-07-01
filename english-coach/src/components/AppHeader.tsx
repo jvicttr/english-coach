@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { UserButton } from "@clerk/nextjs";
+import { UserButton, useUser } from "@clerk/nextjs";
 import { usePathname, useRouter } from "next/navigation";
 import Image from "next/image";
 
@@ -37,6 +37,7 @@ function timeAgo(d: string) {
 export function AppHeader() {
   const pathname = usePathname();
   const router = useRouter();
+  const { isLoaded: clerkLoaded } = useUser();
   const [isPro, setIsPro] = useState(() => {
     if (typeof window === "undefined") return false;
     return localStorage.getItem("isPro") === "true";
@@ -274,11 +275,18 @@ const isHome = pathname === "/app";
           </div>
 
 <div style={{ position: "relative", display: "inline-flex", flexShrink: 0 }}>
-            <UserButton appearance={{ elements: { avatarBox: { width: 38, height: 38 } } }} />
-            {isPro && (
-              <span style={{ position: "absolute", bottom: -4, left: "50%", transform: "translateX(-50%)", fontSize: "0.52rem", fontWeight: 800, letterSpacing: "0.4px", background: "linear-gradient(135deg, #f5c800, #e0a800)", color: "#000", padding: "1px 5px", borderRadius: "50px", whiteSpace: "nowrap", lineHeight: 1.4, pointerEvents: "none" }}>
-                PRO
-              </span>
+            {!clerkLoaded ? (
+              <div style={{ width: 38, height: 38, borderRadius: "50%", background: "#2a2a2a", animation: "sk-pulse 1.5s ease-in-out infinite", flexShrink: 0 }} />
+            ) : (
+              <>
+                <style>{`@keyframes sk-pulse{0%,100%{opacity:.4}50%{opacity:.15}}`}</style>
+                <UserButton appearance={{ elements: { avatarBox: { width: 38, height: 38 } } }} />
+                {isPro && (
+                  <span style={{ position: "absolute", bottom: -4, left: "50%", transform: "translateX(-50%)", fontSize: "0.52rem", fontWeight: 800, letterSpacing: "0.4px", background: "linear-gradient(135deg, #f5c800, #e0a800)", color: "#000", padding: "1px 5px", borderRadius: "50px", whiteSpace: "nowrap", lineHeight: 1.4, pointerEvents: "none" }}>
+                    PRO
+                  </span>
+                )}
+              </>
             )}
           </div>
         </div>

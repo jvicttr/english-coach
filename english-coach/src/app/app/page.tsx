@@ -128,8 +128,8 @@ export default function AppHome() {
                 <div className="sk" style={{ height: 14, width: 130 }} />
               </div>
             </div>
-            <div style={{ display: "flex", gap: 4 }}>
-              {Array.from({ length: 7 }, (_, i) => <div key={i} className="sk" style={{ width: 24, height: 24, borderRadius: 7 }} />)}
+            <div style={{ display: "flex", gap: 4, overflow: "hidden", flexShrink: 1 }}>
+              {Array.from({ length: 7 }, (_, i) => <div key={i} className="sk" style={{ width: 24, height: 24, borderRadius: 7, flexShrink: 0 }} />)}
             </div>
           </div>
         ) : (
