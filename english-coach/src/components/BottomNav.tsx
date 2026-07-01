@@ -1,6 +1,7 @@
 "use client";
 
-import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useRef } from "react";
+import { usePathname } from "next/navigation";
 
 const NAV_ITEMS = [
   { href: "/app", icon: "home", label: "Conversar" },
@@ -83,6 +84,29 @@ const NAV_STYLE = { background: "#0d0d0d", borderTop: "1px solid #1e1e1e" } as c
 
 export function BottomNavFixed() {
   const pathname = usePathname();
+  const navRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+
+    const update = () => {
+      const offset = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+      if (navRef.current) {
+        navRef.current.style.transform = `translateY(-${offset}px)`;
+      }
+    };
+
+    vv.addEventListener("resize", update);
+    vv.addEventListener("scroll", update);
+    update();
+
+    return () => {
+      vv.removeEventListener("resize", update);
+      vv.removeEventListener("scroll", update);
+    };
+  }, []);
+
   if (
     /^\/app\/mensagens\//.test(pathname) ||
     pathname === "/app/conversar" ||
@@ -90,8 +114,12 @@ export function BottomNavFixed() {
     pathname === "/app/roleplay" ||
     pathname.startsWith("/app/roleplay/")
   ) return null;
+
   return (
-    <nav style={{ ...NAV_STYLE, position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 50, paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
+    <nav
+      ref={navRef}
+      style={{ ...NAV_STYLE, position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 50, paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
+    >
       <NavItems />
     </nav>
   );
