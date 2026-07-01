@@ -68,7 +68,7 @@ function NavItems() {
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              padding: "13px 0 9px",
+              padding: "13px 0 16px",
               textDecoration: "none",
             }}
           >
@@ -97,15 +97,7 @@ export function BottomNavFixed() {
   return (
     <nav
       ref={navRef}
-      style={{
-        ...NAV_STYLE,
-        position: "fixed",
-        bottom: "calc(-1 * env(safe-area-inset-bottom, 0px))",
-        left: 0,
-        right: 0,
-        zIndex: 50,
-        paddingBottom: "env(safe-area-inset-bottom, 0px)",
-      }}
+      style={{ ...NAV_STYLE, position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 50 }}
     >
       <NavItems />
     </nav>
