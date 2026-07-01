@@ -571,7 +571,7 @@ export default function ChatPage() {
     <div
       ref={outerRef}
       className="flex flex-col items-center px-3 sm:px-4"
-      style={{ background: "var(--black)", fontFamily: "'Inter', sans-serif", height: "100dvh", overflow: "hidden", paddingTop: "calc(65px + env(safe-area-inset-top))", paddingBottom: inputBarHeight }}
+      style={{ background: "var(--black)", fontFamily: "'Inter', sans-serif", position: "fixed", top: 0, left: 0, right: 0, bottom: 0, overflow: "hidden", paddingTop: "calc(65px + env(safe-area-inset-top))", paddingBottom: inputBarHeight }}
       onClick={() => longPressMenu && setLongPressMenu(null)}
     >
 
