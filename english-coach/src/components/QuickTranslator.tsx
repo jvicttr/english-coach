@@ -37,10 +37,10 @@ export default function QuickTranslator() {
 
   // Derive display labels
   const fromLabel = direction === "auto"
-    ? (result?.detected_lang ? LANG_INFO[result.detected_lang] : { flag: "🌐", label: "Auto" })
+    ? (result?.detected_lang ? LANG_INFO[result.detected_lang] : { flag: "", label: "" })
     : direction === "pt-en" ? LANG_INFO.pt : LANG_INFO.en;
   const toLabel = direction === "auto"
-    ? (result?.detected_lang ? LANG_INFO[result.detected_lang === "pt" ? "en" : "pt"] : { flag: "✨", label: "detectar" })
+    ? (result?.detected_lang ? LANG_INFO[result.detected_lang === "pt" ? "en" : "pt"] : { flag: "", label: "" })
     : direction === "pt-en" ? LANG_INFO.en : LANG_INFO.pt;
 
   async function translate(text: string, dir: Direction) {
@@ -113,7 +113,6 @@ export default function QuickTranslator() {
       {/* Header */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 14px 8px", borderBottom: "1px solid #1a1a1a" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <span style={{ fontSize: "0.78rem" }}>🔤</span>
           <span style={{ fontSize: "0.72rem", fontWeight: 700, color: "var(--gray)", textTransform: "uppercase", letterSpacing: "0.06em" }}>Tradução rápida</span>
         </div>
 
