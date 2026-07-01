@@ -91,12 +91,9 @@ export function BottomNavFixed() {
     pathname.startsWith("/app/roleplay/")
   ) return null;
   return (
-    <>
-      <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, height: "env(safe-area-inset-bottom, 0px)", background: "#0d0d0d", zIndex: 49, pointerEvents: "none" }} />
-      <nav style={{ ...NAV_STYLE, position: "fixed", bottom: "env(safe-area-inset-bottom, 0px)", left: 0, right: 0, zIndex: 50 }}>
-        <NavItems />
-      </nav>
-    </>
+    <nav style={{ ...NAV_STYLE, position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 50, paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
+      <NavItems />
+    </nav>
   );
 }
 

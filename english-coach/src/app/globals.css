@@ -74,11 +74,8 @@ input:-webkit-autofill:active {
 
 /* Used only on the home page to prevent iOS overscroll */
 .app-scroll {
-  height: 100dvh;
-  overflow-y: auto;
+  min-height: 100dvh;
   overflow-x: hidden;
-  overscroll-behavior: none;
-  -webkit-overflow-scrolling: touch;
 }
 
 @keyframes avatar-pulse {
