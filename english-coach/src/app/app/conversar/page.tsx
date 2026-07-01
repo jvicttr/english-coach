@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useLayoutEffect } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import type { TrailStep } from "@/lib/trilha-steps";
@@ -135,22 +135,21 @@ export default function Home() {
   const audioChunksRef = useRef<Blob[]>([]);
   const autoStopTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  useEffect(() => {
+  // Mede o input bar antes do primeiro paint e sempre que ele redimensionar
+  useLayoutEffect(() => {
     const el = inputBarRef.current;
     if (!el) return;
     const syncBar = () => {
       const h = el.offsetHeight;
+      if (h === 0) return;
       setInputBarHeight(h);
       document.documentElement.style.setProperty("--chat-pb", `${h}px`);
-      requestAnimationFrame(() => {
-        if (chatRef.current) chatRef.current.scrollTop = chatRef.current.scrollHeight;
-      });
     };
     const ro = new ResizeObserver(syncBar);
     ro.observe(el);
     syncBar();
     return () => ro.disconnect();
-  }, []);
+  }, [trilhaPhase]); // re-attach quando trilhaPhase muda (input bar pode montar/desmontar)
 
   // Warn before closing tab mid-trilha
   const trilhaSaveRef = useRef({ trilhaStep, messages });
