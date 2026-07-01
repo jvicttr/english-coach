@@ -68,7 +68,7 @@ function NavItems() {
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              padding: "13px 0 16px",
+              padding: "13px 0 8px",
               textDecoration: "none",
             }}
           >
