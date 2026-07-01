@@ -181,8 +181,10 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    if (chatRef.current) chatRef.current.scrollTop = chatRef.current.scrollHeight;
-  }, [messages]);
+    requestAnimationFrame(() => {
+      if (chatRef.current) chatRef.current.scrollTop = chatRef.current.scrollHeight;
+    });
+  }, [messages, isLoading]);
 
   // Save trilha progress whenever state changes (localStorage + Supabase for cross-device)
   useEffect(() => {
@@ -1743,7 +1745,7 @@ export default function Home() {
       {(trilhaPhase !== "review" || reviewPhase === "chat") && <div
         ref={chatRef}
         className="w-full max-w-2xl flex-1 min-h-0 p-3 sm:p-4 overflow-y-auto flex flex-col"
-        style={{ background: "var(--dark1)", border: "1px solid #1f1f1f", borderRadius: "var(--radius)", boxShadow: "var(--shadow)" }}
+        style={{ background: "var(--dark1)", border: "1px solid #1f1f1f", borderRadius: "var(--radius)", boxShadow: "var(--shadow)", marginBottom: 8 }}
       >
         {/* ── Topic loading (AI opening message) ──────────── */}
         {messages.length === 0 && topic && isLoading && (
