@@ -1210,7 +1210,7 @@ export default function Home() {
   // ── Loading Quiz Screen ──────────────────────────────────────────────────
   if (screen === "loading-quiz") {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen gap-4" style={{ background: "var(--black)", fontFamily: "'Inter', sans-serif" }}>
+      <div className="flex flex-col items-center justify-center min-h-screen gap-4" style={{ background: "var(--black)", fontFamily: "'Inter', sans-serif", paddingTop: "calc(65px + env(safe-area-inset-top, 0px))" }}>
         <div className="flex gap-1.5">
           {[0, 150, 300].map((d) => (
             <span key={d} className="w-3 h-3 rounded-full animate-bounce" style={{ background: "var(--yellow)", animationDelay: `${d}ms` }} />
@@ -1224,7 +1224,7 @@ export default function Home() {
   // ── Loading Flashcards Screen ─────────────────────────────────────────────
   if (screen === "loading-flashcards") {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen gap-4" style={{ background: "var(--black)", fontFamily: "'Inter', sans-serif" }}>
+      <div className="flex flex-col items-center justify-center min-h-screen gap-4" style={{ background: "var(--black)", fontFamily: "'Inter', sans-serif", paddingTop: "calc(65px + env(safe-area-inset-top, 0px))" }}>
         <div className="flex gap-1.5">
           {[0, 150, 300].map((d) => (
             <span key={d} className="w-3 h-3 rounded-full animate-bounce" style={{ background: "var(--yellow)", animationDelay: `${d}ms` }} />
@@ -1242,7 +1242,7 @@ export default function Home() {
     const allDone = fcIndex >= trilhaFlashcards.length;
 
     return (
-      <div className="flex flex-col items-center px-4 pt-6 pb-8 min-h-screen" style={{ background: "var(--black)", fontFamily: "'Inter', sans-serif" }}>
+      <div className="flex flex-col items-center px-4 pb-8 min-h-screen" style={{ background: "var(--black)", fontFamily: "'Inter', sans-serif", paddingTop: "calc(65px + env(safe-area-inset-top, 0px))" }}>
         <div className="w-full max-w-lg">
           {/* Header */}
           <div className="flex items-center justify-between mb-2">
@@ -1376,7 +1376,7 @@ export default function Home() {
   // ── Trail Complete Screen ─────────────────────────────────────────────────
   if (screen === "trail-complete" && trilhaStep) {
     return (
-      <div className="flex flex-col items-center justify-center px-4 pt-6 pb-8 min-h-screen" style={{ background: "var(--black)", fontFamily: "'Inter', sans-serif" }}>
+      <div className="flex flex-col items-center justify-center px-4 pb-8 min-h-screen" style={{ background: "var(--black)", fontFamily: "'Inter', sans-serif", paddingTop: "calc(65px + env(safe-area-inset-top, 0px))" }}>
         <div className="w-full max-w-lg flex flex-col items-center text-center gap-5">
           <div style={{ fontSize: "4rem" }}>🏆</div>
           <div>
@@ -1417,7 +1417,7 @@ export default function Home() {
     const total = quiz.questions.length;
 
     return (
-      <div className="flex flex-col items-center px-4 pt-6 pb-8 min-h-screen" style={{ background: "var(--black)", fontFamily: "'Inter', sans-serif" }}>
+      <div className="flex flex-col items-center px-4 pb-8 min-h-screen" style={{ background: "var(--black)", fontFamily: "'Inter', sans-serif", paddingTop: "calc(65px + env(safe-area-inset-top, 0px))" }}>
         <div className="w-full max-w-lg">
           {/* Header */}
           <div className="flex items-center justify-between mb-6">
@@ -1522,7 +1522,7 @@ export default function Home() {
     const trilhaPassed = !!(trilhaStep && trilhaPhase !== "chat1" && pct >= 70);
 
     return (
-      <div className="flex flex-col items-center justify-center px-4 pt-6 pb-8 min-h-screen" style={{ background: "var(--black)", fontFamily: "'Inter', sans-serif" }}>
+      <div className="flex flex-col items-center justify-center px-4 pb-8 min-h-screen" style={{ background: "var(--black)", fontFamily: "'Inter', sans-serif", paddingTop: "calc(65px + env(safe-area-inset-top, 0px))" }}>
         <div className="w-full max-w-lg flex flex-col items-center text-center gap-5">
           <div className="text-5xl">{emoji}</div>
           <div>
@@ -1641,7 +1641,7 @@ export default function Home() {
     <div
       ref={outerRef}
       className="flex flex-col items-center px-3 sm:px-4"
-      style={{ background: "var(--black)", fontFamily: "'Inter', sans-serif", position: "fixed", top: 0, left: 0, right: 0, bottom: 0, overflow: "hidden", paddingTop: "calc(65px + env(safe-area-inset-top))", paddingBottom: "var(--chat-pb, 70px)" }}
+      style={{ background: "var(--black)", fontFamily: "'Inter', sans-serif", position: "fixed", top: 0, left: 0, right: 0, bottom: 0, overflow: "hidden", paddingTop: "calc(65px + env(safe-area-inset-top))", paddingBottom: trilhaPhase === "review" ? "env(safe-area-inset-bottom, 0px)" : "var(--chat-pb, 70px)" }}
     >
 
       {/* ── Trilha phase banner ────────────────────────────── */}
@@ -2051,7 +2051,6 @@ export default function Home() {
           </div>
         )}
 
-        <div style={{ height: "var(--chat-pb, 70px)", flexShrink: 0 }} />
         <div ref={bottomRef} />
       </div>}
 
