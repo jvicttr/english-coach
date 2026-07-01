@@ -1,6 +1,5 @@
 "use client";
 
-import { useRef, useEffect } from "react";
 import { usePathname } from "next/navigation";
 
 const NAV_ITEMS = [
@@ -82,43 +81,33 @@ function NavItems() {
 
 const NAV_STYLE = { background: "#0d0d0d", borderTop: "1px solid #1e1e1e" } as const;
 
-export function BottomNavFixed() {
-  const pathname = usePathname();
-  const navRef = useRef<HTMLElement>(null);
-
-  useEffect(() => {
-    // iOS PWA fix: navigator.standalone is true only when saved to home screen on iOS
-    if (!(window.navigator as any).standalone) return;
-    const el = document.querySelector("[data-scroll-container]") as HTMLElement | null;
-    if (!el) return;
-    el.scrollTop += 1;
-    requestAnimationFrame(() => { el.scrollTop = Math.max(0, el.scrollTop - 1); });
-  }, [pathname]);
-
-  if (
+function shouldHideNav(pathname: string) {
+  return (
     /^\/app\/mensagens\/.+/.test(pathname) ||
     pathname === "/app/conversar" ||
     pathname.startsWith("/app/conversar/") ||
     pathname === "/app/roleplay" ||
     pathname.startsWith("/app/roleplay/")
-  ) return null;
+  );
+}
 
+/** Nav sem position:fixed — filho de um flex container fixo no layout. Elimina o bug de iOS PWA. */
+export function BottomNavBar() {
+  const pathname = usePathname();
+  if (shouldHideNav(pathname)) return null;
   return (
-    <nav
-      ref={navRef}
-      style={{
-        ...NAV_STYLE,
-        position: "fixed",
-        bottom: 0,
-        left: 0,
-        right: 0,
-        zIndex: 50,
-        transform: "translateZ(0)",
-        WebkitTransform: "translateZ(0)",
-        paddingBottom: "env(safe-area-inset-bottom, 0px)",
-        willChange: "transform",
-      }}
-    >
+    <nav style={{ ...NAV_STYLE, flexShrink: 0, paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
+      <NavItems />
+    </nav>
+  );
+}
+
+/** Mantido para compatibilidade — redireciona para BottomNavBar */
+export function BottomNavFixed() {
+  const pathname = usePathname();
+  if (shouldHideNav(pathname)) return null;
+  return (
+    <nav style={{ ...NAV_STYLE, position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 50, paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
       <NavItems />
     </nav>
   );
