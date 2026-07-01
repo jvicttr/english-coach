@@ -10,7 +10,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       <UserSync />
       <AppHeader />
       <NotificationPromptBanner />
-      <div style={{ height: "100dvh", overflowY: "auto", overflowX: "hidden", background: "#0d0d0d", WebkitOverflowScrolling: "touch" as const, paddingBottom: "calc(47px + env(safe-area-inset-bottom, 0px))" }}>
+      <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, overflowY: "auto", overflowX: "hidden", background: "#0d0d0d", WebkitOverflowScrolling: "touch" as const, paddingBottom: "calc(47px + env(safe-area-inset-bottom, 0px))" }}>
         {children}
       </div>
       <BottomNavFixed />

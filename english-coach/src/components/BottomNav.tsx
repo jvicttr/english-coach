@@ -107,6 +107,7 @@ export function BottomNavFixed() {
         transform: "translateZ(0)",
         WebkitTransform: "translateZ(0)",
         paddingBottom: "env(safe-area-inset-bottom, 0px)",
+        willChange: "transform",
       }}
     >
       <NavItems />
