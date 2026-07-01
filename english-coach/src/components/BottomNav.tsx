@@ -108,6 +108,7 @@ export function BottomNavFixed() {
   }, []);
 
   if (
+    pathname === "/app/mensagens" ||
     /^\/app\/mensagens\//.test(pathname) ||
     pathname === "/app/conversar" ||
     pathname.startsWith("/app/conversar/") ||

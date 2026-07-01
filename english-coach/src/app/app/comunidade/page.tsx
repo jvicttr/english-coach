@@ -4,7 +4,6 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useUser } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import { PostCard, type Post, EMOJI_LIST } from "@/components/PostCard";
-import { StartConversationModal } from "@/components/StartConversationModal";
 
 function getSupportedMime() {
   const types = ["audio/webm;codecs=opus", "audio/webm", "audio/mp4", "audio/ogg"];
@@ -27,7 +26,6 @@ export default function ComunidadePage() {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [imageZoom, setImageZoom] = useState(1);
   const [composerOpen, setComposerOpen] = useState(false);
-  const [showChat, setShowChat] = useState(false);
 
   const [mentionOpen, setMentionOpen] = useState(false);
   const [mentionQuery, setMentionQuery] = useState("");
@@ -524,7 +522,7 @@ export default function ComunidadePage() {
 
       {/* Botão conversas */}
       <button
-        onClick={() => setShowChat(true)}
+        onClick={() => router.push("/app/mensagens")}
         style={{
           position: "fixed",
           bottom: "100px",
@@ -553,7 +551,6 @@ export default function ComunidadePage() {
         </svg>
       </button>
 
-      <StartConversationModal isOpen={showChat} onClose={() => setShowChat(false)} />
 
       <style>{`
         @keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}

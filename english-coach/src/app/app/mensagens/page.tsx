@@ -10,184 +10,138 @@ function avatarColor(name: string) {
   for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
   return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
 }
-function UserAvatar({ src, name, size = 40, online }: { src: string | null; name: string; size?: number; online?: boolean }) {
+
+function UserAvatar({ src, name, size = 48 }: { src: string | null; name: string; size?: number }) {
   const [err, setErr] = useState(false);
   const initial = (name || "?")[0].toUpperCase();
   return (
-    <div style={{ width: size, height: size, borderRadius: "50%", background: (!src || err) ? avatarColor(name) : "transparent", display: "flex", alignItems: "center", justifyContent: "center", position: "relative", flexShrink: 0, overflow: "hidden" }}>
+    <div style={{ width: size, height: size, borderRadius: "50%", background: (!src || err) ? avatarColor(name) : "transparent", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, overflow: "hidden" }}>
       {src && !err
         ? <img src={src} alt={name} style={{ width: "100%", height: "100%", objectFit: "cover" }} onError={() => setErr(true)} />
         : <span style={{ fontSize: size * 0.42, fontWeight: 700, color: "#fff", lineHeight: 1 }}>{initial}</span>
       }
-      {online && <div style={{ position: "absolute", bottom: 0, right: 0, width: size * 0.3, height: size * 0.3, background: "#22c55e", borderRadius: "50%", border: "2px solid var(--black)" }} />}
     </div>
   );
 }
 
-interface User {
-  id: string;
-  name: string;
-  email: string;
-  image_url: string | null;
+function formatTime(iso: string) {
+  const date = new Date(iso);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+  if (diffDays === 0) return date.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+  if (diffDays === 1) return "Ontem";
+  if (diffDays < 7) return date.toLocaleDateString("pt-BR", { weekday: "short" });
+  return date.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
 }
 
-interface UserPresence {
-  user_id: string;
-  is_online: boolean;
-  last_seen: string;
+interface Conversation {
+  conversation_id: string;
+  other_user: { id: string; name: string; image_url: string | null };
+  last_message: { content: string; created_at: string; is_mine: boolean } | null;
+  unread_count: number;
+  updated_at: string;
 }
 
 export default function MensagensPage() {
   const router = useRouter();
   const { user } = useUser();
-  const [users, setUsers] = useState<User[]>([]);
-  const [presences, setPresences] = useState<Record<string, UserPresence>>({});
+  const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     if (!user) return;
-    loadUsers();
-    const interval = setInterval(updatePresence, 30000);
-    return () => clearInterval(interval);
+    fetch("/api/messages/conversations")
+      .then(r => r.json())
+      .then(d => setConversations(d.conversations || []))
+      .catch(() => {})
+      .finally(() => setLoading(false));
   }, [user]);
 
-  async function loadUsers() {
-    try {
-      const res = await fetch("/api/users");
-      const data = await res.json();
-      const allUsers = data.users || [];
-      setUsers(allUsers);
-
-      // Buscar presença de todos os usuários
-      if (allUsers.length > 0) {
-        const userIds = allUsers.map((u: User) => u.id);
-        const presRes = await fetch(`/api/messages/presence?userIds=${userIds.join(",")}`);
-        const presData = await presRes.json();
-        const presenceMap: Record<string, UserPresence> = {};
-        presData.presences?.forEach((p: UserPresence) => {
-          presenceMap[p.user_id] = p;
-        });
-        setPresences(presenceMap);
-      }
-
-      setLoading(false);
-    } catch (error) {
-      console.error("Erro ao carregar usuários:", error);
-      setLoading(false);
-    }
-  }
-
-  async function updatePresence() {
-    try {
-      await fetch("/api/messages/presence", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ isOnline: true }),
-      });
-    } catch (error) {
-      console.error("Erro ao atualizar presença:", error);
-    }
-  }
-
-  function isOnline(userId: string): boolean {
-    const presence = presences[userId];
-    if (!presence) return false;
-    const lastSeen = new Date(presence.last_seen);
-    const now = new Date();
-    const diffMinutes = (now.getTime() - lastSeen.getTime()) / (1000 * 60);
-    return presence.is_online && diffMinutes < 5;
-  }
-
-  const filteredUsers = users.filter(u =>
-    u.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    u.email.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  if (loading) {
-    return (
-      <div style={{ padding: "20px", textAlign: "center", color: "#999" }}>
-        Carregando...
-      </div>
-    );
-  }
-
   return (
-    <div style={{ display: "flex", height: "100dvh", paddingTop: "calc(70px + env(safe-area-inset-top))", paddingBottom: "calc(70px + env(safe-area-inset-bottom))", background: "var(--black)", fontFamily: "'Inter', sans-serif", boxSizing: "border-box" }}>
-      {/* Sidebar - Usuários */}
-      <div style={{ width: "100%", maxWidth: "400px", borderRight: "1px solid #1e1e1e", display: "flex", flexDirection: "column", minHeight: 0 }}>
-        <div style={{ padding: "16px", borderBottom: "1px solid #1e1e1e" }}>
-          <h1 style={{ fontSize: "1.2rem", fontWeight: 800, color: "#fff", margin: 0 }}>💬 Mensagens</h1>
-        </div>
+    <div style={{ minHeight: "100dvh", background: "#0d0d0d", fontFamily: "'Inter', sans-serif", paddingTop: "calc(65px + env(safe-area-inset-top))", paddingBottom: "calc(56px + env(safe-area-inset-bottom, 0px))" }}>
 
-        <input
-          type="text"
-          placeholder="Buscar usuário..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          style={{
-            margin: "10px 16px",
-            padding: "8px 12px",
-            background: "#0d0d0d",
-            border: "1px solid #2a2a2a",
-            borderRadius: 8,
-            color: "#fff",
-            fontSize: "0.9rem",
-            outline: "none",
-          }}
-        />
-
-        <div style={{ flex: 1, overflowY: "auto" }}>
-          {filteredUsers.length === 0 ? (
-            <div style={{ padding: "20px", textAlign: "center", color: "#666" }}>
-              Nenhum usuário encontrado
-            </div>
-          ) : (
-            filteredUsers.map(u => {
-              const online = isOnline(u.id);
-              return (
-                <div
-                  key={u.id}
-                  onClick={() => router.push(`/app/mensagens/${u.id}`)}
-                  style={{
-                    padding: "12px 16px",
-                    borderBottom: "1px solid #1e1e1e",
-                    cursor: "pointer",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "12px",
-                  }}
-                  onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(255,255,255,.05)")}
-                  onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
-                >
-                  <UserAvatar src={u.image_url} name={u.name} size={40} online={online} />
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: "0.9rem", fontWeight: 600, color: "#fff" }}>
-                      {u.name}
-                    </div>
-                    <div style={{ fontSize: "0.75rem", color: "#666" }}>
-                      {online ? "🟢 Online" : "⚫ Offline"}
-                    </div>
-                  </div>
-                </div>
-              );
-            })
-          )}
+      {/* Header */}
+      <div style={{ padding: "14px 16px 12px", borderBottom: "1px solid #1e1e1e", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, fontWeight: 800, color: "#fff", fontSize: "1rem" }}>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+          </svg>
+          Mensagens
         </div>
+        <button
+          onClick={() => router.push("/app/pesquisa")}
+          style={{ background: "rgba(245,200,0,0.08)", border: "1px solid rgba(245,200,0,0.25)", borderRadius: 8, padding: "6px 12px", color: "var(--yellow)", fontSize: "0.75rem", fontWeight: 700, cursor: "pointer" }}
+        >
+          + Nova conversa
+        </button>
       </div>
 
-      {/* Chat Area - Vazio */}
-      <div
-        style={{
-          flex: 1,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          color: "#666",
-          fontSize: "1rem",
-        }}
-      >
-        Selecione um usuário para começar
+      {/* Lista de conversas */}
+      <div style={{ maxWidth: 600, margin: "0 auto" }}>
+        {loading ? (
+          <div style={{ display: "flex", flexDirection: "column", gap: 1 }}>
+            {[1,2,3].map(i => (
+              <div key={i} style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 16px" }}>
+                <div style={{ width: 48, height: 48, borderRadius: "50%", background: "#1e1e1e" }} />
+                <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 6 }}>
+                  <div style={{ height: 12, width: "40%", borderRadius: 6, background: "#1e1e1e" }} />
+                  <div style={{ height: 10, width: "65%", borderRadius: 6, background: "#161616" }} />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : conversations.length === 0 ? (
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", paddingTop: 80, gap: 16, color: "#555" }}>
+            <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="#333" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+            </svg>
+            <p style={{ margin: 0, fontSize: "0.95rem", color: "#555" }}>Nenhuma conversa ainda</p>
+            <button
+              onClick={() => router.push("/app/pesquisa")}
+              style={{ background: "var(--yellow)", color: "#000", fontWeight: 800, fontSize: "0.85rem", border: "none", borderRadius: 10, padding: "10px 20px", cursor: "pointer" }}
+            >
+              Encontrar usuários
+            </button>
+          </div>
+        ) : (
+          conversations.map(conv => (
+            <div
+              key={conv.conversation_id}
+              onClick={() => router.push(`/app/mensagens/${conv.other_user.id}`)}
+              style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 16px", borderBottom: "1px solid #111", cursor: "pointer", transition: "background 0.1s" }}
+              onMouseEnter={e => { e.currentTarget.style.background = "#111"; }}
+              onMouseLeave={e => { e.currentTarget.style.background = "transparent"; }}
+            >
+              <UserAvatar src={conv.other_user.image_url} name={conv.other_user.name} size={48} />
+
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 3 }}>
+                  <span style={{ fontSize: "0.95rem", fontWeight: conv.unread_count > 0 ? 800 : 600, color: "#fff", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: "65%" }}>
+                    {conv.other_user.name}
+                  </span>
+                  {conv.last_message && (
+                    <span style={{ fontSize: "0.72rem", color: conv.unread_count > 0 ? "var(--yellow)" : "#555", flexShrink: 0 }}>
+                      {formatTime(conv.last_message.created_at)}
+                    </span>
+                  )}
+                </div>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+                  <span style={{ fontSize: "0.82rem", color: conv.unread_count > 0 ? "#aaa" : "#555", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", flex: 1 }}>
+                    {conv.last_message
+                      ? `${conv.last_message.is_mine ? "Você: " : ""}${conv.last_message.content}`
+                      : "Conversa iniciada"}
+                  </span>
+                  {conv.unread_count > 0 && (
+                    <span style={{ background: "var(--yellow)", color: "#000", fontSize: "0.65rem", fontWeight: 800, borderRadius: "50%", minWidth: 20, height: 20, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, padding: "0 4px" }}>
+                      {conv.unread_count > 99 ? "99+" : conv.unread_count}
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))
+        )}
       </div>
     </div>
   );

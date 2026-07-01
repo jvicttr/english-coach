@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import OnboardingTour from "@/components/OnboardingTour";
 import LevelSelect from "@/components/LevelSelect";
-import { StartConversationModal } from "@/components/StartConversationModal";
 import QuickTranslator from "@/components/QuickTranslator";
 import { TRAIL_STEPS, isStepUnlocked, getStartingLevel, type TrailStep } from "@/lib/trilha-steps";
 
@@ -34,7 +33,6 @@ export default function AppHome() {
   const [trilhaCta, setTrilhaCta] = useState<{ type: "continue" | "next"; step: TrailStep } | null | undefined>(undefined);
   const [trilhaStarted, setTrilhaStarted] = useState(false);
   const [recommendation, setRecommendation] = useState<{ packName: string; hardCount: number } | null>(null);
-  const [showStartChat, setShowStartChat] = useState(false);
 
   useEffect(() => {
     const saved = localStorage.getItem("lastTopic");
@@ -295,7 +293,7 @@ export default function AppHome() {
 
       {/* Botão FAB Mensagens */}
       <button
-        onClick={() => setShowStartChat(true)}
+        onClick={() => router.push("/app/mensagens")}
         style={{
           position: "fixed",
           bottom: "100px",
@@ -330,7 +328,6 @@ export default function AppHome() {
         </svg>
       </button>
 
-      <StartConversationModal isOpen={showStartChat} onClose={() => setShowStartChat(false)} />
     </div>
     </>
   );
