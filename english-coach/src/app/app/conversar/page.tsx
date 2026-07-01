@@ -128,6 +128,7 @@ export default function Home() {
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputBarRef = useRef<HTMLDivElement>(null);
   const chatRef = useRef<HTMLDivElement>(null);
+  const outerRef = useRef<HTMLDivElement>(null);
   const [inputBarHeight, setInputBarHeight] = useState(70);
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const recognitionRef = useRef<AnySpeechRecognition>(null);
@@ -141,7 +142,7 @@ export default function Home() {
     const syncBar = () => {
       const h = el.offsetHeight;
       setInputBarHeight(h);
-      if (chatRef.current) chatRef.current.style.marginBottom = `${h}px`;
+      if (outerRef.current) outerRef.current.style.paddingBottom = `${h}px`;
       requestAnimationFrame(() => {
         if (chatRef.current) chatRef.current.scrollTop = chatRef.current.scrollHeight;
       });
@@ -1638,8 +1639,9 @@ export default function Home() {
   // ── Chat Screen ──────────────────────────────────────────────────────────
   return (
     <div
+      ref={outerRef}
       className="flex flex-col items-center px-3 sm:px-4"
-      style={{ background: "var(--black)", fontFamily: "'Inter', sans-serif", height: "100dvh", overflow: "hidden", paddingTop: "calc(65px + env(safe-area-inset-top))", paddingBottom: 0 }}
+      style={{ background: "var(--black)", fontFamily: "'Inter', sans-serif", height: "100dvh", overflow: "hidden", paddingTop: "calc(65px + env(safe-area-inset-top))", paddingBottom: inputBarHeight }}
     >
 
       {/* ── Trilha phase banner ────────────────────────────── */}
@@ -1735,7 +1737,7 @@ export default function Home() {
 
       {/* ── Review: Flashcards ─────────────────────────────── */}
       {trilhaPhase === "review" && reviewPhase === "flashcards" && (
-        <div className="w-full max-w-2xl flex-1 min-h-0 overflow-y-auto flex flex-col gap-3 p-1" style={{ marginBottom: inputBarHeight }}>
+        <div className="w-full max-w-2xl flex-1 min-h-0 overflow-y-auto flex flex-col gap-3 p-1" style={{ marginBottom: 0 }}>
           {reviewFlashcards.length === 0 ? (
             <div style={{ textAlign: "center", color: "var(--gray)", paddingTop: 40 }}>Flashcards não disponíveis neste dispositivo.</div>
           ) : (
@@ -1771,7 +1773,7 @@ export default function Home() {
 
       {/* ── Review: Quiz ───────────────────────────────────── */}
       {trilhaPhase === "review" && reviewPhase === "quiz" && (
-        <div className="w-full max-w-2xl flex-1 min-h-0 overflow-y-auto flex flex-col gap-3 p-1" style={{ marginBottom: inputBarHeight }}>
+        <div className="w-full max-w-2xl flex-1 min-h-0 overflow-y-auto flex flex-col gap-3 p-1" style={{ marginBottom: 0 }}>
           {!reviewQuiz ? (
             <div style={{ textAlign: "center", color: "var(--gray)", paddingTop: 40 }}>Quiz não disponível neste dispositivo.</div>
           ) : (
@@ -1807,7 +1809,7 @@ export default function Home() {
       {/* ── Review: Chat2 (prática de vocabulário) ──────────── */}
       {trilhaPhase === "review" && reviewPhase === "chat2" && (
         <div className="w-full max-w-2xl flex-1 min-h-0 overflow-y-auto p-3 sm:p-4"
-          style={{ background: "var(--dark1)", border: "1px solid #1f1f1f", borderRadius: "var(--radius)", marginBottom: inputBarHeight }}>
+          style={{ background: "var(--dark1)", border: "1px solid #1f1f1f", borderRadius: "var(--radius)", marginBottom: 0 }}>
           {reviewChat2Messages.length === 0 ? (
             <div style={{ textAlign: "center", color: "var(--gray)", paddingTop: 40 }}>Prática não disponível neste dispositivo.</div>
           ) : (
@@ -1827,7 +1829,7 @@ export default function Home() {
       {(trilhaPhase !== "review" || reviewPhase === "chat") && <div
         ref={chatRef}
         className="w-full max-w-2xl flex-1 min-h-0 p-3 sm:p-4 overflow-y-auto flex flex-col"
-        style={{ background: "var(--dark1)", border: "1px solid #1f1f1f", borderRadius: "var(--radius)", boxShadow: "var(--shadow)", marginBottom: inputBarHeight }}
+        style={{ background: "var(--dark1)", border: "1px solid #1f1f1f", borderRadius: "var(--radius)", boxShadow: "var(--shadow)" }}
       >
         {/* ── Topic loading (AI opening message) ──────────── */}
         {messages.length === 0 && topic && isLoading && (

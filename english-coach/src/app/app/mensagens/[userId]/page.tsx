@@ -249,6 +249,7 @@ export default function ChatPage() {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const msgRefsMap = useRef<Map<string, HTMLElement>>(new Map());
   const chatScrollRef = useRef<HTMLDivElement>(null);
+  const outerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const el = inputBarRef.current;
@@ -256,7 +257,7 @@ export default function ChatPage() {
     const syncBar = () => {
       const h = el.offsetHeight;
       setInputBarHeight(h);
-      if (chatScrollRef.current) chatScrollRef.current.style.marginBottom = `${h}px`;
+      if (outerRef.current) outerRef.current.style.paddingBottom = `${h}px`;
       requestAnimationFrame(() => {
         if (chatScrollRef.current) chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
       });
@@ -568,8 +569,9 @@ export default function ChatPage() {
 
   return (
     <div
+      ref={outerRef}
       className="flex flex-col items-center px-3 sm:px-4"
-      style={{ background: "var(--black)", fontFamily: "'Inter', sans-serif", height: "100dvh", overflow: "hidden", paddingTop: "calc(65px + env(safe-area-inset-top))", paddingBottom: 0 }}
+      style={{ background: "var(--black)", fontFamily: "'Inter', sans-serif", height: "100dvh", overflow: "hidden", paddingTop: "calc(65px + env(safe-area-inset-top))", paddingBottom: inputBarHeight }}
       onClick={() => longPressMenu && setLongPressMenu(null)}
     >
 
@@ -591,7 +593,7 @@ export default function ChatPage() {
       <div
         ref={chatScrollRef}
         className="w-full max-w-2xl flex-1 min-h-0 p-3 sm:p-4 overflow-y-auto flex flex-col"
-        style={{ background: "var(--dark1)", border: "1px solid #1f1f1f", borderRadius: "var(--radius)", boxShadow: "var(--shadow)", overflowX: "hidden", marginBottom: inputBarHeight }}
+        style={{ background: "var(--dark1)", border: "1px solid #1f1f1f", borderRadius: "var(--radius)", boxShadow: "var(--shadow)", overflowX: "hidden" }}
       >
         {messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center gap-3">
