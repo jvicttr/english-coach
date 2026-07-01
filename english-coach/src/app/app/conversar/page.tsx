@@ -1648,6 +1648,14 @@ export default function Home() {
         </div>
       )}
 
+      {/* ── Topic badge (chat livre/temático) ───────────────── */}
+      {!trilhaStep && topic && (
+        <div className="w-full max-w-2xl mb-3 flex items-center justify-center gap-2 shrink-0">
+          <span style={{ fontSize: "1rem" }}>{topic.emoji}</span>
+          <span style={{ fontSize: "0.78rem", fontWeight: 700, color: topic.color }}>{topic.label}</span>
+        </div>
+      )}
+
       {/* ── Review: Flashcards ─────────────────────────────── */}
       {trilhaPhase === "review" && reviewPhase === "flashcards" && (
         <div className="w-full max-w-2xl flex-1 min-h-0 overflow-y-auto flex flex-col gap-3 p-1" style={{ marginBottom: 0 }}>
@@ -1987,13 +1995,32 @@ export default function Home() {
         </div>
       )}
 
+      {/* ── Botões de ação — chat livre/temático (fora da input bar, como roleplay) ── */}
+      {!trilhaStep && topic && !limitReached && messages.length >= 2 && trilhaPhase !== "review" && (
+        <div className="w-full max-w-2xl mb-2 flex gap-2">
+          <button onClick={() => endConversation("quiz")} disabled={isLoading} className="flex-1 py-2.5 rounded-xl text-sm font-bold transition-all disabled:opacity-40" style={{ background: "transparent", border: "1px solid rgba(245,200,0,0.3)", color: "var(--yellow)" }}>
+            🎯 Fazer quiz
+          </button>
+          <button onClick={() => isPro ? endConversation("flashcards") : router.push("/planos")} disabled={isLoading} className="flex-1 py-2.5 rounded-xl text-sm font-bold transition-all disabled:opacity-40" style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.15)", color: "var(--white)" }}>
+            🃏 Criar flashcards
+          </button>
+        </div>
+      )}
+
+      {/* ── pendingSpeak — chat livre/temático (fora da input bar) ── */}
+      {!trilhaStep && pendingSpeak && !isSpeaking && (
+        <div className="w-full max-w-2xl mb-2">
+          <button onClick={() => { const t = pendingSpeak; setPendingSpeak(null); speak(t); }} className="w-full py-2.5 rounded-xl text-sm font-bold" style={{ background: "rgba(245,200,0,0.1)", border: "1px solid rgba(245,200,0,0.35)", color: "var(--yellow)" }}>🔊 Toque para ouvir a resposta</button>
+        </div>
+      )}
+
       {/* ── Input bar fixo — estilo WhatsApp ───────────────── */}
       {trilhaPhase !== "review" && (
         <div ref={inputBarRef} style={{ position: "fixed", bottom: 0, left: 0, right: 0, background: "#111", borderTop: "1px solid #1e1e1e", paddingBottom: "env(safe-area-inset-bottom, 0px)", zIndex: 100 }}>
           <div style={{ maxWidth: "42rem", margin: "0 auto", padding: "8px 12px" }}>
 
-          {/* Áudio bloqueado */}
-          {pendingSpeak && !isSpeaking && (
+          {/* Áudio bloqueado — só para modo trilha (chat livre tem botão fora da input bar) */}
+          {trilhaStep && pendingSpeak && !isSpeaking && (
             <button onClick={() => { const t = pendingSpeak; setPendingSpeak(null); speak(t); }} style={{ width: "100%", marginBottom: 8, padding: "8px 0", borderRadius: 12, background: "rgba(245,200,0,0.1)", border: "1px solid rgba(245,200,0,0.35)", color: "var(--yellow)", fontSize: "0.82rem", fontWeight: 700, cursor: "pointer" }}>
               🔊 Toque para ouvir a resposta
             </button>
@@ -2008,31 +2035,6 @@ export default function Home() {
               <button onClick={proceedToFlashcards} disabled={isLoading || trilhaMsgCount < 8} style={{ width: "100%", padding: "8px 0", borderRadius: 12, background: trilhaMsgCount >= 8 ? "var(--yellow)" : "rgba(245,200,0,0.08)", border: "1px solid rgba(245,200,0,0.35)", color: trilhaMsgCount >= 8 ? "var(--black)" : "var(--yellow)", fontSize: "0.82rem", fontWeight: 700, cursor: trilhaMsgCount >= 8 ? "pointer" : "default", opacity: (isLoading || trilhaMsgCount < 8) ? 0.5 : 1 }}>
                 {trilhaMsgCount >= 8 ? "🃏 Ir para vocabulário →" : "🔒 Ir para vocabulário (faltam " + (8 - trilhaMsgCount) + ")"}
               </button>
-            </div>
-          )}
-
-          {/* Botões de ação — chat livre/temático */}
-          {!trilhaStep && topic && !limitReached && (
-            <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 8 }}>
-              {messages.length < 2 && (
-                <p style={{ textAlign: "center", fontSize: "0.72rem", fontWeight: 600, color: "var(--gray)", margin: 0 }}>
-                  {messages.length}/2 mensagens — continue conversando para desbloquear
-                </p>
-              )}
-              <div style={{ display: "flex", gap: 8 }}>
-                <button
-                  onClick={() => messages.length >= 2 ? endConversation("quiz") : undefined}
-                  disabled={isLoading || messages.length < 2}
-                  style={{ flex: 1, padding: "8px 0", borderRadius: 12, background: messages.length >= 2 ? "transparent" : "rgba(245,200,0,0.04)", border: "1px solid rgba(245,200,0,0.3)", color: "var(--yellow)", fontSize: "0.82rem", fontWeight: 700, cursor: messages.length >= 2 ? "pointer" : "default", opacity: isLoading || messages.length < 2 ? 0.45 : 1 }}>
-                  {messages.length < 2 ? "🔒 Fazer quiz" : "🎯 Fazer quiz"}
-                </button>
-                <button
-                  onClick={() => messages.length >= 2 ? (isPro ? endConversation("flashcards") : router.push("/planos")) : undefined}
-                  disabled={isLoading || messages.length < 2}
-                  style={{ flex: 1, padding: "8px 0", borderRadius: 12, background: messages.length >= 2 ? "transparent" : "rgba(255,255,255,0.02)", border: `1px solid ${messages.length >= 2 && isPro ? "rgba(255,255,255,0.15)" : "rgba(245,200,0,0.2)"}`, color: messages.length >= 2 && isPro ? "var(--white)" : "var(--yellow)", fontSize: "0.82rem", fontWeight: 700, cursor: messages.length >= 2 ? "pointer" : "default", opacity: isLoading || messages.length < 2 ? 0.45 : 1 }}>
-                  {messages.length < 2 ? "🔒 Criar flashcards" : isPro ? "🃏 Criar flashcards" : "🔒 Criar flashcards"}
-                </button>
-              </div>
             </div>
           )}
 
