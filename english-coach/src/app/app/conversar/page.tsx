@@ -2127,13 +2127,28 @@ export default function Home() {
             </div>
           )}
 
-          {/* Encerrar conversa livre */}
-          {!trilhaStep && messages.length >= 2 && !limitReached && (
-            <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
-              <button onClick={() => endConversation("quiz")} disabled={isLoading} style={{ flex: 1, padding: "8px 0", borderRadius: 12, background: "transparent", border: "1px solid rgba(245,200,0,0.3)", color: "var(--yellow)", fontSize: "0.82rem", fontWeight: 700, cursor: "pointer", opacity: isLoading ? 0.4 : 1 }}>🎯 Fazer quiz</button>
-              <button onClick={() => isPro ? endConversation("flashcards") : router.push("/planos")} disabled={isLoading} style={{ flex: 1, padding: "8px 0", borderRadius: 12, background: "transparent", border: `1px solid ${isPro ? "rgba(255,255,255,0.15)" : "rgba(245,200,0,0.2)"}`, color: isPro ? "var(--white)" : "var(--yellow)", fontSize: "0.82rem", fontWeight: 700, cursor: "pointer", opacity: isLoading ? 0.4 : 1 }}>
-                {isPro ? "🃏 Criar flashcards" : "🔒 Criar flashcards"}
-              </button>
+          {/* Botões de ação — chat livre/temático */}
+          {!trilhaStep && topic && !limitReached && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 8 }}>
+              {messages.length < 2 && (
+                <p style={{ textAlign: "center", fontSize: "0.72rem", fontWeight: 600, color: "var(--gray)", margin: 0 }}>
+                  {messages.length}/2 mensagens — continue conversando para desbloquear
+                </p>
+              )}
+              <div style={{ display: "flex", gap: 8 }}>
+                <button
+                  onClick={() => messages.length >= 2 ? endConversation("quiz") : undefined}
+                  disabled={isLoading || messages.length < 2}
+                  style={{ flex: 1, padding: "8px 0", borderRadius: 12, background: messages.length >= 2 ? "transparent" : "rgba(245,200,0,0.04)", border: "1px solid rgba(245,200,0,0.3)", color: "var(--yellow)", fontSize: "0.82rem", fontWeight: 700, cursor: messages.length >= 2 ? "pointer" : "default", opacity: isLoading || messages.length < 2 ? 0.45 : 1 }}>
+                  {messages.length < 2 ? "🔒 Fazer quiz" : "🎯 Fazer quiz"}
+                </button>
+                <button
+                  onClick={() => messages.length >= 2 ? (isPro ? endConversation("flashcards") : router.push("/planos")) : undefined}
+                  disabled={isLoading || messages.length < 2}
+                  style={{ flex: 1, padding: "8px 0", borderRadius: 12, background: messages.length >= 2 ? "transparent" : "rgba(255,255,255,0.02)", border: `1px solid ${messages.length >= 2 && isPro ? "rgba(255,255,255,0.15)" : "rgba(245,200,0,0.2)"}`, color: messages.length >= 2 && isPro ? "var(--white)" : "var(--yellow)", fontSize: "0.82rem", fontWeight: 700, cursor: messages.length >= 2 ? "pointer" : "default", opacity: isLoading || messages.length < 2 ? 0.45 : 1 }}>
+                  {messages.length < 2 ? "🔒 Criar flashcards" : isPro ? "🃏 Criar flashcards" : "🔒 Criar flashcards"}
+                </button>
+              </div>
             </div>
           )}
 
