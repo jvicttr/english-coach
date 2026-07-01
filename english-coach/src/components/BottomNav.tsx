@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useEffect } from "react";
 import { usePathname } from "next/navigation";
 
 const NAV_ITEMS = [
@@ -85,6 +85,15 @@ const NAV_STYLE = { background: "#0d0d0d", borderTop: "1px solid #1e1e1e" } as c
 export function BottomNavFixed() {
   const pathname = usePathname();
   const navRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    // iOS PWA fix: navigator.standalone is true only when saved to home screen on iOS
+    if (!(window.navigator as any).standalone) return;
+    const el = document.querySelector("[data-scroll-container]") as HTMLElement | null;
+    if (!el) return;
+    el.scrollTop += 1;
+    requestAnimationFrame(() => { el.scrollTop = Math.max(0, el.scrollTop - 1); });
+  }, [pathname]);
 
   if (
     /^\/app\/mensagens\/.+/.test(pathname) ||
