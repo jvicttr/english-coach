@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useRef } from "react";
 import { usePathname } from "next/navigation";
 
 const NAV_ITEMS = [
@@ -85,27 +85,6 @@ const NAV_STYLE = { background: "#0d0d0d", borderTop: "1px solid #1e1e1e" } as c
 export function BottomNavFixed() {
   const pathname = usePathname();
   const navRef = useRef<HTMLElement>(null);
-
-  useEffect(() => {
-    const vv = window.visualViewport;
-    if (!vv) return;
-
-    const update = () => {
-      const offset = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
-      if (navRef.current) {
-        navRef.current.style.transform = `translateY(-${offset}px)`;
-      }
-    };
-
-    vv.addEventListener("resize", update);
-    vv.addEventListener("scroll", update);
-    update();
-
-    return () => {
-      vv.removeEventListener("resize", update);
-      vv.removeEventListener("scroll", update);
-    };
-  }, []);
 
   if (
     pathname === "/app/mensagens" ||
