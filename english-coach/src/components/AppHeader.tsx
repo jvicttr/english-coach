@@ -168,7 +168,8 @@ const isHome = pathname === "/app";
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          {tierChip && (
+          <style>{`@keyframes sk-pulse{0%,100%{opacity:.4}50%{opacity:.15}}`}</style>
+          {tierChip ? (
             <a
               href="/app/conquistas"
               style={{
@@ -189,6 +190,8 @@ const isHome = pathname === "/app";
                 {tierChip.totalXp.toLocaleString("pt-BR")} XP
               </span>
             </a>
+          ) : (
+            <div style={{ width: 80, height: 28, borderRadius: 50, background: "#2a2a2a", animation: "sk-pulse 1.5s ease-in-out infinite" }} />
           )}
           <a
             href="/planos"
