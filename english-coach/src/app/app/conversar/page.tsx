@@ -2051,6 +2051,7 @@ export default function Home() {
           </div>
         )}
 
+        <div style={{ height: "var(--chat-pb, 70px)", flexShrink: 0 }} />
         <div ref={bottomRef} />
       </div>}
 
