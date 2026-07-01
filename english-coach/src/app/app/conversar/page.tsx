@@ -95,16 +95,15 @@ export default function Home() {
   const [couponLoading, setCouponLoading] = useState(false);
   const [topic, setTopic] = useState<TopicDef | null>(null);
   const [trilhaStep, setTrilhaStep] = useState<TrailStep | null>(null);
-  const [trilhaPhase, setTrilhaPhase] = useState<"chat1" | "flashcards" | "quiz" | "chat2" | "review" | null>(null);
+  const [trilhaPhase, setTrilhaPhase] = useState<"chat1" | "flashcards" | "quiz" | "review" | null>(null);
   const [trilhaMsgCount, setTrilhaMsgCount] = useState(0);
   const [trilhaChat1Messages, setTrilhaChat1Messages] = useState<Message[]>([]);
   const [trilhaFlashcards, setTrilhaFlashcards] = useState<TrilhaFlashcard[]>([]);
   const [trilhaQuizScore, setTrilhaQuizScore] = useState<{ score: number; total: number } | null>(null);
   // Review mode navigation
-  const [reviewPhase, setReviewPhase] = useState<"chat" | "flashcards" | "quiz" | "chat2">("chat");
+  const [reviewPhase, setReviewPhase] = useState<"chat" | "flashcards" | "quiz">("chat");
   const [reviewFlashcards, setReviewFlashcards] = useState<TrilhaFlashcard[]>([]);
   const [reviewQuiz, setReviewQuiz] = useState<{ quiz: Quiz; answers: (number | null)[]; score: number } | null>(null);
-  const [reviewChat2Messages, setReviewChat2Messages] = useState<Message[]>([]);
   const [reviewFcIndex, setReviewFcIndex] = useState(0);
   const [reviewFcFlipped, setReviewFcFlipped] = useState(false);
   const [fcIndex, setFcIndex] = useState(0);
@@ -189,8 +188,8 @@ export default function Home() {
   useEffect(() => {
     if (!trilhaStep) return;
 
-    // Chat1 and Chat2: save messages and msgCount
-    if ((trilhaPhase === "chat1" || trilhaPhase === "chat2") && messages.length > 0) {
+    // Chat1: save messages and msgCount
+    if (trilhaPhase === "chat1" && messages.length > 0) {
       try {
         localStorage.setItem(`trilhaContinue_${trilhaStep.id}`, JSON.stringify({ messages, msgCount: trilhaMsgCount, phase: trilhaPhase }));
       } catch {}
@@ -267,7 +266,7 @@ export default function Home() {
         try {
           const parsed = JSON.parse(pendingStep);
           localStorage.removeItem("pendingTrilhaStep");
-          const phase: "chat1" | "flashcards" | "quiz" | "chat2" | "review" = parsed.phase ?? "chat1";
+          const phase: "chat1" | "flashcards" | "quiz" | "review" = parsed.phase ?? "chat1";
           // eslint-disable-next-line @typescript-eslint/no-unused-vars
           const { phase: _p, isTrilha: _isTrilha, ...step } = parsed;
           setTrilhaStep(step as TrailStep);
@@ -307,10 +306,9 @@ export default function Home() {
                 }
               } catch {}
             }
-            // 2. Load flashcards, quiz and chat2 from localStorage
+            // 2. Load flashcards and quiz from localStorage
             let hasFc = false;
             let hasQuiz = false;
-            let hasChat2 = false;
             try {
               const fcRaw = localStorage.getItem(`trilhaReview_fc_${stepId}`);
               if (fcRaw) { setReviewFlashcards(JSON.parse(fcRaw)); hasFc = true; }
@@ -318,10 +316,6 @@ export default function Home() {
             try {
               const qRaw = localStorage.getItem(`trilhaReview_quiz_${stepId}`);
               if (qRaw) { setReviewQuiz(JSON.parse(qRaw)); hasQuiz = true; }
-            } catch {}
-            try {
-              const c2Raw = localStorage.getItem(`trilhaReview_chat2_${stepId}`);
-              if (c2Raw) { const parsed = JSON.parse(c2Raw); if (parsed?.length > 0) { setReviewChat2Messages(parsed); hasChat2 = true; } }
             } catch {}
             // 3. Fallback: fetch flashcards and quiz from Supabase if localStorage is missing
             if (!hasFc || !hasQuiz) {
@@ -340,16 +334,16 @@ export default function Home() {
                 }
               } catch {}
             }
-            // 4. Auto-navigate to first section with data
-            if (!chatLoaded && hasFc) setReviewPhase("flashcards");
-            else if (!chatLoaded && hasQuiz) setReviewPhase("quiz");
-            else if (!chatLoaded && hasChat2) setReviewPhase("chat2");
+            // 4. Auto-navigate: prefer flashcards as entry point in review
+            if (hasFc) setReviewPhase("flashcards");
+            else if (hasQuiz) setReviewPhase("quiz");
+            else if (!chatLoaded) setReviewPhase("chat");
             setIsLoading(false);
             return;
           }
 
           // Restore saved session — check Supabase first (cross-device), then localStorage
-          if (phase === "chat1" || phase === "chat2") {
+          if (phase === "chat1") {
             setIsLoading(true);
             let savedMessages: unknown[] | null = null;
             let savedMsgCount = 0;
@@ -509,9 +503,7 @@ export default function Home() {
           }
 
           // Fresh start: AI opens the conversation
-          const ctx = phase === "chat2"
-            ? `${(step as TrailStep).context}\n\nPRACTICE SESSION — The student has already had an initial conversation on this topic and just reviewed the key vocabulary with flashcards. Now guide a warm follow-up practice where they naturally use the vocabulary they studied. Be encouraging.`
-            : (step as TrailStep).context;
+          const ctx = (step as TrailStep).context;
           if (phase !== "chat1") setIsLoading(true); // chat1 already set isLoading above
           const stepId = (step as TrailStep).id;
           fetch("/api/chat", {
@@ -809,11 +801,7 @@ export default function Home() {
     if (trilhaStep) setTrilhaMsgCount((c) => c + 1);
     setIsLoading(true);
     try {
-      const activeStepContext = trilhaStep
-        ? trilhaPhase === "chat2"
-          ? `${trilhaStep.context}\n\nPRACTICE SESSION — The student reviewed flashcards from the first conversation. Guide a natural follow-up practice where they use the vocabulary they studied.`
-          : trilhaStep.context
-        : undefined;
+      const activeStepContext = trilhaStep ? trilhaStep.context : undefined;
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -929,7 +917,7 @@ export default function Home() {
           level,
         }),
       });
-      // Trilha: save quiz score for use in finalizePractice (startChat2 resets score/quiz state)
+      // Trilha: save quiz score for review mode
       if (trilhaStep && trilhaPhase === "chat1") {
         setTrilhaQuizScore({ score: finalScore, total: quiz?.questions.length ?? 0 });
         // Save for review mode (localStorage + link quiz session to step in Supabase)
@@ -1051,72 +1039,22 @@ export default function Home() {
           }).catch(() => {});
         }
       } else {
-        await startChat2();
+        await finalizePractice();
       }
     } catch {
-      await startChat2();
-    }
-  }
-
-  async function startChat2() {
-    if (!trilhaStep) return;
-    setMessages([]);
-    setInput("");
-    setQuiz(null);
-    setQuizSessionId(null);
-    setAnswers([]);
-    setCurrentQ(0);
-    setShowExplanation(false);
-    setScore(0);
-    setTrilhaFlashcards([]);
-    setFcIndex(0);
-    setFcFlipped(false);
-    setFcShowTranslation(false);
-    setTrilhaPhase("chat2");
-    setTrilhaMsgCount(0);
-    setScreen("chat");
-    const ctx = `${trilhaStep.context}\n\nPRACTICE SESSION — The student has already had an initial conversation on this topic and just reviewed the key vocabulary with flashcards. Now guide a warm follow-up practice where they naturally use the vocabulary they studied. Be encouraging.`;
-    setIsLoading(true);
-    try {
-      const res = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: [], level, topic: "free", topicStart: true, stepContext: ctx, stepLevel: trilhaStep.level }),
-      });
-      if (!res.ok) return;
-      const data = await res.json();
-      if (data.reply) {
-        const initialMsgs = [{ role: "assistant" as const, content: data.reply, translation: data.translation ?? undefined }];
-        setMessages(initialMsgs);
-        // Save state to localStorage (so if user leaves, we can restore to chat2)
-        try { localStorage.setItem(`trilhaContinue_${trilhaStep.id}`, JSON.stringify({ messages: initialMsgs, msgCount: 0, phase: "chat2" })); } catch {}
-      }
-    } finally {
-      setIsLoading(false);
+      await finalizePractice();
     }
   }
 
   async function finalizePractice() {
     if (!trilhaStep) return;
-    let savedScore: number = trilhaQuizScore?.score ?? 0;
-    let savedTotal: number = trilhaQuizScore?.total ?? 0;
-    // Fallback: if state was lost (navigation/refresh), recover from localStorage
-    if (!trilhaQuizScore) {
-      try {
-        const stored = localStorage.getItem(`trilhaReview_quiz_${trilhaStep.id}`);
-        if (stored) {
-          const parsed = JSON.parse(stored);
-          if (typeof parsed.score === "number") savedScore = parsed.score;
-          if (Array.isArray(parsed.quiz?.questions)) savedTotal = parsed.quiz.questions.length;
-        }
-      } catch {}
-    }
-    // Save chat2 messages for review mode
-    try { localStorage.setItem(`trilhaReview_chat2_${trilhaStep.id}`, JSON.stringify(messages)); } catch {}
+    // Use the current quiz score directly (score/quiz state is still active on result screen)
+    const finalScore = score;
+    const finalTotal = quiz?.questions.length ?? trilhaQuizScore?.total ?? 0;
     await fetch("/api/trilha", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ stepId: trilhaStep.id, score: savedScore, total: savedTotal }),
+      body: JSON.stringify({ stepId: trilhaStep.id, score: finalScore, total: finalTotal }),
     });
     setScreen("trail-complete");
   }
@@ -1255,11 +1193,11 @@ export default function Home() {
 
           {/* Phase indicator */}
           <div className="mb-5 flex items-center gap-2 text-xs" style={{ color: "var(--gray)" }}>
-            <span style={{ color: "#4ade80", fontWeight: 700 }}>✓ Fase 1</span>
+            <span style={{ color: "#4ade80", fontWeight: 700 }}>✓ Conversa</span>
             <span style={{ color: "var(--gray2)" }}>›</span>
-            <span style={{ color: "var(--yellow)", fontWeight: 700 }}>● Fase 2 · Vocabulário</span>
+            <span style={{ color: "var(--yellow)", fontWeight: 700 }}>● Vocabulário</span>
             <span style={{ color: "var(--gray2)" }}>›</span>
-            <span>Fase 3 · Prática</span>
+            <span>Quiz</span>
           </div>
 
           {/* Progress bar */}
@@ -1384,18 +1322,17 @@ export default function Home() {
             <p className="text-sm mt-2" style={{ color: "var(--yellow)", fontWeight: 700 }}>{trilhaStep.emoji} {trilhaStep.title}</p>
           </div>
           <p className="text-sm" style={{ color: "var(--gray)" }}>
-            Você completou as 3 fases desta etapa: conversa inicial, revisão de vocabulário e prática final. Excelente trabalho!
+            Você completou as 3 fases desta etapa: conversa, revisão de vocabulário e quiz. Excelente trabalho!
           </p>
           <div className="w-full flex flex-col gap-3 mt-2">
             <div className="w-full px-4 py-3 rounded-xl text-sm text-center" style={{ background: "rgba(74,222,128,0.08)", border: "1px solid rgba(74,222,128,0.2)" }}>
-              <span style={{ color: "#4ade80", fontWeight: 600 }}>✓ Fase 1 · Conversa inicial</span>
-              {score > 0 && quiz && <span style={{ color: "#4ade80", fontWeight: 700, marginLeft: "0.5rem" }}> · {score}/{quiz.questions.length} no quiz</span>}
+              <span style={{ color: "#4ade80", fontWeight: 600 }}>✓ Conversa inicial</span>
             </div>
             <div className="w-full px-4 py-3 rounded-xl text-sm text-center" style={{ background: "rgba(74,222,128,0.08)", border: "1px solid rgba(74,222,128,0.2)" }}>
-              <span style={{ color: "#4ade80", fontWeight: 600 }}>✓ Fase 2 · Revisão de vocabulário</span>
+              <span style={{ color: "#4ade80", fontWeight: 600 }}>✓ Revisão de vocabulário</span>
             </div>
             <div className="w-full px-4 py-3 rounded-xl text-sm text-center" style={{ background: "rgba(74,222,128,0.08)", border: "1px solid rgba(74,222,128,0.2)" }}>
-              <span style={{ color: "#4ade80", fontWeight: 600 }}>✓ Fase 3 · Prática</span>
+              <span style={{ color: "#4ade80", fontWeight: 600 }}>✓ Quiz · {trilhaQuizScore?.score ?? score}/{trilhaQuizScore?.total ?? quiz?.questions.length ?? 0} corretas</span>
             </div>
           </div>
           <button
@@ -1518,8 +1455,7 @@ export default function Home() {
         setSharing(false);
       }
     }
-    const trilhaChat1Passed = false; // quiz is now after flashcards; always proceed to chat2
-    const trilhaPassed = !!(trilhaStep && trilhaPhase !== "chat1" && pct >= 70);
+    const trilhaPassed = !!(trilhaStep && pct >= 70);
 
     return (
       <div className="flex flex-col items-center justify-center px-4 pb-8 min-h-screen" style={{ background: "var(--black)", fontFamily: "'Inter', sans-serif", paddingTop: "calc(65px + env(safe-area-inset-top, 0px))" }}>
@@ -1534,11 +1470,11 @@ export default function Home() {
           {/* Phase indicator for trail */}
           {trilhaStep && (
             <div className="flex items-center gap-2 text-xs" style={{ color: "var(--gray)" }}>
-              <span style={{ color: "#4ade80", fontWeight: 700 }}>✓ Fase 1</span>
+              <span style={{ color: "#4ade80", fontWeight: 700 }}>✓ Conversa</span>
               <span style={{ color: "var(--gray2)" }}>›</span>
-              <span style={{ color: "#4ade80", fontWeight: 700 }}>✓ Fase 2 · Vocabulário</span>
+              <span style={{ color: "#4ade80", fontWeight: 700 }}>✓ Vocabulário</span>
               <span style={{ color: "var(--gray2)" }}>›</span>
-              <span style={{ color: "var(--yellow)", fontWeight: 700 }}>● Fase 3 · Prática</span>
+              <span style={{ color: "var(--yellow)", fontWeight: 700 }}>● Quiz</span>
             </div>
           )}
 
@@ -1562,12 +1498,6 @@ export default function Home() {
             })}
           </div>
 
-          {trilhaStep && (
-            <div className="w-full px-4 py-3 rounded-xl text-center text-sm font-bold" style={{ background: "rgba(245,200,0,0.08)", border: "1px solid rgba(245,200,0,0.3)", color: "var(--yellow)" }}>
-              ✅ Quiz concluído! Agora é hora de praticar tudo em conversa.
-            </div>
-          )}
-
           <button
             onClick={shareQuizResult}
             disabled={sharing || shared}
@@ -1580,11 +1510,11 @@ export default function Home() {
           <div className="flex gap-3 w-full">
             {trilhaStep ? (
               <button
-                onClick={startChat2}
+                onClick={finalizePractice}
                 className="flex-1 py-3 rounded-xl font-bold text-sm"
                 style={{ background: "#4ade80", color: "#000" }}
               >
-                🗣️ Ir para prática →
+                ✅ Concluir etapa →
               </button>
             ) : (
               <>
@@ -1659,18 +1589,18 @@ export default function Home() {
           <div className="flex items-center gap-1.5 text-xs" style={{ color: "var(--gray)" }}>
             {trilhaPhase === "review" ? (
               <>
-                {(["chat", "flashcards", "quiz", "chat2"] as const).map((p, i) => {
-                  const label = ["1", "2", "3", "4"][i];
-                  const hasData = p === "chat" ? messages.length > 0 : p === "flashcards" ? reviewFlashcards.length > 0 : p === "quiz" ? !!reviewQuiz : reviewChat2Messages.length > 0;
+                {(["chat", "flashcards", "quiz"] as const).map((p, i) => {
+                  const labels = ["Conversa", "Vocab", "Quiz"];
+                  const hasData = p === "chat" ? messages.length > 0 : p === "flashcards" ? reviewFlashcards.length > 0 : !!reviewQuiz;
                   const isActive = reviewPhase === p;
                   return (
                     <span key={p} style={{ display: "flex", alignItems: "center", gap: 4 }}>
                       {i > 0 && <span style={{ color: "var(--gray2)" }}>›</span>}
                       <button
                         onClick={() => hasData && setReviewPhase(p)}
-                        style={{ fontWeight: 700, color: isActive ? "var(--yellow)" : hasData ? "#4ade80" : "var(--gray2)", background: "none", border: "none", cursor: hasData ? "pointer" : "default", padding: "2px 4px", borderRadius: 4, fontSize: "0.75rem", textDecoration: isActive ? "underline" : "none" }}
+                        style={{ fontWeight: 700, color: isActive ? "var(--yellow)" : hasData ? "#4ade80" : "var(--gray2)", background: isActive ? "rgba(245,200,0,0.1)" : "none", border: isActive ? "1px solid rgba(245,200,0,0.25)" : "1px solid transparent", cursor: hasData ? "pointer" : "default", padding: "2px 7px", borderRadius: 6, fontSize: "0.7rem" }}
                       >
-                        {hasData ? "✓" : ""}{label}
+                        {labels[i]}
                       </button>
                     </span>
                   );
@@ -1678,55 +1608,37 @@ export default function Home() {
               </>
             ) : (
               <>
-                <span style={{ color: "#4ade80", fontWeight: 700 }}>✓1</span>
-                <span style={{ color: "var(--gray2)" }}>›</span>
                 {screen === "chat" && trilhaPhase === "chat1" ? (
                   <>
-                    <span style={{ color: "var(--yellow)", fontWeight: 700 }}>●1</span>
+                    <span style={{ color: "var(--yellow)", fontWeight: 700 }}>● Conversa</span>
                     <span style={{ color: "var(--gray2)" }}>›</span>
-                    <span>2</span>
+                    <span style={{ color: "var(--gray2)" }}>Vocab</span>
                     <span style={{ color: "var(--gray2)" }}>›</span>
-                    <span>3</span>
-                    <span style={{ color: "var(--gray2)" }}>›</span>
-                    <span>4</span>
+                    <span style={{ color: "var(--gray2)" }}>Quiz</span>
                   </>
                 ) : screen === "trail-fc" ? (
                   <>
-                    <span style={{ color: "#4ade80", fontWeight: 700 }}>✓1</span>
+                    <span style={{ color: "#4ade80", fontWeight: 700 }}>✓ Conversa</span>
                     <span style={{ color: "var(--gray2)" }}>›</span>
-                    <span style={{ color: "var(--yellow)", fontWeight: 700 }}>●2</span>
+                    <span style={{ color: "var(--yellow)", fontWeight: 700 }}>● Vocab</span>
                     <span style={{ color: "var(--gray2)" }}>›</span>
-                    <span>3</span>
-                    <span style={{ color: "var(--gray2)" }}>›</span>
-                    <span>4</span>
+                    <span style={{ color: "var(--gray2)" }}>Quiz</span>
                   </>
-                ) : screen === "quiz" ? (
+                ) : (screen === "quiz" || screen === "result") ? (
                   <>
-                    <span style={{ color: "#4ade80", fontWeight: 700 }}>✓1</span>
+                    <span style={{ color: "#4ade80", fontWeight: 700 }}>✓ Conversa</span>
                     <span style={{ color: "var(--gray2)" }}>›</span>
-                    <span style={{ color: "#4ade80", fontWeight: 700 }}>✓2</span>
+                    <span style={{ color: "#4ade80", fontWeight: 700 }}>✓ Vocab</span>
                     <span style={{ color: "var(--gray2)" }}>›</span>
-                    <span style={{ color: "var(--yellow)", fontWeight: 700 }}>●3</span>
-                    <span style={{ color: "var(--gray2)" }}>›</span>
-                    <span>4</span>
-                  </>
-                ) : screen === "chat" && trilhaPhase === "chat2" ? (
-                  <>
-                    <span style={{ color: "#4ade80", fontWeight: 700 }}>✓1</span>
-                    <span style={{ color: "var(--gray2)" }}>›</span>
-                    <span style={{ color: "#4ade80", fontWeight: 700 }}>✓2</span>
-                    <span style={{ color: "var(--gray2)" }}>›</span>
-                    <span style={{ color: "#4ade80", fontWeight: 700 }}>✓3</span>
-                    <span style={{ color: "var(--gray2)" }}>›</span>
-                    <span style={{ color: "var(--yellow)", fontWeight: 700 }}>●4</span>
+                    <span style={{ color: "var(--yellow)", fontWeight: 700 }}>● Quiz</span>
                   </>
                 ) : (
                   <>
-                    <span>2</span>
+                    <span style={{ color: "var(--gray2)" }}>Conversa</span>
                     <span style={{ color: "var(--gray2)" }}>›</span>
-                    <span>3</span>
+                    <span style={{ color: "var(--gray2)" }}>Vocab</span>
                     <span style={{ color: "var(--gray2)" }}>›</span>
-                    <span>4</span>
+                    <span style={{ color: "var(--gray2)" }}>Quiz</span>
                   </>
                 )}
               </>
@@ -1802,25 +1714,6 @@ export default function Home() {
                 );
               })}
             </>
-          )}
-        </div>
-      )}
-
-      {/* ── Review: Chat2 (prática de vocabulário) ──────────── */}
-      {trilhaPhase === "review" && reviewPhase === "chat2" && (
-        <div className="w-full max-w-2xl flex-1 min-h-0 overflow-y-auto p-3 sm:p-4"
-          style={{ background: "var(--dark1)", border: "1px solid #1f1f1f", borderRadius: "var(--radius)", marginBottom: 0 }}>
-          {reviewChat2Messages.length === 0 ? (
-            <div style={{ textAlign: "center", color: "var(--gray)", paddingTop: 40 }}>Prática não disponível neste dispositivo.</div>
-          ) : (
-            reviewChat2Messages.map((msg, i) => (
-              <div key={i} className={`mb-3 flex ${msg.role === "user" ? "justify-end" : "justify-start"} items-end gap-2`}>
-                {msg.role === "assistant" && <div style={{ width: 28, height: 28, borderRadius: "50%", background: "var(--yellow)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.75rem", flexShrink: 0 }}>🎓</div>}
-                <div style={{ maxWidth: "80%", padding: "10px 13px", borderRadius: msg.role === "user" ? "18px 18px 4px 18px" : "18px 18px 18px 4px", background: msg.role === "user" ? "var(--yellow)" : "var(--dark2)", color: msg.role === "user" ? "#000" : "#fff", fontSize: "0.85rem", lineHeight: 1.5 }}>
-                  {msg.content}
-                </div>
-              </div>
-            ))
           )}
         </div>
       )}
@@ -2112,16 +2005,6 @@ export default function Home() {
               </p>
               <button onClick={proceedToFlashcards} disabled={isLoading || trilhaMsgCount < 8} style={{ width: "100%", padding: "8px 0", borderRadius: 12, background: trilhaMsgCount >= 8 ? "var(--yellow)" : "rgba(245,200,0,0.08)", border: "1px solid rgba(245,200,0,0.35)", color: trilhaMsgCount >= 8 ? "var(--black)" : "var(--yellow)", fontSize: "0.82rem", fontWeight: 700, cursor: trilhaMsgCount >= 8 ? "pointer" : "default", opacity: (isLoading || trilhaMsgCount < 8) ? 0.5 : 1 }}>
                 {trilhaMsgCount >= 8 ? "🃏 Ir para vocabulário →" : "🔒 Ir para vocabulário (faltam " + (8 - trilhaMsgCount) + ")"}
-              </button>
-            </div>
-          )}
-          {trilhaPhase === "chat2" && !limitReached && (
-            <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 8 }}>
-              <p style={{ textAlign: "center", fontSize: "0.72rem", fontWeight: 600, color: "var(--gray)", margin: 0 }}>
-                {trilhaMsgCount}/4 mensagens enviadas{trilhaMsgCount < 4 ? " — pratique mais um pouco!" : " — pronto para concluir!"}
-              </p>
-              <button onClick={finalizePractice} disabled={isLoading || trilhaMsgCount < 4} style={{ width: "100%", padding: "8px 0", borderRadius: 12, background: trilhaMsgCount >= 4 ? "rgba(74,222,128,0.15)" : "rgba(74,222,128,0.06)", border: "1px solid rgba(74,222,128,0.4)", color: "#4ade80", fontSize: "0.82rem", fontWeight: 700, cursor: trilhaMsgCount >= 4 ? "pointer" : "default", opacity: (isLoading || trilhaMsgCount < 4) ? 0.5 : 1 }}>
-                {trilhaMsgCount >= 4 ? "✅ Finalizar prática e concluir etapa" : "🔒 Finalizar prática (faltam " + (4 - trilhaMsgCount) + ")"}
               </button>
             </div>
           )}
