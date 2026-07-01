@@ -75,7 +75,7 @@ export default function RolePlay() {
     const syncBar = () => {
       const h = el.offsetHeight;
       setInputBarHeight(h);
-      if (outerRef.current) outerRef.current.style.paddingBottom = `${h}px`;
+      document.documentElement.style.setProperty("--chat-pb", `${h}px`);
       requestAnimationFrame(() => {
         if (chatRef.current) chatRef.current.scrollTop = chatRef.current.scrollHeight;
       });
@@ -571,7 +571,7 @@ export default function RolePlay() {
 
   // ── Chat ─────────────────────────────────────────────────────────────────
   return (
-    <div ref={outerRef} className="flex flex-col items-center px-3 sm:px-4" style={{ background: "var(--black)", fontFamily: "'Inter', sans-serif", position: "fixed", top: 0, left: 0, right: 0, bottom: 0, overflow: "hidden", paddingTop: "calc(65px + env(safe-area-inset-top))", paddingBottom: inputBarHeight }}>
+    <div ref={outerRef} className="flex flex-col items-center px-3 sm:px-4" style={{ background: "var(--black)", fontFamily: "'Inter', sans-serif", position: "fixed", top: 0, left: 0, right: 0, bottom: 0, overflow: "hidden", paddingTop: "calc(65px + env(safe-area-inset-top))", paddingBottom: "var(--chat-pb, 70px)" }}>
       {scenario && (
         <div className="w-full max-w-2xl mb-3 flex items-center justify-center gap-2 shrink-0">
           <span style={{ fontSize: "1rem" }}>{scenario.emoji}</span>
