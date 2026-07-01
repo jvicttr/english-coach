@@ -57,6 +57,8 @@ export default function RolePlay() {
   const [score, setScore] = useState(0);
 
   const bottomRef = useRef<HTMLDivElement>(null);
+  const inputBarRef = useRef<HTMLDivElement>(null);
+  const [inputBarHeight, setInputBarHeight] = useState(70);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const audioUnlockedRef = useRef(false);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -64,6 +66,18 @@ export default function RolePlay() {
   const autoStopTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const recognitionRef = useRef<AnySpeechRecognition>(null);
+
+  useEffect(() => {
+    const el = inputBarRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => {
+      setInputBarHeight(el.offsetHeight);
+      requestAnimationFrame(() => bottomRef.current?.scrollIntoView({ behavior: "instant" as ScrollBehavior }));
+    });
+    ro.observe(el);
+    setInputBarHeight(el.offsetHeight);
+    return () => ro.disconnect();
+  }, []);
 
   // Auto-save quiz on tab close or navigation away
   const quizSaveRef = useRef({ screen, quizSessionId, quiz, answers });
@@ -558,7 +572,7 @@ export default function RolePlay() {
         </div>
       )}
 
-      <div className="w-full max-w-2xl flex-1 min-h-0 p-3 sm:p-4 overflow-y-auto" style={{ background: "var(--dark1)", border: "1px solid #1f1f1f", borderRadius: "var(--radius)", boxShadow: "var(--shadow)", marginBottom: "calc(70px + env(safe-area-inset-bottom, 0px))" }}>
+      <div className="w-full max-w-2xl flex-1 min-h-0 p-3 sm:p-4 overflow-y-auto flex flex-col" style={{ background: "var(--dark1)", border: "1px solid #1f1f1f", borderRadius: "var(--radius)", boxShadow: "var(--shadow)", marginBottom: inputBarHeight }}>
         {messages.length === 0 && isLoading && (
           <div className="flex flex-col items-center justify-center gap-3" style={{ minHeight: "60%", paddingBottom: "20%" }}>
             <div className="text-3xl">{scenario?.emoji}</div>
@@ -568,6 +582,8 @@ export default function RolePlay() {
             <p className="text-xs" style={{ color: "var(--gray)" }}>Preparando o cenário...</p>
           </div>
         )}
+
+        <div style={{ flex: 1 }} />
 
         {messages.map((msg, i) => (
           <div key={i} className={`mb-3 flex ${msg.role === "user" ? "justify-end" : "justify-start"} items-end gap-2`}>
@@ -726,7 +742,7 @@ export default function RolePlay() {
       )}
 
       {/* Input bar fixo — estilo WhatsApp */}
-      <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, background: "#111", borderTop: "1px solid #1e1e1e", padding: "8px 12px", paddingBottom: "calc(8px + env(safe-area-inset-bottom, 0px))", zIndex: 100 }}>
+      <div ref={inputBarRef} style={{ position: "fixed", bottom: 0, left: 0, right: 0, background: "#111", borderTop: "1px solid #1e1e1e", padding: "8px 12px", paddingBottom: "calc(8px + env(safe-area-inset-bottom, 0px))", zIndex: 100 }}>
         {(isListening || isTranscribing || isSpeaking) && (
           <div style={{ textAlign: "center", fontSize: "11px", marginBottom: 6 }}>
             {isListening ? <span style={{ color: "#ef4444" }}>● Gravando — toque em ⏹ para enviar</span>

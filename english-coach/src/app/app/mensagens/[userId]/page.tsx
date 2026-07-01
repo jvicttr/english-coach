@@ -239,6 +239,8 @@ export default function ChatPage() {
   const [highlightedMsgId, setHighlightedMsgId] = useState<string | null>(null);
 
   const bottomRef = useRef<HTMLDivElement>(null);
+  const inputBarRef = useRef<HTMLDivElement>(null);
+  const [inputBarHeight, setInputBarHeight] = useState(70);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const mrRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
@@ -247,6 +249,18 @@ export default function ChatPage() {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const msgRefsMap = useRef<Map<string, HTMLElement>>(new Map());
   const chatScrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = inputBarRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => {
+      setInputBarHeight(el.offsetHeight);
+      requestAnimationFrame(() => bottomRef.current?.scrollIntoView({ behavior: "instant" as ScrollBehavior }));
+    });
+    ro.observe(el);
+    setInputBarHeight(el.offsetHeight);
+    return () => ro.disconnect();
+  }, []);
 
   useEffect(() => {
     if (!user?.id || !otherUserId) return;
@@ -571,8 +585,8 @@ export default function ChatPage() {
       {/* Chat area */}
       <div
         ref={chatScrollRef}
-        className="w-full max-w-2xl flex-1 min-h-0 p-3 sm:p-4 overflow-y-auto"
-        style={{ background: "var(--dark1)", border: "1px solid #1f1f1f", borderRadius: "var(--radius)", boxShadow: "var(--shadow)", overflowX: "hidden", marginBottom: "calc(70px + env(safe-area-inset-bottom, 0px))" }}
+        className="w-full max-w-2xl flex-1 min-h-0 p-3 sm:p-4 overflow-y-auto flex flex-col"
+        style={{ background: "var(--dark1)", border: "1px solid #1f1f1f", borderRadius: "var(--radius)", boxShadow: "var(--shadow)", overflowX: "hidden", marginBottom: inputBarHeight }}
       >
         {messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center gap-3">
@@ -582,7 +596,7 @@ export default function ChatPage() {
               <p className="text-xs mt-1" style={{ color: "var(--gray)" }}>Comece a conversa!</p>
             </div>
           </div>
-        ) : messages.flatMap((msg: any, idx: number) => {
+        ) : (<><div style={{ flex: 1 }} />{messages.flatMap((msg: any, idx: number) => {
           const isOwn = msg.sender_id === user?.id;
           const showSep = idx === 0 || getBrasiliaDay(msg.created_at) !== getBrasiliaDay(messages[idx - 1].created_at);
           const swipeOffset = getSwipeOffset(msg.id);
@@ -801,7 +815,7 @@ export default function ChatPage() {
           );
 
           return els;
-        })}
+        })}</>)}
         <div ref={bottomRef} />
       </div>
 
@@ -949,7 +963,7 @@ export default function ChatPage() {
       )}
 
       {/* Input bar — estilo WhatsApp, fixo no fundo */}
-      <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, background: "#111", borderTop: "1px solid #1e1e1e", padding: "8px 12px", paddingBottom: "calc(8px + env(safe-area-inset-bottom, 0px))", zIndex: 100 }}>
+      <div ref={inputBarRef} style={{ position: "fixed", bottom: 0, left: 0, right: 0, background: "#111", borderTop: "1px solid #1e1e1e", padding: "8px 12px", paddingBottom: "calc(8px + env(safe-area-inset-bottom, 0px))", zIndex: 100 }}>
         {/* Audio preview */}
         {audioUrl && (
           <div style={{ display: "flex", alignItems: "center", gap: 8, background: "#1a1a1a", border: "1px solid #2a2a2a", borderRadius: 10, padding: "7px 10px", marginBottom: 8 }}>

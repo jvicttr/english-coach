@@ -137,7 +137,10 @@ export default function Home() {
   useEffect(() => {
     const el = inputBarRef.current;
     if (!el) return;
-    const ro = new ResizeObserver(() => setInputBarHeight(el.offsetHeight));
+    const ro = new ResizeObserver(() => {
+      setInputBarHeight(el.offsetHeight);
+      requestAnimationFrame(() => bottomRef.current?.scrollIntoView({ behavior: "instant" as ScrollBehavior }));
+    });
     ro.observe(el);
     setInputBarHeight(el.offsetHeight);
     return () => ro.disconnect();
