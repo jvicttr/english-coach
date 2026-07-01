@@ -95,6 +95,59 @@ export default function PerfilPage() {
     ? Math.min(100, Math.round(((data.totalXp - data.tier.min) / (data.nextTier.min - data.tier.min)) * 100))
     : 100;
 
+  const loading = !data || !level;
+
+  if (loading) return (
+    <div style={{ background: "var(--black)", fontFamily: "'Inter', sans-serif", minHeight: "100dvh", display: "flex", flexDirection: "column", alignItems: "center", paddingTop: "calc(65px + env(safe-area-inset-top))", paddingBottom: "calc(56px + env(safe-area-inset-bottom, 0px))" }}>
+      <div style={{ width: "100%", padding: "10px 16px", borderBottom: "1px solid #1e1e1e" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: "1rem", fontWeight: 800, color: "var(--white)" }}>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          Perfil
+        </div>
+      </div>
+      <div style={{ width: "100%", maxWidth: 672, padding: "20px 16px", display: "flex", flexDirection: "column", gap: 14 }}>
+        <style>{`@keyframes sk-pulse{0%,100%{opacity:.4}50%{opacity:.15}}`}</style>
+        {/* Avatar skeleton */}
+        <div style={{ background: "var(--dark2)", borderRadius: 16, padding: "20px 18px", display: "flex", alignItems: "center", gap: 16 }}>
+          <div style={{ width: 56, height: 56, borderRadius: "50%", background: "#2a2a2a", flexShrink: 0, animation: "sk-pulse 1.5s ease-in-out infinite" }} />
+          <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 8 }}>
+            <div style={{ height: 14, width: "55%", borderRadius: 6, background: "#2a2a2a", animation: "sk-pulse 1.5s ease-in-out infinite" }} />
+            <div style={{ height: 11, width: "40%", borderRadius: 6, background: "#2a2a2a", animation: "sk-pulse 1.5s ease-in-out infinite 0.2s" }} />
+            <div style={{ height: 10, width: "65%", borderRadius: 6, background: "#2a2a2a", animation: "sk-pulse 1.5s ease-in-out infinite 0.4s" }} />
+          </div>
+          <div style={{ width: 36, height: 22, borderRadius: 50, background: "#2a2a2a", animation: "sk-pulse 1.5s ease-in-out infinite" }} />
+        </div>
+        {/* Nível skeleton */}
+        <div style={{ background: "var(--dark2)", borderRadius: 16, padding: "16px 18px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <div style={{ width: 32, height: 32, borderRadius: 8, background: "#2a2a2a", animation: "sk-pulse 1.5s ease-in-out infinite" }} />
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              <div style={{ height: 10, width: 100, borderRadius: 6, background: "#2a2a2a", animation: "sk-pulse 1.5s ease-in-out infinite 0.1s" }} />
+              <div style={{ height: 13, width: 80, borderRadius: 6, background: "#2a2a2a", animation: "sk-pulse 1.5s ease-in-out infinite 0.2s" }} />
+            </div>
+          </div>
+          <div style={{ width: 52, height: 28, borderRadius: 8, background: "#2a2a2a", animation: "sk-pulse 1.5s ease-in-out infinite" }} />
+        </div>
+        {/* Handle skeleton */}
+        <div style={{ background: "var(--dark2)", borderRadius: 16, padding: "16px 18px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <div style={{ height: 10, width: 110, borderRadius: 6, background: "#2a2a2a", animation: "sk-pulse 1.5s ease-in-out infinite 0.1s" }} />
+            <div style={{ height: 13, width: 80, borderRadius: 6, background: "#2a2a2a", animation: "sk-pulse 1.5s ease-in-out infinite 0.2s" }} />
+          </div>
+          <div style={{ width: 52, height: 28, borderRadius: 8, background: "#2a2a2a", animation: "sk-pulse 1.5s ease-in-out infinite" }} />
+        </div>
+        {/* Plan skeleton */}
+        <div style={{ background: "var(--dark2)", borderRadius: 16, padding: "16px 18px", display: "flex", alignItems: "center", gap: 14 }}>
+          <div style={{ width: 40, height: 40, borderRadius: 12, background: "#2a2a2a", flexShrink: 0, animation: "sk-pulse 1.5s ease-in-out infinite" }} />
+          <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 6 }}>
+            <div style={{ height: 13, width: "50%", borderRadius: 6, background: "#2a2a2a", animation: "sk-pulse 1.5s ease-in-out infinite 0.1s" }} />
+            <div style={{ height: 10, width: "70%", borderRadius: 6, background: "#2a2a2a", animation: "sk-pulse 1.5s ease-in-out infinite 0.2s" }} />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
   return (
     <div style={{ background: "var(--black)", fontFamily: "'Inter', sans-serif", minHeight: "100dvh", display: "flex", flexDirection: "column", alignItems: "center", paddingTop: "calc(65px + env(safe-area-inset-top))", paddingBottom: "calc(56px + env(safe-area-inset-bottom, 0px))" }}>
       <div style={{ width: "100%", padding: "10px 16px", borderBottom: "1px solid #1e1e1e" }}>
