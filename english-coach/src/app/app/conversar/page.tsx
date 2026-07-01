@@ -126,11 +126,22 @@ export default function Home() {
   const [shared, setShared] = useState(false);
 
   const bottomRef = useRef<HTMLDivElement>(null);
+  const inputBarRef = useRef<HTMLDivElement>(null);
+  const [inputBarHeight, setInputBarHeight] = useState(70);
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const recognitionRef = useRef<AnySpeechRecognition>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const autoStopTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    const el = inputBarRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => setInputBarHeight(el.offsetHeight));
+    ro.observe(el);
+    setInputBarHeight(el.offsetHeight);
+    return () => ro.disconnect();
+  }, []);
 
   // Warn before closing tab mid-trilha
   const trilhaSaveRef = useRef({ trilhaStep, messages });
@@ -1715,7 +1726,7 @@ export default function Home() {
 
       {/* ── Review: Flashcards ─────────────────────────────── */}
       {trilhaPhase === "review" && reviewPhase === "flashcards" && (
-        <div className="w-full max-w-2xl flex-1 min-h-0 overflow-y-auto flex flex-col gap-3 p-1" style={{ marginBottom: "calc(70px + env(safe-area-inset-bottom, 0px))" }}>
+        <div className="w-full max-w-2xl flex-1 min-h-0 overflow-y-auto flex flex-col gap-3 p-1" style={{ marginBottom: inputBarHeight }}>
           {reviewFlashcards.length === 0 ? (
             <div style={{ textAlign: "center", color: "var(--gray)", paddingTop: 40 }}>Flashcards não disponíveis neste dispositivo.</div>
           ) : (
@@ -1751,7 +1762,7 @@ export default function Home() {
 
       {/* ── Review: Quiz ───────────────────────────────────── */}
       {trilhaPhase === "review" && reviewPhase === "quiz" && (
-        <div className="w-full max-w-2xl flex-1 min-h-0 overflow-y-auto flex flex-col gap-3 p-1" style={{ marginBottom: "calc(70px + env(safe-area-inset-bottom, 0px))" }}>
+        <div className="w-full max-w-2xl flex-1 min-h-0 overflow-y-auto flex flex-col gap-3 p-1" style={{ marginBottom: inputBarHeight }}>
           {!reviewQuiz ? (
             <div style={{ textAlign: "center", color: "var(--gray)", paddingTop: 40 }}>Quiz não disponível neste dispositivo.</div>
           ) : (
@@ -1787,7 +1798,7 @@ export default function Home() {
       {/* ── Review: Chat2 (prática de vocabulário) ──────────── */}
       {trilhaPhase === "review" && reviewPhase === "chat2" && (
         <div className="w-full max-w-2xl flex-1 min-h-0 overflow-y-auto p-3 sm:p-4"
-          style={{ background: "var(--dark1)", border: "1px solid #1f1f1f", borderRadius: "var(--radius)", marginBottom: "calc(70px + env(safe-area-inset-bottom, 0px))" }}>
+          style={{ background: "var(--dark1)", border: "1px solid #1f1f1f", borderRadius: "var(--radius)", marginBottom: inputBarHeight }}>
           {reviewChat2Messages.length === 0 ? (
             <div style={{ textAlign: "center", color: "var(--gray)", paddingTop: 40 }}>Prática não disponível neste dispositivo.</div>
           ) : (
@@ -1806,7 +1817,7 @@ export default function Home() {
       {/* ── Chat area ──────────────────────────────────────── */}
       {(trilhaPhase !== "review" || reviewPhase === "chat") && <div
         className="w-full max-w-2xl flex-1 min-h-0 p-3 sm:p-4 overflow-y-auto"
-        style={{ background: "var(--dark1)", border: "1px solid #1f1f1f", borderRadius: "var(--radius)", boxShadow: "var(--shadow)", marginBottom: "calc(70px + env(safe-area-inset-bottom, 0px))" }}
+        style={{ background: "var(--dark1)", border: "1px solid #1f1f1f", borderRadius: "var(--radius)", boxShadow: "var(--shadow)", marginBottom: inputBarHeight }}
       >
         {/* ── Topic loading (AI opening message) ──────────── */}
         {messages.length === 0 && topic && isLoading && (
@@ -2069,7 +2080,7 @@ export default function Home() {
 
       {/* ── Input bar fixo — estilo WhatsApp ───────────────── */}
       {trilhaPhase !== "review" && (
-        <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, background: "#111", borderTop: "1px solid #1e1e1e", padding: "8px 12px", paddingBottom: "calc(8px + env(safe-area-inset-bottom, 0px))", zIndex: 100 }}>
+        <div ref={inputBarRef} style={{ position: "fixed", bottom: 0, left: 0, right: 0, background: "#111", borderTop: "1px solid #1e1e1e", padding: "8px 12px", paddingBottom: "calc(8px + env(safe-area-inset-bottom, 0px))", zIndex: 100 }}>
 
           {/* Áudio bloqueado */}
           {pendingSpeak && !isSpeaking && (
