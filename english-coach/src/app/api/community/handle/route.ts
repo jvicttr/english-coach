@@ -33,14 +33,28 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Handle muito curto (mínimo 2 caracteres)" }, { status: 400 });
   }
 
-  // Check uniqueness
-  const { data: existing } = await db.from("user_xp").select("user_id").filter("handle", "ilike", clean).maybeSingle();
+  // Check uniqueness (case-insensitive)
+  const { data: existing } = await db
+    .from("user_xp")
+    .select("user_id")
+    .filter("handle", "ilike", clean)
+    .maybeSingle();
 
   if (existing && existing.user_id !== userId) {
-    return NextResponse.json({ error: "Esse handle já está em uso" }, { status: 409 });
+    return NextResponse.json({ error: "Esse @ já está em uso por outro usuário" }, { status: 409 });
   }
 
-  await db.from("user_xp").upsert({ user_id: userId, handle: clean }, { onConflict: "user_id" });
+  const { error: saveError } = await db
+    .from("user_xp")
+    .upsert({ user_id: userId, handle: clean }, { onConflict: "user_id" });
+
+  // Catch DB-level unique constraint violation (race condition)
+  if (saveError) {
+    if (saveError.code === "23505") {
+      return NextResponse.json({ error: "Esse @ já está em uso por outro usuário" }, { status: 409 });
+    }
+    return NextResponse.json({ error: "Erro ao salvar handle" }, { status: 500 });
+  }
 
   return NextResponse.json({ handle: clean });
 }
