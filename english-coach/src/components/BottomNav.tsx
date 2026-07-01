@@ -97,7 +97,17 @@ export function BottomNavFixed() {
   return (
     <nav
       ref={navRef}
-      style={{ ...NAV_STYLE, position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 50 }}
+      style={{
+        ...NAV_STYLE,
+        position: "fixed",
+        bottom: 0,
+        left: 0,
+        right: 0,
+        zIndex: 50,
+        transform: "translateZ(0)",
+        WebkitTransform: "translateZ(0)",
+        paddingBottom: "env(safe-area-inset-bottom, 0px)",
+      }}
     >
       <NavItems />
     </nav>
