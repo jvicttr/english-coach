@@ -10,7 +10,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       <UserSync />
       <AppHeader />
       <NotificationPromptBanner />
-      {children}
+      <div style={{ minHeight: "100dvh", background: "#0d0d0d" }}>
+        {children}
+      </div>
       <BottomNavFixed />
       <IOSInstallBanner />
     </>
