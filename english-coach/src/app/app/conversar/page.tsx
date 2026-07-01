@@ -1816,7 +1816,7 @@ export default function Home() {
 
       {/* ── Chat area ──────────────────────────────────────── */}
       {(trilhaPhase !== "review" || reviewPhase === "chat") && <div
-        className="w-full max-w-2xl flex-1 min-h-0 p-3 sm:p-4 overflow-y-auto"
+        className="w-full max-w-2xl flex-1 min-h-0 p-3 sm:p-4 overflow-y-auto flex flex-col"
         style={{ background: "var(--dark1)", border: "1px solid #1f1f1f", borderRadius: "var(--radius)", boxShadow: "var(--shadow)", marginBottom: inputBarHeight }}
       >
         {/* ── Topic loading (AI opening message) ──────────── */}
@@ -1861,6 +1861,9 @@ export default function Home() {
             </button>
           </div>
         )}
+
+        {/* Spacer — empurra as mensagens para baixo quando poucas */}
+        <div style={{ flex: 1 }} />
 
         {/* ── Active topic pill ───────────────────────────── */}
         {topic && messages.length > 0 && (
