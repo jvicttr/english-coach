@@ -1825,6 +1825,27 @@ export default function Home() {
         </div>
       )}
 
+      {/* ── Active topic pill (fixo no topo do chat) ───────── */}
+      {!trilhaStep && topic && messages.length > 0 && (
+        <div className="w-full max-w-2xl" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "6px 4px 8px", borderBottom: "1px solid #1f1f1f", flexShrink: 0 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+            <span style={{ fontSize: "1rem" }}>{topic.emoji}</span>
+            <span style={{ fontSize: "0.72rem", fontWeight: 700, color: topic.color }}>{topic.label}</span>
+            {level && (
+              <span style={{ fontSize: "0.62rem", color: "var(--gray2)", background: "var(--dark2)", padding: "1px 7px", borderRadius: "50px", border: "1px solid #2a2a2a" }}>
+                {level === "beginner" ? "Básico" : level === "intermediate" ? "Intermediário" : "Avançado"}
+              </span>
+            )}
+          </div>
+          <button
+            onClick={restartChat}
+            style={{ fontSize: "0.68rem", color: "var(--gray2)", background: "transparent", border: "none", cursor: "pointer", opacity: 0.7 }}
+          >
+            Trocar tópico
+          </button>
+        </div>
+      )}
+
       {/* ── Chat area ──────────────────────────────────────── */}
       {(trilhaPhase !== "review" || reviewPhase === "chat") && <div
         ref={chatRef}
@@ -1876,27 +1897,6 @@ export default function Home() {
 
         {/* Spacer — empurra as mensagens para baixo quando poucas */}
         <div style={{ flex: 1 }} />
-
-        {/* ── Active topic pill ───────────────────────────── */}
-        {topic && messages.length > 0 && (
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "10px", paddingBottom: "10px", borderBottom: "1px solid #1f1f1f" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-              <span style={{ fontSize: "1rem" }}>{topic.emoji}</span>
-              <span style={{ fontSize: "0.72rem", fontWeight: 700, color: topic.color }}>{topic.label}</span>
-              {level && (
-                <span style={{ fontSize: "0.62rem", color: "var(--gray2)", background: "var(--dark2)", padding: "1px 7px", borderRadius: "50px", border: "1px solid #2a2a2a" }}>
-                  {level === "beginner" ? "Básico" : level === "intermediate" ? "Intermediário" : "Avançado"}
-                </span>
-              )}
-            </div>
-            <button
-              onClick={restartChat}
-              style={{ fontSize: "0.68rem", color: "var(--gray2)", background: "transparent", border: "none", cursor: "pointer", opacity: 0.7 }}
-            >
-              Trocar tópico
-            </button>
-          </div>
-        )}
 
         {messages.map((msg, i) => (
           <div key={i} className={`mb-3 flex ${msg.role === "user" ? "justify-end" : "justify-start"} items-end gap-2`}>
