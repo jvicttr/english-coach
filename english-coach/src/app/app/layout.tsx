@@ -3,11 +3,13 @@ import { BottomNavBar } from "@/components/BottomNav";
 import { UserSync } from "@/components/UserSync";
 import IOSInstallBanner from "@/components/IOSInstallBanner";
 import NotificationPromptBanner from "@/components/NotificationPromptBanner";
+import PushNavigationHandler from "@/components/PushNavigationHandler";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <>
       <UserSync />
+      <PushNavigationHandler />
       <AppHeader />
       <NotificationPromptBanner />
       {/* Flex column fixo que ocupa toda a tela — nav é filho estático, não fixed */}
