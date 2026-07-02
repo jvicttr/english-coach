@@ -174,7 +174,7 @@ export async function POST(req: NextRequest) {
         : imageUrl ? "📸 Enviou uma imagem"
         : audioUrl ? "🎵 Enviou áudio"
         : "Enviou uma mensagem";
-      pushToUser(recipientId, senderName, preview, `https://www.faleinglesjv.com/app/mensagens/${userId}`).catch(() => {});
+      pushToUser(recipientId, `${senderName} enviou uma mensagem`, preview, `https://www.faleinglesjv.com/app/mensagens/${userId}`).catch(() => {});
     }
   } catch {}
 
