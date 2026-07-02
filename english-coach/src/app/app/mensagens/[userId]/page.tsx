@@ -970,7 +970,8 @@ export default function ChatPage() {
       )}
 
       {/* Input bar — estilo WhatsApp, fixo no fundo */}
-      <div ref={inputBarRef} style={{ position: "fixed", bottom: 0, left: 0, right: 0, background: "#111", borderTop: "1px solid #1e1e1e", padding: "8px 12px", paddingBottom: "calc(8px + env(safe-area-inset-bottom, 0px))", zIndex: 100 }}>
+      <div ref={inputBarRef} style={{ position: "fixed", bottom: 0, left: 0, right: 0, background: "#111", borderTop: "1px solid #1e1e1e", zIndex: 100, paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
+      <div style={{ maxWidth: "42rem", margin: "0 auto", padding: "8px 12px" }}>
         {/* Audio preview */}
         {audioUrl && (
           <div style={{ display: "flex", alignItems: "center", gap: 8, background: "#1a1a1a", border: "1px solid #2a2a2a", borderRadius: 10, padding: "7px 10px", marginBottom: 8 }}>
@@ -1065,6 +1066,7 @@ export default function ChatPage() {
           </button>
 
         </div>
+      </div>
       </div>
     </div>
   );
