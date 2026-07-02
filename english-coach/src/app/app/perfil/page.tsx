@@ -374,6 +374,11 @@ function NotificationButton() {
         // iOS Safari PWA: usa Web Push nativo com VAPID próprio
         const vapidPublicKey = process.env.NEXT_PUBLIC_WEBPUSH_PUBLIC_KEY!;
         const keyBytes = Uint8Array.from(atob(vapidPublicKey.replace(/-/g, "+").replace(/_/g, "/")), c => c.charCodeAt(0));
+
+        // Remove subscription antiga (chave VAPID diferente do OneSignal)
+        const existingSub = await sw.pushManager.getSubscription();
+        if (existingSub) await existingSub.unsubscribe();
+
         const subscription = await sw.pushManager.subscribe({
           userVisibleOnly: true,
           applicationServerKey: keyBytes,
