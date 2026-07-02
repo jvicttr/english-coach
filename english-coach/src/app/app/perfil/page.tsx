@@ -428,21 +428,23 @@ function NotificationButton() {
     : "Receba lembretes de streak e mensagens diretas";
 
   return (
-    <button
-      onClick={status === "idle" ? enable : undefined}
-      disabled={status === "loading" || status === "done" || status === "denied"}
-      style={{ background: "var(--dark2)", border: "1px solid #2a2a2a", borderRadius: 16, padding: "16px 18px", display: "flex", alignItems: "center", gap: 14, width: "100%", cursor: status === "idle" ? "pointer" : "default", opacity: status === "denied" ? 0.5 : 1 }}
-    >
-      <span style={{ fontSize: "1.4rem" }}>🔔</span>
-      <div style={{ flex: 1, textAlign: "left" }}>
-        <p style={{ fontSize: "0.85rem", fontWeight: 800, color: status === "done" ? "var(--yellow)" : "var(--white)", margin: 0 }}>{label}</p>
-        <p style={{ fontSize: "0.7rem", color: "var(--gray2)", margin: "2px 0 0" }}>{subtitle}</p>
-      </div>
-      {status === "idle" && <span style={{ fontSize: "0.85rem", color: "var(--gray2)" }}>→</span>}
-    </button>
-    {errorMsg && (
-      <p style={{ fontSize: "0.68rem", color: "#ef4444", margin: "6px 4px 0", wordBreak: "break-all" }}>{errorMsg}</p>
-    )}
+    <>
+      <button
+        onClick={status === "idle" ? enable : undefined}
+        disabled={status === "loading" || status === "done" || status === "denied"}
+        style={{ background: "var(--dark2)", border: "1px solid #2a2a2a", borderRadius: 16, padding: "16px 18px", display: "flex", alignItems: "center", gap: 14, width: "100%", cursor: status === "idle" ? "pointer" : "default", opacity: status === "denied" ? 0.5 : 1 }}
+      >
+        <span style={{ fontSize: "1.4rem" }}>🔔</span>
+        <div style={{ flex: 1, textAlign: "left" }}>
+          <p style={{ fontSize: "0.85rem", fontWeight: 800, color: status === "done" ? "var(--yellow)" : "var(--white)", margin: 0 }}>{label}</p>
+          <p style={{ fontSize: "0.7rem", color: "var(--gray2)", margin: "2px 0 0" }}>{subtitle}</p>
+        </div>
+        {status === "idle" && <span style={{ fontSize: "0.85rem", color: "var(--gray2)" }}>→</span>}
+      </button>
+      {errorMsg && (
+        <p style={{ fontSize: "0.68rem", color: "#ef4444", margin: "6px 4px 0", wordBreak: "break-all" }}>{errorMsg}</p>
+      )}
+    </>
   );
 }
 
