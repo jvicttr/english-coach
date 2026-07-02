@@ -135,7 +135,9 @@ export default function AppHome() {
         ) : (
         <a href="/app/progresso" style={{ background: "var(--dark1)", border: "1px solid #1e1e1e", borderRadius: 16, padding: "12px 14px", display: "flex", alignItems: "center", justifyContent: "space-between", textDecoration: "none", cursor: "pointer", overflow: "hidden" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <span style={{ fontSize: "1.4rem" }}>🔥</span>
+              <div style={{ width: 28, height: 28, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--yellow)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2C8 7 6 10 6 14a6 6 0 0 0 12 0c0-4-2-7-6-12z"/><path d="M12 14c-1.5 0-2.5-1-2.5-2.5C9.5 10 10.5 9 12 8c1.5 1 2.5 2 2.5 3.5C14.5 13 13.5 14 12 14z" fill="var(--yellow)" stroke="none"/></svg>
+              </div>
               <div>
                 <p style={{ fontSize: "0.65rem", color: "var(--gray)", margin: 0, fontWeight: 600 }}>Sequência atual</p>
                 <p style={{ fontSize: "0.9rem", fontWeight: 800, color: "#fff", margin: 0 }}>
@@ -160,7 +162,9 @@ export default function AppHome() {
         {/* ── Recommendation ─────────────────────────────────────────────────── */}
         {isPro !== null && recommendation && (
           <a href="/app/flashcards" style={{ background: "rgba(248,113,113,.06)", border: "1px solid rgba(248,113,113,.25)", borderRadius: 14, padding: "10px 14px", display: "flex", alignItems: "center", gap: 10, textDecoration: "none" }}>
-            <span style={{ fontSize: "1.3rem" }}>🎯</span>
+            <div style={{ width: 28, height: 28, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f87171" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2" fill="#f87171"/></svg>
+            </div>
             <div style={{ flex: 1 }}>
               <p style={{ fontSize: "0.78rem", fontWeight: 800, color: "#f87171", margin: 0 }}>Você tem dificuldade em "{recommendation.packName}"</p>
               <p style={{ fontSize: "0.68rem", color: "rgba(248,113,113,.65)", margin: "1px 0 0" }}>{recommendation.hardCount} palavras difíceis — revisar agora →</p>
@@ -184,7 +188,7 @@ export default function AppHome() {
           >
             <div>
               <p style={{ fontSize: "0.65rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: ".08em", color: "rgba(0,0,0,.5)", margin: 0 }}>
-                {!trilhaStarted ? "🎓 Começar trilha de aprendizado" : trilhaCta.type === "continue" ? "▶ Continuar trilha" : "🗺️ Próximo tópico"}
+                {!trilhaStarted ? "Começar trilha de aprendizado" : trilhaCta.type === "continue" ? "Continuar trilha" : "Próximo tópico"}
               </p>
               <p style={{ fontSize: "1rem", fontWeight: 800, color: "#000", margin: "2px 0 0" }}>
                 {trilhaCta.step.emoji} {trilhaCta.step.title}
@@ -224,20 +228,18 @@ export default function AppHome() {
             {[
               {
                 href: "/app/conversar",
-                emoji: "💬",
+                icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>,
                 title: "Conversar",
                 desc: "Conversa livre ou por tópico",
                 iconBg: "rgba(96,165,250,.12)",
-                iconColor: "#60a5fa",
                 badge: null,
               },
               {
                 href: isPro === true ? "/app/roleplay" : "/planos",
-                emoji: "🎭",
+                icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.5 6.5a4.5 4.5 0 1 1-9 0 4.5 4.5 0 0 1 9 0z"/><path d="M3 20c0-4 3.6-7 9-7s9 3 9 7"/><circle cx="8" cy="6.5" r="1" fill="#a78bfa"/><circle cx="16" cy="6.5" r="1" fill="#a78bfa"/></svg>,
                 title: "Role-play",
                 desc: isPro === true ? "Situações reais" : "Exclusivo Pro",
                 iconBg: "rgba(167,139,250,.12)",
-                iconColor: "#a78bfa",
                 badge: isPro === false ? { label: "🔒 Pro", color: "var(--yellow)", bg: "rgba(245,200,0,.1)" } : null,
               },
             ].map((card) => (
@@ -245,8 +247,8 @@ export default function AppHome() {
                 onMouseEnter={(e) => (e.currentTarget.style.borderColor = "rgba(245,200,0,.2)")}
                 onMouseLeave={(e) => (e.currentTarget.style.borderColor = "#1e1e1e")}
               >
-                <div style={{ width: 36, height: 36, borderRadius: 10, background: card.iconBg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.1rem" }}>
-                  {card.emoji}
+                <div style={{ width: 36, height: 36, borderRadius: 10, background: card.iconBg, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  {card.icon}
                 </div>
                 <div>
                   <p style={{ fontSize: "0.85rem", fontWeight: 700, color: "#fff", margin: 0 }}>{card.title}</p>
@@ -269,7 +271,9 @@ export default function AppHome() {
         {/* ── PRO exclusive ──────────────────────────────────────────────────── */}
         {isPro === true && (
           <a href="/app/resumo" style={{ background: "var(--dark1)", border: "1px solid rgba(245,200,0,.2)", borderRadius: 16, padding: "14px 16px", textDecoration: "none", display: "flex", alignItems: "center", gap: 14 }}>
-            <div style={{ width: 40, height: 40, borderRadius: 12, background: "rgba(245,200,0,.1)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.2rem", flexShrink: 0 }}>📄</div>
+            <div style={{ width: 40, height: 40, borderRadius: 12, background: "rgba(245,200,0,.1)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--yellow)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+            </div>
             <div>
               <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                 <p style={{ fontSize: "0.85rem", fontWeight: 700, color: "#fff", margin: 0 }}>Revisão de Aula</p>
@@ -283,7 +287,9 @@ export default function AppHome() {
         {/* ── No-content CTA ─────────────────────────────────────────────────── */}
         {isPro !== null && streak === 0 && !lastTopic && (
           <div style={{ background: "var(--dark1)", border: "1px solid #1e1e1e", borderRadius: 16, padding: "20px 16px", textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
-            <div style={{ fontSize: "2rem" }}>👋</div>
+            <div style={{ width: 44, height: 44, borderRadius: 14, background: "rgba(245,200,0,.08)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--yellow)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>
+            </div>
             <p style={{ fontWeight: 700, color: "#fff", fontSize: "0.95rem", margin: 0 }}>Boas-vindas ao JV IA!</p>
             <p style={{ color: "var(--gray)", fontSize: "0.8rem", margin: 0, lineHeight: 1.5 }}>Escolha uma atividade acima para começar a praticar inglês agora.</p>
           </div>
