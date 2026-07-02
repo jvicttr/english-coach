@@ -135,12 +135,7 @@ export default function AppHome() {
         ) : (
         <a href="/app/progresso" style={{ background: "var(--dark1)", border: "1px solid #1e1e1e", borderRadius: 16, padding: "12px 14px", display: "flex", alignItems: "center", justifyContent: "space-between", textDecoration: "none", cursor: "pointer", overflow: "hidden" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <div style={{ width: 28, height: 28, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M12 2C11 5 8 7 8 11c0 .9.2 1.8.5 2.5C9 12 10 11 10 11c0 3 1 4.5 2 5.5 1-1.5 1.5-3 1.2-5 1 1 1.8 2.5 1.8 4 .7-.8 1-2 1-3 0-4-4-10-4-10z" fill="var(--yellow)" fillOpacity="0.2" stroke="var(--yellow)" strokeWidth="1.7"/>
-                  <path d="M12 22a3 3 0 0 1-3-3c0-1.5 3-4 3-4s3 2.5 3 4a3 3 0 0 1-3 3z" fill="var(--yellow)" stroke="none"/>
-                </svg>
-              </div>
+              <span style={{ fontSize: "1.4rem", lineHeight: 1 }}>🔥</span>
               <div>
                 <p style={{ fontSize: "0.65rem", color: "var(--gray)", margin: 0, fontWeight: 600 }}>Sequência atual</p>
                 <p style={{ fontSize: "0.9rem", fontWeight: 800, color: "#fff", margin: 0 }}>
