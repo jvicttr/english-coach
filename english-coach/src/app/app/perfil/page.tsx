@@ -333,10 +333,21 @@ function ManageSubscriptionButton() {
 }
 
 function NotificationButton() {
-  const [status, setStatus] = useState<"idle" | "loading" | "done" | "denied" | "unsupported">("idle");
+  const [status, setStatus] = useState<"idle" | "loading" | "done" | "denied" | "unsupported" | "ios-safari">("idle");
 
   useEffect(() => {
     if (typeof window === "undefined") return;
+
+    // Detecta iOS Safari fora do PWA
+    const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
+    const isSafari = /Safari/.test(navigator.userAgent) && !/CriOS|FxiOS|OPiOS/.test(navigator.userAgent);
+    const isStandalone = (window.navigator as any).standalone === true;
+
+    if (isIOS && isSafari && !isStandalone) {
+      setStatus("ios-safari");
+      return;
+    }
+
     if (!("Notification" in window)) { setStatus("unsupported"); return; }
     if (Notification.permission === "granted") setStatus("done");
     if (Notification.permission === "denied") setStatus("denied");
@@ -384,6 +395,25 @@ function NotificationButton() {
   }
 
   if (status === "unsupported") return null;
+
+  // iOS Safari fora do PWA — instrução para instalar
+  if (status === "ios-safari") {
+    return (
+      <div style={{ background: "var(--dark2)", border: "1px solid #2a2a2a", borderRadius: 16, padding: "16px 18px", display: "flex", alignItems: "flex-start", gap: 14 }}>
+        <span style={{ fontSize: "1.4rem" }}>🔔</span>
+        <div style={{ flex: 1 }}>
+          <p style={{ fontSize: "0.85rem", fontWeight: 800, color: "var(--white)", margin: 0 }}>Ativar notificações no iPhone</p>
+          <p style={{ fontSize: "0.7rem", color: "var(--gray2)", margin: "6px 0 0", lineHeight: 1.5 }}>
+            Para receber notificações, instale o app na tela inicial:{" "}
+            <strong style={{ color: "var(--white)" }}>Safari → botão compartilhar</strong>{" "}
+            <span style={{ fontSize: "0.85rem" }}>⎙</span>{" "}
+            → <strong style={{ color: "var(--white)" }}>Adicionar à Tela de Início</strong>.
+            Depois abra o app pela tela inicial e volte aqui.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   const label = status === "done" ? "Notificações ativadas ✓"
     : status === "denied" ? "Notificações bloqueadas no browser"
