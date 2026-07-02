@@ -369,8 +369,8 @@ function NotificationButton() {
       const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
 
       if (isIOS) {
-        // iOS Safari PWA: usa Web Push nativo com SW próprio e VAPID próprio
-        const sw = await navigator.serviceWorker.register("/webpush-sw.js");
+        // iOS Safari PWA: usa Web Push nativo com VAPID próprio, mas reutiliza o firebase-messaging-sw.js já ativo
+        const sw = await navigator.serviceWorker.register("/firebase-messaging-sw.js");
         await navigator.serviceWorker.ready;
 
         const vapidPublicKey = process.env.NEXT_PUBLIC_WEBPUSH_PUBLIC_KEY!;

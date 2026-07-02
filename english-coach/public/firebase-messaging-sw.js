@@ -19,10 +19,10 @@ self.addEventListener("push", (event) => {
   let payload;
   try { payload = event.data.json(); } catch { return; }
 
-  const title = payload.notification?.title ?? payload.data?.title ?? "JV IA";
-  const body  = payload.notification?.body  ?? payload.data?.body  ?? "";
-  const icon  = payload.notification?.icon  ?? "/favicon.png";
-  const url   = payload.fcm_options?.link   ?? payload.data?.url ?? "/app";
+  const title = payload.notification?.title ?? payload.data?.title ?? payload.title ?? "JV IA";
+  const body  = payload.notification?.body  ?? payload.data?.body  ?? payload.body  ?? "";
+  const icon  = payload.notification?.icon  ?? payload.icon  ?? "/favicon.png";
+  const url   = payload.fcm_options?.link   ?? payload.data?.url ?? payload.url   ?? "/app";
 
   event.waitUntil(
     self.registration.showNotification(title, {
