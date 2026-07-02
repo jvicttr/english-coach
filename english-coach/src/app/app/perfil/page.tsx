@@ -392,17 +392,19 @@ function NotificationButton() {
         setStatus("done");
       } else {
         // Android/Desktop: usa FCM
+        // sanitize: remove BOM/invisible chars que causam "non ISO-8859-1" no fetch
+        const clean = (v?: string) => (v ?? "").replace(/[^\x20-\x7E]/g, "").trim();
         const fcmSw = await navigator.serviceWorker.register("/firebase-messaging-sw.js");
         await navigator.serviceWorker.ready;
         const FIREBASE_CONFIG = {
-          apiKey:            process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-          authDomain:        process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-          projectId:         process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-          storageBucket:     process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-          messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-          appId:             process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+          apiKey:            clean(process.env.NEXT_PUBLIC_FIREBASE_API_KEY),
+          authDomain:        clean(process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN),
+          projectId:         clean(process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID),
+          storageBucket:     clean(process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET),
+          messagingSenderId: clean(process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID),
+          appId:             clean(process.env.NEXT_PUBLIC_FIREBASE_APP_ID),
         };
-        const VAPID_KEY = process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY;
+        const VAPID_KEY = clean(process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY);
         const { initializeApp, getApps } = await import("firebase/app");
         const { getMessaging, getToken } = await import("firebase/messaging");
         const app = getApps().length > 0 ? getApps()[0] : initializeApp(FIREBASE_CONFIG);
