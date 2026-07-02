@@ -366,61 +366,26 @@ function NotificationButton() {
       const permission = await Notification.requestPermission();
       if (permission !== "granted") { setStatus("denied"); return; }
 
-      const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
+      // Web Push nativo para todos (iOS e Android) — evita dependência do Firebase no browser
+      const sw = await navigator.serviceWorker.register("/firebase-messaging-sw.js");
+      await navigator.serviceWorker.ready;
 
-      if (isIOS) {
-        // iOS Safari PWA: usa Web Push nativo com VAPID próprio, mas reutiliza o firebase-messaging-sw.js já ativo
-        const sw = await navigator.serviceWorker.register("/firebase-messaging-sw.js");
-        await navigator.serviceWorker.ready;
+      const vapidPublicKey = process.env.NEXT_PUBLIC_WEBPUSH_PUBLIC_KEY!;
+      const keyBytes = Uint8Array.from(atob(vapidPublicKey.replace(/-/g, "+").replace(/_/g, "/")), c => c.charCodeAt(0));
 
-        const vapidPublicKey = process.env.NEXT_PUBLIC_WEBPUSH_PUBLIC_KEY!;
-        const keyBytes = Uint8Array.from(atob(vapidPublicKey.replace(/-/g, "+").replace(/_/g, "/")), c => c.charCodeAt(0));
+      const existingSub = await sw.pushManager.getSubscription();
+      if (existingSub) await existingSub.unsubscribe();
 
-        // Remove subscription antiga (chave VAPID diferente do OneSignal)
-        const existingSub = await sw.pushManager.getSubscription();
-        if (existingSub) await existingSub.unsubscribe();
-
-        const subscription = await sw.pushManager.subscribe({
-          userVisibleOnly: true,
-          applicationServerKey: keyBytes,
-        });
-        await fetch("/api/webpush/register", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ subscription: subscription.toJSON() }),
-        });
-        setStatus("done");
-      } else {
-        // Android/Desktop: usa FCM
-        // sanitize: remove BOM/invisible chars que causam "non ISO-8859-1" no fetch
-        const clean = (v?: string) => (v ?? "").replace(/[^\x20-\x7E]/g, "").trim();
-        const fcmSw = await navigator.serviceWorker.register("/firebase-messaging-sw.js");
-        await navigator.serviceWorker.ready;
-        const FIREBASE_CONFIG = {
-          apiKey:            clean(process.env.NEXT_PUBLIC_FIREBASE_API_KEY),
-          authDomain:        clean(process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN),
-          projectId:         clean(process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID),
-          storageBucket:     clean(process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET),
-          messagingSenderId: clean(process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID),
-          appId:             clean(process.env.NEXT_PUBLIC_FIREBASE_APP_ID),
-        };
-        const VAPID_KEY = clean(process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY);
-        const { initializeApp, getApps } = await import("firebase/app");
-        const { getMessaging, getToken } = await import("firebase/messaging");
-        const app = getApps().length > 0 ? getApps()[0] : initializeApp(FIREBASE_CONFIG);
-        fcmSw.active?.postMessage({ type: "FIREBASE_CONFIG", config: FIREBASE_CONFIG });
-        fcmSw.installing?.postMessage({ type: "FIREBASE_CONFIG", config: FIREBASE_CONFIG });
-        const messaging = getMessaging(app);
-        const token = await getToken(messaging, { vapidKey: VAPID_KEY, serviceWorkerRegistration: fcmSw });
-        if (token) {
-          await fetch("/api/fcm/register", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ token }),
-          });
-          setStatus("done");
-        }
-      }
+      const subscription = await sw.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: keyBytes,
+      });
+      await fetch("/api/webpush/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ subscription: subscription.toJSON() }),
+      });
+      setStatus("done");
     } catch (err: any) {
       setErrorMsg(err?.message ?? String(err));
       setStatus("idle");
