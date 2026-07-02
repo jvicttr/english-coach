@@ -1,16 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@supabase/supabase-js";
+import { sendPushMulticast } from "@/lib/fcm";
 
-const ONESIGNAL_APP_ID = process.env.ONESIGNAL_APP_ID!;
-const ONESIGNAL_API_KEY = process.env.ONESIGNAL_API_KEY!;
+const supabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SECRET_KEY!);
 
 const MESSAGES = {
   morning: {
-    headings: "Bom dia! 🌅",
-    contents: "Que tal uma conversa rápida em inglês antes de começar o dia?",
+    title: "Bom dia! 🌅",
+    body: "Que tal uma conversa rápida em inglês antes de começar o dia?",
   },
   afternoon: {
-    headings: "Hora de praticar! 🎯",
-    contents: "Seu inglês melhora todo dia. Que tal uma conversa rápida agora?",
+    title: "Hora de praticar! 🎯",
+    body: "Seu inglês melhora todo dia. Que tal uma conversa rápida agora?",
   },
 };
 
@@ -21,37 +22,23 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // Determine which message based on UTC hour
-  // 11 UTC = 8h BRT (morning), 20 UTC = 17h BRT (afternoon)
+  // Busca todos os FCM tokens cadastrados
+  const { data: subs } = await supabase
+    .from("subscriptions")
+    .select("fcm_token")
+    .not("fcm_token", "is", null);
+
+  const tokens = (subs ?? []).map((s) => s.fcm_token).filter(Boolean) as string[];
+
+  if (tokens.length === 0) {
+    return NextResponse.json({ ok: true, sent: 0, message: "No FCM tokens registered" });
+  }
+
   const utcHour = new Date().getUTCHours();
   const msg = utcHour < 14 ? MESSAGES.morning : MESSAGES.afternoon;
 
-  const body = {
-    app_id: ONESIGNAL_APP_ID,
-    included_segments: ["All"],
-    headings: { en: msg.headings, pt: msg.headings },
-    contents: { en: msg.contents, pt: msg.contents },
-    url: "https://app.faleinglesjv.com/app",
-    web_url: "https://app.faleinglesjv.com/app",
-    chrome_web_icon: "https://app.faleinglesjv.com/favicon.png",
-  };
+  await sendPushMulticast(tokens, msg.title, msg.body, "https://www.faleinglesjv.com/app");
 
-  const res = await fetch("https://onesignal.com/api/v1/notifications", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Basic ${ONESIGNAL_API_KEY}`,
-    },
-    body: JSON.stringify(body),
-  });
-
-  const data = await res.json();
-
-  if (!res.ok) {
-    console.error("[notify cron] OneSignal error:", data);
-    return NextResponse.json({ error: data }, { status: 500 });
-  }
-
-  console.log(`[notify cron] sent (${utcHour < 14 ? "morning" : "afternoon"}):`, data.id);
-  return NextResponse.json({ ok: true, id: data.id, type: utcHour < 14 ? "morning" : "afternoon" });
+  console.log(`[notify cron] sent to ${tokens.length} devices (${utcHour < 14 ? "morning" : "afternoon"})`);
+  return NextResponse.json({ ok: true, sent: tokens.length });
 }

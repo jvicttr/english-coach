@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Inter, Caveat } from "next/font/google";
 import { ClerkProvider } from "@clerk/nextjs";
 import { Analytics } from "@vercel/analytics/react";
-import OneSignalInit from "@/components/OneSignalInit";
+import FCMInit from "@/components/FCMInit";
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
@@ -119,7 +119,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         <body>
           {children}
           <Analytics />
-          <OneSignalInit />
+          <FCMInit />
         </body>
       </html>
     </ClerkProvider>

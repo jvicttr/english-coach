@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { sendEmail, streakReminderHtml } from "@/lib/email";
+import { sendPushMulticast } from "@/lib/fcm";
 
 const supabase = createClient(
   process.env.SUPABASE_URL!,
@@ -82,29 +83,23 @@ export async function GET(req: NextRequest) {
 
   let sent = 0;
 
-  // Push via OneSignal — um único batch para todos os userIds
-  const pushIds = toNotify.map((u) => u.userId);
-  if (pushIds.length > 0 && process.env.ONESIGNAL_APP_ID && process.env.ONESIGNAL_API_KEY) {
+  // Push FCM para usuários que não praticaram hoje
+  if (toNotify.length > 0) {
+    const userIds = toNotify.map((u) => u.userId);
+    const { data: tokenRows } = await supabase
+      .from("subscriptions")
+      .select("fcm_token")
+      .in("user_id", userIds)
+      .not("fcm_token", "is", null);
+    const tokens = (tokenRows ?? []).map((r) => r.fcm_token).filter(Boolean) as string[];
     const utcHour = new Date().getUTCHours();
-    const pushHeading = utcHour < 14 ? "Bom dia! 🌅" : "Hora de praticar! 🎯";
+    const pushTitle = utcHour < 14 ? "Bom dia! 🌅" : "Hora de praticar! 🎯";
     const pushBody = utcHour < 14
       ? "Não perca seu streak — pratique inglês agora antes de começar o dia!"
       : "Você ainda não praticou hoje. Mantenha sua sequência!";
-
-    fetch("https://onesignal.com/api/v1/notifications", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Basic ${process.env.ONESIGNAL_API_KEY}` },
-      body: JSON.stringify({
-        app_id: process.env.ONESIGNAL_APP_ID,
-        include_aliases: { external_id: pushIds },
-        target_channel: "push",
-        headings: { en: pushHeading, pt: pushHeading },
-        contents: { en: pushBody, pt: pushBody },
-        url: "https://www.faleinglesjv.com/app",
-        web_url: "https://www.faleinglesjv.com/app",
-        chrome_web_icon: "https://www.faleinglesjv.com/favicon.png",
-      }),
-    }).catch((e) => console.warn("[streak-reminder] push error:", e));
+    if (tokens.length > 0) {
+      sendPushMulticast(tokens, pushTitle, pushBody, "https://www.faleinglesjv.com/app").catch(() => {});
+    }
   }
 
   for (const { userId, streak } of toNotify) {

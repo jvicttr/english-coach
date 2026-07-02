@@ -4,9 +4,15 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth, currentUser } from "@clerk/nextjs/server";
 import { createClient } from "@supabase/supabase-js";
 import Anthropic from "@anthropic-ai/sdk";
+import { sendPush } from "@/lib/fcm";
 
 const supabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SECRET_KEY!);
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+
+async function pushToUser(userId: string, title: string, body: string, url: string, icon?: string) {
+  const { data } = await supabase.from("subscriptions").select("fcm_token").eq("user_id", userId).single();
+  if (data?.fcm_token) sendPush(data.fcm_token, title, body, url, icon).catch(() => {});
+}
 
 const FREE_POST_LIMIT = 1;
 
@@ -112,22 +118,13 @@ export async function POST(req: NextRequest) {
         from_display_name: displayName,
         from_avatar_url: avatarUrl,
       });
-      if (process.env.ONESIGNAL_APP_ID && process.env.ONESIGNAL_API_KEY) {
-        fetch("https://onesignal.com/api/v1/notifications", {
-          method: "POST",
-          headers: { "Content-Type": "application/json", Authorization: `Basic ${process.env.ONESIGNAL_API_KEY}` },
-          body: JSON.stringify({
-            app_id: process.env.ONESIGNAL_APP_ID,
-            include_aliases: { external_id: [parent.user_id] },
-            target_channel: "push",
-            headings: { en: `${displayName} respondeu seu post`, pt: `${displayName} respondeu seu post` },
-            contents: { en: content.slice(0, 100), pt: content.slice(0, 100) },
-            url: `https://www.faleinglesjv.com/app/comunidade#post-${parentId}`,
-            web_url: `https://www.faleinglesjv.com/app/comunidade#post-${parentId}`,
-            chrome_web_icon: avatarUrl || "https://www.faleinglesjv.com/favicon.png",
-          }),
-        }).catch(() => {});
-      }
+      pushToUser(
+        parent.user_id,
+        `${displayName} respondeu seu post`,
+        content.slice(0, 100),
+        `https://www.faleinglesjv.com/app/comunidade#post-${parentId}`,
+        avatarUrl ?? undefined
+      );
     }
   }
 
@@ -177,23 +174,13 @@ export async function POST(req: NextRequest) {
       from_display_name: displayName,
       from_avatar_url: avatarUrl,
     });
-    // Push notification via OneSignal
-    if (process.env.ONESIGNAL_APP_ID && process.env.ONESIGNAL_API_KEY) {
-      fetch("https://onesignal.com/api/v1/notifications", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Basic ${process.env.ONESIGNAL_API_KEY}` },
-        body: JSON.stringify({
-          app_id: process.env.ONESIGNAL_APP_ID,
-          include_aliases: { external_id: [mentionedUserId] },
-          target_channel: "push",
-          headings: { en: `${displayName} te marcou!`, pt: `${displayName} te marcou!` },
-          contents: { en: content.slice(0, 100), pt: content.slice(0, 100) },
-          url: `https://www.faleinglesjv.com/app/comunidade#post-${parentId ?? post.id}`,
-          web_url: `https://www.faleinglesjv.com/app/comunidade#post-${parentId ?? post.id}`,
-          chrome_web_icon: avatarUrl || "https://www.faleinglesjv.com/favicon.png",
-        }),
-      }).catch(() => {});
-    }
+    pushToUser(
+      mentionedUserId,
+      `${displayName} te marcou!`,
+      content.slice(0, 100),
+      `https://www.faleinglesjv.com/app/comunidade#post-${parentId ?? post.id}`,
+      avatarUrl ?? undefined
+    );
   }
 
   // Community badges: check post count (only for original posts, not replies)

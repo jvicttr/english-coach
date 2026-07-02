@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { auth } from "@clerk/nextjs/server";
+import { sendPush } from "@/lib/fcm";
 
 const supabase = createClient(
   process.env.SUPABASE_URL!,
@@ -153,48 +154,40 @@ export async function POST(req: NextRequest) {
     }
   } catch { /* notifications are non-critical */ }
 
-  // Enviar push notification para o destinatário via OneSignal external_id
+  // Enviar push via FCM para o destinatário
   try {
-    if (process.env.ONESIGNAL_APP_ID && process.env.ONESIGNAL_API_KEY) {
-      const { data: conv } = await supabase
-        .from("conversations")
-        .select("user1_id, user2_id")
-        .eq("id", conversationId)
+    const { data: conv } = await supabase
+      .from("conversations")
+      .select("user1_id, user2_id")
+      .eq("id", conversationId)
+      .single();
+
+    if (conv) {
+      const recipientId = conv.user1_id === userId ? conv.user2_id : conv.user1_id;
+      const { data: recipientSub } = await supabase
+        .from("subscriptions")
+        .select("fcm_token, name")
+        .eq("user_id", userId)
+        .single();
+      const { data: recipientToken } = await supabase
+        .from("subscriptions")
+        .select("fcm_token")
+        .eq("user_id", recipientId)
         .single();
 
-      if (conv) {
-        const recipientId = conv.user1_id === userId ? conv.user2_id : conv.user1_id;
-
-        const { data: sender } = await supabase
-          .from("subscriptions")
-          .select("name")
-          .eq("user_id", userId)
-          .single();
-
-        const senderName = sender?.name ?? "Alguém";
-        const messagePreview = content
+      if (recipientToken?.fcm_token) {
+        const senderName = recipientSub?.name ?? "Alguém";
+        const preview = content
           ? content.substring(0, 100)
           : imageUrl ? "📸 Enviou uma imagem"
           : audioUrl ? "🎵 Enviou áudio"
           : "Enviou uma mensagem";
-
-        fetch("https://onesignal.com/api/v1/notifications", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Basic ${process.env.ONESIGNAL_API_KEY}`,
-          },
-          body: JSON.stringify({
-            app_id: process.env.ONESIGNAL_APP_ID,
-            include_aliases: { external_id: [recipientId] },
-            target_channel: "push",
-            headings: { en: senderName, pt: senderName },
-            contents: { en: messagePreview, pt: messagePreview },
-            url: `https://www.faleinglesjv.com/app/mensagens/${userId}`,
-            web_url: `https://www.faleinglesjv.com/app/mensagens/${userId}`,
-            chrome_web_icon: "https://www.faleinglesjv.com/favicon.png",
-          }),
-        }).catch((e) => console.warn("[notification] push error:", e));
+        sendPush(
+          recipientToken.fcm_token,
+          senderName,
+          preview,
+          `https://www.faleinglesjv.com/app/mensagens/${userId}`
+        ).catch(() => {});
       }
     }
   } catch {}
