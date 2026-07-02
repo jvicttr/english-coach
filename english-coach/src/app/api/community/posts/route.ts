@@ -112,6 +112,22 @@ export async function POST(req: NextRequest) {
         from_display_name: displayName,
         from_avatar_url: avatarUrl,
       });
+      if (process.env.ONESIGNAL_APP_ID && process.env.ONESIGNAL_API_KEY) {
+        fetch("https://onesignal.com/api/v1/notifications", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Basic ${process.env.ONESIGNAL_API_KEY}` },
+          body: JSON.stringify({
+            app_id: process.env.ONESIGNAL_APP_ID,
+            include_aliases: { external_id: [parent.user_id] },
+            target_channel: "push",
+            headings: { en: `${displayName} respondeu seu post`, pt: `${displayName} respondeu seu post` },
+            contents: { en: content.slice(0, 100), pt: content.slice(0, 100) },
+            url: `https://www.faleinglesjv.com/app/comunidade#post-${parentId}`,
+            web_url: `https://www.faleinglesjv.com/app/comunidade#post-${parentId}`,
+            chrome_web_icon: avatarUrl || "https://www.faleinglesjv.com/favicon.png",
+          }),
+        }).catch(() => {});
+      }
     }
   }
 

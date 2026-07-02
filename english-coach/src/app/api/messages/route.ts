@@ -186,14 +186,13 @@ export async function POST(req: NextRequest) {
           },
           body: JSON.stringify({
             app_id: process.env.ONESIGNAL_APP_ID,
-            include_external_user_ids: [recipientId],
+            include_aliases: { external_id: [recipientId] },
+            target_channel: "push",
             headings: { en: senderName, pt: senderName },
             contents: { en: messagePreview, pt: messagePreview },
             url: `https://www.faleinglesjv.com/app/mensagens/${userId}`,
             web_url: `https://www.faleinglesjv.com/app/mensagens/${userId}`,
-            large_icon: "https://www.faleinglesjv.com/icon-192.png",
-            ios_badgeType: "Increase",
-            ios_badgeCount: 1,
+            chrome_web_icon: "https://www.faleinglesjv.com/favicon.png",
           }),
         }).catch((e) => console.warn("[notification] push error:", e));
       }
