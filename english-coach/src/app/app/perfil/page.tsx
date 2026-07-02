@@ -293,6 +293,8 @@ export default function PerfilPage() {
         {/* Gerenciar assinatura (pro only) */}
         {plan === "pro" && <ManageSubscriptionButton />}
 
+        {/* Notificações */}
+        <NotificationButton />
 
       </div>
 
@@ -326,6 +328,84 @@ function ManageSubscriptionButton() {
         <p style={{ fontSize: "0.7rem", color: "var(--gray2)", margin: "2px 0 0" }}>Cancelar, trocar método de pagamento e mais</p>
       </div>
       <span style={{ fontSize: "0.85rem", color: "var(--gray2)" }}>{loading ? "..." : "→"}</span>
+    </button>
+  );
+}
+
+function NotificationButton() {
+  const [status, setStatus] = useState<"idle" | "loading" | "done" | "denied" | "unsupported">("idle");
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (!("Notification" in window)) { setStatus("unsupported"); return; }
+    if (Notification.permission === "granted") setStatus("done");
+    if (Notification.permission === "denied") setStatus("denied");
+  }, []);
+
+  async function enable() {
+    if (!("Notification" in window) || !("serviceWorker" in navigator)) return;
+    setStatus("loading");
+    try {
+      const permission = await Notification.requestPermission();
+      if (permission !== "granted") { setStatus("denied"); return; }
+
+      const FIREBASE_CONFIG = {
+        apiKey:            process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+        authDomain:        process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+        projectId:         process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+        storageBucket:     process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+        messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+        appId:             process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+      };
+      const VAPID_KEY = process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY;
+
+      const { initializeApp, getApps } = await import("firebase/app");
+      const { getMessaging, getToken } = await import("firebase/messaging");
+
+      const app = getApps().length > 0 ? getApps()[0] : initializeApp(FIREBASE_CONFIG);
+      const sw = await navigator.serviceWorker.register("/firebase-messaging-sw.js");
+      sw.active?.postMessage({ type: "FIREBASE_CONFIG", config: FIREBASE_CONFIG });
+      sw.installing?.postMessage({ type: "FIREBASE_CONFIG", config: FIREBASE_CONFIG });
+
+      const messaging = getMessaging(app);
+      const token = await getToken(messaging, { vapidKey: VAPID_KEY, serviceWorkerRegistration: sw });
+
+      if (token) {
+        await fetch("/api/fcm/register", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ token }),
+        });
+        setStatus("done");
+      }
+    } catch {
+      setStatus("idle");
+    }
+  }
+
+  if (status === "unsupported") return null;
+
+  const label = status === "done" ? "Notificações ativadas ✓"
+    : status === "denied" ? "Notificações bloqueadas no browser"
+    : status === "loading" ? "Ativando…"
+    : "Ativar notificações";
+
+  const subtitle = status === "done" ? "Você receberá alertas de streak e mensagens"
+    : status === "denied" ? "Permita nas configurações do browser para ativar"
+    : "Receba lembretes de streak e mensagens diretas";
+
+  return (
+    <button
+      onClick={status === "idle" ? enable : undefined}
+      disabled={status === "loading" || status === "done" || status === "denied"}
+      style={{ background: "var(--dark2)", border: "1px solid #2a2a2a", borderRadius: 16, padding: "16px 18px", display: "flex", alignItems: "center", gap: 14, width: "100%", cursor: status === "idle" ? "pointer" : "default", opacity: status === "denied" ? 0.5 : 1 }}
+    >
+      <span style={{ fontSize: "1.4rem" }}>🔔</span>
+      <div style={{ flex: 1, textAlign: "left" }}>
+        <p style={{ fontSize: "0.85rem", fontWeight: 800, color: status === "done" ? "var(--yellow)" : "var(--white)", margin: 0 }}>{label}</p>
+        <p style={{ fontSize: "0.7rem", color: "var(--gray2)", margin: "2px 0 0" }}>{subtitle}</p>
+      </div>
+      {status === "idle" && <span style={{ fontSize: "0.85rem", color: "var(--gray2)" }}>→</span>}
     </button>
   );
 }
