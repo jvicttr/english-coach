@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { auth } from "@clerk/nextjs/server";
-import { sendPush } from "@/lib/fcm";
+import { pushToUser } from "@/lib/push";
 
 const supabase = createClient(
   process.env.SUPABASE_URL!,
@@ -154,7 +154,7 @@ export async function POST(req: NextRequest) {
     }
   } catch { /* notifications are non-critical */ }
 
-  // Enviar push via FCM para o destinatário
+  // Enviar push para o destinatário (FCM ou Web Push)
   try {
     const { data: conv } = await supabase
       .from("conversations")
@@ -164,31 +164,18 @@ export async function POST(req: NextRequest) {
 
     if (conv) {
       const recipientId = conv.user1_id === userId ? conv.user2_id : conv.user1_id;
-      const { data: recipientSub } = await supabase
+      const { data: senderSub } = await supabase
         .from("subscriptions")
-        .select("fcm_token, name")
+        .select("name")
         .eq("user_id", userId)
         .single();
-      const { data: recipientToken } = await supabase
-        .from("subscriptions")
-        .select("fcm_token")
-        .eq("user_id", recipientId)
-        .single();
-
-      if (recipientToken?.fcm_token) {
-        const senderName = recipientSub?.name ?? "Alguém";
-        const preview = content
-          ? content.substring(0, 100)
-          : imageUrl ? "📸 Enviou uma imagem"
-          : audioUrl ? "🎵 Enviou áudio"
-          : "Enviou uma mensagem";
-        sendPush(
-          recipientToken.fcm_token,
-          senderName,
-          preview,
-          `https://www.faleinglesjv.com/app/mensagens/${userId}`
-        ).catch(() => {});
-      }
+      const senderName = senderSub?.name ?? "Alguém";
+      const preview = content
+        ? content.substring(0, 100)
+        : imageUrl ? "📸 Enviou uma imagem"
+        : audioUrl ? "🎵 Enviou áudio"
+        : "Enviou uma mensagem";
+      pushToUser(recipientId, senderName, preview, `https://www.faleinglesjv.com/app/mensagens/${userId}`).catch(() => {});
     }
   } catch {}
 

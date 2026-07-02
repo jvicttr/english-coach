@@ -4,15 +4,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth, currentUser } from "@clerk/nextjs/server";
 import { createClient } from "@supabase/supabase-js";
 import Anthropic from "@anthropic-ai/sdk";
-import { sendPush } from "@/lib/fcm";
+import { pushToUser } from "@/lib/push";
 
 const supabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SECRET_KEY!);
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-
-async function pushToUser(userId: string, title: string, body: string, url: string, icon?: string) {
-  const { data } = await supabase.from("subscriptions").select("fcm_token").eq("user_id", userId).single();
-  if (data?.fcm_token) sendPush(data.fcm_token, title, body, url, icon).catch(() => {});
-}
 
 const FREE_POST_LIMIT = 1;
 

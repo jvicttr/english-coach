@@ -3,7 +3,7 @@ export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { auth, currentUser } from "@clerk/nextjs/server";
 import { createClient } from "@supabase/supabase-js";
-import { sendPush } from "@/lib/fcm";
+import { pushToUser } from "@/lib/push";
 
 const supabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SECRET_KEY!);
 
@@ -65,17 +65,13 @@ export async function POST(req: NextRequest) {
       from_avatar_url: avatarUrl,
     });
 
-    supabase.from("subscriptions").select("fcm_token").eq("user_id", targetId).single().then(({ data }) => {
-      if (data?.fcm_token) {
-        sendPush(
-          data.fcm_token,
-          `${displayName} começou a te seguir!`,
-          "Veja o perfil dele na comunidade.",
-          `https://www.faleinglesjv.com/app/comunidade/u/${me}`,
-          avatarUrl ?? undefined
-        ).catch(() => {});
-      }
-    });
+    pushToUser(
+      targetId,
+      `${displayName} começou a te seguir!`,
+      "Veja o perfil dele na comunidade.",
+      `https://www.faleinglesjv.com/app/comunidade/u/${me}`,
+      avatarUrl ?? undefined
+    ).catch(() => {});
   }
 
   const { count } = await db
