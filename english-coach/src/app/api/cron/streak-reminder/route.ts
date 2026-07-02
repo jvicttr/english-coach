@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { sendEmail, streakReminderHtml } from "@/lib/email";
 import { sendPushMulticast } from "@/lib/fcm";
+import { pushToUser } from "@/lib/push";
 
 const supabase = createClient(
   process.env.SUPABASE_URL!,
@@ -83,22 +84,28 @@ export async function GET(req: NextRequest) {
 
   let sent = 0;
 
-  // Push FCM para usuários que não praticaram hoje
+  // Push para usuários que não praticaram hoje (FCM multicast + Web Push individual)
   if (toNotify.length > 0) {
-    const userIds = toNotify.map((u) => u.userId);
+    const utcHour = new Date().getUTCHours();
+    const pushTitle = utcHour < 14 ? "Bom dia! 🌅" : "Hora de praticar! 🎯";
+    const pushBody = utcHour < 14
+      ? "Não perca seu streak — pratique inglês agora antes de começar o dia!"
+      : "Você ainda não praticou hoje. Mantenha sua sequência!";
+
+    // FCM multicast (Android/desktop)
     const { data: tokenRows } = await supabase
       .from("subscriptions")
       .select("fcm_token")
       .in("user_id", userIds)
       .not("fcm_token", "is", null);
     const tokens = (tokenRows ?? []).map((r) => r.fcm_token).filter(Boolean) as string[];
-    const utcHour = new Date().getUTCHours();
-    const pushTitle = utcHour < 14 ? "Bom dia! 🌅" : "Hora de praticar! 🎯";
-    const pushBody = utcHour < 14
-      ? "Não perca seu streak — pratique inglês agora antes de começar o dia!"
-      : "Você ainda não praticou hoje. Mantenha sua sequência!";
     if (tokens.length > 0) {
       sendPushMulticast(tokens, pushTitle, pushBody, "https://www.faleinglesjv.com/app").catch(() => {});
+    }
+
+    // Web Push individual (iOS)
+    for (const { userId } of toNotify) {
+      pushToUser(userId, pushTitle, pushBody, "https://www.faleinglesjv.com/app").catch(() => {});
     }
   }
 

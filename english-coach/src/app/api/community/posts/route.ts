@@ -116,7 +116,7 @@ export async function POST(req: NextRequest) {
       pushToUser(
         parent.user_id,
         `${displayName} respondeu seu post`,
-        content.slice(0, 100),
+        content.slice(0, 100) || "Veja a resposta na comunidade",
         `https://www.faleinglesjv.com/app/comunidade#post-${parentId}`,
         avatarUrl ?? undefined
       );
@@ -171,8 +171,8 @@ export async function POST(req: NextRequest) {
     });
     pushToUser(
       mentionedUserId,
-      `${displayName} te marcou!`,
-      content.slice(0, 100),
+      `${displayName} te marcou em um post`,
+      content.slice(0, 100) || "Veja o post na comunidade",
       `https://www.faleinglesjv.com/app/comunidade#post-${parentId ?? post.id}`,
       avatarUrl ?? undefined
     );
