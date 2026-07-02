@@ -136,7 +136,10 @@ export default function AppHome() {
         <a href="/app/progresso" style={{ background: "var(--dark1)", border: "1px solid #1e1e1e", borderRadius: 16, padding: "12px 14px", display: "flex", alignItems: "center", justifyContent: "space-between", textDecoration: "none", cursor: "pointer", overflow: "hidden" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
               <div style={{ width: 28, height: 28, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--yellow)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2C8 7 6 10 6 14a6 6 0 0 0 12 0c0-4-2-7-6-12z"/><path d="M12 14c-1.5 0-2.5-1-2.5-2.5C9.5 10 10.5 9 12 8c1.5 1 2.5 2 2.5 3.5C14.5 13 13.5 14 12 14z" fill="var(--yellow)" stroke="none"/></svg>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 2C9.5 6 7 9 7 13a5 5 0 0 0 10 0c0-4-2.5-7-5-11z" fill="var(--yellow)" fillOpacity="0.15" stroke="var(--yellow)" strokeWidth="1.8"/>
+                  <path d="M12 18a2.5 2.5 0 0 1-2.5-2.5C9.5 14 11 12 12 11c1 1 2.5 3 2.5 4.5A2.5 2.5 0 0 1 12 18z" fill="var(--yellow)" stroke="none"/>
+                </svg>
               </div>
               <div>
                 <p style={{ fontSize: "0.65rem", color: "var(--gray)", margin: 0, fontWeight: 600 }}>Sequência atual</p>
@@ -236,7 +239,7 @@ export default function AppHome() {
               },
               {
                 href: isPro === true ? "/app/roleplay" : "/planos",
-                icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.5 6.5a4.5 4.5 0 1 1-9 0 4.5 4.5 0 0 1 9 0z"/><path d="M3 20c0-4 3.6-7 9-7s9 3 9 7"/><circle cx="8" cy="6.5" r="1" fill="#a78bfa"/><circle cx="16" cy="6.5" r="1" fill="#a78bfa"/></svg>,
+                icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M15 3H5a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2v4l4-4h4a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2z" fill="rgba(167,139,250,.1)"/><path d="M19 9h2a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-1v3l-3-3h-3a2 2 0 0 1-2-2v-1" fill="rgba(167,139,250,.08)"/></svg>,
                 title: "Role-play",
                 desc: isPro === true ? "Situações reais" : "Exclusivo Pro",
                 iconBg: "rgba(167,139,250,.12)",
