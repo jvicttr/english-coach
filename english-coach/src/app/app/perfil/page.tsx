@@ -367,11 +367,12 @@ function NotificationButton() {
       if (permission !== "granted") { setStatus("denied"); return; }
 
       const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
-      const sw = await navigator.serviceWorker.register("/firebase-messaging-sw.js");
-      await navigator.serviceWorker.ready;
 
       if (isIOS) {
-        // iOS Safari PWA: usa Web Push nativo com VAPID próprio
+        // iOS Safari PWA: usa Web Push nativo com SW próprio e VAPID próprio
+        const sw = await navigator.serviceWorker.register("/webpush-sw.js");
+        await navigator.serviceWorker.ready;
+
         const vapidPublicKey = process.env.NEXT_PUBLIC_WEBPUSH_PUBLIC_KEY!;
         const keyBytes = Uint8Array.from(atob(vapidPublicKey.replace(/-/g, "+").replace(/_/g, "/")), c => c.charCodeAt(0));
 
@@ -391,6 +392,8 @@ function NotificationButton() {
         setStatus("done");
       } else {
         // Android/Desktop: usa FCM
+        const fcmSw = await navigator.serviceWorker.register("/firebase-messaging-sw.js");
+        await navigator.serviceWorker.ready;
         const FIREBASE_CONFIG = {
           apiKey:            process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
           authDomain:        process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
@@ -403,10 +406,10 @@ function NotificationButton() {
         const { initializeApp, getApps } = await import("firebase/app");
         const { getMessaging, getToken } = await import("firebase/messaging");
         const app = getApps().length > 0 ? getApps()[0] : initializeApp(FIREBASE_CONFIG);
-        sw.active?.postMessage({ type: "FIREBASE_CONFIG", config: FIREBASE_CONFIG });
-        sw.installing?.postMessage({ type: "FIREBASE_CONFIG", config: FIREBASE_CONFIG });
+        fcmSw.active?.postMessage({ type: "FIREBASE_CONFIG", config: FIREBASE_CONFIG });
+        fcmSw.installing?.postMessage({ type: "FIREBASE_CONFIG", config: FIREBASE_CONFIG });
         const messaging = getMessaging(app);
-        const token = await getToken(messaging, { vapidKey: VAPID_KEY, serviceWorkerRegistration: sw });
+        const token = await getToken(messaging, { vapidKey: VAPID_KEY, serviceWorkerRegistration: fcmSw });
         if (token) {
           await fetch("/api/fcm/register", {
             method: "POST",
