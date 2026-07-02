@@ -334,6 +334,7 @@ function ManageSubscriptionButton() {
 
 function NotificationButton() {
   const [status, setStatus] = useState<"idle" | "loading" | "done" | "denied" | "unsupported" | "ios-safari">("idle");
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -349,8 +350,9 @@ function NotificationButton() {
     }
 
     if (!("Notification" in window)) { setStatus("unsupported"); return; }
-    if (Notification.permission === "granted") setStatus("done");
-    if (Notification.permission === "denied") setStatus("denied");
+    if (Notification.permission === "denied") { setStatus("denied"); return; }
+    // Se já tem permissão, tenta registrar o token automaticamente
+    if (Notification.permission === "granted") setStatus("idle");
   }, []);
 
   async function enable() {
@@ -389,7 +391,8 @@ function NotificationButton() {
         });
         setStatus("done");
       }
-    } catch {
+    } catch (err: any) {
+      setErrorMsg(err?.message ?? String(err));
       setStatus("idle");
     }
   }
@@ -437,6 +440,9 @@ function NotificationButton() {
       </div>
       {status === "idle" && <span style={{ fontSize: "0.85rem", color: "var(--gray2)" }}>→</span>}
     </button>
+    {errorMsg && (
+      <p style={{ fontSize: "0.68rem", color: "#ef4444", margin: "6px 4px 0", wordBreak: "break-all" }}>{errorMsg}</p>
+    )}
   );
 }
 
