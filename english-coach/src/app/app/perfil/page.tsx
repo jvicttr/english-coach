@@ -293,6 +293,9 @@ export default function PerfilPage() {
         {/* Gerenciar assinatura (pro only) */}
         {plan === "pro" && <ManageSubscriptionButton />}
 
+        {/* Instalar app (mobile only) */}
+        <InstallAppButton />
+
         {/* Notificações */}
         <NotificationButton />
 
@@ -462,6 +465,62 @@ function NotificationButton() {
         <p style={{ fontSize: "0.68rem", color: "#ef4444", margin: "6px 4px 0", wordBreak: "break-all" }}>{errorMsg}</p>
       )}
     </>
+  );
+}
+
+function InstallAppButton() {
+  const [state, setState] = useState<"hidden" | "ios" | "android" | "installed">("hidden");
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const ua = navigator.userAgent;
+    const isIOS = /iPad|iPhone|iPod/.test(ua) && !/CriOS|FxiOS/.test(ua);
+    const isAndroid = /Android/.test(ua);
+    const isStandalone = (navigator as any).standalone === true || window.matchMedia("(display-mode: standalone)").matches;
+
+    if (isStandalone) { setState("installed"); return; }
+    if (isIOS) setState("ios");
+    else if (isAndroid) setState("android");
+  }, []);
+
+  async function installAndroid() {
+    if (!(window as any)._deferredPrompt) return;
+    (window as any)._deferredPrompt.prompt();
+    await (window as any)._deferredPrompt.userChoice;
+    (window as any)._deferredPrompt = null;
+  }
+
+  if (state === "hidden" || state === "installed") return null;
+
+  if (state === "ios") {
+    return (
+      <div style={{ background: "var(--dark2)", border: "1px solid #2a2a2a", borderRadius: 16, padding: "16px 18px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 8 }}>
+          <span style={{ fontSize: "1.4rem" }}>📲</span>
+          <div>
+            <p style={{ fontSize: "0.85rem", fontWeight: 800, color: "var(--white)", margin: 0 }}>Adicionar à tela inicial</p>
+            <p style={{ fontSize: "0.7rem", color: "var(--gray2)", margin: "2px 0 0" }}>Acesse mais rápido e receba notificações</p>
+          </div>
+        </div>
+        <p style={{ fontSize: "0.72rem", color: "var(--gray2)", margin: 0, lineHeight: 1.6 }}>
+          Toque em <strong style={{ color: "var(--white)" }}>Compartilhar ⎙</strong> na barra inferior do Safari e depois em <strong style={{ color: "var(--yellow)" }}>Adicionar à Tela de Início</strong>.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <button
+      onClick={installAndroid}
+      style={{ background: "var(--dark2)", border: "1px solid #2a2a2a", borderRadius: 16, padding: "16px 18px", display: "flex", alignItems: "center", gap: 14, width: "100%", cursor: "pointer" }}
+    >
+      <span style={{ fontSize: "1.4rem" }}>📲</span>
+      <div style={{ flex: 1, textAlign: "left" }}>
+        <p style={{ fontSize: "0.85rem", fontWeight: 800, color: "var(--white)", margin: 0 }}>Instalar app</p>
+        <p style={{ fontSize: "0.7rem", color: "var(--gray2)", margin: "2px 0 0" }}>Adicionar à tela inicial do celular</p>
+      </div>
+      <span style={{ fontSize: "0.85rem", color: "var(--gray2)" }}>→</span>
+    </button>
   );
 }
 
