@@ -25,7 +25,9 @@ export default function FCMInit() {
     // Pede permissão e registra o token após 4s
     const timer = setTimeout(async () => {
       try {
+        console.log("[FCM] iniciando...");
         const permission = await Notification.requestPermission();
+        console.log("[FCM] permissão:", permission);
         if (permission !== "granted") return;
 
         const { initializeApp, getApps } = await import("firebase/app");
@@ -33,6 +35,7 @@ export default function FCMInit() {
 
         const app = getApps().length > 0 ? getApps()[0] : initializeApp(FIREBASE_CONFIG);
         const sw  = await navigator.serviceWorker.register("/firebase-messaging-sw.js");
+        console.log("[FCM] SW registrado:", sw);
 
         // Passa a config para o service worker
         sw.active?.postMessage({ type: "FIREBASE_CONFIG", config: FIREBASE_CONFIG });
@@ -40,16 +43,18 @@ export default function FCMInit() {
 
         const messaging = getMessaging(app);
         const token = await getToken(messaging, { vapidKey: VAPID_KEY, serviceWorkerRegistration: sw });
+        console.log("[FCM] token:", token);
 
         if (token) {
-          await fetch("/api/fcm/register", {
+          const res = await fetch("/api/fcm/register", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ token }),
           });
+          console.log("[FCM] register response:", res.status);
         }
-      } catch {
-        // Permissão negada ou browser não suporta — silencioso
+      } catch (err) {
+        console.error("[FCM] erro:", err);
       }
     }, 4000);
 
