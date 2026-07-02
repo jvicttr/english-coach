@@ -164,12 +164,11 @@ export async function POST(req: NextRequest) {
 
     if (conv) {
       const recipientId = conv.user1_id === userId ? conv.user2_id : conv.user1_id;
-      const { data: senderSub } = await supabase
-        .from("subscriptions")
-        .select("name")
-        .eq("user_id", userId)
-        .single();
-      const senderName = senderSub?.name ?? "Alguém";
+      const [{ data: senderXp }, { data: senderSub }] = await Promise.all([
+        supabase.from("user_xp").select("display_name").eq("user_id", userId).maybeSingle(),
+        supabase.from("subscriptions").select("name").eq("user_id", userId).maybeSingle(),
+      ]);
+      const senderName = senderXp?.display_name ?? senderSub?.name ?? "Alguém";
       const preview = content
         ? content.substring(0, 100)
         : imageUrl ? "📸 Enviou uma imagem"
