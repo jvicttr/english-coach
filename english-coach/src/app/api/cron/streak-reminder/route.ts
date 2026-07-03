@@ -41,6 +41,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const force = req.nextUrl.searchParams.get("force") === "true";
   const today = new Date().toISOString().split("T")[0];
 
   const { data: allResults } = await supabase
@@ -61,7 +62,7 @@ export async function GET(req: NextRequest) {
   const toNotify: { userId: string; streak: number }[] = [];
   for (const [userId, dates] of Object.entries(byUser)) {
     const practicedToday = dates.some((d) => d.startsWith(today));
-    if (practicedToday) continue;
+    if (practicedToday && !force) continue;
 
     const streak = calcStreak(dates);
     toNotify.push({ userId, streak });
