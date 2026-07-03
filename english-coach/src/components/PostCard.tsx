@@ -552,7 +552,7 @@ export function PostCard({ post, myId, user, router, isReply = false, onReaction
   const [repostMentionOpen, setRepostMentionOpen] = useState(false);
   const [repostMentionQuery, setRepostMentionQuery] = useState("");
   const [repostMentionUsers, setRepostMentionUsers] = useState<Array<{ id: string; name: string; image_url: string | null; handle: string | null }>>([]);
-  const [repostMentionRect, setRepostMentionRect] = useState<{ top: number; left: number; width: number } | null>(null);
+  const [repostMentionRect, setRepostMentionRect] = useState<{ top: number; left: number; width: number; height: number } | null>(null);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -623,7 +623,7 @@ export function PostCard({ post, myId, user, router, isReply = false, onReaction
       setRepostMentionOpen(true);
       fetchRepostMentionUsers();
       const rect = e.target.getBoundingClientRect();
-      setRepostMentionRect({ top: rect.top, left: rect.left, width: rect.width });
+      setRepostMentionRect({ top: rect.top, left: rect.left, width: rect.width, height: rect.height });
     } else {
       setRepostMentionOpen(false);
       setRepostMentionRect(null);
@@ -1072,7 +1072,7 @@ export function PostCard({ post, myId, user, router, isReply = false, onReaction
                     style={{ width: "100%", background: "transparent", border: "none", outline: "none", color: "#fff", fontSize: "0.88rem", resize: "none", fontFamily: "'Inter', sans-serif", lineHeight: 1.5, boxSizing: "border-box", padding: 0 }}
                   />
                   {repostMentionOpen && repostFilteredMentions.length > 0 && repostMentionRect && typeof document !== "undefined" && createPortal(
-                    <div style={{ position: "fixed", top: repostMentionRect.top - 8, left: repostMentionRect.left, width: repostMentionRect.width, transform: "translateY(-100%)", background: "#1a1a1a", border: "1px solid #2a2a2a", borderRadius: 10, overflow: "hidden", zIndex: 99999, boxShadow: "0 4px 16px rgba(0,0,0,0.5)" }}>
+                    <div style={{ position: "fixed", top: repostMentionRect.top + repostMentionRect.height + 4, left: repostMentionRect.left, width: repostMentionRect.width, background: "#1a1a1a", border: "1px solid #2a2a2a", borderRadius: 10, overflow: "hidden", zIndex: 99999, boxShadow: "0 4px 16px rgba(0,0,0,0.5)" }}>
                       {repostFilteredMentions.map(u => (
                         <button key={u.id} onMouseDown={e => { e.preventDefault(); insertRepostMention(u); }} style={{ display: "flex", alignItems: "center", gap: 8, width: "100%", padding: "8px 12px", background: "none", border: "none", color: "#fff", cursor: "pointer", textAlign: "left", fontSize: "0.85rem" }}
                           onMouseEnter={e => (e.currentTarget.style.background = "#252525")}
