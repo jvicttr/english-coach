@@ -4,6 +4,8 @@ importScripts("https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging-com
 self.addEventListener("install", () => self.skipWaiting());
 self.addEventListener("activate", (event) => event.waitUntil(clients.claim()));
 
+let pendingNavUrl = null;
+
 // Configuração injetada pelo FCMInit via postMessage
 let messaging;
 
@@ -13,6 +15,10 @@ self.addEventListener("message", (event) => {
       firebase.initializeApp(event.data.config);
     }
     messaging = firebase.messaging();
+  }
+  if (event.data?.type === "GET_PENDING_NAV") {
+    event.source.postMessage({ type: "NAVIGATE", url: pendingNavUrl });
+    pendingNavUrl = null;
   }
 });
 
@@ -40,6 +46,7 @@ self.addEventListener("push", (event) => {
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
   const url = event.notification.data?.url ?? "/app";
+  pendingNavUrl = url;
   event.waitUntil(
     clients.matchAll({ type: "window", includeUncontrolled: true }).then((list) => {
       if (list.length > 0) {
