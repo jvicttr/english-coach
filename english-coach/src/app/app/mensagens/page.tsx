@@ -38,7 +38,7 @@ function formatTime(iso: string) {
 interface Conversation {
   conversation_id: string;
   other_user: { id: string; name: string; image_url: string | null };
-  last_message: { content: string; created_at: string; is_mine: boolean } | null;
+  last_message: { content: string | null; audio_url: string | null; image_url: string | null; created_at: string; is_mine: boolean } | null;
   unread_count: number;
   updated_at: string;
 }
@@ -129,7 +129,7 @@ export default function MensagensPage() {
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
                   <span style={{ fontSize: "0.82rem", color: conv.unread_count > 0 ? "#aaa" : "#555", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", flex: 1 }}>
                     {conv.last_message
-                      ? `${conv.last_message.is_mine ? "Você: " : ""}${conv.last_message.content}`
+                      ? `${conv.last_message.is_mine ? "Você: " : ""}${conv.last_message.content || (conv.last_message.audio_url ? "🎵 Áudio" : conv.last_message.image_url ? "📸 Imagem" : "Mensagem")}`
                       : "Conversa iniciada"}
                   </span>
                   {conv.unread_count > 0 && (

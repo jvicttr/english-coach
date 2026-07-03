@@ -83,6 +83,8 @@ export async function GET() {
       other_user: other,
       last_message: lastMsg ? {
         content: lastMsg.content,
+        audio_url: lastMsg.audio_url,
+        image_url: lastMsg.image_url,
         created_at: lastMsg.created_at,
         is_mine: lastMsg.sender_id === userId,
       } : null,
