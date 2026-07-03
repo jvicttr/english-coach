@@ -484,13 +484,30 @@ export default function ChatPage() {
     const file = e.target.files?.[0];
     if (!file) return;
     setSending(true);
+    // Preview otimista com URL local enquanto faz upload
+    const localUrl = URL.createObjectURL(file);
+    const tmpId = `tmp-${Date.now()}`;
+    setMessages(prev => [...prev, {
+      id: tmpId,
+      sender_id: user?.id,
+      image_url: localUrl,
+      content: null,
+      created_at: new Date().toISOString(),
+    }]);
     try {
       const fd = new FormData();
       fd.append("file", file); fd.append("type", "image");
       const res = await fetch("/api/community/upload", { method: "POST", body: fd });
-      const { url } = await res.json();
-      await send(undefined, url, undefined);
-    } catch (e) { console.error(e); setSending(false); }
+      const data = await res.json();
+      if (!data.url) throw new Error("Upload falhou");
+      await send(undefined, data.url, undefined);
+      // Remove o preview otimista (o poll vai trazer a mensagem real)
+      setMessages(prev => prev.filter(m => m.id !== tmpId));
+    } catch (err) {
+      console.error(err);
+      setMessages(prev => prev.filter(m => m.id !== tmpId));
+      setSending(false);
+    }
     e.target.value = "";
   }
 
