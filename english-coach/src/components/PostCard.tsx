@@ -606,7 +606,7 @@ export function PostCard({ post, myId, user, router, isReply = false, onReaction
   async function fetchRepostMentionUsers() {
     if (repostMentionUsers.length > 0) return;
     try {
-      const res = await fetch("/api/community/mention-users");
+      const res = await fetch("/api/users");
       const data = await res.json();
       setRepostMentionUsers(data.users || []);
     } catch {}
