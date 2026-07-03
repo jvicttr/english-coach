@@ -1059,18 +1059,19 @@ export function PostCard({ post, myId, user, router, isReply = false, onReaction
                   <button onClick={() => { setRepostImageFile(null); setRepostImagePreview(null); }} style={{ position: "absolute", top: 4, right: 4, background: "#f87171", border: "none", color: "#fff", cursor: "pointer", fontSize: "0.8rem", width: 20, height: 20, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700 }}>✕</button>
                 </div>
               ) : (
-                <div style={{ position: "relative" }}>
+                <>
                   <textarea
                     ref={repostTaRef}
                     value={repostComment}
                     onChange={handleRepostCommentChange}
+                    onBlur={() => setTimeout(() => setRepostMentionOpen(false), 150)}
                     placeholder="Adicione um comentário... (opcional)"
                     maxLength={280}
                     rows={3}
                     style={{ width: "100%", background: "transparent", border: "none", outline: "none", color: "#fff", fontSize: "0.88rem", resize: "none", fontFamily: "'Inter', sans-serif", lineHeight: 1.5, boxSizing: "border-box", padding: 0 }}
                   />
-                  {repostMentionOpen && repostFilteredMentions.length > 0 && repostMentionRect && (
-                    <div style={{ position: "fixed", top: repostMentionRect.top - 8, left: repostMentionRect.left, width: repostMentionRect.width, transform: "translateY(-100%)", background: "#1a1a1a", border: "1px solid #2a2a2a", borderRadius: 10, overflow: "hidden", zIndex: 9999, boxShadow: "0 4px 16px rgba(0,0,0,0.5)" }}>
+                  {repostMentionOpen && repostFilteredMentions.length > 0 && repostMentionRect && typeof document !== "undefined" && React.createPortal(
+                    <div style={{ position: "fixed", top: repostMentionRect.top - 8, left: repostMentionRect.left, width: repostMentionRect.width, transform: "translateY(-100%)", background: "#1a1a1a", border: "1px solid #2a2a2a", borderRadius: 10, overflow: "hidden", zIndex: 99999, boxShadow: "0 4px 16px rgba(0,0,0,0.5)" }}>
                       {repostFilteredMentions.map(u => (
                         <button key={u.id} onMouseDown={e => { e.preventDefault(); insertRepostMention(u); }} style={{ display: "flex", alignItems: "center", gap: 8, width: "100%", padding: "8px 12px", background: "none", border: "none", color: "#fff", cursor: "pointer", textAlign: "left", fontSize: "0.85rem" }}
                           onMouseEnter={e => (e.currentTarget.style.background = "#252525")}
@@ -1085,9 +1086,10 @@ export function PostCard({ post, myId, user, router, isReply = false, onReaction
                           </div>
                         </button>
                       ))}
-                    </div>
+                    </div>,
+                    document.body
                   )}
-                </div>
+                </>
               )}
               {repostShowEmoji && (
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 3, background: "#0d0d0d", borderRadius: 8, padding: "6px 8px", marginBottom: 6 }}>
