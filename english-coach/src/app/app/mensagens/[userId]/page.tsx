@@ -339,6 +339,11 @@ export default function ChatPage() {
       const res = await fetch(`/api/messages?conversationId=${convId}`);
       const data = await res.json();
       setMessages(data.messages || []);
+      // Marca como lida sempre que há mensagens novas não lidas
+      const hasUnread = (data.messages || []).some((m: any) => m.sender_id !== user?.id && !m.read_at);
+      if (hasUnread) {
+        fetch("/api/messages", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ conversationId: convId }) }).catch(() => {});
+      }
     } catch (e) { console.error(e); }
   }
 
