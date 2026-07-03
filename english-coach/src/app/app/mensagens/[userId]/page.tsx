@@ -237,6 +237,9 @@ export default function ChatPage() {
   const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [highlightedMsgId, setHighlightedMsgId] = useState<string | null>(null);
+  const [otherIsOnline, setOtherIsOnline] = useState(false);
+  const [otherIsTyping, setOtherIsTyping] = useState(false);
+  const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputBarRef = useRef<HTMLDivElement>(null);
@@ -273,6 +276,31 @@ export default function ChatPage() {
     init();
     return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
   }, [user?.id, otherUserId]);
+
+  // Presença: marca online ao entrar, offline ao sair
+  useEffect(() => {
+    if (!user?.id) return;
+    fetch("/api/messages/presence", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ isOnline: true }) }).catch(() => {});
+    return () => {
+      fetch("/api/messages/presence", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ isOnline: false, isTyping: false }) }).catch(() => {});
+    };
+  }, [user?.id]);
+
+  // Presença: poll status do outro usuário a cada 3s
+  useEffect(() => {
+    if (!otherUserId) return;
+    const poll = () => {
+      fetch(`/api/messages/presence?userIds=${otherUserId}`)
+        .then(r => r.json())
+        .then(d => {
+          const p = d.presences?.[0];
+          if (p) { setOtherIsOnline(!!p.is_online); setOtherIsTyping(!!p.is_typing); }
+        }).catch(() => {});
+    };
+    poll();
+    const id = setInterval(poll, 3000);
+    return () => clearInterval(id);
+  }, [otherUserId]);
 
   const initialScrollDone = useRef(false);
 
@@ -477,6 +505,12 @@ export default function ChatPage() {
     } else {
       setMentionOpen(false);
     }
+    // Typing indicator
+    fetch("/api/messages/presence", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ isTyping: true }) }).catch(() => {});
+    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+    typingTimeoutRef.current = setTimeout(() => {
+      fetch("/api/messages/presence", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ isTyping: false }) }).catch(() => {});
+    }, 2000);
   }
 
   function insertMention(u: { name: string }) {
@@ -587,10 +621,17 @@ export default function ChatPage() {
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M9 2L4 7L9 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
           </button>
           <a href={`/app/comunidade/u/${otherUserId}`} style={{ display: "flex", alignItems: "center", gap: 10, textDecoration: "none", flex: 1, minWidth: 0 }}>
-            <UserAvatar src={otherUserImage} name={otherUserName} size={36} />
+            <div style={{ position: "relative", flexShrink: 0 }}>
+              <UserAvatar src={otherUserImage} name={otherUserName} size={36} />
+              {otherIsOnline && (
+                <div style={{ position: "absolute", bottom: 1, right: 1, width: 10, height: 10, borderRadius: "50%", background: "#4caf50", border: "2px solid var(--black)" }} />
+              )}
+            </div>
             <div style={{ minWidth: 0 }}>
               <div style={{ fontWeight: 700, fontSize: "0.9rem", color: "var(--white)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{otherUserName || "..."}</div>
-              <div style={{ fontSize: "0.68rem", color: "var(--gray)" }}>Mensagem direta</div>
+              <div style={{ fontSize: "0.68rem", color: otherIsTyping ? "#4caf50" : otherIsOnline ? "#4caf50" : "var(--gray)" }}>
+                {otherIsTyping ? "digitando..." : otherIsOnline ? "online" : "Mensagem direta"}
+              </div>
             </div>
           </a>
         </div>
@@ -830,6 +871,17 @@ export default function ChatPage() {
 
           return els;
         })}</>)}
+        {otherIsTyping && (
+          <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 0 8px" }}>
+            <UserAvatar src={otherUserImage} name={otherUserName} size={28} />
+            <div style={{ background: "#1e1e1e", borderRadius: "18px 18px 18px 4px", padding: "10px 14px", display: "flex", gap: 4, alignItems: "center" }}>
+              <style>{`@keyframes typingDot{0%,80%,100%{transform:scale(0.6);opacity:0.4}40%{transform:scale(1);opacity:1}}`}</style>
+              {[0,1,2].map(i => (
+                <div key={i} style={{ width: 7, height: 7, borderRadius: "50%", background: "#888", animation: `typingDot 1.2s ease-in-out ${i * 0.2}s infinite` }} />
+              ))}
+            </div>
+          </div>
+        )}
         <div ref={bottomRef} />
       </div>
 

@@ -12,15 +12,21 @@ export async function POST(req: NextRequest) {
   const { userId } = await auth();
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { isOnline } = await req.json();
+  const { isOnline, isTyping } = await req.json();
+
+  const update: Record<string, any> = {
+    user_id: userId,
+    last_seen: new Date().toISOString(),
+  };
+  if (isOnline !== undefined) update.is_online = isOnline;
+  if (isTyping !== undefined) {
+    update.is_typing = isTyping;
+    update.typing_at = isTyping ? new Date().toISOString() : null;
+  }
 
   const { data, error } = await supabase
     .from("user_presence")
-    .upsert({
-      user_id: userId,
-      is_online: isOnline ?? true,
-      last_seen: new Date().toISOString(),
-    }, { onConflict: "user_id" })
+    .upsert(update, { onConflict: "user_id" })
     .select()
     .single();
 
@@ -39,9 +45,17 @@ export async function GET(req: NextRequest) {
 
   const { data: presences, error } = await supabase
     .from("user_presence")
-    .select("*")
+    .select("user_id, is_online, last_seen, is_typing, typing_at")
     .in("user_id", userIds);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json({ presences });
+
+  const now = Date.now();
+  const enriched = (presences ?? []).map(p => ({
+    ...p,
+    is_online: p.is_online && (now - new Date(p.last_seen).getTime()) < 5 * 60 * 1000,
+    is_typing: p.is_typing && p.typing_at && (now - new Date(p.typing_at).getTime()) < 4000,
+  }));
+
+  return NextResponse.json({ presences: enriched });
 }
