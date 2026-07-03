@@ -22,9 +22,9 @@ export async function pushToUser(
 
   if (!data) return;
 
-  if (data.fcm_token) {
-    sendPush(data.fcm_token, title, body, url, icon).catch(() => {});
-  } else if (data.webpush_subscription) {
+  if (data.webpush_subscription) {
     sendWebPush(data.webpush_subscription, title, body, url).catch(() => {});
+  } else if (data.fcm_token) {
+    sendPush(data.fcm_token, title, body, url, icon).catch(() => {});
   }
 }
