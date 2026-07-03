@@ -11,22 +11,6 @@
   ],
   "crons": [
     {
-      "path": "/api/cron/save-news",
-      "schedule": "0 8 * * *"
-    },
-    {
-      "path": "/api/cron/streak",
-      "schedule": "0 22 * * *"
-    },
-    {
-      "path": "/api/cron/notify",
-      "schedule": "0 13 * * *"
-    },
-    {
-      "path": "/api/cron/notify",
-      "schedule": "0 21 * * *"
-    },
-    {
       "path": "/api/cron/streak-reminder",
       "schedule": "0 13 * * *"
     },
