@@ -548,6 +548,9 @@ export function PostCard({ post, myId, user, router, isReply = false, onReaction
   const repostTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const repostFileRef = useRef<HTMLInputElement>(null);
   const repostTaRef = useRef<HTMLTextAreaElement>(null);
+  const [repostMentionOpen, setRepostMentionOpen] = useState(false);
+  const [repostMentionQuery, setRepostMentionQuery] = useState("");
+  const [repostMentionUsers, setRepostMentionUsers] = useState<Array<{ id: string; name: string; image_url: string | null; handle: string | null }>>([]);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -595,8 +598,48 @@ export function PostCard({ post, myId, user, router, isReply = false, onReaction
     setRepostComment(""); setRepostAudioBlob(null); setRepostAudioUrl(null);
     setRepostImageFile(null); setRepostImagePreview(null);
     setRepostShowEmoji(false); setRepostError(""); setRepostRecording(false); setRepostSeconds(0);
+    setRepostMentionOpen(false); setRepostMentionQuery("");
     if (repostTimerRef.current) clearInterval(repostTimerRef.current);
   }
+
+  async function fetchRepostMentionUsers() {
+    if (repostMentionUsers.length > 0) return;
+    try {
+      const res = await fetch("/api/community/mention-users");
+      const data = await res.json();
+      setRepostMentionUsers(data.users || []);
+    } catch {}
+  }
+
+  function handleRepostCommentChange(e: React.ChangeEvent<HTMLTextAreaElement>) {
+    const val = e.target.value;
+    setRepostComment(val);
+    const cursor = e.target.selectionStart ?? val.length;
+    const match = val.slice(0, cursor).match(/@(\w*)$/);
+    if (match) {
+      setRepostMentionQuery(match[1].toLowerCase());
+      setRepostMentionOpen(true);
+      fetchRepostMentionUsers();
+    } else {
+      setRepostMentionOpen(false);
+    }
+  }
+
+  function insertRepostMention(u: { id: string; name: string; handle: string | null }) {
+    const ta = repostTaRef.current;
+    const cursor = ta?.selectionStart ?? repostComment.length;
+    const before = repostComment.slice(0, cursor);
+    const atIdx = before.lastIndexOf("@");
+    const tag = u.handle ?? u.name.split(" ")[0];
+    const newText = before.slice(0, atIdx) + `@${tag} ` + repostComment.slice(cursor);
+    setRepostComment(newText);
+    setRepostMentionOpen(false);
+    setTimeout(() => ta?.focus(), 0);
+  }
+
+  const repostFilteredMentions = repostMentionUsers
+    .filter(u => u.name.toLowerCase().includes(repostMentionQuery) || (u.handle ?? "").toLowerCase().includes(repostMentionQuery))
+    .slice(0, 5);
 
   async function startRepostRec() {
     try {
@@ -1012,15 +1055,35 @@ export function PostCard({ post, myId, user, router, isReply = false, onReaction
                   <button onClick={() => { setRepostImageFile(null); setRepostImagePreview(null); }} style={{ position: "absolute", top: 4, right: 4, background: "#f87171", border: "none", color: "#fff", cursor: "pointer", fontSize: "0.8rem", width: 20, height: 20, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700 }}>✕</button>
                 </div>
               ) : (
-                <textarea
-                  ref={repostTaRef}
-                  value={repostComment}
-                  onChange={e => setRepostComment(e.target.value)}
-                  placeholder="Adicione um comentário... (opcional)"
-                  maxLength={280}
-                  rows={3}
-                  style={{ width: "100%", background: "transparent", border: "none", outline: "none", color: "#fff", fontSize: "0.88rem", resize: "none", fontFamily: "'Inter', sans-serif", lineHeight: 1.5, boxSizing: "border-box", padding: 0 }}
-                />
+                <div style={{ position: "relative" }}>
+                  <textarea
+                    ref={repostTaRef}
+                    value={repostComment}
+                    onChange={handleRepostCommentChange}
+                    placeholder="Adicione um comentário... (opcional)"
+                    maxLength={280}
+                    rows={3}
+                    style={{ width: "100%", background: "transparent", border: "none", outline: "none", color: "#fff", fontSize: "0.88rem", resize: "none", fontFamily: "'Inter', sans-serif", lineHeight: 1.5, boxSizing: "border-box", padding: 0 }}
+                  />
+                  {repostMentionOpen && repostFilteredMentions.length > 0 && (
+                    <div style={{ position: "absolute", bottom: "100%", left: 0, background: "#1a1a1a", border: "1px solid #2a2a2a", borderRadius: 10, overflow: "hidden", zIndex: 50, minWidth: 200, boxShadow: "0 4px 16px rgba(0,0,0,0.5)" }}>
+                      {repostFilteredMentions.map(u => (
+                        <button key={u.id} onMouseDown={e => { e.preventDefault(); insertRepostMention(u); }} style={{ display: "flex", alignItems: "center", gap: 8, width: "100%", padding: "8px 12px", background: "none", border: "none", color: "#fff", cursor: "pointer", textAlign: "left", fontSize: "0.85rem" }}
+                          onMouseEnter={e => (e.currentTarget.style.background = "#252525")}
+                          onMouseLeave={e => (e.currentTarget.style.background = "none")}
+                        >
+                          <div style={{ width: 28, height: 28, borderRadius: "50%", background: "#333", overflow: "hidden", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.75rem" }}>
+                            {u.image_url ? <img src={u.image_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : (u.name[0] ?? "?").toUpperCase()}
+                          </div>
+                          <div>
+                            <div style={{ fontWeight: 700, fontSize: "0.82rem" }}>{u.name}</div>
+                            {u.handle && <div style={{ fontSize: "0.72rem", color: "#888" }}>@{u.handle}</div>}
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
               )}
               {repostShowEmoji && (
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 3, background: "#0d0d0d", borderRadius: 8, padding: "6px 8px", marginBottom: 6 }}>
