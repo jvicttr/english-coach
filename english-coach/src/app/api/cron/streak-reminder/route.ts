@@ -136,5 +136,5 @@ export async function GET(req: NextRequest) {
     sent++;
   }
 
-  return NextResponse.json({ sent, total: toNotify.length, pushOk, pushFail, pushErrors });
+  return NextResponse.json({ sent, total: toNotify.length });
 }
