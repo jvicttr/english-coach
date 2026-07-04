@@ -252,6 +252,7 @@ export default function ChatPage() {
   // Long press menu for mobile delete
   const [longPressMenu, setLongPressMenu] = useState<{ msgId: string; x: number; y: number } | null>(null);
   const [deleteConfirmMsgId, setDeleteConfirmMsgId] = useState<string | null>(null);
+  const [bubbleMenuMsgId, setBubbleMenuMsgId] = useState<string | null>(null);
   const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [highlightedMsgId, setHighlightedMsgId] = useState<string | null>(null);
@@ -669,7 +670,7 @@ export default function ChatPage() {
       ref={outerRef}
       className="flex flex-col items-center px-3 sm:px-4"
       style={{ background: "var(--black)", fontFamily: "'Inter', sans-serif", position: "fixed", top: 0, left: 0, right: 0, bottom: 0, overflow: "hidden", paddingTop: "calc(65px + env(safe-area-inset-top))", paddingBottom: "var(--chat-pb, 86px)" }}
-      onClick={() => longPressMenu && setLongPressMenu(null)}
+      onClick={() => { if (longPressMenu) setLongPressMenu(null); if (bubbleMenuMsgId) setBubbleMenuMsgId(null); }}
     >
 
       {/* Subheader */}
@@ -829,7 +830,7 @@ export default function ChatPage() {
                         <path d="M9 17h8a2 2 0 0 0 2-2v-5"/>
                       </svg>
                     </ActionBtn>
-                    <ActionBtn onClick={() => deleteMsg(msg.id)} title="Apagar mensagem">
+                    <ActionBtn onClick={() => setDeleteConfirmMsgId(msg.id)} title="Apagar mensagem">
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                         <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/>
                       </svg>
@@ -841,10 +842,79 @@ export default function ChatPage() {
                 <div
                   className="max-w-[82%] sm:max-w-[78%] px-3 sm:px-4 py-2.5 text-sm leading-relaxed"
                   style={isOwn
-                    ? { background: "var(--yellow)", color: "var(--black)", borderRadius: "18px 18px 4px 18px", fontWeight: 500 }
-                    : { background: "var(--dark2)", color: "var(--white)", borderRadius: "18px 18px 18px 4px", border: "1px solid #2a2a2a" }
+                    ? { background: "var(--yellow)", color: "var(--black)", borderRadius: "18px 18px 4px 18px", fontWeight: 500, position: "relative" }
+                    : { background: "var(--dark2)", color: "var(--white)", borderRadius: "18px 18px 18px 4px", border: "1px solid #2a2a2a", position: "relative" }
                   }
                 >
+                  {/* Dropdown ▾ — desktop only, aparece no hover */}
+                  {showActions && !isTmp && (
+                    <div className="hidden sm:block" style={{ position: "absolute", top: 6, right: 8, zIndex: 10 }}>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); setBubbleMenuMsgId(prev => prev === msg.id ? null : msg.id); }}
+                        style={{
+                          background: isOwn ? "rgba(0,0,0,0.12)" : "rgba(255,255,255,0.1)",
+                          border: "none",
+                          borderRadius: 6,
+                          width: 20,
+                          height: 20,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          cursor: "pointer",
+                          padding: 0,
+                          color: isOwn ? "rgba(0,0,0,0.5)" : "var(--gray)",
+                        }}
+                        title="Opções"
+                      >
+                        <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                          <path d="M2 3.5L5 6.5L8 3.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                      </button>
+
+                      {bubbleMenuMsgId === msg.id && (
+                        <div
+                          onClick={(e) => e.stopPropagation()}
+                          style={{
+                            position: "absolute",
+                            top: 24,
+                            right: 0,
+                            background: "#1e1e1e",
+                            border: "1px solid #2a2a2a",
+                            borderRadius: 10,
+                            minWidth: 160,
+                            boxShadow: "0 4px 20px rgba(0,0,0,0.5)",
+                            zIndex: 20,
+                            overflow: "hidden",
+                          }}
+                        >
+                          <button
+                            onClick={() => { setBubbleMenuMsgId(null); setDeleteConfirmMsgId(msg.id); }}
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 8,
+                              padding: "10px 14px",
+                              background: "transparent",
+                              border: "none",
+                              cursor: "pointer",
+                              width: "100%",
+                              textAlign: "left",
+                              color: "#ef4444",
+                              fontSize: "0.82rem",
+                              fontWeight: 500,
+                            }}
+                            onMouseEnter={e => (e.currentTarget.style.background = "#2a1a1a")}
+                            onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
+                          >
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                              <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/>
+                            </svg>
+                            Deletar mensagem
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
                   {/* Reply quote inside bubble — clicável para ir à mensagem original */}
                   {msg.reply_to_id && (
                     <div
@@ -917,7 +987,7 @@ export default function ChatPage() {
                         <path d="M9 17h8a2 2 0 0 0 2-2v-5"/>
                       </svg>
                     </ActionBtn>
-                    <ActionBtn onClick={() => deleteMsg(msg.id)} title="Apagar mensagem">
+                    <ActionBtn onClick={() => setDeleteConfirmMsgId(msg.id)} title="Apagar mensagem">
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                         <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/>
                       </svg>
