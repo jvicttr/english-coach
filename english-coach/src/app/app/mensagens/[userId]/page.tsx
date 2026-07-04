@@ -310,13 +310,13 @@ export default function ChatPage() {
     if (!container) return;
 
     if (!initialScrollDone.current) {
-      // First load: jump to bottom after layout is painted
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          if (chatScrollRef.current) chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
-        });
-      });
       initialScrollDone.current = true;
+      const scrollToEnd = () => {
+        bottomRef.current?.scrollIntoView({ behavior: "instant" as ScrollBehavior });
+      };
+      requestAnimationFrame(() => { requestAnimationFrame(scrollToEnd); });
+      setTimeout(scrollToEnd, 150);
+      setTimeout(scrollToEnd, 500);
       return;
     }
 
