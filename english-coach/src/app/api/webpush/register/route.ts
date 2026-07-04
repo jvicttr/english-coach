@@ -4,6 +4,19 @@ import { createClient } from "@supabase/supabase-js";
 
 const supabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SECRET_KEY!);
 
+export async function GET() {
+  const { userId } = await auth();
+  if (!userId) return NextResponse.json({ active: false });
+
+  const { data } = await supabase
+    .from("subscriptions")
+    .select("webpush_subscription")
+    .eq("user_id", userId)
+    .single();
+
+  return NextResponse.json({ active: !!data?.webpush_subscription });
+}
+
 export async function POST(req: NextRequest) {
   const { userId } = await auth();
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

@@ -209,7 +209,7 @@ export default function Home() {
       fetch("/api/trilha-session", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ stepId: trilhaStep.id, phase: "flashcards", flashcardIndex: fcIndex, flashcardFlipped: fcFlipped }),
+        body: JSON.stringify({ stepId: trilhaStep.id, messages, phase: "flashcards", flashcardIndex: fcIndex, flashcardFlipped: fcFlipped }),
       }).catch(() => {});
     }
 
@@ -221,7 +221,7 @@ export default function Home() {
       fetch("/api/trilha-session", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ stepId: trilhaStep.id, phase: "quiz", quizData: { currentQ, answers, total: quiz.questions.length } }),
+        body: JSON.stringify({ stepId: trilhaStep.id, messages, phase: "quiz", quizData: { currentQ, answers, total: quiz.questions.length } }),
       }).catch(() => {});
     }
   }, [messages, trilhaStep, trilhaPhase, trilhaMsgCount, fcIndex, fcFlipped, trilhaFlashcards.length, currentQ, answers, quiz]);
@@ -439,7 +439,7 @@ export default function Home() {
                       fetch("/api/trilha-session", {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ stepId: (step as TrailStep).id, phase: "flashcards", flashcardIndex: 0, flashcardFlipped: false }),
+                        body: JSON.stringify({ stepId: (step as TrailStep).id, messages: savedChat1Messages, phase: "flashcards", flashcardIndex: 0, flashcardFlipped: false }),
                       }).catch(() => {});
                     } else {
                       // Flashcard regeneration failed — go straight to quiz
@@ -992,7 +992,7 @@ export default function Home() {
         fetch("/api/trilha-session", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ stepId: trilhaStep.id, phase: "flashcards", flashcardIndex: 0, flashcardFlipped: false }),
+          body: JSON.stringify({ stepId: trilhaStep.id, messages, phase: "flashcards", flashcardIndex: 0, flashcardFlipped: false }),
         }).catch(() => {});
       } else {
         // Flashcard generation failed — go straight to quiz with saved messages
@@ -1036,7 +1036,7 @@ export default function Home() {
           fetch("/api/trilha-session", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ stepId: trilhaStep.id, phase: "quiz", quizData: { currentQ: 0, answers: newAnswers, total: data.quiz.questions.length, sessionId } }),
+            body: JSON.stringify({ stepId: trilhaStep.id, messages: msgs, phase: "quiz", quizData: { currentQ: 0, answers: newAnswers, total: data.quiz.questions.length, sessionId } }),
           }).catch(() => {});
         }
       } else {

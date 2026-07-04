@@ -343,11 +343,20 @@ export default function ChatPage() {
 
     if (!initialScrollDone.current) {
       initialScrollDone.current = true;
-      // Scroll imediato antes do paint + fallbacks para imagens que carregam depois
-      container.scrollTop = container.scrollHeight;
-      setTimeout(() => { container.scrollTop = container.scrollHeight; }, 150);
-      setTimeout(() => { container.scrollTop = container.scrollHeight; }, 500);
-      return;
+      // Scroll imediato antes do paint + reancora sempre que uma imagem (foto/avatar) termina
+      // de carregar e muda o scrollHeight — "load" não faz bubble, mas é capturado na fase de captura
+      const snap = () => { container.scrollTop = container.scrollHeight; };
+      snap();
+      container.addEventListener("load", snap, true);
+      const t1 = setTimeout(snap, 150);
+      const t2 = setTimeout(snap, 500);
+      const t3 = setTimeout(() => container.removeEventListener("load", snap, true), 3000);
+      return () => {
+        clearTimeout(t1);
+        clearTimeout(t2);
+        clearTimeout(t3);
+        container.removeEventListener("load", snap, true);
+      };
     }
 
     // Novas mensagens: scroll só se estiver perto do fundo — antes do paint para evitar flash

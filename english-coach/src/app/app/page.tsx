@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import OnboardingTour from "@/components/OnboardingTour";
 import LevelSelect from "@/components/LevelSelect";
 import QuickTranslator from "@/components/QuickTranslator";
+import InstallAppCard from "@/components/InstallAppCard";
 import { TRAIL_STEPS, isStepUnlocked, getStartingLevel, type TrailStep } from "@/lib/trilha-steps";
 
 type TierInfo = { id: string; label: string; emoji: string; color: string; min: number; max: number };
@@ -281,6 +282,9 @@ export default function AppHome() {
             <svg style={{ marginLeft: "auto", flexShrink: 0 }} width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--gray)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
           </a>
         )}
+
+        {/* ── Adicionar à tela inicial (some sozinho se já instalado) ─────────── */}
+        <InstallAppCard />
 
         {/* ── No-content CTA ─────────────────────────────────────────────────── */}
         {isPro !== null && streak === 0 && !lastTopic && (

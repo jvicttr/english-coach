@@ -31,7 +31,7 @@ export async function GET(req: NextRequest) {
     .from("flashcards")
     .select("word, translation, phonetic, example, example_translation, pack_id, created_at")
     .eq("user_id", userId)
-    .eq("pack_name", step.title)
+    .like("pack_name", `${step.title} ·%`)
     .order("created_at", { ascending: false })
     .limit(20);
 

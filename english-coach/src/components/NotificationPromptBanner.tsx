@@ -1,217 +1,161 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 
-type PermState = "loading" | "default" | "denied" | "granted";
+const DISMISSED_KEY = "notif-popup-dismissed";
+const DISMISS_DAYS = 3;
 
-const DISMISSED_KEY = "notif-banner-dismissed";
-const SUBSCRIBED_KEY = "push-subscribed";
+type Status = "idle" | "loading" | "done" | "denied";
 
 export default function NotificationPromptBanner() {
-  const [perm, setPerm] = useState<PermState>("loading");
-  const [dismissed, setDismissed] = useState(false);
-  const [requesting, setRequesting] = useState(false);
+  const [show, setShow] = useState(false);
+  const [status, setStatus] = useState<Status>("idle");
 
   useEffect(() => {
-    // Permanently dismissed by the user (× button) — never show again
-    if (localStorage.getItem(DISMISSED_KEY) === "1") {
-      setDismissed(true);
-      return;
-    }
-
-    // Already subscribed and confirmed in a previous session — hide banner
-    if (localStorage.getItem(SUBSCRIBED_KEY) === "1") {
-      setDismissed(true);
-      return;
-    }
-
-    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-
-    if (!("Notification" in window)) {
-      if (isIOS) setPerm("default");
-      else setDismissed(true); // not supported, hide
-      return;
-    }
-
-    // On iOS, Notification.permission can incorrectly report "granted" before
-    // the user has actually been asked. Show the banner until confirmed.
-    if (isIOS && Notification.permission !== "denied") {
-      setPerm("default");
-      return;
-    }
-
-    if (Notification.permission === "granted") {
-      setDismissed(true); // already granted on non-iOS, no banner needed
-      return;
-    }
-
-    setPerm(Notification.permission as PermState);
-
-    const handler = () => setPerm(Notification.permission as PermState);
-    navigator.permissions
-      ?.query({ name: "notifications" })
-      .then((status) => status.addEventListener("change", handler))
-      .catch(() => {});
+    check();
   }, []);
 
-  const dismiss = () => {
-    localStorage.setItem(DISMISSED_KEY, "1");
-    setDismissed(true);
-  };
+  async function check() {
+    if (typeof window === "undefined") return;
+    if (!("Notification" in window) || !("serviceWorker" in navigator) || !("PushManager" in window)) return;
+    if (Notification.permission === "denied") return;
 
-  const enable = async () => {
-    setRequesting(true);
-    try {
-      // Access OneSignal directly (sync — no deferred queue) so iOS sees it as user gesture
-      const os = (window as WindowWithOneSignal).OneSignal;
+    const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
+    const isSafari = /Safari/.test(navigator.userAgent) && !/CriOS|FxiOS|OPiOS/.test(navigator.userAgent);
+    const isStandalone = (window.navigator as any).standalone === true || window.matchMedia("(display-mode: standalone)").matches;
+    if (isIOS && isSafari && !isStandalone) return; // não dá pra ativar push numa aba do Safari fora do PWA
 
-      if (os?.Notifications?.requestPermission) {
-        // OneSignal v16: handles full subscription registration internally
-        await os.Notifications.requestPermission();
-        const granted = os.Notifications.permission === true;
-        if (granted) {
-          try { await os.User?.PushSubscription?.optIn?.(); } catch { /* ignore */ }
-          localStorage.setItem(SUBSCRIBED_KEY, "1");
-          localStorage.setItem(DISMISSED_KEY, "1");
-          setPerm("granted");
-          setTimeout(() => setDismissed(true), 2500);
-        } else {
-          setPerm("denied");
-        }
-      } else if ("Notification" in window) {
-        // Fallback: native API + manual OneSignal opt-in via deferred
-        const result = await Notification.requestPermission();
-        if (result === "granted") {
-          window.OneSignalDeferred = window.OneSignalDeferred || [];
-          window.OneSignalDeferred.push(async (OneSignal: OneSignalType) => {
-            try { await OneSignal.User?.PushSubscription?.optIn?.(); } catch { /* ignore */ }
-          });
-          localStorage.setItem(SUBSCRIBED_KEY, "1");
-          localStorage.setItem(DISMISSED_KEY, "1");
-          setPerm("granted");
-          setTimeout(() => setDismissed(true), 2500);
-        } else {
-          setPerm(result as PermState);
-        }
-      } else {
-        setPerm("denied");
-      }
-    } catch {
-      setPerm("denied");
-    } finally {
-      setRequesting(false);
+    const dismissedAt = localStorage.getItem(DISMISSED_KEY);
+    if (dismissedAt) {
+      const days = (Date.now() - parseInt(dismissedAt)) / (1000 * 60 * 60 * 24);
+      if (days < DISMISS_DAYS) return;
     }
-  };
 
-  if (perm === "loading" || dismissed) return null;
+    try {
+      const res = await fetch("/api/webpush/register");
+      const data = await res.json();
+      if (data.active) return; // já tem subscription ativa no novo sistema
+    } catch {
+      return;
+    }
 
-  return (
-    <div
-      style={{
-        position: "fixed",
-        top: 62,
-        left: 12,
-        right: 12,
-        zIndex: 150,
-        background: perm === "denied" ? "#1a1010" : perm === "granted" ? "#0d1f0d" : "#141200",
-        border: `1px solid ${perm === "denied" ? "#5a1a1a" : perm === "granted" ? "#1a4d1a" : "#3a2e00"}`,
-        borderRadius: 14,
-        padding: "14px 16px",
-        display: "flex",
-        alignItems: "flex-start",
-        gap: 12,
-        boxShadow: "0 4px 24px rgba(0,0,0,0.5)",
-      }}
-    >
-      <span style={{ fontSize: 24, lineHeight: 1, flexShrink: 0 }}>
-        {perm === "denied" ? "🔕" : perm === "granted" ? "✅" : "🔔"}
-      </span>
+    setTimeout(() => setShow(true), 1500);
+  }
 
-      <div style={{ flex: 1 }}>
-        {perm === "default" && (
-          <>
-            <div style={{ fontWeight: 700, fontSize: 14, color: "#fff", marginBottom: 4 }}>
-              Ative as notificações
+  function dismiss() {
+    localStorage.setItem(DISMISSED_KEY, String(Date.now()));
+    setShow(false);
+  }
+
+  async function enable() {
+    setStatus("loading");
+    try {
+      const permission = await Notification.requestPermission();
+      if (permission !== "granted") {
+        setStatus("denied");
+        return;
+      }
+
+      const sw = await navigator.serviceWorker.register("/firebase-messaging-sw.js");
+      await navigator.serviceWorker.ready;
+
+      const vapidPublicKey = process.env.NEXT_PUBLIC_WEBPUSH_PUBLIC_KEY!;
+      const keyBytes = Uint8Array.from(atob(vapidPublicKey.replace(/-/g, "+").replace(/_/g, "/")), (c) => c.charCodeAt(0));
+
+      const existingSub = await sw.pushManager.getSubscription();
+      if (existingSub) await existingSub.unsubscribe();
+
+      const subscription = await sw.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: keyBytes,
+      });
+      await fetch("/api/webpush/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ subscription: subscription.toJSON() }),
+      });
+      setStatus("done");
+      setTimeout(() => setShow(false), 1800);
+    } catch {
+      setStatus("idle");
+    }
+  }
+
+  if (!show || typeof document === "undefined") return null;
+
+  return createPortal(
+    <>
+      <div
+        onClick={status === "loading" ? undefined : dismiss}
+        style={{ position: "fixed", inset: 0, zIndex: 200, background: "rgba(0,0,0,0.85)", backdropFilter: "blur(4px)" }}
+      />
+      <div style={{ position: "fixed", top: "50%", left: "50%", transform: "translate(-50%, -50%)", zIndex: 201, width: "calc(100% - 32px)", maxWidth: 400 }}>
+        <div style={{ background: "#141414", border: "1px solid #2a2a2a", borderRadius: 20, padding: "28px 20px 22px", textAlign: "center" }}>
+          <div style={{ fontSize: "2.2rem", marginBottom: 12 }}>
+            {status === "done" ? "✅" : status === "denied" ? "🔕" : "🔔"}
+          </div>
+
+          {status === "denied" ? (
+            <>
+              <h2 style={{ fontSize: "1.05rem", fontWeight: 800, color: "#fff", margin: "0 0 8px" }}>Notificações bloqueadas</h2>
+              <p style={{ fontSize: "0.82rem", color: "#999", margin: "0 0 20px", lineHeight: 1.5 }}>
+                Ative manualmente nas configurações do seu navegador (Ajustes → Notificações → JV IA).
+              </p>
+            </>
+          ) : status === "done" ? (
+            <>
+              <h2 style={{ fontSize: "1.05rem", fontWeight: 800, color: "#4ade80", margin: "0 0 8px" }}>Notificações ativadas!</h2>
+              <p style={{ fontSize: "0.82rem", color: "#999", margin: 0, lineHeight: 1.5 }}>
+                Você vai receber mensagens, menções, seguidores e lembretes de streak.
+              </p>
+            </>
+          ) : (
+            <>
+              <h2 style={{ fontSize: "1.05rem", fontWeight: 800, color: "#fff", margin: "0 0 8px" }}>Ative as notificações</h2>
+              <p style={{ fontSize: "0.82rem", color: "#999", margin: "0 0 20px", lineHeight: 1.5 }}>
+                Fique sabendo na hora de mensagens diretas, menções, novos seguidores e não perca seu streak.
+              </p>
+            </>
+          )}
+
+          {status !== "done" && status !== "denied" && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              <button
+                onClick={enable}
+                disabled={status === "loading"}
+                style={{ background: "var(--yellow)", border: "none", borderRadius: 14, padding: "13px", fontSize: "0.85rem", fontWeight: 800, color: "#000", cursor: status === "loading" ? "wait" : "pointer", opacity: status === "loading" ? 0.7 : 1 }}
+              >
+                {status === "loading" ? "Ativando…" : "Ativar notificações"}
+              </button>
+              <button onClick={dismiss} style={{ background: "transparent", border: "none", color: "#666", fontSize: "0.78rem", fontWeight: 600, cursor: "pointer", padding: "4px" }}>
+                Agora não
+              </button>
             </div>
-            <div style={{ fontSize: 12, color: "#aaa", marginBottom: 10, lineHeight: 1.5 }}>
-              Receba aviso quando alguém te mandar mensagem e lembretes para praticar.
-            </div>
+          )}
+
+          {(status === "done" || status === "denied") && (
             <button
-              onClick={enable}
-              disabled={requesting}
+              onClick={dismiss}
               style={{
-                background: "#F5C800",
-                color: "#000",
-                fontWeight: 800,
-                fontSize: 13,
-                border: "none",
-                borderRadius: 50,
-                padding: "8px 20px",
-                cursor: requesting ? "wait" : "pointer",
-                opacity: requesting ? 0.7 : 1,
+                marginTop: status === "denied" ? 4 : 0,
+                width: "100%",
+                background: status === "denied" ? "var(--yellow)" : "transparent",
+                border: status === "denied" ? "none" : "1px solid #2a2a2a",
+                borderRadius: 14,
+                padding: "12px",
+                fontSize: "0.82rem",
+                fontWeight: 700,
+                color: status === "denied" ? "#000" : "#999",
+                cursor: "pointer",
               }}
             >
-              {requesting ? "Aguarde..." : "Ativar notificações"}
+              Entendido
             </button>
-          </>
-        )}
-
-        {perm === "granted" && (
-          <>
-            <div style={{ fontWeight: 700, fontSize: 14, color: "#4ade80", marginBottom: 2 }}>
-              Notificações ativadas!
-            </div>
-            <div style={{ fontSize: 12, color: "#aaa" }}>
-              Você vai receber mensagens e lembretes diários.
-            </div>
-          </>
-        )}
-
-        {perm === "denied" && (
-          <>
-            <div style={{ fontWeight: 700, fontSize: 14, color: "#fff", marginBottom: 4 }}>
-              Notificações bloqueadas
-            </div>
-            <div style={{ fontSize: 12, color: "#aaa", lineHeight: 1.55 }}>
-              Vá em{" "}
-              <strong style={{ color: "#F5C800" }}>Ajustes → Notificações → JV IA</strong>{" "}
-              e ative as notificações.
-            </div>
-          </>
-        )}
+          )}
+        </div>
       </div>
-
-      <button
-        onClick={dismiss}
-        style={{
-          background: "none",
-          border: "none",
-          color: "#555",
-          fontSize: 20,
-          cursor: "pointer",
-          padding: 0,
-          lineHeight: 1,
-          flexShrink: 0,
-        }}
-        aria-label="Fechar"
-      >
-        ×
-      </button>
-    </div>
+    </>,
+    document.body
   );
-}
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type OneSignalType = any;
-
-type WindowWithOneSignal = Window & {
-  OneSignal?: OneSignalType;
-  OneSignalDeferred: ((os: OneSignalType) => void)[];
-};
-
-declare global {
-  interface Window {
-    OneSignal?: OneSignalType;
-    OneSignalDeferred: ((os: OneSignalType) => void)[];
-  }
 }
