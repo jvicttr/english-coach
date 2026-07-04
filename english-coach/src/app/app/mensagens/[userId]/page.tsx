@@ -182,7 +182,6 @@ function CheckDouble({ color = "#999" }: { color?: string }) {
 
 function MsgStatus({ msg }: { msg: any }) {
   if (msg.id?.startsWith("tmp-")) return <CheckSingle color="#888" />;
-  if (msg.read_at) return <CheckDouble color="#4fc3f7" />;
   return <CheckDouble color="#888" />;
 }
 
@@ -256,6 +255,9 @@ export default function ChatPage() {
   const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [highlightedMsgId, setHighlightedMsgId] = useState<string | null>(null);
+  const [translations, setTranslations] = useState<Record<string, string>>({});
+  const [translatingId, setTranslatingId] = useState<string | null>(null);
+  const [shownTranslations, setShownTranslations] = useState<Set<string>>(new Set());
   const [otherIsOnline, setOtherIsOnline] = useState(false);
   const [otherIsTyping, setOtherIsTyping] = useState(false);
   const [otherLastSeen, setOtherLastSeen] = useState<string | null>(null);
@@ -658,6 +660,29 @@ export default function ChatPage() {
     return swipeState?.msgId === msgId ? swipeState.offset : 0;
   }
 
+  async function toggleTranslate(msg: any) {
+    if (shownTranslations.has(msg.id)) {
+      setShownTranslations((prev) => { const s = new Set(prev); s.delete(msg.id); return s; });
+      return;
+    }
+    if (translations[msg.id]) {
+      setShownTranslations((prev) => new Set(prev).add(msg.id));
+      return;
+    }
+    setTranslatingId(msg.id);
+    try {
+      const res = await fetch("/api/community/translate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: msg.content }),
+      });
+      const data = await res.json();
+      setTranslations((prev) => ({ ...prev, [msg.id]: data.translation ?? "" }));
+      setShownTranslations((prev) => new Set(prev).add(msg.id));
+    } catch {}
+    setTranslatingId(null);
+  }
+
   function scrollToMessage(msgId: string) {
     const el = msgRefsMap.current.get(msgId);
     if (!el || !chatScrollRef.current) return;
@@ -847,9 +872,10 @@ export default function ChatPage() {
                   </div>
                 )}
 
-                {/* Message bubble */}
+                {/* Bubble + status "visto" abaixo */}
+                <div className="max-w-[82%] sm:max-w-[78%]" style={{ display: "flex", flexDirection: "column", alignItems: isOwn ? "flex-end" : "flex-start" }}>
                 <div
-                  className="max-w-[82%] sm:max-w-[78%] px-3 sm:px-4 py-2.5 text-sm leading-relaxed"
+                  className="px-3 sm:px-4 py-2.5 text-sm leading-relaxed"
                   style={isOwn
                     ? { background: "var(--yellow)", color: "var(--black)", borderRadius: "18px 18px 4px 18px", fontWeight: 500, position: "relative" }
                     : { background: "var(--dark2)", color: "var(--white)", borderRadius: "18px 18px 18px 4px", border: "1px solid #2a2a2a", position: "relative" }
@@ -950,6 +976,25 @@ export default function ChatPage() {
                   )}
 
                   {msg.content && <p style={{ margin: "0 0 4px 0" }}>{renderWithMentions(msg.content)}</p>}
+                  {!isOwn && msg.content && (
+                    shownTranslations.has(msg.id) ? (
+                      <p
+                        onClick={(e) => e.stopPropagation()}
+                        style={{ margin: "0 0 4px 0", paddingTop: 4, borderTop: "1px solid rgba(255,255,255,0.08)", fontSize: "0.78rem", color: "var(--gray)", fontStyle: "italic" }}
+                      >
+                        🇧🇷 {translations[msg.id]}
+                      </p>
+                    ) : (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); toggleTranslate(msg); }}
+                        onTouchStart={(e) => e.stopPropagation()}
+                        disabled={translatingId === msg.id}
+                        style={{ background: "transparent", border: "1px solid #3a3a3a", borderRadius: 50, padding: "1px 8px", fontSize: "0.65rem", color: "var(--gray)", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 4, marginBottom: 2 }}
+                      >
+                        {translatingId === msg.id ? "…" : "🇧🇷 Traduzir"}
+                      </button>
+                    )
+                  )}
                   {msg.image_url && (
                     <img
                       src={msg.image_url}
@@ -965,6 +1010,10 @@ export default function ChatPage() {
                     {fmtBrasiliaTime(msg.created_at)}
                     {isOwn && <MsgStatus msg={msg} />}
                   </div>
+                </div>
+                {isOwn && !isTmp && msg.read_at && (
+                  <span style={{ fontSize: "0.62rem", color: "var(--gray)", marginTop: 2, marginRight: 2 }}>visto</span>
+                )}
                 </div>
 
                 {/* Emoji reaction button — mobile, sempre visível (direita do bubble para msgs recebidas) */}

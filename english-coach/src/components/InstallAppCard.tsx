@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { initInstallPromptCapture, hasDeferredPrompt, subscribeInstallPrompt, triggerInstallPrompt } from "@/lib/installPrompt";
+import { initInstallPromptCapture, hasDeferredPrompt, subscribeInstallPrompt, triggerInstallPrompt, isInstallTestMode } from "@/lib/installPrompt";
 
 type Env = {
   isIOS: boolean;
@@ -48,6 +48,11 @@ export default function InstallAppCard() {
   }, []);
 
   async function grantInstallReward() {
+    if (isInstallTestMode()) {
+      setRewardMsg("🧪 (teste) App instalado — XP não concedido");
+      setTimeout(() => setVisible(false), 2800);
+      return;
+    }
     try {
       const res = await fetch("/api/install-reward", { method: "POST" });
       const data = await res.json();

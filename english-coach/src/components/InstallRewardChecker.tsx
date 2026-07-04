@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { isInstallTestMode } from "@/lib/installPrompt";
 
 const CHECKED_KEY = "install-reward-checked";
 
@@ -17,6 +18,12 @@ export default function InstallRewardChecker() {
     if (!isStandalone) return;
 
     localStorage.setItem(CHECKED_KEY, "1");
+
+    if (isInstallTestMode()) {
+      setMsg("🧪 (teste) App instalado — XP não concedido");
+      setTimeout(() => setMsg(null), 4000);
+      return;
+    }
 
     fetch("/api/install-reward", { method: "POST" })
       .then((r) => r.json())

@@ -43,3 +43,19 @@ export async function triggerInstallPrompt(): Promise<"accepted" | "dismissed" |
     return "dismissed";
   }
 }
+
+const TEST_MODE_KEY = "jv_install_test_mode";
+
+/**
+ * Modo de teste: acesse o app com ?installtest=1 na URL para ativar (persiste no
+ * localStorage até você abrir com ?installtest=0). Com o modo ativo, o fluxo de
+ * instalar o app roda normalmente na tela, mas pula a chamada real que concede XP —
+ * útil pra testar o pop-up/botão sem ganhar a recompensa de verdade.
+ */
+export function isInstallTestMode(): boolean {
+  if (typeof window === "undefined") return false;
+  const param = new URLSearchParams(window.location.search).get("installtest");
+  if (param === "1") localStorage.setItem(TEST_MODE_KEY, "1");
+  else if (param === "0") localStorage.removeItem(TEST_MODE_KEY);
+  return localStorage.getItem(TEST_MODE_KEY) === "1";
+}
