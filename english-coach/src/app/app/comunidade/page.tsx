@@ -493,8 +493,8 @@ export default function ComunidadePage() {
             <button
               onClick={() => { setSelectedImage(null); setImageZoom(1); }}
               style={{
-                position: "absolute",
-                top: 20,
+                position: "fixed",
+                top: "calc(65px + env(safe-area-inset-top) + 8px)",
                 right: 20,
                 background: "rgba(255,255,255,0.2)",
                 border: "none",
