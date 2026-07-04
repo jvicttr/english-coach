@@ -243,6 +243,7 @@ export default function ChatPage() {
   const msgRefsMap = useRef<Map<string, HTMLElement>>(new Map());
   const chatScrollRef = useRef<HTMLDivElement>(null);
   const outerRef = useRef<HTMLDivElement>(null);
+  const [showScrollDown, setShowScrollDown] = useState(false);
 
   useEffect(() => {
     const el = inputBarRef.current;
@@ -266,6 +267,17 @@ export default function ChatPage() {
     init();
     return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
   }, [user?.id, otherUserId]);
+
+  useEffect(() => {
+    const el = chatScrollRef.current;
+    if (!el) return;
+    const onScroll = () => {
+      const distFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+      setShowScrollDown(distFromBottom > 120);
+    };
+    el.addEventListener("scroll", onScroll, { passive: true });
+    return () => el.removeEventListener("scroll", onScroll);
+  }, []);
 
   // Presença: marca online ao entrar, offline ao sair
   useEffect(() => {
@@ -867,6 +879,34 @@ export default function ChatPage() {
         )}
         <div ref={bottomRef} />
       </div>
+
+      {/* Scroll to bottom button */}
+      {showScrollDown && (
+        <button
+          onClick={() => bottomRef.current?.scrollIntoView({ behavior: "smooth" })}
+          style={{
+            position: "fixed",
+            bottom: `calc(var(--chat-pb, 86px) + 12px)`,
+            right: 16,
+            width: 38,
+            height: 38,
+            borderRadius: "50%",
+            background: "#1e1e1e",
+            border: "1px solid #333",
+            color: "#fff",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            cursor: "pointer",
+            zIndex: 200,
+            boxShadow: "0 2px 12px rgba(0,0,0,0.5)",
+          }}
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M12 5v14M5 12l7 7 7-7"/>
+          </svg>
+        </button>
+      )}
 
       {/* Lightbox */}
       {lightboxUrl && (
