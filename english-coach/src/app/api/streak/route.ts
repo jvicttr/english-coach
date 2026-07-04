@@ -13,15 +13,16 @@ export async function GET() {
   const { userId } = await auth();
   if (!userId) return NextResponse.json({ streak: 0, weekDays: [] });
 
-  // Merge activity from usage table AND quiz_results (completed quizzes)
-  const [{ data: usageData }, { data: quizData }] = await Promise.all([
+  const [{ data: usageData }, { data: quizData }, { data: communityData }] = await Promise.all([
     supabase.from("usage").select("date").eq("user_id", userId).order("date", { ascending: false }).limit(60),
     supabase.from("quiz_results").select("created_at").eq("user_id", userId).not("score", "is", null).order("created_at", { ascending: false }).limit(100),
+    supabase.from("community_posts").select("created_at").eq("user_id", userId).order("created_at", { ascending: false }).limit(60),
   ]);
 
   const dateSet = new Set<string>();
   for (const r of usageData ?? []) dateSet.add(r.date);
   for (const r of quizData ?? []) dateSet.add((r.created_at as string).split("T")[0]);
+  for (const r of communityData ?? []) dateSet.add((r.created_at as string).split("T")[0]);
 
   const today = new Date();
 

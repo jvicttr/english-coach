@@ -119,15 +119,15 @@ export default function Progresso() {
 
   useEffect(() => {
     Promise.all([
-      fetch("/api/quiz-history").then((r) => r.json()),
-      fetch("/api/flashcards").then((r) => (r.ok ? r.json() : { cards: [] })),
-      fetch("/api/trilha").then((r) => r.json()),
-      fetch("/api/streak").then((r) => r.json()),
+      fetch("/api/quiz-history").then((r) => r.json()).catch(() => ({ results: [] })),
+      fetch("/api/flashcards").then((r) => (r.ok ? r.json() : { cards: [] })).catch(() => ({ cards: [] })),
+      fetch("/api/trilha").then((r) => r.json()).catch(() => ({ completed: [] })),
+      fetch("/api/streak").then((r) => r.json()).catch(() => ({ streak: null })),
     ]).then(([quizData, fcData, trilhaData, streakData]) => {
       setResults(quizData.results ?? []);
       setFlashcards(fcData.cards ?? []);
       setTrilhaProgress(trilhaData.completed ?? []);
-      setRealStreak(streakData.streak ?? 0);
+      if (streakData.streak != null) setRealStreak(streakData.streak);
       setLoading(false);
     });
   }, []);
