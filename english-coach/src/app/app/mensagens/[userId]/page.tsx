@@ -658,7 +658,7 @@ export default function ChatPage() {
       <div
         ref={chatScrollRef}
         className="w-full max-w-2xl flex-1 min-h-0 p-3 sm:p-4 overflow-y-auto flex flex-col"
-        style={{ background: "var(--dark1)", overflowX: "hidden" }}
+        style={{ background: "var(--dark1)", border: "1px solid #1f1f1f", borderRadius: "var(--radius)", boxShadow: "var(--shadow)", overflowX: "hidden" }}
       >
         {messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center gap-3">
@@ -740,6 +740,24 @@ export default function ChatPage() {
                 {/* Other user avatar */}
                 {!isOwn && <UserAvatar src={otherUserImage} name={otherUserName} size={28} />}
 
+                {/* Emoji reaction button — mobile, sempre visível (esquerda do bubble para msgs próprias) */}
+                {isOwn && !isTmp && (
+                  <button
+                    className=""
+                    onTouchStart={(e) => e.stopPropagation()}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const r = e.currentTarget.getBoundingClientRect();
+                      const pw = 292;
+                      setReactionPicker(prev => prev?.msgId === msg.id ? null : {
+                        msgId: msg.id,
+                        x: Math.max(8, Math.min(r.left - pw / 2 + 13, window.innerWidth - pw - 8)),
+                        y: Math.max(70, r.top - 58),
+                      });
+                    }}
+                    style={{ width: 26, height: 26, background: reactionPicker?.msgId === msg.id ? "rgba(245,200,0,0.2)" : "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0, fontSize: "0.85rem", lineHeight: 1 }}
+                  >😊</button>
+                )}
 
                 {/* Action buttons for own messages (desktop, left of bubble) */}
                 {isOwn && showActions && (
@@ -810,6 +828,24 @@ export default function ChatPage() {
                   </div>
                 </div>
 
+                {/* Emoji reaction button — mobile, sempre visível (direita do bubble para msgs recebidas) */}
+                {!isOwn && (
+                  <button
+                    className=""
+                    onTouchStart={(e) => e.stopPropagation()}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const r = e.currentTarget.getBoundingClientRect();
+                      const pw = 292;
+                      setReactionPicker(prev => prev?.msgId === msg.id ? null : {
+                        msgId: msg.id,
+                        x: Math.max(8, Math.min(r.left - pw / 2 + 13, window.innerWidth - pw - 8)),
+                        y: Math.max(70, r.top - 58),
+                      });
+                    }}
+                    style={{ width: 26, height: 26, background: reactionPicker?.msgId === msg.id ? "rgba(245,200,0,0.2)" : "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0, fontSize: "0.85rem", lineHeight: 1 }}
+                  >😊</button>
+                )}
 
                 {/* Action buttons for other's messages (desktop, right of bubble) */}
                 {!isOwn && showActions && (
@@ -830,25 +866,9 @@ export default function ChatPage() {
                 )}
               </div>
 
-              {/* Reaction pills + emoji button abaixo do bubble */}
-              {(grouped.length > 0 || !isTmp) && (
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 3, justifyContent: isOwn ? "flex-end" : "flex-start", paddingLeft: isOwn ? 0 : 36, paddingRight: 4, alignItems: "center" }}>
-                  {!isTmp && (
-                    <button
-                      onTouchStart={(e) => e.stopPropagation()}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        const r = e.currentTarget.getBoundingClientRect();
-                        const pw = 292;
-                        setReactionPicker(prev => prev?.msgId === msg.id ? null : {
-                          msgId: msg.id,
-                          x: Math.max(8, Math.min(r.left - pw / 2 + 13, window.innerWidth - pw - 8)),
-                          y: Math.max(70, r.top - 58),
-                        });
-                      }}
-                      style={{ width: 22, height: 22, background: reactionPicker?.msgId === msg.id ? "rgba(245,200,0,0.2)" : "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0, fontSize: "0.75rem", lineHeight: 1 }}
-                    >😊</button>
-                  )}
+              {/* Reaction pills abaixo do bubble */}
+              {grouped.length > 0 && (
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 3, justifyContent: isOwn ? "flex-end" : "flex-start", paddingLeft: isOwn ? 0 : 36, paddingRight: 4 }}>
                   {grouped.map(({ emoji, count, userIds }) => {
                     const hasOwn = userIds.includes(user?.id ?? "");
                     return (
