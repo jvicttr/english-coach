@@ -19,12 +19,10 @@ interface Props {
 export function HoldMicButton({ onSend, disabled, size = 44 }: Props) {
   const [phase, setPhase] = useState<"idle" | "recording" | "locked">("idle");
   const [seconds, setSeconds] = useState(0);
-  const [dragX, setDragX] = useState(0); // negative = dragging left
   const mrRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
-  const startXRef = useRef(0);
   const startYRef = useRef(0);
   const isRecRef = useRef(false);
   const isLockedRef = useRef(false);
@@ -46,9 +44,9 @@ export function HoldMicButton({ onSend, disabled, size = 44 }: Props) {
         cancelRef.current = false;
         setPhase("idle");
         setSeconds(0);
-        setDragX(0);
         if (!wasCancelled && chunksRef.current.length > 0) {
-          onSend(new Blob(chunksRef.current, { type: mr.mimeType }));
+          const blob = new Blob(chunksRef.current, { type: mr.mimeType });
+          onSend(blob);
         }
       };
       mr.start();
@@ -58,7 +56,6 @@ export function HoldMicButton({ onSend, disabled, size = 44 }: Props) {
       cancelRef.current = false;
       setPhase("recording");
       setSeconds(0);
-      setDragX(0);
       timerRef.current = setInterval(() => setSeconds(s => s + 1), 1000);
     } catch (e) {
       console.error("Mic error:", e);
@@ -79,42 +76,24 @@ export function HoldMicButton({ onSend, disabled, size = 44 }: Props) {
     if (disabled || phase !== "idle") return;
     e.preventDefault();
     e.currentTarget.setPointerCapture(e.pointerId);
-    startXRef.current = e.clientX;
     startYRef.current = e.clientY;
     startRec();
   }
 
   function onPointerMove(e: React.PointerEvent<HTMLButtonElement>) {
     if (!isRecRef.current || isLockedRef.current) return;
-    const dx = e.clientX - startXRef.current; // negative = left
-    const dy = startYRef.current - e.clientY;  // positive = up
-
-    // Slide up → lock
+    const dy = startYRef.current - e.clientY;
     if (dy > 60) {
       isLockedRef.current = true;
-      setDragX(0);
       setPhase("locked");
-      return;
-    }
-
-    // Slide left → show drag feedback
-    if (dx < 0) {
-      setDragX(Math.max(dx, -140));
-      // Cancel threshold: 120px left
-      if (dx < -120) {
-        cancelRec();
-      }
     }
   }
 
   function onPointerUp() {
     if (!isRecRef.current) return;
     if (isLockedRef.current) return;
-    setDragX(0);
     stopRec();
   }
-
-  const isCancelZone = dragX < -60;
 
   if (phase === "idle") {
     return (
@@ -140,32 +119,22 @@ export function HoldMicButton({ onSend, disabled, size = 44 }: Props) {
 
   if (phase === "recording") {
     return (
-      <div style={{ display: "flex", alignItems: "center", flex: 1, position: "relative", overflow: "hidden" }}>
-        <style>{`@keyframes pulse-rec{0%,100%{box-shadow:0 0 8px rgba(239,68,68,0.4)}50%{box-shadow:0 0 20px rgba(239,68,68,0.8)}}`}</style>
-
-        {/* Hints + timer — fade out when dragging left */}
-        <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 6, opacity: isCancelZone ? 0.3 : 1, transition: "opacity 0.15s" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, flex: 1 }}>
+        {/* Cancel swipe hint */}
+        <div style={{ display: "flex", alignItems: "center", gap: 6, flex: 1, justifyContent: "flex-end" }}>
+          <span style={{ fontSize: "0.7rem", color: "#888", whiteSpace: "nowrap" }}>↑ deslize p/ travar</span>
           <span style={{ fontSize: "0.78rem", color: "#ef4444", fontWeight: 700 }}>● {fmt(seconds)}</span>
-          <span style={{ fontSize: "0.68rem", color: isCancelZone ? "#ef4444" : "#666", whiteSpace: "nowrap", transition: "color 0.15s" }}>
-            {isCancelZone ? "← Solte para cancelar" : "← cancelar  |  ↑ travar"}
-          </span>
         </div>
-
-        {/* Mic button — moves left with drag */}
         <button
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}
           onPointerUp={onPointerUp}
           style={{
             width: size, height: size, borderRadius: "50%", border: "none",
-            background: isCancelZone ? "#888" : "#ef4444",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            cursor: "pointer", flexShrink: 0,
-            boxShadow: isCancelZone ? "none" : "0 0 16px rgba(239,68,68,0.5)",
-            animation: isCancelZone ? "none" : "pulse-rec 1s ease-in-out infinite",
-            transform: `translateX(${dragX}px)`,
-            transition: dragX === 0 ? "transform 0.2s, background 0.15s" : "background 0.15s",
-            touchAction: "none",
+            background: "#ef4444", display: "flex", alignItems: "center",
+            justifyContent: "center", cursor: "pointer", flexShrink: 0,
+            boxShadow: "0 0 16px rgba(239,68,68,0.5)", touchAction: "none",
+            animation: "pulse-rec 1s ease-in-out infinite",
           } as React.CSSProperties}
         >
           <svg width={size * 0.35} height={size * 0.35} viewBox="0 0 24 24" fill="white">
