@@ -1445,11 +1445,24 @@ export default function Home() {
       setSharing(true);
       const resultEmoji = pct >= 80 ? "🏆" : pct >= 60 ? "💪" : "📚";
       const content = `${resultEmoji} Just scored ${score}/${total} (${pct}%) on a quiz!\n\n"${quiz!.title}"`;
+      const quizTranscript = JSON.stringify({
+        type: "quiz_result",
+        title: quiz!.title,
+        score,
+        total,
+        questions: quiz!.questions.map((q, i) => ({
+          question: q.question,
+          options: q.options,
+          correct: q.correct,
+          explanation: q.explanation,
+          userAnswer: answers[i] ?? null,
+        })),
+      });
       try {
         await fetch("/api/community/posts", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ content, isShare: true }),
+          body: JSON.stringify({ content, transcript: quizTranscript, isShare: true }),
         });
         setShared(true);
       } finally {
