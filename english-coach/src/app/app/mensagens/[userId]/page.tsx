@@ -260,7 +260,7 @@ export default function ChatPage() {
     const syncBar = () => {
       const h = el.offsetHeight;
       setInputBarHeight(h);
-      document.documentElement.style.setProperty("--chat-pb", `${h}px`);
+      document.documentElement.style.setProperty("--chat-pb", `${h + 12}px`);
       requestAnimationFrame(() => {
         if (chatScrollRef.current) chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
       });
