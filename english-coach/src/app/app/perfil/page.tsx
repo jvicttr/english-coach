@@ -160,7 +160,7 @@ export default function PerfilPage() {
       <div style={{ width: "100%", maxWidth: 672, padding: "20px 16px", display: "flex", flexDirection: "column", gap: 14 }}>
 
         {/* Avatar + nome + plano */}
-        <div style={{ background: "var(--dark2)", borderRadius: 16, padding: "20px 18px", display: "flex", alignItems: "center", gap: 16 }}>
+        <a href={user?.id ? `/app/comunidade/u/${user.id}` : undefined} style={{ background: "var(--dark2)", borderRadius: 16, padding: "20px 18px", display: "flex", alignItems: "center", gap: 16, textDecoration: "none", cursor: user?.id ? "pointer" : "default" }}>
           <div style={{ width: 56, height: 56, borderRadius: "50%", overflow: "hidden", background: "#1e1e1e", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
             {user?.imageUrl
               ? <img src={user.imageUrl} alt="avatar" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
@@ -194,7 +194,7 @@ export default function PerfilPage() {
           <span style={{ fontSize: "0.65rem", fontWeight: 800, padding: "3px 10px", borderRadius: 50, background: plan === "pro" ? "var(--yellow)" : "#1e1e1e", color: plan === "pro" ? "#000" : "var(--gray2)", border: plan === "pro" ? "none" : "1px solid #333", flexShrink: 0 }}>
             {plan === "pro" ? "PRO" : "FREE"}
           </span>
-        </div>
+        </a>
 
         {/* Nível de inglês */}
         <div style={{ background: "var(--dark2)", borderRadius: 16, padding: "16px 18px" }}>
