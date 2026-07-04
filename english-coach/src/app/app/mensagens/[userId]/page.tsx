@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useUser } from "@clerk/nextjs";
 import ChatTranslator from "@/components/ChatTranslator";
+import { HoldMicButton } from "@/components/HoldMicButton";
 
 const EMOJIS = ["😀","😂","😍","🥰","😎","🤔","😅","🙌","👏","🔥","💯","❤️","🎉","✨","💪","🙏","👍","😊","🤩","😏","🥳","💬","🌍","📚","🎯","🚀","⭐","💡","🎶","✅"];
 const QUICK_EMOJIS = ["❤️","😂","😮","😢","🙏","👍","🔥","😍"];
@@ -36,10 +37,6 @@ function UserAvatar({ src, name, size = 32 }: { src: string; name: string; size?
   );
 }
 
-function getSupportedMime() {
-  const types = ["audio/webm;codecs=opus", "audio/webm", "audio/mp4", "audio/ogg"];
-  return types.find(t => typeof MediaRecorder !== "undefined" && MediaRecorder.isTypeSupported(t)) ?? "";
-}
 
 function ChatAudioPlayer({ src, isOwn }: { src: string; isOwn: boolean }) {
   const audioRef = React.useRef<HTMLAudioElement>(null);
@@ -209,13 +206,9 @@ export default function ChatPage() {
   const [otherUserName, setOtherUserName] = useState("");
   const [otherUserImage, setOtherUserImage] = useState("");
   const [showEmoji, setShowEmoji] = useState(false);
-  const [recording, setRecording] = useState(false);
   const [mentionOpen, setMentionOpen] = useState(false);
   const [mentionQuery, setMentionQuery] = useState("");
   const [allUsers, setAllUsers] = useState<Array<{ id: string; name: string; image_url: string | null }>>([]);
-  const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
-  const [audioUrl, setAudioUrl] = useState<string | null>(null);
-  const [recSeconds, setRecSeconds] = useState(0);
 
   // Lightbox
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
@@ -245,9 +238,6 @@ export default function ChatPage() {
   const inputBarRef = useRef<HTMLDivElement>(null);
   const [inputBarHeight, setInputBarHeight] = useState(70);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const mrRef = useRef<MediaRecorder | null>(null);
-  const chunksRef = useRef<Blob[]>([]);
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const msgRefsMap = useRef<Map<string, HTMLElement>>(new Map());
@@ -443,39 +433,15 @@ export default function ChatPage() {
     }).catch(() => {});
   }
 
-  async function startRecording() {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mime = getSupportedMime();
-      const mr = new MediaRecorder(stream, mime ? { mimeType: mime } : undefined);
-      chunksRef.current = [];
-      mr.ondataavailable = e => { if (e.data.size > 0) chunksRef.current.push(e.data); };
-      mr.onstop = () => {
-        stream.getTracks().forEach(t => t.stop());
-        const blob = new Blob(chunksRef.current, { type: mr.mimeType });
-        setAudioBlob(blob);
-        setAudioUrl(URL.createObjectURL(blob));
-        setRecording(false);
-        if (timerRef.current) clearInterval(timerRef.current);
-      };
-      mr.start(); mrRef.current = mr; setRecording(true); setRecSeconds(0);
-      timerRef.current = setInterval(() => setRecSeconds(s => s + 1), 1000);
-    } catch (e) { console.error("Mic error:", e); }
-  }
-
-  function stopRecording() { mrRef.current?.stop(); if (timerRef.current) clearInterval(timerRef.current); }
-
-  async function sendAudio() {
-    if (!audioBlob) return;
+  async function sendAudioBlob(blob: Blob) {
     setSending(true);
     try {
-      const ext = audioBlob.type.includes("mp4") ? "mp4" : audioBlob.type.includes("ogg") ? "ogg" : "webm";
+      const ext = blob.type.includes("mp4") ? "mp4" : blob.type.includes("ogg") ? "ogg" : "webm";
       const fd = new FormData();
-      fd.append("file", new File([audioBlob], `audio.${ext}`, { type: audioBlob.type }));
+      fd.append("file", new File([blob], `audio.${ext}`, { type: blob.type }));
       fd.append("type", "audio");
       const res = await fetch("/api/community/upload", { method: "POST", body: fd });
       const { url } = await res.json();
-      setAudioBlob(null); setAudioUrl(null);
       await send(undefined, undefined, url);
     } catch (e) { console.error(e); setSending(false); }
   }
@@ -1048,15 +1014,6 @@ export default function ChatPage() {
       {/* Input bar — estilo WhatsApp, fixo no fundo */}
       <div ref={inputBarRef} style={{ position: "fixed", bottom: 0, left: 0, right: 0, background: "#111", borderTop: "1px solid #1e1e1e", zIndex: 100, paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
       <div style={{ maxWidth: "42rem", margin: "0 auto", padding: "8px 12px" }}>
-        {/* Audio preview */}
-        {audioUrl && (
-          <div style={{ display: "flex", alignItems: "center", gap: 8, background: "#1a1a1a", border: "1px solid #2a2a2a", borderRadius: 10, padding: "7px 10px", marginBottom: 8 }}>
-            <div style={{ flex: 1 }}><ChatAudioPlayer src={audioUrl} isOwn={false} /></div>
-            <button onClick={sendAudio} disabled={sending} style={{ background: "var(--yellow)", color: "#000", border: "none", borderRadius: 8, padding: "6px 14px", fontWeight: 700, cursor: "pointer", fontSize: "0.85rem", flexShrink: 0 }}>Enviar</button>
-            <button onClick={() => { setAudioBlob(null); setAudioUrl(null); }} style={{ background: "none", border: "none", color: "var(--gray)", cursor: "pointer", fontSize: "1.2rem", flexShrink: 0 }}>✕</button>
-          </div>
-        )}
-
         {/* Reply preview bar */}
         {replyTo && (
           <div style={{ display: "flex", alignItems: "center", gap: 10, background: "#1a1a1a", border: "1px solid #2a2a2a", borderLeft: "3px solid var(--yellow)", borderRadius: 10, padding: "7px 10px", marginBottom: 8 }}>
@@ -1075,11 +1032,7 @@ export default function ChatPage() {
             <button onClick={() => setReplyTo(null)} style={{ background: "none", border: "none", color: "var(--gray)", cursor: "pointer", fontSize: "1.1rem", flexShrink: 0, lineHeight: 1 }}>✕</button>
           </div>
         )}
-        {recording && (
-          <div style={{ textAlign: "center", fontSize: "11px", marginBottom: 6 }}>
-            <span style={{ color: "#ef4444" }}>● Gravando {recSeconds}s — toque em ⏹ para parar</span>
-          </div>
-        )}
+        <style>{`@keyframes pulse-rec{0%,100%{box-shadow:0 0 8px rgba(239,68,68,0.4)}50%{box-shadow:0 0 20px rgba(239,68,68,0.8)}}`}</style>
         <div style={{ display: "flex", gap: 8, alignItems: "flex-end" }}>
 
           {/* Ícones esquerdos: tradutor + foto */}
@@ -1124,22 +1077,20 @@ export default function ChatPage() {
             />
           </div>
 
-          {/* Mic ou Send — círculo amarelo */}
-          <button
-            onClick={input.trim() ? () => send(input) : (recording ? stopRecording : startRecording)}
-            disabled={sending}
-            style={{ width: 44, height: 44, borderRadius: "50%", border: "none", background: recording ? "#ef4444" : "var(--yellow)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0, boxShadow: recording ? "0 0 16px rgba(239,68,68,0.5)" : "none", transition: "background 0.15s" }}
-          >
-            {recording ? (
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="white"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>
-            ) : input.trim() ? (
+          {/* Send ou Mic */}
+          {input.trim() ? (
+            <button
+              onClick={() => send(input)}
+              disabled={sending}
+              style={{ width: 44, height: 44, borderRadius: "50%", border: "none", background: "var(--yellow)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }}
+            >
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
                 <path d="M12 19V5M5 12l7-7 7 7" stroke="#000" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
-            ) : (
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="#000"><path d="M12 1a4 4 0 0 1 4 4v6a4 4 0 0 1-8 0V5a4 4 0 0 1 4-4zm0 2a2 2 0 0 0-2 2v6a2 2 0 0 0 4 0V5a2 2 0 0 0-2-2zm-7 9h2a5 5 0 0 0 10 0h2a7 7 0 0 1-6 6.93V21h2v2H9v-2h2v-3.07A7 7 0 0 1 5 12z"/></svg>
-            )}
-          </button>
+            </button>
+          ) : (
+            <HoldMicButton onSend={sendAudioBlob} disabled={sending} />
+          )}
 
         </div>
       </div>
