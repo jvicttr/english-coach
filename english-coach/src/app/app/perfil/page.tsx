@@ -354,8 +354,13 @@ function NotificationButton() {
 
     if (!("Notification" in window)) { setStatus("unsupported"); return; }
     if (Notification.permission === "denied") { setStatus("denied"); return; }
-    // Se já tem permissão, tenta registrar o token automaticamente
-    if (Notification.permission === "granted") setStatus("idle");
+    // Se já tem permissão, confirma no servidor se a subscription está mesmo ativa
+    if (Notification.permission === "granted") {
+      fetch("/api/webpush/register")
+        .then((r) => r.json())
+        .then((data) => setStatus(data.active ? "done" : "idle"))
+        .catch(() => setStatus("idle"));
+    }
   }, []);
 
   async function enable() {
