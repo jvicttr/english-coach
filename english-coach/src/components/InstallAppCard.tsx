@@ -30,6 +30,7 @@ export default function InstallAppCard() {
   const [canPrompt, setCanPrompt] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [installing, setInstalling] = useState(false);
+  const [rewardMsg, setRewardMsg] = useState<string | null>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -46,6 +47,17 @@ export default function InstallAppCard() {
     return subscribeInstallPrompt(setCanPrompt);
   }, []);
 
+  async function grantInstallReward() {
+    try {
+      const res = await fetch("/api/install-reward", { method: "POST" });
+      const data = await res.json();
+      setRewardMsg(data.awarded ? "🎉 +1000 XP! App instalado" : "✅ App instalado!");
+    } catch {
+      setRewardMsg("✅ App instalado!");
+    }
+    setTimeout(() => setVisible(false), 2800);
+  }
+
   async function handleClick() {
     if (canPrompt) {
       setInstalling(true);
@@ -53,6 +65,7 @@ export default function InstallAppCard() {
       setInstalling(false);
       setCanPrompt(hasDeferredPrompt());
       if (outcome === "unavailable") setShowModal(true);
+      else if (outcome === "accepted") grantInstallReward();
       return;
     }
     setShowModal(true);
@@ -64,17 +77,23 @@ export default function InstallAppCard() {
     <>
       <button
         onClick={handleClick}
-        disabled={installing}
-        style={{ background: "var(--dark1)", border: "1px solid #1e1e1e", borderRadius: 16, padding: "14px 16px", display: "flex", alignItems: "center", gap: 14, width: "100%", cursor: installing ? "default" : "pointer", textAlign: "left", opacity: installing ? 0.7 : 1 }}
+        disabled={installing || !!rewardMsg}
+        style={{ background: "var(--dark1)", border: "1px solid #1e1e1e", borderRadius: 16, padding: "14px 16px", display: "flex", alignItems: "center", gap: 14, width: "100%", cursor: installing || rewardMsg ? "default" : "pointer", textAlign: "left", opacity: installing ? 0.7 : 1 }}
       >
         <div style={{ width: 40, height: 40, borderRadius: 12, background: "rgba(245,200,0,.1)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-          <span style={{ fontSize: "1.2rem" }}>📲</span>
+          <span style={{ fontSize: "1.2rem" }}>{rewardMsg ? "🎉" : "📲"}</span>
         </div>
         <div style={{ flex: 1 }}>
-          <p style={{ fontSize: "0.85rem", fontWeight: 700, color: "#fff", margin: 0 }}>{installing ? "Instalando…" : "Adicionar à tela inicial"}</p>
-          <p style={{ fontSize: "0.72rem", color: "var(--gray)", margin: "2px 0 0" }}>Acesso rápido e notificações no celular ou computador</p>
+          <p style={{ fontSize: "0.85rem", fontWeight: 700, color: rewardMsg ? "var(--yellow)" : "#fff", margin: 0 }}>
+            {rewardMsg ?? (installing ? "Instalando…" : "Adicionar à tela inicial")}
+          </p>
+          {!rewardMsg && (
+            <p style={{ fontSize: "0.72rem", color: "var(--gray)", margin: "2px 0 0" }}>Ganhe 1000 XP de bônus + acesso rápido e notificações</p>
+          )}
         </div>
-        <svg style={{ flexShrink: 0 }} width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--gray)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        {!rewardMsg && (
+          <svg style={{ flexShrink: 0 }} width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--gray)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        )}
       </button>
 
       {showModal && typeof document !== "undefined" && createPortal(

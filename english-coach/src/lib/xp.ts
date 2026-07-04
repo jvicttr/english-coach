@@ -14,7 +14,8 @@ export type BadgeId =
   | "trail_a1" | "trail_a2" | "trail_b1" | "trail_b2" | "trail_c1"
   | "level_advanced"
   | "tier_silver" | "tier_gold" | "tier_platinum" | "tier_diamond" | "tier_legend"
-  | "community_first_post" | "community_10_posts" | "community_liked";
+  | "community_first_post" | "community_10_posts" | "community_liked"
+  | "app_installed";
 
 export type Badge = {
   id: BadgeId;
@@ -63,6 +64,8 @@ export const BADGES: Badge[] = [
   { id: "community_first_post", emoji: "📢", title: "Voz da Comunidade", desc: "Publicou seu primeiro post na comunidade",      xpReward: 20  },
   { id: "community_10_posts",   emoji: "🌐", title: "Influencer",        desc: "10 posts publicados na comunidade",             xpReward: 80  },
   { id: "community_liked",      emoji: "❤️", title: "Querido pela Turma", desc: "Recebeu 10 curtidas em posts",                 xpReward: 60  },
+  // App
+  { id: "app_installed",        emoji: "📲", title: "App Instalado",      desc: "Adicionou o JV IA à tela inicial",             xpReward: 1000 },
 ];
 
 
@@ -89,7 +92,8 @@ export type XPEvent =
   | { type: "message"; detectedLevel?: string }
   | { type: "quiz"; score: number; total: number }
   | { type: "flashcard" }
-  | { type: "trail_step"; stepId: string };
+  | { type: "trail_step"; stepId: string }
+  | { type: "app_installed" };
 
 export async function grantXP(userId: string, event: XPEvent): Promise<{ newXp: number; newBadges: Badge[] }> {
   // Get current state (also fetch display_name to know if it needs filling)
@@ -154,6 +158,8 @@ export async function grantXP(userId: string, event: XPEvent): Promise<{ newXp: 
     if (step) {
       badgesToCheck.push(`trail_${step.level.toLowerCase()}` as BadgeId);
     }
+  } else if (event.type === "app_installed") {
+    badgesToCheck.push("app_installed");
   }
   // Tier badges — check on every XP event
   badgesToCheck.push("tier_silver", "tier_gold", "tier_platinum", "tier_diamond", "tier_legend");
@@ -238,6 +244,8 @@ export async function grantXP(userId: string, event: XPEvent): Promise<{ newXp: 
         if (event.type === "trail_step") completedSet.add(event.stepId);
         earned = levelSteps.every((s) => completedSet.has(s.id));
       }
+    } else if (badgeId === "app_installed") {
+      earned = event.type === "app_installed";
     }
 
     if (earned) {
