@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useLayoutEffect, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useUser } from "@clerk/nextjs";
 import ChatTranslator from "@/components/ChatTranslator";
@@ -334,23 +334,21 @@ export default function ChatPage() {
 
   const initialScrollDone = useRef(false);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (messages.length === 0) return;
     const container = chatScrollRef.current;
     if (!container) return;
 
     if (!initialScrollDone.current) {
       initialScrollDone.current = true;
-      const scrollToEnd = () => {
-        bottomRef.current?.scrollIntoView({ behavior: "instant" as ScrollBehavior });
-      };
-      requestAnimationFrame(() => { requestAnimationFrame(scrollToEnd); });
-      setTimeout(scrollToEnd, 150);
-      setTimeout(scrollToEnd, 500);
+      // Scroll imediato antes do paint + fallbacks para imagens que carregam depois
+      container.scrollTop = container.scrollHeight;
+      setTimeout(() => { container.scrollTop = container.scrollHeight; }, 150);
+      setTimeout(() => { container.scrollTop = container.scrollHeight; }, 500);
       return;
     }
 
-    // Subsequent updates: only scroll if user is near the bottom
+    // Novas mensagens: scroll só se estiver perto do fundo — antes do paint para evitar flash
     const distanceFromBottom = container.scrollHeight - container.scrollTop - container.clientHeight;
     if (distanceFromBottom <= 120) {
       container.scrollTop = container.scrollHeight;
