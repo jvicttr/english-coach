@@ -36,6 +36,23 @@ function UserAvatar({ src, name, size = 32 }: { src: string; name: string; size?
   );
 }
 
+function fmtLastSeen(iso: string | null): string {
+  if (!iso) return "Mensagem direta";
+  const date = new Date(iso);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMin = Math.floor(diffMs / 60000);
+  if (diffMin < 1) return "visto agora mesmo";
+  if (diffMin < 60) return `visto há ${diffMin} min`;
+  const todayStr = now.toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" });
+  const dateStr = date.toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" });
+  const time = date.toLocaleTimeString("pt-BR", { timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit" });
+  if (todayStr === dateStr) return `visto hoje às ${time}`;
+  const yest = new Date(now); yest.setDate(yest.getDate() - 1);
+  if (yest.toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" }) === dateStr) return `visto ontem às ${time}`;
+  return `visto em ${dateStr} às ${time}`;
+}
+
 function getSupportedMime() {
   const types = ["audio/webm;codecs=opus", "audio/webm", "audio/mp4", "audio/ogg"];
   return types.find(t => typeof MediaRecorder !== "undefined" && MediaRecorder.isTypeSupported(t)) ?? "";
@@ -239,6 +256,7 @@ export default function ChatPage() {
   const [highlightedMsgId, setHighlightedMsgId] = useState<string | null>(null);
   const [otherIsOnline, setOtherIsOnline] = useState(false);
   const [otherIsTyping, setOtherIsTyping] = useState(false);
+  const [otherLastSeen, setOtherLastSeen] = useState<string | null>(null);
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -306,7 +324,7 @@ export default function ChatPage() {
         .then(r => r.json())
         .then(d => {
           const p = d.presences?.[0];
-          if (p) { setOtherIsOnline(!!p.is_online); setOtherIsTyping(!!p.is_typing); }
+          if (p) { setOtherIsOnline(!!p.is_online); setOtherIsTyping(!!p.is_typing); setOtherLastSeen(p.last_seen ?? null); }
         }).catch(() => {});
     };
     poll();
@@ -659,7 +677,7 @@ export default function ChatPage() {
             <div style={{ minWidth: 0 }}>
               <div style={{ fontWeight: 700, fontSize: "0.9rem", color: "var(--white)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{otherUserName || "..."}</div>
               <div style={{ fontSize: "0.68rem", color: otherIsTyping ? "#4caf50" : otherIsOnline ? "#4caf50" : "var(--gray)" }}>
-                {otherIsTyping ? "digitando..." : otherIsOnline ? "online" : "Mensagem direta"}
+                {otherIsTyping ? "digitando..." : otherIsOnline ? "online" : fmtLastSeen(otherLastSeen)}
               </div>
             </div>
           </a>
