@@ -2,9 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
+import { notifFlowDone } from "@/lib/onboardingSequence";
 
-export const TOUR_KEY = "jvia_tour_done";
-export const TOUR_DONE_EVENT = "jvia-tour-done";
+const TOUR_KEY = "jvia_tour_done";
 
 const STEPS = [
   {
@@ -48,14 +48,15 @@ export default function OnboardingTour() {
   useEffect(() => {
     setMounted(true);
     if (!localStorage.getItem(TOUR_KEY)) {
-      setTimeout(() => setVisible(true), 800);
+      // Espera o pop-up de notificação ser resolvido (mostrado e fechado, ou nem precisar aparecer)
+      // antes do tour surgir, pra não disputarem tela na primeira abertura do app
+      notifFlowDone.then(() => setTimeout(() => setVisible(true), 400));
     }
   }, []);
 
   function finish() {
     localStorage.setItem(TOUR_KEY, "1");
     setVisible(false);
-    window.dispatchEvent(new Event(TOUR_DONE_EVENT));
   }
 
   function next() {

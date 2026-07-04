@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { TOUR_KEY, TOUR_DONE_EVENT } from "@/components/OnboardingTour";
+import { markNotifFlowDone } from "@/lib/onboardingSequence";
 
 const DISMISSED_KEY = "notif-popup-dismissed";
 const DISMISS_DAYS = 3;
@@ -14,46 +14,43 @@ export default function NotificationPromptBanner() {
   const [status, setStatus] = useState<Status>("idle");
 
   useEffect(() => {
-    // Se o tour de boas-vindas ainda não rodou, espera ele terminar antes de mostrar o pop-up
-    // (evita os dois modais competindo na tela ao mesmo tempo na primeira abertura do app)
-    if (!localStorage.getItem(TOUR_KEY)) {
-      const onTourDone = () => check();
-      window.addEventListener(TOUR_DONE_EVENT, onTourDone);
-      return () => window.removeEventListener(TOUR_DONE_EVENT, onTourDone);
-    }
     check();
   }, []);
 
   async function check() {
     if (typeof window === "undefined") return;
-    if (!("Notification" in window) || !("serviceWorker" in navigator) || !("PushManager" in window)) return;
-    if (Notification.permission === "denied") return;
+    if (!("Notification" in window) || !("serviceWorker" in navigator) || !("PushManager" in window)) { markNotifFlowDone(); return; }
+    if (Notification.permission === "denied") { markNotifFlowDone(); return; }
 
     const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
     const isSafari = /Safari/.test(navigator.userAgent) && !/CriOS|FxiOS|OPiOS/.test(navigator.userAgent);
     const isStandalone = (window.navigator as any).standalone === true || window.matchMedia("(display-mode: standalone)").matches;
-    if (isIOS && isSafari && !isStandalone) return; // não dá pra ativar push numa aba do Safari fora do PWA
+    if (isIOS && isSafari && !isStandalone) { markNotifFlowDone(); return; } // não dá pra ativar push numa aba do Safari fora do PWA
 
     const dismissedAt = localStorage.getItem(DISMISSED_KEY);
     if (dismissedAt) {
       const days = (Date.now() - parseInt(dismissedAt)) / (1000 * 60 * 60 * 24);
-      if (days < DISMISS_DAYS) return;
+      if (days < DISMISS_DAYS) { markNotifFlowDone(); return; }
     }
 
     try {
       const res = await fetch("/api/webpush/register");
       const data = await res.json();
-      if (data.active) return; // já tem subscription ativa no novo sistema
+      if (data.active) { markNotifFlowDone(); return; } // já tem subscription ativa no novo sistema
     } catch {
+      markNotifFlowDone();
       return;
     }
 
-    setTimeout(() => setShow(true), 1500);
+    setShow(true);
+    // Não chama markNotifFlowDone() aqui — só quando o pop-up for de fato fechado (dismiss/enable),
+    // para o tour esperar essa interação terminar antes de aparecer.
   }
 
   function dismiss() {
     localStorage.setItem(DISMISSED_KEY, String(Date.now()));
     setShow(false);
+    markNotifFlowDone();
   }
 
   async function enable() {
@@ -62,6 +59,7 @@ export default function NotificationPromptBanner() {
       const permission = await Notification.requestPermission();
       if (permission !== "granted") {
         setStatus("denied");
+        // Fica visível até o usuário clicar "Entendido" (dismiss), que marca o fluxo como concluído
         return;
       }
 
@@ -84,7 +82,7 @@ export default function NotificationPromptBanner() {
         body: JSON.stringify({ subscription: subscription.toJSON() }),
       });
       setStatus("done");
-      setTimeout(() => setShow(false), 1800);
+      setTimeout(() => { setShow(false); markNotifFlowDone(); }, 1800);
     } catch {
       setStatus("idle");
     }
