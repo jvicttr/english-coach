@@ -251,6 +251,7 @@ export default function ChatPage() {
   const swipeVibratedRef = useRef(false);
   // Long press menu for mobile delete
   const [longPressMenu, setLongPressMenu] = useState<{ msgId: string; x: number; y: number } | null>(null);
+  const [deleteConfirmMsgId, setDeleteConfirmMsgId] = useState<string | null>(null);
   const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [highlightedMsgId, setHighlightedMsgId] = useState<string | null>(null);
@@ -612,6 +613,13 @@ export default function ChatPage() {
         navigator.vibrate?.(40);
       }
       setSwipeState({ msgId, offset });
+    } else if (deltaX < 0) {
+      const offset = Math.max(deltaX, -72);
+      if (offset <= -50 && !swipeVibratedRef.current) {
+        swipeVibratedRef.current = true;
+        navigator.vibrate?.(40);
+      }
+      setSwipeState({ msgId, offset });
     }
   }
 
@@ -624,6 +632,11 @@ export default function ChatPage() {
         replyTriggeredRef.current = true;
         setReplyTo(msg);
         setTimeout(() => textareaRef.current?.focus(), 100);
+      }
+    } else if (offset < -50) {
+      const msg = messages.find(m => m.id === msgId);
+      if (msg && msg.sender_id === user?.id) {
+        setDeleteConfirmMsgId(msgId);
       }
     }
     setSwipeState(null);
@@ -741,7 +754,7 @@ export default function ChatPage() {
                   left: 4,
                   top: "50%",
                   transform: "translateY(-50%)",
-                  opacity: Math.min(swipeOffset / 50, 1),
+                  opacity: swipeOffset > 0 ? Math.min(swipeOffset / 50, 1) : 0,
                   pointerEvents: "none",
                   color: "var(--gray)",
                   fontSize: "1.1rem",
@@ -750,6 +763,25 @@ export default function ChatPage() {
               >
                 ↩
               </div>
+
+              {/* Mobile swipe delete icon — à direita, apenas msgs próprias */}
+              {isOwn && (
+                <div
+                  style={{
+                    position: "absolute",
+                    right: 4,
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                    opacity: swipeOffset < 0 ? Math.min(-swipeOffset / 50, 1) : 0,
+                    pointerEvents: "none",
+                    color: "#ef4444",
+                    fontSize: "1.1rem",
+                    transition: swipeOffset === 0 ? "opacity 0.2s" : "none",
+                  }}
+                >
+                  🗑️
+                </div>
+              )}
 
               {/* Message row */}
               <div
@@ -1088,6 +1120,35 @@ export default function ChatPage() {
                 {item.label}
               </button>
             ))}
+          </div>
+        </>
+      )}
+
+      {/* Delete confirm modal (swipe left) */}
+      {deleteConfirmMsgId && (
+        <>
+          <div
+            style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 2000 }}
+            onClick={() => setDeleteConfirmMsgId(null)}
+          />
+          <div style={{ position: "fixed", left: "50%", top: "50%", transform: "translate(-50%, -50%)", background: "#1a1a1a", border: "1px solid #2a2a2a", borderRadius: 16, padding: 24, zIndex: 2001, width: "min(320px, calc(100vw - 48px))" }}>
+            <p style={{ color: "var(--white)", fontSize: "0.9rem", textAlign: "center", marginBottom: 20, lineHeight: 1.5 }}>
+              Você quer mesmo deletar esta mensagem?
+            </p>
+            <div style={{ display: "flex", gap: 10 }}>
+              <button
+                onClick={() => setDeleteConfirmMsgId(null)}
+                style={{ flex: 1, padding: "10px", background: "var(--dark2)", border: "1px solid #2a2a2a", borderRadius: 10, color: "var(--gray)", cursor: "pointer", fontSize: "0.85rem" }}
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => { deleteMsg(deleteConfirmMsgId); setDeleteConfirmMsgId(null); }}
+                style={{ flex: 1, padding: "10px", background: "#ef4444", border: "none", borderRadius: 10, color: "#fff", cursor: "pointer", fontWeight: 600, fontSize: "0.85rem" }}
+              >
+                Deletar
+              </button>
+            </div>
           </div>
         </>
       )}
