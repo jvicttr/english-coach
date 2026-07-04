@@ -3,38 +3,39 @@
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 
-const TOUR_KEY = "jvia_tour_done";
+export const TOUR_KEY = "jvia_tour_done";
+export const TOUR_DONE_EVENT = "jvia-tour-done";
 
 const STEPS = [
   {
     emoji: "👋",
     title: "Bem-vindo ao JV IA!",
     desc: "Seu coach de inglês com inteligência artificial. Vamos te mostrar como funciona em menos de 1 minuto.",
-    highlight: null,
   },
   {
     emoji: "🗺️",
     title: "Trilha de Aprendizado",
-    desc: "Comece pela Trilha! São 40 passos do A1 ao C1. Cada passo tem uma conversa guiada e um quiz para desbloquear o próximo.",
-    highlight: "nav-trilha",
+    desc: "Comece pela Trilha! Passos guiados do A1 ao C1, cada um com uma conversa guiada, flashcards e um quiz para desbloquear o próximo.",
   },
   {
-    emoji: "💬",
-    title: "Converse com a IA",
-    desc: "Pratique inglês conversando livremente ou escolha um tema. A IA corrige, explica e adapta ao seu nível.",
-    highlight: "card-conversar",
+    emoji: "🎙️",
+    title: "Converse e faça Role-play",
+    desc: "Pratique conversando livremente, por tema, ou encare simulações de situações reais (entrevista, restaurante, viagem). A IA corrige, explica e se adapta ao seu nível.",
   },
   {
     emoji: "🃏",
     title: "Flashcards Inteligentes",
-    desc: "Palavras novas viram flashcards automaticamente após cada conversa. Revise com repetição espaçada para memorizar de verdade.",
-    highlight: "nav-flashcards",
+    desc: "Palavras novas viram flashcards automaticamente após cada conversa. O app até recomenda quais revisar com base no que você mais erra.",
   },
   {
-    emoji: "📊",
-    title: "Acompanhe seu Progresso",
-    desc: "Veja sua sequência de dias, média nos quizzes e evolução ao longo do tempo. Quanto mais você pratica, mais cresce!",
-    highlight: "nav-progresso",
+    emoji: "👥",
+    title: "Comunidade",
+    desc: "Poste em inglês, siga outros alunos, comente, reaja e troque mensagens diretas. Praticar fica mais fácil com gente de verdade.",
+  },
+  {
+    emoji: "🔥",
+    title: "Streak, XP e Progresso",
+    desc: "Mantenha sua sequência de dias, ganhe XP, suba de nível e acompanhe sua evolução nos quizzes ao longo do tempo.",
   },
 ];
 
@@ -54,6 +55,7 @@ export default function OnboardingTour() {
   function finish() {
     localStorage.setItem(TOUR_KEY, "1");
     setVisible(false);
+    window.dispatchEvent(new Event(TOUR_DONE_EVENT));
   }
 
   function next() {

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
+import { TOUR_KEY, TOUR_DONE_EVENT } from "@/components/OnboardingTour";
 
 const DISMISSED_KEY = "notif-popup-dismissed";
 const DISMISS_DAYS = 3;
@@ -13,6 +14,13 @@ export default function NotificationPromptBanner() {
   const [status, setStatus] = useState<Status>("idle");
 
   useEffect(() => {
+    // Se o tour de boas-vindas ainda não rodou, espera ele terminar antes de mostrar o pop-up
+    // (evita os dois modais competindo na tela ao mesmo tempo na primeira abertura do app)
+    if (!localStorage.getItem(TOUR_KEY)) {
+      const onTourDone = () => check();
+      window.addEventListener(TOUR_DONE_EVENT, onTourDone);
+      return () => window.removeEventListener(TOUR_DONE_EVENT, onTourDone);
+    }
     check();
   }, []);
 
