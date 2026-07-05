@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
+import { useUser } from "@clerk/nextjs";
 import { initInstallPromptCapture, hasDeferredPrompt, subscribeInstallPrompt, triggerInstallPrompt, isInstallTestMode } from "@/lib/installPrompt";
 
 type Env = {
@@ -23,7 +24,8 @@ function detectEnv(): Env {
   return { isIOS, isAndroid, isMac, isMobile: isIOS || isAndroid, isSafari, isFirefox };
 }
 
-export default function InstallAppCard() {
+export default function InstallAppCard({ pulse = false }: { pulse?: boolean }) {
+  const { user } = useUser();
   const [mounted, setMounted] = useState(false);
   const [visible, setVisible] = useState(false);
   const [env, setEnv] = useState<Env | null>(null);
@@ -48,7 +50,7 @@ export default function InstallAppCard() {
   }, []);
 
   async function grantInstallReward() {
-    if (isInstallTestMode()) {
+    if (isInstallTestMode(user?.id)) {
       setRewardMsg("🧪 (teste) App instalado — XP não concedido");
       setTimeout(() => setVisible(false), 2800);
       return;
@@ -80,10 +82,18 @@ export default function InstallAppCard() {
 
   return (
     <>
+      {pulse && (
+        <style>{`
+          @keyframes installPulseBorder {
+            0%, 100% { border-color: rgba(245,200,0,.25); box-shadow: 0 0 0 0 rgba(245,200,0,.25); }
+            50% { border-color: var(--yellow); box-shadow: 0 0 0 4px rgba(245,200,0,.12); }
+          }
+        `}</style>
+      )}
       <button
         onClick={handleClick}
         disabled={installing || !!rewardMsg}
-        style={{ background: "var(--dark1)", border: "1px solid #1e1e1e", borderRadius: 16, padding: "14px 16px", display: "flex", alignItems: "center", gap: 14, width: "100%", cursor: installing || rewardMsg ? "default" : "pointer", textAlign: "left", opacity: installing ? 0.7 : 1 }}
+        style={{ background: "var(--dark1)", border: "1px solid #1e1e1e", borderRadius: 16, padding: "14px 16px", display: "flex", alignItems: "center", gap: 14, width: "100%", cursor: installing || rewardMsg ? "default" : "pointer", textAlign: "left", opacity: installing ? 0.7 : 1, ...(pulse && !rewardMsg ? { animation: "installPulseBorder 1.8s ease-in-out infinite" } : {}) }}
       >
         <div style={{ width: 40, height: 40, borderRadius: 12, background: "rgba(245,200,0,.1)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
           <span style={{ fontSize: "1.2rem" }}>{rewardMsg ? "🎉" : "📲"}</span>

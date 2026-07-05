@@ -46,13 +46,22 @@ export async function triggerInstallPrompt(): Promise<"accepted" | "dismissed" |
 
 const TEST_MODE_KEY = "jv_install_test_mode";
 
+// Conta(s) que sempre testam o app — nunca ganham o bônus de XP de instalação de verdade,
+// mesmo sem passar ?installtest=1 na URL (sobrevive a desinstalar/reinstalar, já que é
+// por conta e não por localStorage do device).
+const ALWAYS_TEST_USER_IDS = new Set(["user_3EzV0DXiskFt0wNSwNSXVHapiBC"]); // @jv — João Victor
+
 /**
  * Modo de teste: acesse o app com ?installtest=1 na URL para ativar (persiste no
  * localStorage até você abrir com ?installtest=0). Com o modo ativo, o fluxo de
  * instalar o app roda normalmente na tela, mas pula a chamada real que concede XP —
  * útil pra testar o pop-up/botão sem ganhar a recompensa de verdade.
+ *
+ * Passe o userId do Clerk (useUser().user?.id) quando disponível para também cobrir
+ * as contas sempre-em-teste, independente de device ou reinstalação.
  */
-export function isInstallTestMode(): boolean {
+export function isInstallTestMode(userId?: string | null): boolean {
+  if (userId && ALWAYS_TEST_USER_IDS.has(userId)) return true;
   if (typeof window === "undefined") return false;
   const param = new URLSearchParams(window.location.search).get("installtest");
   if (param === "1") localStorage.setItem(TEST_MODE_KEY, "1");

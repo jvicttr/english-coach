@@ -34,6 +34,15 @@ export default function AppHome() {
   const [trilhaCta, setTrilhaCta] = useState<{ type: "continue" | "next"; step: TrailStep } | null | undefined>(undefined);
   const [trilhaStarted, setTrilhaStarted] = useState(false);
   const [recommendation, setRecommendation] = useState<{ packName: string; hardCount: number } | null>(null);
+  const [isMobileView, setIsMobileView] = useState(false);
+
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 640px)");
+    setIsMobileView(mq.matches);
+    const onChange = (e: MediaQueryListEvent) => setIsMobileView(e.matches);
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
+  }, []);
 
   useEffect(() => {
     const saved = localStorage.getItem("lastTopic");
@@ -118,6 +127,9 @@ export default function AppHome() {
             {greeting()}{userName ? `, ${userName}` : ""}!
           </p>
         </div>
+
+        {/* ── Adicionar à tela inicial (mobile: destaque no topo) ──────────────── */}
+        {isMobileView && <InstallAppCard pulse />}
 
         {/* ── Streak ─────────────────────────────────────────────────────────── */}
         {isPro === null ? (
@@ -284,7 +296,7 @@ export default function AppHome() {
         )}
 
         {/* ── Adicionar à tela inicial (some sozinho se já instalado) ─────────── */}
-        <InstallAppCard />
+        {!isMobileView && <InstallAppCard />}
 
         {/* ── No-content CTA ─────────────────────────────────────────────────── */}
         {isPro !== null && streak === 0 && !lastTopic && (

@@ -1,14 +1,17 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useUser } from "@clerk/nextjs";
 import { isInstallTestMode } from "@/lib/installPrompt";
 
 const CHECKED_KEY = "install-reward-checked";
 
 export default function InstallRewardChecker() {
+  const { user, isLoaded } = useUser();
   const [msg, setMsg] = useState<string | null>(null);
 
   useEffect(() => {
+    if (!isLoaded) return; // espera o Clerk carregar o usuário antes de decidir
     // Já rodou nesse dispositivo/navegador — o servidor também dedupa via badge, mas evita a chamada à toa
     if (localStorage.getItem(CHECKED_KEY)) return;
 
@@ -19,7 +22,7 @@ export default function InstallRewardChecker() {
 
     localStorage.setItem(CHECKED_KEY, "1");
 
-    if (isInstallTestMode()) {
+    if (isInstallTestMode(user?.id)) {
       setMsg("🧪 (teste) App instalado — XP não concedido");
       setTimeout(() => setMsg(null), 4000);
       return;
@@ -34,7 +37,7 @@ export default function InstallRewardChecker() {
         }
       })
       .catch(() => {});
-  }, []);
+  }, [isLoaded, user?.id]);
 
   if (!msg) return null;
 
