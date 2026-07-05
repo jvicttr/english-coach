@@ -12,7 +12,7 @@
   "crons": [
     {
       "path": "/api/cron/streak-reminder",
-      "schedule": "0 13 * * *"
+      "schedule": "0 12 * * *"
     },
     {
       "path": "/api/cron/streak-reminder",
