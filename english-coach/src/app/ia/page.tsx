@@ -9,13 +9,31 @@ const FEATURES = [
   {
     icon: "💬",
     title: "Conversação por tópicos",
-    desc: "Escolha um tema — trabalho, viagem, filmes, rotina — e converse em inglês com um coach que realmente entende o contexto. Sem frases prontas, sem exercícios mecânicos.",
+    desc: "Escolha um tema — trabalho, viagem, filmes, rotina — e converse em inglês com um coach que realmente entende o contexto e se adapta ao seu nível automaticamente.",
+    badge: null,
+  },
+  {
+    icon: "🗺️",
+    title: "Trilha de Aprendizado A1 → C1",
+    desc: "Passos guiados do básico ao avançado. Cada etapa tem uma conversa, flashcards e um quiz para desbloquear a próxima — um caminho claro do zero até a fluência.",
+    badge: null,
+  },
+  {
+    icon: "🎭",
+    title: "Role-play de situações reais",
+    desc: "Simule entrevistas de emprego, check-in em hotel, pedido em restaurante e outras situações do dia a dia com a IA no papel do outro personagem.",
+    badge: "Pro",
+  },
+  {
+    icon: "🃏",
+    title: "Flashcards com repetição espaçada",
+    desc: "As palavras que você usou ficam salvas automaticamente como flashcards, e o app te lembra de revisar no momento certo para fixar de vez.",
     badge: null,
   },
   {
     icon: "🔊",
     title: "Ouça o inglês correto",
-    desc: "Cada resposta do JV IA pode ser ouvida em áudio com a pronúncia nativa. Tem botão para repetir devagar — ideal para treinar o ouvido sem pressa.",
+    desc: "Cada resposta do JV IA pode ser ouvida em áudio com pronúncia natural. Tem botão para repetir devagar — ideal para treinar o ouvido sem pressa.",
     badge: null,
   },
   {
@@ -31,9 +49,21 @@ const FEATURES = [
     badge: null,
   },
   {
-    icon: "🏆",
-    title: "Histórico e sequência de dias",
-    desc: "Acompanhe seus quizzes anteriores, sua pontuação e quantos dias seguidos você está praticando. A consistência é o que gera fluência.",
+    icon: "🔥",
+    title: "Streak, XP e conquistas",
+    desc: "Mantenha sua sequência de dias, ganhe XP a cada atividade, suba de nível e desbloqueie badges — a consistência vira jogo, e o jogo vira fluência.",
+    badge: null,
+  },
+  {
+    icon: "👥",
+    title: "Comunidade e mensagens diretas",
+    desc: "Poste em inglês, siga outros alunos, comente, reaja e troque mensagens diretas. Praticar fica mais leve com gente de verdade do seu lado.",
+    badge: null,
+  },
+  {
+    icon: "📱",
+    title: "Funciona como app no celular",
+    desc: "Instale o JV IA na tela inicial do celular ou computador — sem loja de aplicativos — e receba notificações de mensagens e lembretes de streak.",
     badge: null,
   },
   {
@@ -41,18 +71,6 @@ const FEATURES = [
     title: "Revisão de aula com PDF",
     desc: "Envie o PDF da sua aula ao vivo e o JV IA cria um resumo, responde suas dúvidas sobre o conteúdo e gera um quiz específico daquela aula.",
     badge: "Exclusivo Combo",
-  },
-  {
-    icon: "📱",
-    title: "Funciona como app no celular",
-    desc: "Instale o JV IA direto na tela inicial do seu celular como um aplicativo. Sem baixar da App Store — é só adicionar à tela inicial.",
-    badge: null,
-  },
-  {
-    icon: "🧠",
-    title: "Adapta ao seu nível automaticamente",
-    desc: "O JV IA detecta se você é iniciante, intermediário ou avançado pela sua forma de escrever e adapta o vocabulário e as respostas sem você precisar configurar nada.",
-    badge: null,
   },
 ];
 
