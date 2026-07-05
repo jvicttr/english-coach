@@ -15,10 +15,11 @@ export async function POST(req: NextRequest) {
     const voice = lang === "pt" ? "nova" : "echo";
 
     const response = await openai.audio.speech.create({
-      model: isSlow ? "tts-1-hd" : "tts-1",
+      model: "gpt-4o-mini-tts",
       voice,
       input: text,
       speed: isSlow ? 0.25 : (speed ?? 1.0),
+      instructions: "Speak in a warm, natural, encouraging tone, like a friendly and patient English teacher talking one-on-one with a student.",
     });
 
     // Stream the audio directly — client starts playing before full download
