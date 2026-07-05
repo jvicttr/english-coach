@@ -34,9 +34,12 @@ export default function NotificationPromptBanner() {
     }
 
     try {
-      const res = await fetch("/api/webpush/register");
-      const data = await res.json();
-      if (data.active) { markNotifFlowDone(); return; } // já tem subscription ativa no novo sistema
+      // Checa localmente (não no servidor) se ESTE navegador tem uma subscription ativa agora.
+      // O servidor pode ter uma subscription salva de um device antigo (ex: reinstalou o app),
+      // o que não significa que este device específico ainda está inscrito de verdade.
+      const reg = await navigator.serviceWorker.getRegistration("/firebase-messaging-sw.js");
+      const localSub = reg ? await reg.pushManager.getSubscription() : null;
+      if (localSub) { markNotifFlowDone(); return; }
     } catch {
       markNotifFlowDone();
       return;
