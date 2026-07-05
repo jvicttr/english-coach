@@ -84,7 +84,7 @@ export async function GET(req: NextRequest) {
   }
 
   let sent = 0;
-  let pushOk = 0, pushFail = 0;
+  let pushOk = 0, pushFail = 0, pushNoSub = 0;
   const pushErrors: string[] = [];
 
   // Push para usuários que não praticaram hoje (FCM multicast + Web Push individual)
@@ -109,14 +109,16 @@ export async function GET(req: NextRequest) {
     // Web Push individual
     for (const { userId } of toNotify) {
       try {
-        await pushToUser(userId, pushTitle, pushBody, "https://www.faleinglesjv.com/app");
-        pushOk++;
+        const result = await pushToUser(userId, pushTitle, pushBody, "https://www.faleinglesjv.com/app");
+        if (result === "sent") pushOk++;
+        else if (result === "no_subscription") pushNoSub++;
+        else pushFail++;
       } catch (e: any) {
         pushFail++;
         pushErrors.push(e?.message ?? String(e));
       }
     }
-    console.log("push results", { pushOk, pushFail, pushErrors });
+    console.log("push results", { pushOk, pushFail, pushNoSub, pushErrors });
   }
 
   for (const { userId, streak } of toNotify) {
@@ -137,5 +139,5 @@ export async function GET(req: NextRequest) {
     sent++;
   }
 
-  return NextResponse.json({ sent, total: toNotify.length });
+  return NextResponse.json({ sent, total: toNotify.length, pushOk, pushFail, pushNoSub });
 }
