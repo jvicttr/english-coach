@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, use, useRef } from "react";
+import { createPortal } from "react-dom";
 import { useUser } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import { getTier } from "@/lib/tiers";
@@ -260,7 +261,7 @@ export default function UserProfilePage({ params }: { params: Promise<{ userId: 
       <style>{`@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}`}</style>
 
       {/* Followers / Following modal */}
-      {followModal && (
+      {followModal && typeof document !== "undefined" && createPortal(
         <div onClick={() => setFollowModal(null)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", display: "flex", alignItems: "flex-end", justifyContent: "center", zIndex: 2000 }}>
           <div onClick={e => e.stopPropagation()} style={{ background: "var(--dark2)", borderRadius: "18px 18px 0 0", width: "100%", maxWidth: 520, maxHeight: "70vh", display: "flex", flexDirection: "column", border: "1px solid #2a2a2a", borderBottom: "none" }}>
             {/* Header */}
@@ -303,7 +304,8 @@ export default function UserProfilePage({ params }: { params: Promise<{ userId: 
               )}
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {selectedImage && (
