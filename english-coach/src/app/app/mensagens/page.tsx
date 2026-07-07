@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useUser } from "@clerk/nextjs";
 
@@ -48,6 +48,11 @@ export default function MensagensPage() {
   const { user } = useUser();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(true);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const longPressFiredRef = useRef(false);
 
   useEffect(() => {
     if (!user) return;
@@ -57,6 +62,31 @@ export default function MensagensPage() {
       .catch(() => {})
       .finally(() => setLoading(false));
   }, [user]);
+
+  function handleTouchStart(conversationId: string) {
+    longPressFiredRef.current = false;
+    if (longPressTimerRef.current) clearTimeout(longPressTimerRef.current);
+    longPressTimerRef.current = setTimeout(() => {
+      longPressFiredRef.current = true;
+      if (navigator.vibrate) navigator.vibrate(10);
+      setDeleteConfirmId(conversationId);
+    }, 550);
+  }
+
+  function cancelLongPress() {
+    if (longPressTimerRef.current) { clearTimeout(longPressTimerRef.current); longPressTimerRef.current = null; }
+  }
+
+  async function deleteConversation(conversationId: string) {
+    setDeleting(true);
+    try {
+      await fetch(`/api/messages/conversations?conversationId=${encodeURIComponent(conversationId)}`, { method: "DELETE" });
+      setConversations(prev => prev.filter(c => c.conversation_id !== conversationId));
+    } catch {} finally {
+      setDeleting(false);
+      setDeleteConfirmId(null);
+    }
+  }
 
   return (
     <div style={{ minHeight: "100dvh", background: "#0d0d0d", fontFamily: "'Inter', sans-serif", paddingTop: "calc(65px + env(safe-area-inset-top))", paddingBottom: "calc(56px + env(safe-area-inset-bottom, 0px))" }}>
@@ -108,8 +138,15 @@ export default function MensagensPage() {
           conversations.map(conv => (
             <div
               key={conv.conversation_id}
-              onClick={() => router.push(`/app/mensagens/${conv.other_user.id}`)}
-              style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 16px", borderBottom: "1px solid #111", cursor: "pointer", transition: "background 0.1s" }}
+              onClick={() => {
+                if (longPressFiredRef.current) { longPressFiredRef.current = false; return; }
+                router.push(`/app/mensagens/${conv.other_user.id}`);
+              }}
+              onTouchStart={() => handleTouchStart(conv.conversation_id)}
+              onTouchMove={cancelLongPress}
+              onTouchEnd={cancelLongPress}
+              onContextMenu={(e) => { e.preventDefault(); setDeleteConfirmId(conv.conversation_id); }}
+              style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 16px", borderBottom: "1px solid #111", cursor: "pointer", transition: "background 0.1s", WebkitTouchCallout: "none", WebkitUserSelect: "none", userSelect: "none" }}
               onMouseEnter={e => { e.currentTarget.style.background = "#111"; }}
               onMouseLeave={e => { e.currentTarget.style.background = "transparent"; }}
             >
@@ -143,6 +180,37 @@ export default function MensagensPage() {
           ))
         )}
       </div>
+
+      {/* Confirmação de apagar conversa (aperta-segura ou botão direito) */}
+      {deleteConfirmId && (
+        <>
+          <div
+            style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 2000 }}
+            onClick={() => !deleting && setDeleteConfirmId(null)}
+          />
+          <div style={{ position: "fixed", left: "50%", top: "50%", transform: "translate(-50%, -50%)", background: "#1a1a1a", border: "1px solid #2a2a2a", borderRadius: 16, padding: 24, zIndex: 2001, width: "min(320px, calc(100vw - 48px))" }}>
+            <p style={{ color: "var(--white)", fontSize: "0.9rem", textAlign: "center", marginBottom: 20, lineHeight: 1.5 }}>
+              Apagar esta conversa da sua lista? Ela some só para você — a outra pessoa continua vendo normalmente.
+            </p>
+            <div style={{ display: "flex", gap: 10 }}>
+              <button
+                onClick={() => setDeleteConfirmId(null)}
+                disabled={deleting}
+                style={{ flex: 1, padding: "10px", background: "var(--dark2)", border: "1px solid #2a2a2a", borderRadius: 10, color: "var(--gray)", cursor: "pointer", fontSize: "0.85rem" }}
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => deleteConversation(deleteConfirmId)}
+                disabled={deleting}
+                style={{ flex: 1, padding: "10px", background: "#ef4444", border: "none", borderRadius: 10, color: "#fff", cursor: "pointer", fontWeight: 600, fontSize: "0.85rem", opacity: deleting ? 0.7 : 1 }}
+              >
+                {deleting ? "Apagando…" : "Apagar"}
+              </button>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }
