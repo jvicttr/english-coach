@@ -87,11 +87,17 @@ export function getVisibleSteps(startingLevel: TrailLevel): TrailStep[] {
 export function isStepUnlocked(stepId: string, completedIds: Set<string>, startingLevel?: TrailLevel): boolean {
   const step = TRAIL_STEPS.find((s) => s.id === stepId);
   if (!step) return false;
+
+  const levelsOrder: TrailLevel[] = ["A1", "A2", "B1", "B2", "C1"];
+  const levelIdx = levelsOrder.indexOf(step.level);
+  const startingIdx = startingLevel ? levelsOrder.indexOf(startingLevel) : 0;
+
+  // Niveis mais faceis que o nivel escolhido ficam livres pra revisao, sem pre-requisitos
+  if (levelIdx < startingIdx) return true;
+
   if (step.order === 1) {
-    const levelsOrder: TrailLevel[] = ["A1", "A2", "B1", "B2", "C1"];
-    const levelIdx = levelsOrder.indexOf(step.level);
-    // First level overall OR user's starting level — always unlocked
-    if (levelIdx === 0 || (startingLevel && step.level === startingLevel)) return true;
+    // Primeiro passo do nivel de inicio do usuario — sempre desbloqueado
+    if (levelIdx === startingIdx) return true;
     const prevLevel = levelsOrder[levelIdx - 1];
     const prevLevelSteps = TRAIL_STEPS.filter((s) => s.level === prevLevel);
     return prevLevelSteps.every((s) => completedIds.has(s.id));

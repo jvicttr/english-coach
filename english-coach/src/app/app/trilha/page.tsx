@@ -100,10 +100,12 @@ export default function TrilhaPage() {
     return "locked";
   }
 
-  // Determine which levels are visible based on user level
+  // Todos os niveis ficam visiveis — os anteriores ao nivel do usuario ficam liberados pra revisao
   const startingLevel = getStartingLevel(userLevel);
   const startingIdx = LEVELS_ORDER.indexOf(startingLevel);
-  const visibleLevels = LEVELS_ORDER.slice(startingIdx);
+  const visibleLevels = LEVELS_ORDER;
+  // Progresso (contagem/%) considera só a partir do nivel do usuario — o que ele precisa concluir
+  const ownLevels = LEVELS_ORDER.slice(startingIdx);
 
   if (loading) {
     return (
@@ -118,8 +120,8 @@ export default function TrilhaPage() {
     );
   }
 
-  const totalSteps = visibleLevels.reduce((acc, l) => acc + TRAIL_STEPS.filter((s) => s.level === l).length, 0);
-  const completedCount = visibleLevels.reduce((acc, l) => acc + TRAIL_STEPS.filter((s) => s.level === l && completedIds.has(s.id)).length, 0);
+  const totalSteps = ownLevels.reduce((acc, l) => acc + TRAIL_STEPS.filter((s) => s.level === l).length, 0);
+  const completedCount = ownLevels.reduce((acc, l) => acc + TRAIL_STEPS.filter((s) => s.level === l && completedIds.has(s.id)).length, 0);
 
   return (
     <div className="app-scroll" style={{ background: "var(--black)", fontFamily: "'Inter', sans-serif", paddingTop: "calc(65px + env(safe-area-inset-top))", paddingBottom: 80 }}>
@@ -159,15 +161,17 @@ export default function TrilhaPage() {
           const steps = TRAIL_STEPS.filter((s) => s.level === levelId);
           const levelCompleted = steps.filter((s) => completedIds.has(s.id)).length;
           const isLevelLocked = steps[0] ? getStepState(steps[0]) === "locked" : false;
+          const isOwnLevel = levelId === startingLevel;
 
           return (
             <div key={levelId} style={{ marginBottom: 8 }}>
               {/* Level banner */}
               <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20, marginTop: levelIdx > 0 ? 16 : 0 }}>
                 <div style={{ height: 1, flex: 1, background: isLevelLocked ? "#1f1f1f" : info.color + "33" }} />
-                <div style={{ display: "flex", alignItems: "center", gap: 8, background: isLevelLocked ? "var(--dark1)" : info.color + "15", border: `1px solid ${isLevelLocked ? "#2a2a2a" : info.color + "40"}`, borderRadius: 50, padding: "6px 16px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, background: isLevelLocked ? "var(--dark1)" : info.color + "15", border: `1px solid ${isOwnLevel ? info.color : isLevelLocked ? "#2a2a2a" : info.color + "40"}`, borderRadius: 50, padding: "6px 16px" }}>
                   <span style={{ fontSize: "0.7rem", fontWeight: 900, letterSpacing: "0.08em", color: isLevelLocked ? "var(--gray2)" : info.color }}>{info.label}</span>
                   <span style={{ fontSize: "0.65rem", color: isLevelLocked ? "#333" : "rgba(255,255,255,.5)", fontWeight: 600 }}>{info.sublabel}</span>
+                  {isOwnLevel && <span style={{ fontSize: "0.6rem", fontWeight: 800, color: "#000", background: info.color, borderRadius: 50, padding: "2px 8px" }}>SEU NÍVEL</span>}
                   {!isLevelLocked && <span style={{ fontSize: "0.65rem", color: isLevelLocked ? "#333" : info.color, fontWeight: 700 }}>{levelCompleted}/{steps.length}</span>}
                 </div>
                 <div style={{ height: 1, flex: 1, background: isLevelLocked ? "#1f1f1f" : info.color + "33" }} />
