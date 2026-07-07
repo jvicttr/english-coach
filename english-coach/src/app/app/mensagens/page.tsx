@@ -146,9 +146,9 @@ export default function MensagensPage() {
               onTouchMove={cancelLongPress}
               onTouchEnd={cancelLongPress}
               onContextMenu={(e) => { e.preventDefault(); setDeleteConfirmId(conv.conversation_id); }}
-              style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 16px", borderBottom: "1px solid #111", cursor: "pointer", transition: "background 0.1s", WebkitTouchCallout: "none", WebkitUserSelect: "none", userSelect: "none" }}
-              onMouseEnter={e => { e.currentTarget.style.background = "#111"; }}
-              onMouseLeave={e => { e.currentTarget.style.background = "transparent"; }}
+              style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 16px", borderBottom: "1px solid #111", cursor: "pointer", transition: "background 0.15s", background: deleteConfirmId === conv.conversation_id ? "rgba(255,255,255,0.07)" : "transparent", WebkitTouchCallout: "none", WebkitUserSelect: "none", userSelect: "none" }}
+              onMouseEnter={e => { if (deleteConfirmId !== conv.conversation_id) e.currentTarget.style.background = "#111"; }}
+              onMouseLeave={e => { if (deleteConfirmId !== conv.conversation_id) e.currentTarget.style.background = "transparent"; }}
             >
               <UserAvatar src={conv.other_user.image_url} name={conv.other_user.name} size={48} />
 
