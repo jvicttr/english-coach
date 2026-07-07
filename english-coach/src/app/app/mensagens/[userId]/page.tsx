@@ -240,6 +240,8 @@ export default function ChatPage() {
 
   // Reply state
   const [replyTo, setReplyTo] = useState<any>(null);
+  // Edit state
+  const [editingMsg, setEditingMsg] = useState<any>(null);
   // Hover state for desktop action buttons
   const [hoveredMsgId, setHoveredMsgId] = useState<string | null>(null);
   // Swipe state for mobile reply
@@ -450,8 +452,28 @@ export default function ChatPage() {
 
   async function deleteMsg(messageId: string) {
     if (messageId.startsWith("tmp-")) return;
+    const msg = messages.find(m => m.id === messageId);
+    // Mensagem recebida: oculta só para mim (quem enviou não fica sabendo). Mensagem própria: apaga para todos.
+    const scope = msg && msg.sender_id !== user?.id ? "me" : "everyone";
     setMessages(prev => prev.filter(m => m.id !== messageId));
-    await fetch(`/api/messages?messageId=${encodeURIComponent(messageId)}`, { method: "DELETE" }).catch(() => {});
+    const qs = scope === "me" ? `messageId=${encodeURIComponent(messageId)}&scope=me` : `messageId=${encodeURIComponent(messageId)}`;
+    await fetch(`/api/messages?${qs}`, { method: "DELETE" }).catch(() => {});
+  }
+
+  async function saveEdit() {
+    if (!editingMsg || !input.trim() || sending) return;
+    const messageId = editingMsg.id;
+    const newContent = input.trim();
+    setSending(true);
+    setInput("");
+    setEditingMsg(null);
+    setMessages(prev => prev.map(m => m.id === messageId ? { ...m, content: newContent, edited_at: new Date().toISOString() } : m));
+    try {
+      await fetch("/api/messages", {
+        method: "PUT", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ messageId, content: newContent }),
+      });
+    } catch (e) { console.error(e); } finally { setSending(false); }
   }
 
   function addReaction(messageId: string, emoji: string) {
@@ -864,7 +886,14 @@ export default function ChatPage() {
                         <path d="M9 17h8a2 2 0 0 0 2-2v-5"/>
                       </svg>
                     </ActionBtn>
-                    <ActionBtn onClick={() => setDeleteConfirmMsgId(msg.id)} title="Apagar mensagem">
+                    {msg.content && (
+                      <ActionBtn onClick={() => { setReplyTo(null); setEditingMsg(msg); setInput(msg.content); setTimeout(() => textareaRef.current?.focus(), 50); }} title="Editar mensagem">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/>
+                        </svg>
+                      </ActionBtn>
+                    )}
+                    <ActionBtn onClick={() => setDeleteConfirmMsgId(msg.id)} title="Apagar para todos">
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                         <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/>
                       </svg>
@@ -922,6 +951,33 @@ export default function ChatPage() {
                             overflow: "hidden",
                           }}
                         >
+                          {isOwn && msg.content && (
+                            <button
+                              onClick={() => { setBubbleMenuMsgId(null); setReplyTo(null); setEditingMsg(msg); setInput(msg.content); setTimeout(() => textareaRef.current?.focus(), 50); }}
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 8,
+                                padding: "10px 14px",
+                                background: "transparent",
+                                border: "none",
+                                borderBottom: "1px solid #2a2a2a",
+                                cursor: "pointer",
+                                width: "100%",
+                                textAlign: "left",
+                                color: "var(--white)",
+                                fontSize: "0.82rem",
+                                fontWeight: 500,
+                              }}
+                              onMouseEnter={e => (e.currentTarget.style.background = "#2a2a2a")}
+                              onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
+                            >
+                              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/>
+                              </svg>
+                              Editar mensagem
+                            </button>
+                          )}
                           <button
                             onClick={() => { setBubbleMenuMsgId(null); setDeleteConfirmMsgId(msg.id); }}
                             style={{
@@ -944,7 +1000,7 @@ export default function ChatPage() {
                             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                               <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/>
                             </svg>
-                            Deletar mensagem
+                            {isOwn ? "Apagar para todos" : "Apagar só para mim"}
                           </button>
                         </div>
                       )}
@@ -1007,6 +1063,7 @@ export default function ChatPage() {
 
                   {/* Timestamp + status */}
                   <div style={{ fontSize: "0.62rem", opacity: 0.65, display: "flex", alignItems: "center", gap: 4, justifyContent: "flex-end", marginTop: 2 }}>
+                    {msg.edited_at && <span>editado</span>}
                     {fmtBrasiliaTime(msg.created_at)}
                     {isOwn && <MsgStatus msg={msg} />}
                   </div>
@@ -1045,7 +1102,7 @@ export default function ChatPage() {
                         <path d="M9 17h8a2 2 0 0 0 2-2v-5"/>
                       </svg>
                     </ActionBtn>
-                    <ActionBtn onClick={() => setDeleteConfirmMsgId(msg.id)} title="Apagar mensagem">
+                    <ActionBtn onClick={() => setDeleteConfirmMsgId(msg.id)} title="Apagar só para mim">
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                         <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/>
                       </svg>
@@ -1200,37 +1257,54 @@ export default function ChatPage() {
                 >{emoji}</button>
               ))}
             </div>
-            {[
-              {
-                label: "Responder",
-                icon: (
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M9 17H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11a2 2 0 0 1 2 2v3"/>
-                    <path d="M13 21l-4-4 4-4"/><path d="M9 17h8a2 2 0 0 0 2-2v-5"/>
-                  </svg>
-                ),
-                color: "var(--white)",
-                action: () => {
-                  const msg = messages.find(m => m.id === longPressMenu.msgId);
-                  if (msg) { setReplyTo(msg); setTimeout(() => textareaRef.current?.focus(), 100); }
-                  setLongPressMenu(null);
+            {(() => {
+              const lpMsg = messages.find(m => m.id === longPressMenu.msgId);
+              const lpIsOwn = lpMsg?.sender_id === user?.id;
+              const items = [
+                {
+                  label: "Responder",
+                  icon: (
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M9 17H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11a2 2 0 0 1 2 2v3"/>
+                      <path d="M13 21l-4-4 4-4"/><path d="M9 17h8a2 2 0 0 0 2-2v-5"/>
+                    </svg>
+                  ),
+                  color: "var(--white)",
+                  action: () => {
+                    if (lpMsg) { setReplyTo(lpMsg); setTimeout(() => textareaRef.current?.focus(), 100); }
+                    setLongPressMenu(null);
+                  },
                 },
-              },
-              {
-                label: "Apagar mensagem",
-                icon: (
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                    <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/>
-                    <path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/>
-                  </svg>
-                ),
-                color: "#ef4444",
-                action: () => {
-                  deleteMsg(longPressMenu.msgId);
-                  setLongPressMenu(null);
+                ...(lpIsOwn && lpMsg?.content && !lpMsg.id?.startsWith("tmp-") ? [{
+                  label: "Editar mensagem",
+                  icon: (
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/>
+                    </svg>
+                  ),
+                  color: "var(--white)",
+                  action: () => {
+                    if (lpMsg?.content) { setReplyTo(null); setEditingMsg(lpMsg); setInput(lpMsg.content); setTimeout(() => textareaRef.current?.focus(), 100); }
+                    setLongPressMenu(null);
+                  },
+                }] : []),
+                {
+                  label: lpIsOwn ? "Apagar para todos" : "Apagar só para mim",
+                  icon: (
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/>
+                      <path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/>
+                    </svg>
+                  ),
+                  color: "#ef4444",
+                  action: () => {
+                    deleteMsg(longPressMenu.msgId);
+                    setLongPressMenu(null);
+                  },
                 },
-              },
-            ].map((item, i, arr) => (
+              ];
+              return items;
+            })().map((item, i, arr) => (
               <button
                 key={item.label}
                 onClick={item.action}
@@ -1260,23 +1334,33 @@ export default function ChatPage() {
             onClick={() => setDeleteConfirmMsgId(null)}
           />
           <div style={{ position: "fixed", left: "50%", top: "50%", transform: "translate(-50%, -50%)", background: "#1a1a1a", border: "1px solid #2a2a2a", borderRadius: 16, padding: 24, zIndex: 2001, width: "min(320px, calc(100vw - 48px))" }}>
-            <p style={{ color: "var(--white)", fontSize: "0.9rem", textAlign: "center", marginBottom: 20, lineHeight: 1.5 }}>
-              Você quer mesmo deletar esta mensagem?
-            </p>
-            <div style={{ display: "flex", gap: 10 }}>
-              <button
-                onClick={() => setDeleteConfirmMsgId(null)}
-                style={{ flex: 1, padding: "10px", background: "var(--dark2)", border: "1px solid #2a2a2a", borderRadius: 10, color: "var(--gray)", cursor: "pointer", fontSize: "0.85rem" }}
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={() => { deleteMsg(deleteConfirmMsgId); setDeleteConfirmMsgId(null); }}
-                style={{ flex: 1, padding: "10px", background: "#ef4444", border: "none", borderRadius: 10, color: "#fff", cursor: "pointer", fontWeight: 600, fontSize: "0.85rem" }}
-              >
-                Deletar
-              </button>
-            </div>
+            {(() => {
+              const dcMsg = messages.find(m => m.id === deleteConfirmMsgId);
+              const dcIsOwn = dcMsg?.sender_id === user?.id;
+              return (
+                <>
+                  <p style={{ color: "var(--white)", fontSize: "0.9rem", textAlign: "center", marginBottom: 20, lineHeight: 1.5 }}>
+                    {dcIsOwn
+                      ? "Apagar esta mensagem para todos? Ela vai sumir para você e para quem recebeu."
+                      : "Apagar esta mensagem só para você? Ela continua aparecendo normalmente para quem enviou."}
+                  </p>
+                  <div style={{ display: "flex", gap: 10 }}>
+                    <button
+                      onClick={() => setDeleteConfirmMsgId(null)}
+                      style={{ flex: 1, padding: "10px", background: "var(--dark2)", border: "1px solid #2a2a2a", borderRadius: 10, color: "var(--gray)", cursor: "pointer", fontSize: "0.85rem" }}
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      onClick={() => { deleteMsg(deleteConfirmMsgId); setDeleteConfirmMsgId(null); }}
+                      style={{ flex: 1, padding: "10px", background: "#ef4444", border: "none", borderRadius: 10, color: "#fff", cursor: "pointer", fontWeight: 600, fontSize: "0.85rem" }}
+                    >
+                      Apagar
+                    </button>
+                  </div>
+                </>
+              );
+            })()}
           </div>
         </>
       )}
@@ -1302,8 +1386,26 @@ export default function ChatPage() {
           </div>
         )}
 
+        {/* Edit preview bar */}
+        {editingMsg && (
+          <div style={{ display: "flex", alignItems: "center", gap: 10, background: "#1a1a1a", border: "1px solid #2a2a2a", borderLeft: "3px solid var(--yellow)", borderRadius: 10, padding: "7px 10px", marginBottom: 8 }}>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--yellow)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+              <path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/>
+            </svg>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: "0.68rem", color: "var(--yellow)", fontWeight: 700, marginBottom: 1 }}>
+                Editando mensagem
+              </div>
+              <div style={{ fontSize: "0.75rem", color: "var(--gray)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {editingMsg.content}
+              </div>
+            </div>
+            <button onClick={() => { setEditingMsg(null); setInput(""); }} style={{ background: "none", border: "none", color: "var(--gray)", cursor: "pointer", fontSize: "1.1rem", flexShrink: 0, lineHeight: 1 }}>✕</button>
+          </div>
+        )}
+
         {/* Reply preview bar */}
-        {replyTo && (
+        {!editingMsg && replyTo && (
           <div style={{ display: "flex", alignItems: "center", gap: 10, background: "#1a1a1a", border: "1px solid #2a2a2a", borderLeft: "3px solid var(--yellow)", borderRadius: 10, padding: "7px 10px", marginBottom: 8 }}>
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--yellow)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
               <path d="M9 17H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11a2 2 0 0 1 2 2v3"/>
@@ -1361,7 +1463,7 @@ export default function ChatPage() {
               ref={textareaRef}
               value={input}
               onChange={handleInputChange}
-              onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(input); } }}
+              onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); editingMsg ? saveEdit() : send(input); } }}
               placeholder="Digite uma mensagem..."
               rows={1}
               className="w-full resize-none outline-none"
@@ -1371,7 +1473,7 @@ export default function ChatPage() {
 
           {/* Mic ou Send — círculo amarelo */}
           <button
-            onClick={input.trim() ? () => send(input) : (recording ? stopRecording : startRecording)}
+            onClick={input.trim() ? (editingMsg ? saveEdit : () => send(input)) : (recording ? stopRecording : startRecording)}
             disabled={sending}
             style={{ width: 44, height: 44, borderRadius: "50%", border: "none", background: recording ? "#ef4444" : "var(--yellow)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0, boxShadow: recording ? "0 0 16px rgba(239,68,68,0.5)" : "none", transition: "background 0.15s" }}
           >

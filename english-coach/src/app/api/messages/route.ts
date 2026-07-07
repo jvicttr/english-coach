@@ -26,7 +26,16 @@ export async function GET(req: NextRequest) {
       .order("created_at", { ascending: true });
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-    return NextResponse.json({ messages });
+
+    // Esconde mensagens que este usuário apagou "só para mim" — quem enviou continua vendo normalmente
+    const { data: hidden } = await supabase
+      .from("message_hidden_for")
+      .select("message_id")
+      .eq("user_id", userId);
+    const hiddenIds = new Set((hidden ?? []).map((h) => h.message_id));
+    const visible = (messages ?? []).filter((m) => !hiddenIds.has(m.id));
+
+    return NextResponse.json({ messages: visible });
   }
 
   // Listar conversas do usuário
@@ -60,18 +69,19 @@ export async function PATCH(req: NextRequest) {
   return NextResponse.json({ ok: true });
 }
 
-// DELETE - Apagar mensagem (soft delete)
+// DELETE - Apagar mensagem (para todos, só quem enviou) ou ocultar só para mim (?scope=me)
 export async function DELETE(req: NextRequest) {
   const { userId } = await auth();
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { searchParams } = new URL(req.url);
   const messageId = searchParams.get("messageId");
+  const scope = searchParams.get("scope"); // "me" = oculta so para quem pediu
   if (!messageId) return NextResponse.json({ error: "Invalid request" }, { status: 400 });
 
   const { data: message } = await supabase
     .from("direct_messages")
-    .select("id, conversation_id")
+    .select("id, sender_id, conversation_id")
     .eq("id", messageId)
     .is("deleted_at", null)
     .single();
@@ -88,6 +98,20 @@ export async function DELETE(req: NextRequest) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
+  if (scope === "me") {
+    // Oculta só na visão de quem pediu — quem enviou não fica sabendo
+    const { error } = await supabase
+      .from("message_hidden_for")
+      .upsert({ message_id: messageId, user_id: userId }, { onConflict: "message_id,user_id" });
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ ok: true });
+  }
+
+  // Apagar para todos — só quem enviou a mensagem pode
+  if (message.sender_id !== userId) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   const { error } = await supabase
     .from("direct_messages")
     .update({ deleted_at: new Date().toISOString() })
@@ -95,6 +119,35 @@ export async function DELETE(req: NextRequest) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ ok: true });
+}
+
+// PUT - Editar mensagem (só quem enviou)
+export async function PUT(req: NextRequest) {
+  const { userId } = await auth();
+  if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const { messageId, content } = await req.json();
+  if (!messageId || !content?.trim()) return NextResponse.json({ error: "Invalid request" }, { status: 400 });
+
+  const { data: message } = await supabase
+    .from("direct_messages")
+    .select("id, sender_id")
+    .eq("id", messageId)
+    .is("deleted_at", null)
+    .single();
+
+  if (!message) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  if (message.sender_id !== userId) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
+  const { data: updated, error } = await supabase
+    .from("direct_messages")
+    .update({ content: content.trim(), edited_at: new Date().toISOString() })
+    .eq("id", messageId)
+    .select()
+    .single();
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  return NextResponse.json({ message: updated });
 }
 
 // POST - Enviar mensagem
