@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useUser } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
+import { CREATOR_IDS } from "@/lib/creator";
 
 export type Reaction = { emoji: string; user_id: string };
 export type Post = {
@@ -294,8 +295,6 @@ export function ReplyComposer({ postId, user, onDone }: { postId: string; user: 
 
 // ── Creator badge ─────────────────────────────────────────────────────────
 
-const CREATOR_ID = "user_3EzV0DXiskFt0wNSwNSXVHapiBC";
-
 function CreatorBadge({ size = 18 }: { size?: number }) {
   return (
     <span
@@ -455,7 +454,7 @@ function RepostEmbed({ data }: { data: { original_post_id?: string; original_use
             {data.original_avatar_url ? <img src={data.original_avatar_url} style={{ width: "100%", height: "100%", objectFit: "cover" }} alt="" /> : <span style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", fontSize: "0.7rem" }}>👤</span>}
           </div>
           <span style={{ fontSize: "0.75rem", fontWeight: 700, color: "#ccc" }}>{data.original_display_name}</span>
-          {data.original_user_id === CREATOR_ID && <CreatorBadge size={14} />}
+          {CREATOR_IDS.has(data.original_user_id) && <CreatorBadge size={14} />}
           <span style={{ fontSize: "0.65rem", color: "var(--gray)" }}>{timeAgo(data.original_created_at)}</span>
         </a>
       </div>
@@ -781,7 +780,7 @@ export function PostCard({ post, myId, user, router, isReply = false, onReaction
           <button onClick={() => router.push(`/app/comunidade/u/${post.user_id}`)} style={{ background: "none", border: "none", padding: 0, cursor: "pointer" }}>
             <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
               <span style={{ fontSize: isReply ? "0.78rem" : "0.82rem", fontWeight: 700, color: "#fff" }}>{post.display_name}</span>
-              {post.user_id === CREATOR_ID && <CreatorBadge size={isReply ? 15 : 18} />}
+              {CREATOR_IDS.has(post.user_id) && <CreatorBadge size={isReply ? 15 : 18} />}
             </span>
           </button>
           <p style={{ fontSize: "0.65rem", color: "var(--gray)", margin: 0 }}>{timeAgo(post.created_at)}</p>

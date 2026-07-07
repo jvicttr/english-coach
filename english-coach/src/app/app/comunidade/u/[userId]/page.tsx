@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import { useUser } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import { getTier } from "@/lib/tiers";
+import { CREATOR_IDS } from "@/lib/creator";
 import { PostCard, type Post } from "@/components/PostCard";
 
 type Profile = {
@@ -149,7 +150,7 @@ export default function UserProfilePage({ params }: { params: Promise<{ userId: 
                 <span style={{ fontWeight: 800, fontSize: "1.1rem", color: "#fff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                   {profile?.display_name ?? "Student"}
                 </span>
-                {userId === "user_3EzV0DXiskFt0wNSwNSXVHapiBC" && (
+                {CREATOR_IDS.has(userId) && (
                   <span title="Criador do app" style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 22, height: 22, borderRadius: "50%", background: "linear-gradient(135deg, #f5c800 0%, #ff9500 100%)", boxShadow: "0 1px 8px rgba(245,180,0,0.6)", flexShrink: 0 }}>
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="#000"><path d="M2 19h20v2H2zM2 6l5 7 5-7 5 7 5-7v11H2z"/></svg>
                   </span>
