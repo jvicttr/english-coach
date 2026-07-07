@@ -789,6 +789,7 @@ export default function ChatPage() {
           );
 
           const isHighlighted = highlightedMsgId === msg.id;
+          const isLongPressed = longPressMenu?.msgId === msg.id;
           const grouped = groupReactions(msg.message_reactions);
           const showActions = (isHovered && !isTmp) || reactionPicker?.msgId === msg.id;
 
@@ -800,8 +801,11 @@ export default function ChatPage() {
                 position: "relative",
                 marginBottom: 10,
                 borderRadius: 12,
-                transition: "background 0.3s ease",
-                background: isHighlighted ? "rgba(245,200,0,0.12)" : "transparent",
+                transition: "background 0.15s ease",
+                background: isLongPressed ? "rgba(255,255,255,0.07)" : isHighlighted ? "rgba(245,200,0,0.12)" : "transparent",
+                WebkitTouchCallout: "none",
+                WebkitUserSelect: "none",
+                userSelect: "none",
               }}
             >
               {/* Mobile swipe reply arrow — sempre à esquerda */}
