@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { TRAIL_STEPS, LEVEL_INFO, isStepUnlocked, getStartingLevel, type TrailLevel, type TrailStep } from "@/lib/trilha-steps";
 
@@ -28,6 +28,8 @@ export default function TrilhaPage() {
   const [userLevel, setUserLevel] = useState<string>("beginner");
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<TrailStep | null>(null);
+  const stepRefsMap = useRef(new Map<string, HTMLDivElement>());
+  const scrolledRef = useRef(false);
   function scanSavedSessions(): Set<string> {
     const sessions = new Set<string>();
     for (let i = 0; i < localStorage.length; i++) {
@@ -106,6 +108,24 @@ export default function TrilhaPage() {
   const visibleLevels = LEVELS_ORDER;
   // Progresso (contagem/%) considera só a partir do nivel do usuario — o que ele precisa concluir
   const ownLevels = LEVELS_ORDER.slice(startingIdx);
+
+  // Para onde rolar a tela ao abrir: a ultima etapa concluida do proprio nivel em diante,
+  // ou a primeira do proprio nivel se ele ainda nao concluiu nada la — niveis anteriores
+  // (revisao) continuam disponiveis rolando pra cima.
+  const ownSteps = TRAIL_STEPS.filter((s) => ownLevels.includes(s.level));
+  const ownCompletedSteps = ownSteps.filter((s) => completedIds.has(s.id));
+  const targetStepId = ownCompletedSteps.length > 0
+    ? ownCompletedSteps[ownCompletedSteps.length - 1].id
+    : ownSteps[0]?.id;
+
+  useEffect(() => {
+    if (loading || scrolledRef.current || !targetStepId) return;
+    scrolledRef.current = true;
+    const t = setTimeout(() => {
+      stepRefsMap.current.get(targetStepId)?.scrollIntoView({ behavior: "auto", block: "center" });
+    }, 50);
+    return () => clearTimeout(t);
+  }, [loading, targetStepId]);
 
   if (loading) {
     return (
@@ -186,7 +206,11 @@ export default function TrilhaPage() {
                   const isEven = stepIdx % 2 === 0;
 
                   return (
-                    <div key={step.id} style={{ width: "100%", display: "flex", flexDirection: "column", alignItems: "center" }}>
+                    <div
+                      key={step.id}
+                      ref={(el) => { if (el) stepRefsMap.current.set(step.id, el); else stepRefsMap.current.delete(step.id); }}
+                      style={{ width: "100%", display: "flex", flexDirection: "column", alignItems: "center" }}
+                    >
                       {/* Connector line */}
                       {stepIdx > 0 && (
                         <div style={{ width: 2, height: 24, background: state === "locked" ? "#1f1f1f" : completedIds.has(steps[stepIdx - 1].id) ? info.color + "60" : "#2a2a2a" }} />
