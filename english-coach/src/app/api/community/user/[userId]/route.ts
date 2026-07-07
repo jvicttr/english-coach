@@ -40,11 +40,13 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ use
     db.from("user_follows").select("*", { count: "exact", head: true }).eq("follower_id", userId),
   ]);
 
-  const display_name = clerkUser
+  // Nome personalizado (definido pelo usuário) tem prioridade sobre o nome do Clerk
+  const clerkName = clerkUser
     ? (clerkUser.firstName && clerkUser.lastName
         ? `${clerkUser.firstName} ${clerkUser.lastName}`
         : clerkUser.firstName ?? clerkUser.username ?? "Student")
-    : (xpResult.data?.display_name ?? null);
+    : null;
+  const display_name = xpResult.data?.display_name ?? clerkName;
 
   const LEVEL_LABEL: Record<string, string> = {
     beginner: "Iniciante",

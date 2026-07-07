@@ -49,19 +49,21 @@ export async function GET(req: NextRequest) {
       return new Date(msg.created_at) > new Date(lastRead);
     });
 
-    // Enriquecer com nome do remetente
+    // Enriquecer com nome do remetente (nome personalizado tem prioridade sobre o do Clerk)
     const senderIds = [...new Set(unreadMessages.map((m: any) => m.sender_id))];
-    const { data: senders } = await supabase
-      .from("users")
-      .select("id, name, image_url")
-      .in("id", senderIds);
+    const [{ data: senders }, { data: senderXp }] = await Promise.all([
+      supabase.from("users").select("id, name, image_url").in("id", senderIds),
+      supabase.from("user_xp").select("user_id, display_name").in("user_id", senderIds),
+    ]);
 
     const senderMap: Record<string, any> = {};
     senders?.forEach((s: any) => { senderMap[s.id] = s; });
+    const nameMap: Record<string, string> = {};
+    senderXp?.forEach((x: any) => { if (x.display_name) nameMap[x.user_id] = x.display_name; });
 
     const enriched = unreadMessages.map((msg: any) => ({
       ...msg,
-      sender_name: senderMap[msg.sender_id]?.name || "Alguém",
+      sender_name: nameMap[msg.sender_id] || senderMap[msg.sender_id]?.name || "Alguém",
       sender_image: senderMap[msg.sender_id]?.image_url || null,
     }));
 

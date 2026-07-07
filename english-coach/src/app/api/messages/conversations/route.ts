@@ -44,8 +44,15 @@ export async function GET() {
     .select("id, name, image_url")
     .in("id", otherUserIds);
 
+  // Nome personalizado (user_xp.display_name) tem prioridade sobre o nome sincronizado do Clerk
+  const { data: xpNames } = await supabase
+    .from("user_xp")
+    .select("user_id, display_name")
+    .in("user_id", otherUserIds);
+  const nameMap = new Map((xpNames ?? []).map((x: any) => [x.user_id, x.display_name]));
+
   const userMap: Record<string, any> = {};
-  users?.forEach((u: any) => { userMap[u.id] = u; });
+  users?.forEach((u: any) => { userMap[u.id] = { ...u, name: nameMap.get(u.id) || u.name }; });
 
   // 4. Buscar mensagens escondidas "só para mim" para pular na hora de achar a última mensagem visível
   const { data: hiddenMsgs } = await supabase

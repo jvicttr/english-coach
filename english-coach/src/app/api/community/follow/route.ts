@@ -51,10 +51,14 @@ export async function POST(req: NextRequest) {
     await db.from("user_follows").insert({ follower_id: me, following_id: targetId });
 
     // Notify the followed user
-    const follower = await currentUser();
-    const displayName = follower?.firstName
-      ? `${follower.firstName}${follower.lastName ? " " + follower.lastName : ""}`
-      : follower?.username ?? "Alguém";
+    const [follower, followerXp] = await Promise.all([
+      currentUser(),
+      db.from("user_xp").select("display_name").eq("user_id", me).maybeSingle(),
+    ]);
+    const displayName = followerXp.data?.display_name
+      ?? (follower?.firstName
+        ? `${follower.firstName}${follower.lastName ? " " + follower.lastName : ""}`
+        : follower?.username ?? "Alguém");
     const avatarUrl = follower?.imageUrl ?? null;
 
     await supabase.from("notifications").insert({

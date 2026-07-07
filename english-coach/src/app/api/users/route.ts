@@ -28,12 +28,13 @@ export async function GET(req: NextRequest) {
 
     if (error) throw error;
 
-    // Fetch handles from user_xp
+    // Fetch handles + nomes personalizados do user_xp
     const ids = (users || []).map(u => u.id);
     const { data: xpRows } = ids.length
-      ? await (supabase.from("user_xp") as any).select("user_id, handle").in("user_id", ids)
+      ? await (supabase.from("user_xp") as any).select("user_id, handle, display_name").in("user_id", ids)
       : { data: [] };
     const handleMap = Object.fromEntries(((xpRows as any[]) || []).map((r: any) => [r.user_id, r.handle]));
+    const nameMap = Object.fromEntries(((xpRows as any[]) || []).map((r: any) => [r.user_id, r.display_name]));
 
     // Auto-generate handle for users who don't have one yet
     const needsHandle = (users || []).filter(u => !handleMap[u.id]);
@@ -52,7 +53,7 @@ export async function GET(req: NextRequest) {
     const formattedUsers = (users || []).map((u) => ({
       id: u.id,
       email: u.email,
-      name: u.name || u.email,
+      name: nameMap[u.id] || u.name || u.email,
       image_url: u.image_url || null,
       handle: handleMap[u.id] ?? null,
     }));

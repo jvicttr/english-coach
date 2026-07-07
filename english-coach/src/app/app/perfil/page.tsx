@@ -31,6 +31,11 @@ export default function PerfilPage() {
   const [handleInput, setHandleInput] = useState("");
   const [handleError, setHandleError] = useState("");
   const [savingHandle, setSavingHandle] = useState(false);
+  const [displayName, setDisplayName] = useState<string | null>(null);
+  const [editingName, setEditingName] = useState(false);
+  const [nameInput, setNameInput] = useState("");
+  const [nameError, setNameError] = useState("");
+  const [savingName, setSavingName] = useState(false);
   const [followerCount, setFollowerCount] = useState<number | null>(null);
   const [followingCount, setFollowingCount] = useState<number | null>(null);
 
@@ -47,11 +52,13 @@ export default function PerfilPage() {
       fetch("/api/me").then((r) => r.json()),
       fetch("/api/home").then((r) => r.json()),
       fetch("/api/community/handle").then((r) => r.json()),
-    ]).then(([me, home, h]) => {
+      fetch("/api/community/name").then((r) => r.json()),
+    ]).then(([me, home, h, n]) => {
       setPlan(me.plan ?? "free");
       setLevel(me.level ?? localStorage.getItem("userLevel") ?? "intermediate");
       setData(home);
       setHandle(h.handle ?? null);
+      setDisplayName(n.displayName ?? null);
     });
   }, []);
 
@@ -86,6 +93,24 @@ export default function PerfilPage() {
       setEditingHandle(false);
     } finally {
       setSavingHandle(false);
+    }
+  }
+
+  async function saveDisplayName() {
+    setNameError("");
+    setSavingName(true);
+    try {
+      const res = await fetch("/api/community/name", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ displayName: nameInput }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setNameError(data.error ?? "Erro ao salvar"); return; }
+      setDisplayName(data.displayName);
+      setEditingName(false);
+    } finally {
+      setSavingName(false);
     }
   }
 
@@ -168,7 +193,7 @@ export default function PerfilPage() {
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <p style={{ fontSize: "1rem", fontWeight: 800, color: "var(--white)", margin: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-              {user?.firstName ?? user?.fullName ?? "Aluno"}
+              {displayName ?? user?.firstName ?? user?.fullName ?? "Aluno"}
             </p>
             {handle && (
               <p style={{ fontSize: "0.78rem", color: "var(--yellow)", fontWeight: 600, margin: "2px 0 0", opacity: 0.85 }}>@{handle}</p>
@@ -233,6 +258,44 @@ export default function PerfilPage() {
                   {level === key && <span style={{ marginLeft: "auto", fontSize: "0.75rem", color: info.color }}>✓</span>}
                 </button>
               ))}
+            </div>
+          )}
+        </div>
+
+        {/* Nome exibido para outros usuários */}
+        <div style={{ background: "var(--dark2)", borderRadius: 16, padding: "16px 18px" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <div>
+              <p style={{ fontSize: "0.65rem", fontWeight: 700, color: "var(--gray2)", margin: 0, textTransform: "uppercase", letterSpacing: "0.5px" }}>Nome exibido para outros usuários</p>
+              <p style={{ fontSize: "0.95rem", fontWeight: 800, color: "var(--white)", margin: "3px 0 0" }}>
+                {displayName ?? user?.firstName ?? user?.fullName ?? "Aluno"}
+              </p>
+            </div>
+            <button
+              onClick={() => { setEditingName(v => !v); setNameInput(displayName ?? user?.firstName ?? user?.fullName ?? ""); setNameError(""); }}
+              style={{ fontSize: "0.7rem", fontWeight: 700, color: "var(--yellow)", background: "rgba(245,200,0,.08)", border: "1px solid rgba(245,200,0,.25)", borderRadius: 8, padding: "5px 12px", cursor: "pointer" }}
+            >
+              {editingName ? "Cancelar" : "Trocar"}
+            </button>
+          </div>
+
+          {editingName && (
+            <div style={{ marginTop: 14, display: "flex", flexDirection: "column", gap: 8 }}>
+              <input
+                value={nameInput}
+                onChange={e => setNameInput(e.target.value.slice(0, 40))}
+                placeholder="Seu nome"
+                style={{ background: "#111", border: `1px solid ${nameError ? "#ef4444" : "#2a2a2a"}`, borderRadius: 10, outline: "none", fontSize: "0.9rem", color: "var(--white)", padding: "10px 12px" }}
+              />
+              {nameError && <p style={{ fontSize: "0.72rem", color: "#ef4444", margin: 0 }}>{nameError}</p>}
+              <p style={{ fontSize: "0.68rem", color: "var(--gray2)", margin: 0 }}>Esse é o nome que outras pessoas veem nos seus posts, perfil e mensagens. Mínimo 2 caracteres.</p>
+              <button
+                onClick={saveDisplayName}
+                disabled={savingName || nameInput.trim().length < 2}
+                style={{ background: "var(--yellow)", color: "#000", fontWeight: 800, fontSize: "0.82rem", border: "none", borderRadius: 10, padding: "10px", cursor: "pointer", opacity: savingName || nameInput.trim().length < 2 ? 0.5 : 1 }}
+              >
+                {savingName ? "Salvando…" : "Salvar nome"}
+              </button>
             </div>
           )}
         </div>

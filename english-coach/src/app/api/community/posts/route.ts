@@ -67,9 +67,10 @@ export async function POST(req: NextRequest) {
 
   if (validateOnly) return NextResponse.json({ ok: true });
 
-  const [user, sub] = await Promise.all([
+  const [user, sub, xp] = await Promise.all([
     currentUser(),
     supabase.from("subscriptions").select("plan").eq("user_id", userId).single(),
+    supabase.from("user_xp").select("display_name").eq("user_id", userId).maybeSingle(),
   ]);
 
   const isPro = sub.data?.plan === "pro" || sub.data?.plan === "combo";
@@ -86,7 +87,7 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  const displayName = user?.firstName ?? user?.username ?? "Student";
+  const displayName = xp.data?.display_name ?? user?.firstName ?? user?.username ?? "Student";
   const avatarUrl = user?.imageUrl ?? null;
 
   const { data: post, error } = await supabase
