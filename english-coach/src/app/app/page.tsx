@@ -6,7 +6,7 @@ import OnboardingTour from "@/components/OnboardingTour";
 import LevelSelect from "@/components/LevelSelect";
 import QuickTranslator from "@/components/QuickTranslator";
 import InstallAppCard from "@/components/InstallAppCard";
-import { TRAIL_STEPS, isStepUnlocked, getStartingLevel, type TrailStep } from "@/lib/trilha-steps";
+import { TRAIL_STEPS, isStepUnlocked, getStartingLevel, getVisibleSteps, type TrailStep } from "@/lib/trilha-steps";
 
 type TierInfo = { id: string; label: string; emoji: string; color: string; min: number; max: number };
 type XpData = { totalXp: number; tier: TierInfo; nextTier: TierInfo | null; badges: { earned: boolean }[] };
@@ -82,16 +82,18 @@ export default function AppHome() {
         const step = TRAIL_STEPS.find((s) => activeSessions.includes(s.id) && !completedIds.has(s.id));
         if (step) { setTrilhaCta({ type: "continue", step }); return; }
       }
+      // Só considera passos a partir do nivel de inicio do usuario — mesmo corte da tela da trilha
+      const visibleSteps = getVisibleSteps(startingLevel);
       let nextStep: TrailStep | undefined;
       if (completedList.length > 0) {
         const sorted = [...completedList].sort((a, b) => b.completed_at.localeCompare(a.completed_at));
-        const lastIdx = TRAIL_STEPS.findIndex((s) => s.id === sorted[0].step_id);
-        for (let i = lastIdx + 1; i < TRAIL_STEPS.length; i++) {
-          const s = TRAIL_STEPS[i];
+        const lastIdx = visibleSteps.findIndex((s) => s.id === sorted[0].step_id);
+        for (let i = lastIdx + 1; i < visibleSteps.length; i++) {
+          const s = visibleSteps[i];
           if (!completedIds.has(s.id) && isStepUnlocked(s.id, completedIds, startingLevel)) { nextStep = s; break; }
         }
       }
-      if (!nextStep) nextStep = TRAIL_STEPS.find((s) => !completedIds.has(s.id) && isStepUnlocked(s.id, completedIds, startingLevel));
+      if (!nextStep) nextStep = visibleSteps.find((s) => !completedIds.has(s.id) && isStepUnlocked(s.id, completedIds, startingLevel));
       setTrilhaCta(nextStep ? { type: "next", step: nextStep } : null);
     }).catch(() => { setIsPro(false); setTrilhaCta(null); }); }
 

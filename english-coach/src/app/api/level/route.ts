@@ -29,10 +29,17 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid level" }, { status: 400 });
   }
 
+  // Mantém english_level (usado pela trilha de aprendizado) sincronizado com este campo
+  const englishLevelMap: Record<string, string> = {
+    beginner: "iniciante",
+    intermediate: "intermediario",
+    advanced: "avancado",
+  };
+
   await supabase
     .from("subscriptions")
     .upsert(
-      { user_id: userId, level, updated_at: new Date().toISOString() },
+      { user_id: userId, level, english_level: englishLevelMap[level], updated_at: new Date().toISOString() },
       { onConflict: "user_id" }
     );
 

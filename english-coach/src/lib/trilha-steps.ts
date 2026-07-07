@@ -77,6 +77,13 @@ export function getStartingLevel(userLevel: string): TrailLevel {
   return "A1";
 }
 
+/** Passos do nivel de inicio do usuario em diante — mesmo corte usado na tela da trilha. */
+export function getVisibleSteps(startingLevel: TrailLevel): TrailStep[] {
+  const levelsOrder: TrailLevel[] = ["A1", "A2", "B1", "B2", "C1"];
+  const startIdx = levelsOrder.indexOf(startingLevel);
+  return TRAIL_STEPS.filter((s) => levelsOrder.indexOf(s.level) >= startIdx);
+}
+
 export function isStepUnlocked(stepId: string, completedIds: Set<string>, startingLevel?: TrailLevel): boolean {
   const step = TRAIL_STEPS.find((s) => s.id === stepId);
   if (!step) return false;

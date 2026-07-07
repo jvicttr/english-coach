@@ -25,9 +25,17 @@ export async function POST(req: NextRequest) {
 
   const { level } = await req.json();
 
+  // Mantém level (3 niveis, usado pelo chat/roleplay) sincronizado com este campo
+  const levelMap: Record<string, string> = {
+    iniciante: "beginner",
+    basico: "beginner",
+    intermediario: "intermediate",
+    avancado: "advanced",
+  };
+
   await supabase
     .from("subscriptions")
-    .upsert({ user_id: userId, english_level: level }, { onConflict: "user_id" });
+    .upsert({ user_id: userId, english_level: level, level: levelMap[level] }, { onConflict: "user_id" });
 
   return NextResponse.json({ ok: true });
 }
