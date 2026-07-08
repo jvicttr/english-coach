@@ -11,17 +11,20 @@ export async function GET() {
   const { userId } = await auth();
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  // Fetch user display name from Clerk and update in DB
+  // Preenche o nome exibido a partir do Clerk só se o usuário ainda não tiver definido um (próprio ou personalizado)
   try {
-    const clerk = await clerkClient();
-    const user = await clerk.users.getUser(userId);
-    const displayName =
-      [user.firstName, user.lastName].filter(Boolean).join(" ").trim() ||
-      user.username ||
-      "Aluno";
-    await supabase
-      .from("user_xp")
-      .upsert({ user_id: userId, display_name: displayName, updated_at: new Date().toISOString() }, { onConflict: "user_id" });
+    const { data: existing } = await supabase.from("user_xp").select("display_name").eq("user_id", userId).maybeSingle();
+    if (!existing?.display_name) {
+      const clerk = await clerkClient();
+      const user = await clerk.users.getUser(userId);
+      const displayName =
+        [user.firstName, user.lastName].filter(Boolean).join(" ").trim() ||
+        user.username ||
+        "Aluno";
+      await supabase
+        .from("user_xp")
+        .upsert({ user_id: userId, display_name: displayName, updated_at: new Date().toISOString() }, { onConflict: "user_id" });
+    }
   } catch { /* non-fatal */ }
 
   const [{ data: xpRow }, { data: badgeRows }] = await Promise.all([
