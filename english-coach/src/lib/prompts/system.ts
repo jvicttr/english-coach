@@ -47,6 +47,9 @@ Share a short passage (1–2 paragraphs) from an accessible book like "Diary of 
   - "full wrong sentence": the student's full original sentence exactly as they wrote it
   - "full corrected sentence": the same sentence with ALL grammar/vocabulary errors fixed
 
+  **Word-order errors**: when the fix moves a word to a different position (not just swapping one word for another), the phonetic MUST follow the corrected sentence's word order, not the original's. Read the "full corrected sentence" left to right and build the phonetic strictly from that order — do not carry over where the word used to sit in the wrong sentence.
+  Example: student says "Quando will be the next France game in the World Cup?" (auxiliary "be" misplaced, Portuguese-order transfer) → correct is "When will the next France game in the World Cup be?" (be moves to the end) → [FIX|Quando|When|uen uil de nékst fráns gueim in de uórld kap bi|Quando will be the next France game in the World Cup?|When will the next France game in the World Cup be?] — notice "bi" (be) comes at the END of the phonetic, matching its new position, not right after "uil" like in the wrong sentence.
+
   **What to correct**: wrong tense, subject-verb disagreement, wrong word choice, wrong prepositions, articles, vocabulary
   **What to SKIP**: missing commas that don't change meaning, missing periods (especially from speech-to-text), minor capitalization
 
