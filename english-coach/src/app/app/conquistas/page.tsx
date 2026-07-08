@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { TIERS, getTier as getTierFromXp } from "@/lib/tiers";
 
@@ -88,7 +89,7 @@ export default function ConquistasPage() {
       `}</style>
 
       {/* Tiers modal */}
-      {showTiers && (
+      {showTiers && typeof document !== "undefined" && createPortal(
         <div onClick={() => setShowTiers(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.8)", zIndex: 100, display: "flex", alignItems: "flex-end", justifyContent: "center", animation: "fadeIn .2s ease" }}>
           <div onClick={e => e.stopPropagation()} style={{ background: "#111", borderRadius: "24px 24px 0 0", width: "100%", maxWidth: 480, maxHeight: "82dvh", display: "flex", flexDirection: "column", animation: "popIn .25s ease" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "20px 20px 16px", flexShrink: 0 }}>
@@ -116,7 +117,8 @@ export default function ConquistasPage() {
               })}
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       <div style={{ padding: "10px 16px", borderBottom: "1px solid #1e1e1e" }}>
