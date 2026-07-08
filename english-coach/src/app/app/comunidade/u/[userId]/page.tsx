@@ -138,6 +138,28 @@ export default function UserProfilePage({ params }: { params: Promise<{ userId: 
       <div style={{ maxWidth: 600, margin: "0 auto", padding: "0 16px" }}>
         {/* Profile header */}
         <div style={{ padding: "24px 0 20px", borderBottom: "1px solid #1e1e1e", marginBottom: 16 }}>
+          <style>{`@keyframes sk-pulse{0%,100%{opacity:.4}50%{opacity:.15}}`}</style>
+          {loading ? (
+            <div style={{ display: "flex", alignItems: "flex-start", gap: 16 }}>
+              <div style={{ width: 64, height: 64, borderRadius: "50%", background: "#1e1e1e", flexShrink: 0, animation: "sk-pulse 1.5s ease-in-out infinite" }} />
+              <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 8 }}>
+                <div style={{ height: 16, width: "50%", borderRadius: 6, background: "#1e1e1e", animation: "sk-pulse 1.5s ease-in-out infinite" }} />
+                <div style={{ height: 11, width: "30%", borderRadius: 6, background: "#1e1e1e", animation: "sk-pulse 1.5s ease-in-out infinite 0.1s" }} />
+                <div style={{ display: "flex", gap: 12, marginTop: 4 }}>
+                  <div style={{ height: 10, width: 50, borderRadius: 6, background: "#1e1e1e", animation: "sk-pulse 1.5s ease-in-out infinite 0.2s" }} />
+                  <div style={{ height: 10, width: 60, borderRadius: 6, background: "#1e1e1e", animation: "sk-pulse 1.5s ease-in-out infinite 0.3s" }} />
+                  <div style={{ height: 10, width: 55, borderRadius: 6, background: "#1e1e1e", animation: "sk-pulse 1.5s ease-in-out infinite 0.4s" }} />
+                </div>
+                <div style={{ height: 10, width: "40%", borderRadius: 6, background: "#1e1e1e", animation: "sk-pulse 1.5s ease-in-out infinite 0.5s" }} />
+                {!isMe && me && (
+                  <div style={{ display: "flex", gap: 8, marginTop: 6 }}>
+                    <div style={{ width: 90, height: 34, borderRadius: 50, background: "#1e1e1e", animation: "sk-pulse 1.5s ease-in-out infinite" }} />
+                    <div style={{ width: 38, height: 38, borderRadius: "50%", background: "#1e1e1e", animation: "sk-pulse 1.5s ease-in-out infinite 0.1s" }} />
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : (
           <div style={{ display: "flex", alignItems: "flex-start", gap: 16 }}>
             <div style={{ width: 64, height: 64, borderRadius: "50%", overflow: "hidden", background: "#1e1e1e", flexShrink: 0 }}>
               {profile?.avatar_url
@@ -229,6 +251,7 @@ export default function UserProfilePage({ params }: { params: Promise<{ userId: 
               )}
             </div>
           </div>
+          )}
         </div>
 
         {/* Posts */}
