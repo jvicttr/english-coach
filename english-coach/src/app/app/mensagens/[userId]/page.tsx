@@ -322,7 +322,7 @@ export default function ChatPage() {
     };
   }, [user?.id]);
 
-  // Presença: poll status do outro usuário a cada 3s
+  // Presença: poll status do outro usuário a cada 6s
   useEffect(() => {
     if (!otherUserId) return;
     const poll = () => {
@@ -334,7 +334,7 @@ export default function ChatPage() {
         }).catch(() => {});
     };
     poll();
-    const id = setInterval(poll, 3000);
+    const id = setInterval(poll, 6000);
     return () => clearInterval(id);
   }, [otherUserId]);
 
@@ -400,7 +400,7 @@ export default function ChatPage() {
         loadMessages(startData.conversationId);
         fetch("/api/messages", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ conversationId: startData.conversationId }) }).catch(() => {});
         fetch("/api/messages/unread", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ conversationId: startData.conversationId }) }).catch(() => {});
-        intervalRef.current = setInterval(() => loadMessages(startData.conversationId), 3000);
+        intervalRef.current = setInterval(() => loadMessages(startData.conversationId), 5000);
       }
     } catch (e) { console.error(e); }
   }

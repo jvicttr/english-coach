@@ -105,7 +105,7 @@ export default function ComunidadePage() {
 
   useEffect(() => {
     loadPosts();
-    const interval = setInterval(() => loadPosts(true), 10000);
+    const interval = setInterval(() => loadPosts(true), 20000);
 
     const container = scrollContainerRef.current;
     if (!container) return () => clearInterval(interval);

@@ -63,7 +63,7 @@ export function AppHeader() {
 
     loadNotifs();
     loadMsgNotifs();
-    const id = setInterval(() => { loadNotifs(); loadMsgNotifs(); }, 15000);
+    const id = setInterval(() => { loadNotifs(); loadMsgNotifs(); }, 30000);
     return () => clearInterval(id);
   }, []);
 
