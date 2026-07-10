@@ -14,26 +14,27 @@ const supabase = createClient(
 const LEVEL_QUIZ_GUIDE: Record<string, string> = {
   beginner: `The student is a BEGINNER. Quiz rules for this level:
 - Focus on basic vocabulary and simple present/past tense only
-- Questions should test recognition ("Which word means...?", "Complete the sentence: I ___ to school")
+- Questions should test recognition, but the student must still recall or reason out the word — never display it
 - Options must use only high-frequency everyday words — no idioms, no phrasal verbs
 - Wrong options should be plausible but clearly different (avoid trick questions)
 - Keep questions short and direct — no complex grammar in the question itself
-- Prefer translation-type questions ("Como se diz X em inglês?") and simple gap-fills`,
+- Translation questions are fine ("Como se diz 'escola' em inglês?") as long as the English target word never appears anywhere in the Portuguese stem
+- Gap-fill questions must NOT include the base/infinitive form of the target verb in parentheses or nearby text (e.g. never "I ___ (go) to school yesterday") — the student must know the verb from the conversation, not read it off the question`,
 
   intermediate: `The student is INTERMEDIATE. Quiz rules for this level:
 - Mix grammar questions (tense choice, prepositions, articles) with vocabulary and phrases
 - Include 1-2 phrasal verb or common expression questions from the conversation
-- Wrong options should be plausibly confusing (e.g. "go" vs "went" vs "gone" vs "going")
-- Questions can test understanding of context ("In this sentence, 'get along' means...?")
+- Wrong options should be plausibly confusing (e.g. "go" vs "went" vs "gone" vs "going") — all 4 options must be grammatically plausible in isolation, so only conversation context/meaning decides the answer
+- Questions can test understanding of context ("In this sentence, 'get along' means...?") but must NOT quote a definition or synonym of the correct option inside the stem
 - Avoid trivial single-word questions — prefer phrases and expressions
 - Difficulty: challenging but achievable for someone who communicates clearly despite some errors`,
 
   advanced: `The student is ADVANCED. Quiz rules for this level:
 - Focus on nuance, idioms, collocations, and sophisticated vocabulary
 - Test subtle grammar (conditionals, perfect aspects, passive voice usage, modal nuances)
-- Wrong options must be near-synonyms or plausible near-correct forms (no obvious distractors)
+- Wrong options must be near-synonyms or plausible near-correct forms (no obvious distractors) — a native speaker should need to actually think before answering
 - Include at least 2 questions about idiomatic expressions or register (formal vs casual)
-- Can test word choice precision: "Which word fits best here and why?"
+- Can test word choice precision: "Which word fits best here and why?" — but never define or paraphrase the correct word inside the question itself
 - Difficulty: would challenge a near-native speaker — no easy questions`,
 };
 
@@ -50,6 +51,8 @@ Rules for all levels:
 - 4 options each (A, B, C, D), only one correct
 - Questions in Portuguese, options in English
 - Never repeat the same structure across all 5 questions — vary question types
+- CRITICAL — no answer leakage: before finalizing each question, check that the correct option (or its meaning, translation, root word, or an obvious inflection of it) does NOT appear anywhere in the question stem. If the student could point to the right answer just by matching words between the question and an option, without knowing any English, rewrite the question. The question must require actual knowledge from the conversation to answer, not pattern-matching against the stem.
+- Do not make the correct option the only one that "sounds right" grammatically if the others are nonsense — all 4 options should be real, plausible English so the student has to know the material, not just spot the only valid-looking answer
 - The explanation must clearly say WHY the correct answer is right (in pt-BR)
 
 Return ONLY valid JSON in this exact format, no markdown, no explanation:
