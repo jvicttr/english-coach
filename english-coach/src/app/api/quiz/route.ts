@@ -52,6 +52,7 @@ Rules for all levels:
 - Questions in Portuguese, options in English
 - Never repeat the same structure across all 5 questions — vary question types
 - CRITICAL — no answer leakage: before finalizing each question, check that the correct option (or its meaning, translation, root word, or an obvious inflection of it) does NOT appear anywhere in the question stem. If the student could point to the right answer just by matching words between the question and an option, without knowing any English, rewrite the question. The question must require actual knowledge from the conversation to answer, not pattern-matching against the stem.
+- CRITICAL — never quote the original sentence: do NOT quote (in English, between quotation marks or not) the exact sentence the student or coach said in the conversation when that sentence already contains the correct answer or its translation. E.g. if the student said "I don't like France", do NOT write a question like 'Na conversa, o estudante disse "I don't like France." Como se diz "eu não gosto" em inglês?' — that hands over the answer. Instead, describe the topic/situation in your own words without repeating the target phrase (e.g. "Na conversa, você falou sobre não gostar de um país. Como se diz 'eu não gosto' em inglês?")
 - Do not make the correct option the only one that "sounds right" grammatically if the others are nonsense — all 4 options should be real, plausible English so the student has to know the material, not just spot the only valid-looking answer
 - The explanation must clearly say WHY the correct answer is right (in pt-BR)
 
@@ -69,6 +70,49 @@ Return ONLY valid JSON in this exact format, no markdown, no explanation:
 }`;
 }
 
+type QuizQuestion = { question: string; options: string[]; correct: number; explanation: string };
+type QuizPayload = { title: string; questions: QuizQuestion[] };
+
+const RETRY_WARNING = `IMPORTANT: your previous attempt leaked the answer — either by repeating the correct option's words in the question stem, or by quoting the exact sentence from the conversation that already contains the correct answer. Rewrite ALL 5 questions from scratch. Paraphrase situations in your own words instead of quoting the original sentence, and double-check that none of the 4 options' text appears inside its own question stem.`;
+
+function normalizeForLeakCheck(s: string): string {
+  return s
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/[^a-z0-9\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function quizLeaksAnswers(quiz: QuizPayload): boolean {
+  return quiz.questions.some((q) => {
+    const stem = normalizeForLeakCheck(q.question ?? "");
+    const correctOpt = normalizeForLeakCheck(q.options?.[q.correct] ?? "");
+    if (correctOpt.length < 3) return false;
+    return stem.includes(correctOpt);
+  });
+}
+
+async function generateQuiz(resolvedLevel: string, scenario: string | undefined, conversationText: string, extraWarning?: string): Promise<QuizPayload> {
+  const response = await client.messages.create({
+    model: "claude-sonnet-4-6",
+    max_tokens: 1200,
+    system: buildQuizPrompt(resolvedLevel) + (extraWarning ? `\n\n${extraWarning}` : ""),
+    messages: [
+      {
+        role: "user",
+        content: `Student level: ${resolvedLevel}${scenario ? `\nScenario: ${scenario}` : ""}\n\nConversation:\n${conversationText}`,
+      },
+    ],
+  });
+
+  const raw = response.content[0].type === "text" ? response.content[0].text.trim() : "";
+  // Strip markdown code blocks if model wrapped the JSON
+  const cleaned = raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
+  return JSON.parse(cleaned) as QuizPayload;
+}
+
 export async function POST(req: NextRequest) {
   const { userId } = await auth();
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -81,28 +125,18 @@ export async function POST(req: NextRequest) {
     : lessonContext ?? "";
 
   const resolvedLevel = level || "intermediate";
-  const response = await client.messages.create({
-    model: "claude-sonnet-4-6",
-    max_tokens: 1200,
-    system: buildQuizPrompt(resolvedLevel),
-    messages: [
-      {
-        role: "user",
-        content: `Student level: ${resolvedLevel}${scenario ? `\nScenario: ${scenario}` : ""}\n\nConversation:\n${conversationText}`,
-      },
-    ],
-  });
 
-  const raw = response.content[0].type === "text" ? response.content[0].text.trim() : "";
-
-  // Strip markdown code blocks if model wrapped the JSON
-  const cleaned = raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
-
-  let quiz;
+  let quiz: QuizPayload;
   try {
-    quiz = JSON.parse(cleaned);
+    quiz = await generateQuiz(resolvedLevel, scenario, conversationText);
+    if (quizLeaksAnswers(quiz)) {
+      console.warn("[quiz] answer leak detected, regenerating with stronger warning");
+      const retried = await generateQuiz(resolvedLevel, scenario, conversationText, RETRY_WARNING);
+      if (!quizLeaksAnswers(retried)) quiz = retried;
+      else console.warn("[quiz] retry still leaked, serving anyway");
+    }
   } catch (parseErr) {
-    console.error("[quiz] parse error:", parseErr, "\nraw:", raw);
+    console.error("[quiz] parse error:", parseErr);
     return NextResponse.json({ error: "Failed to parse quiz" }, { status: 500 });
   }
 
