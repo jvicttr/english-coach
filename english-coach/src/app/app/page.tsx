@@ -201,10 +201,10 @@ export default function AppHome() {
           >
             <div>
               <p style={{ fontSize: "0.65rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: ".08em", color: "rgba(0,0,0,.5)", margin: 0 }}>
-                {!trilhaStarted ? "Começar trilha de aprendizado" : trilhaCta.type === "continue" ? "Continuar trilha" : "Próximo tópico"}
+                Sua trilha de aprendizado
               </p>
               <p style={{ fontSize: "1rem", fontWeight: 800, color: "#000", margin: "2px 0 0" }}>
-                {trilhaCta.step.emoji} {trilhaCta.step.title}
+                🎓 {!trilhaStarted ? "Começar trilha de aprendizado" : "Continuar trilha"}
               </p>
             </div>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(0,0,0,.5)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
