@@ -129,15 +129,24 @@ Guide the conversation around this theme. Keep it natural and engaging, not like
     }
   } catch { /* news is optional — ignore errors */ }
 
+  // Real-time web search — the model decides on its own when a question needs a
+  // verified, specific current fact. Server-side tool: Anthropic runs the search
+  // and folds the results into this same response, no extra round trip needed.
+  // Skipped on topicStart since there's no student question yet to search for.
+  const enableSearch = !topicStart;
+  if (enableSearch) {
+    systemFull += `\n\n## Real-time web search\nYou have a web_search tool. Use it ONLY when the student asks about something that needs a specific, verifiable, up-to-date fact you can't be fully sure of — exact dates, whether an event already happened, schedules, recent releases, scores, or the current status of something ("when is X happening", "did Y already release", "is Z still going on"). Do NOT use it for casual chat, opinions, hypotheticals, or anything already covered by the NEWS CONTEXT above. When you do search, weave the answer naturally into the conversation — never say "I searched", "according to the internet/web", "let me check", and never mention the tool, sources, or URLs.`;
+  }
+
   const response = await client.messages.create({
     model: "claude-sonnet-4-6",
     max_tokens: 1800,
     system: systemFull,
     messages: baseMessages,
+    ...(enableSearch ? { tools: [{ type: "web_search_20250305" as const, name: "web_search" as const, max_uses: 3 }] } : {}),
   });
 
-  let textBlock = response.content.find(b => b.type === "text");
-  const raw = textBlock && textBlock.type === "text" ? textBlock.text.trim() : "";
+  const raw = response.content.map((b) => (b.type === "text" ? b.text : "")).join("").trim();
   const rawNoBR = raw.replace(/\[BR:([^\]]+)\]/g, "$1");
   const levelMatch = rawNoBR.match(/\[LEVEL:(beginner|intermediate|advanced)\]/);
   const detectedLevel = levelMatch?.[1] ?? null;

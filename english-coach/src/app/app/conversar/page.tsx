@@ -73,6 +73,11 @@ const LEVEL_LABEL: Record<NonNullable<Level>, string> = {
   advanced: "Avançado",
 };
 
+// Ephemeral session cache for free/thematic chat (not trilha): survives tab
+// switches and backgrounding (sessionStorage lives for the tab/app process),
+// but resets on a real app close, unlike the trilha's Supabase-backed save.
+const FREE_CHAT_SESSION_KEY = "jv_freechat_session";
+
 export default function Home() {
   const router = useRouter();
   const [messages, setMessages] = useState<Message[]>([]);
@@ -240,6 +245,15 @@ export default function Home() {
     window.addEventListener("beforeunload", handleUnload);
     return () => window.removeEventListener("beforeunload", handleUnload);
   }, [trilhaStep, trilhaPhase, messages, trilhaMsgCount]);
+
+  // Keep the free/thematic chat in sessionStorage so switching tabs/apps and
+  // coming back resumes the same conversation. Doesn't touch trilha's storage.
+  useEffect(() => {
+    if (trilhaStep || !topic) return;
+    try {
+      sessionStorage.setItem(FREE_CHAT_SESSION_KEY, JSON.stringify({ topic, messages, level }));
+    } catch {}
+  }, [trilhaStep, topic, messages, level]);
 
   useEffect(() => {
     fetch("/api/me").then((r) => r.json()).then(async (d) => {
@@ -523,6 +537,20 @@ export default function Home() {
               }
             }
           }).finally(() => setIsLoading(false));
+        } catch {}
+      } else {
+        // No pending trilha step: try resuming an in-progress free/thematic chat
+        // (e.g. user switched tabs/apps and came back to this same session).
+        try {
+          const raw = sessionStorage.getItem(FREE_CHAT_SESSION_KEY);
+          if (raw) {
+            const saved = JSON.parse(raw);
+            if (saved?.topic && Array.isArray(saved?.messages)) {
+              setTopic(saved.topic);
+              setMessages(saved.messages);
+              if (saved.level) setLevel(saved.level as Level);
+            }
+          }
         } catch {}
       }
     });
@@ -941,6 +969,7 @@ export default function Home() {
       try { localStorage.removeItem(`trilhaContinue_${trilhaStep.id}`); } catch {}
       fetch("/api/trilha-session", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ stepId: trilhaStep.id }) }).catch(() => {});
     }
+    try { sessionStorage.removeItem(FREE_CHAT_SESSION_KEY); } catch {}
     setMessages([]);
     setInput("");
     setLevel(null);

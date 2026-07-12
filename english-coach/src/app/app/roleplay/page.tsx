@@ -34,6 +34,10 @@ const SCENARIOS: Scenario[] = [
   { id: "meeting",        emoji: "📋", name: "Reunião de Trabalho",  desc: "Participe de uma reunião em inglês",   color: "#f97316" },
 ];
 
+// Ephemeral session cache: survives tab switches/backgrounding (sessionStorage
+// lives for the tab/app process), resets on a real app close.
+const ROLEPLAY_SESSION_KEY = "jv_roleplay_session";
+
 export default function RolePlay() {
   const router = useRouter();
   const [screen, setScreen] = useState<AppScreen>("scenarios");
@@ -113,7 +117,29 @@ export default function RolePlay() {
       if (d.level) setLevel(d.level as Level);
       else if (localStorage.getItem("userLevel")) setLevel(localStorage.getItem("userLevel") as Level);
     });
+    // Resume an in-progress role-play (e.g. user switched tabs/apps and came back)
+    try {
+      const raw = sessionStorage.getItem(ROLEPLAY_SESSION_KEY);
+      if (raw) {
+        const saved = JSON.parse(raw);
+        if (saved?.scenario && Array.isArray(saved?.messages)) {
+          setScenario(saved.scenario);
+          setMessages(saved.messages);
+          if (saved.level) setLevel(saved.level as Level);
+          setScreen("chat");
+        }
+      }
+    } catch {}
   }, [router]);
+
+  // Keep the role-play chat in sessionStorage so switching tabs/apps and
+  // coming back resumes the same conversation.
+  useEffect(() => {
+    if (!scenario) return;
+    try {
+      sessionStorage.setItem(ROLEPLAY_SESSION_KEY, JSON.stringify({ scenario, messages, level }));
+    } catch {}
+  }, [scenario, messages, level]);
 
   const SILENT_WAV = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=";
 
@@ -376,6 +402,7 @@ export default function RolePlay() {
   }
 
   function restartChat() {
+    try { sessionStorage.removeItem(ROLEPLAY_SESSION_KEY); } catch {}
     setMessages([]); setInput(""); setLevel(null); setQuiz(null); setQuizSessionId(null);
     setAnswers([]); setCurrentQ(0); setShowExplanation(false); setScore(0); setScreen("scenarios");
     setScenario(null); setLimitReached(false);
