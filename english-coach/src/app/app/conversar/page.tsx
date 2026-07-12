@@ -125,6 +125,11 @@ export default function Home() {
   const [topic, setTopic] = useState<TopicDef | null>(null);
   // Which topic ids already have a saved conversation, so the picker can show "continuar"
   const [topicsWithHistory, setTopicsWithHistory] = useState<Set<string>>(new Set());
+  // Index into `messages` where THIS visit's conversation starts — messages before it
+  // are prior-session history loaded for context, not part of today's practice. Quiz
+  // and flashcard generation only look at messages from this index onward, so they
+  // stay specific to what was actually practiced in the current session.
+  const [sessionStartIndex, setSessionStartIndex] = useState(0);
   const [trilhaStep, setTrilhaStep] = useState<TrailStep | null>(null);
   const [trilhaPhase, setTrilhaPhase] = useState<"chat1" | "flashcards" | "quiz" | "review" | null>(null);
   const [trilhaMsgCount, setTrilhaMsgCount] = useState(0);
@@ -825,9 +830,12 @@ export default function Home() {
     if (saved?.messages?.length > 0) {
       setMessages(saved.messages);
       if (saved.level) setLevel(saved.level as Level);
+      // Everything loaded here is prior-session history — today's practice starts after it.
+      setSessionStartIndex(saved.messages.length);
       return;
     }
 
+    setSessionStartIndex(0);
     if (t.id === "free") return; // free chat, no saved history: wait for user input
     unlockAudio();
     setIsLoading(true);
@@ -901,14 +909,17 @@ export default function Home() {
   }
 
   async function endConversation(mode: "quiz" | "flashcards") {
-    if (messages.length < 2) return;
+    // Trilha keeps its own full-session messages; free/thematic topics only quiz/flashcard
+    // on what was practiced THIS visit, not the whole persisted topic history.
+    const sessionMessages = trilhaStep ? messages : messages.slice(sessionStartIndex);
+    if (sessionMessages.length < 2) return;
     if (mode === "quiz") {
       setScreen("loading-quiz");
       try {
         const res = await fetch("/api/quiz", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ messages, level }),
+          body: JSON.stringify({ messages: sessionMessages, level }),
         });
         const data = await res.json();
         if (data.quiz) {
@@ -934,7 +945,7 @@ export default function Home() {
         await fetch("/api/flashcards/generate", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ messages, topic: topic?.id, packName: topic?.label ?? "Conversa livre" }),
+          body: JSON.stringify({ messages: sessionMessages, topic: topic?.id, packName: topic?.label ?? "Conversa livre" }),
         });
         router.push("/app/flashcards");
       } catch {
@@ -1010,6 +1021,7 @@ export default function Home() {
     setScore(0);
     setScreen("chat");
     setTopic(null);
+    setSessionStartIndex(0);
     setTrilhaStep(null);
     setTrilhaPhase(null);
     setTrilhaMsgCount(0);
@@ -1036,6 +1048,7 @@ export default function Home() {
     setScore(0);
     setScreen("chat");
     setTopic(null);
+    setSessionStartIndex(0);
     setLimitReached(false);
     setMicError("");
     setShownCorrections(new Set());
@@ -2090,7 +2103,7 @@ export default function Home() {
       )}
 
       {/* ── Botões de ação — chat livre/temático (fora da input bar, como roleplay) ── */}
-      {!trilhaStep && topic && !limitReached && messages.length >= 2 && trilhaPhase !== "review" && (
+      {!trilhaStep && topic && !limitReached && (messages.length - sessionStartIndex) >= 2 && trilhaPhase !== "review" && (
         <div className="w-full max-w-2xl mb-2 flex gap-2">
           <button onClick={() => endConversation("quiz")} disabled={isLoading} className="flex-1 py-2.5 rounded-xl text-sm font-bold transition-all disabled:opacity-40" style={{ background: "transparent", border: "1px solid rgba(245,200,0,0.3)", color: "var(--yellow)" }}>
             🎯 Fazer quiz

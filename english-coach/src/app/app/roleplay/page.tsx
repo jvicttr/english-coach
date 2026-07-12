@@ -67,6 +67,9 @@ export default function RolePlay() {
   const [screen, setScreen] = useState<AppScreen>("scenarios");
   const [scenario, setScenario] = useState<Scenario | null>(null);
   const [scenariosWithHistory, setScenariosWithHistory] = useState<Set<string>>(new Set());
+  // Index into `messages` where THIS visit's role-play starts — see conversar/page.tsx
+  // for the full rationale. Quiz/flashcards only look at messages from here onward.
+  const [sessionStartIndex, setSessionStartIndex] = useState(0);
   const [messages, setMessages] = useState<Message[]>([]);
   const [visibleTranslations, setVisibleTranslations] = useState<Set<number>>(new Set());
   const [input, setInput] = useState("");
@@ -322,9 +325,12 @@ export default function RolePlay() {
     if (saved?.messages?.length > 0) {
       setMessages(saved.messages);
       if (saved.level) setLevel(saved.level as Level);
+      // Everything loaded here is prior-session history — today's practice starts after it.
+      setSessionStartIndex(saved.messages.length);
       return;
     }
 
+    setSessionStartIndex(0);
     unlockAudio();
     setIsLoading(true);
     try {
@@ -371,11 +377,13 @@ export default function RolePlay() {
   }
 
   async function endConversation(mode: "quiz" | "flashcards") {
-    if (messages.length < 2) return;
+    // Only quiz/flashcard on what was practiced THIS visit, not the whole persisted scenario history.
+    const sessionMessages = messages.slice(sessionStartIndex);
+    if (sessionMessages.length < 2) return;
     if (mode === "quiz") {
       setScreen("loading-quiz");
       try {
-        const res = await fetch("/api/quiz", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ messages, level, scenario: scenario?.name }) });
+        const res = await fetch("/api/quiz", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ messages: sessionMessages, level, scenario: scenario?.name }) });
         const data = await res.json();
         if (data.quiz) {
           const shuffled = shuffleQuizOptions(data.quiz);
@@ -397,7 +405,7 @@ export default function RolePlay() {
     } else {
       setScreen("loading-flashcards");
       try {
-        await fetch("/api/flashcards/generate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ messages, level, topic: scenario?.id, packName: scenario?.name ?? "Role-play" }) });
+        await fetch("/api/flashcards/generate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ messages: sessionMessages, level, topic: scenario?.id, packName: scenario?.name ?? "Role-play" }) });
         router.push("/app/flashcards");
       } catch {
         setScreen("chat");
@@ -432,7 +440,7 @@ export default function RolePlay() {
     try { sessionStorage.removeItem(ROLEPLAY_SESSION_KEY); } catch {}
     setMessages([]); setInput(""); setLevel(null); setQuiz(null); setQuizSessionId(null);
     setAnswers([]); setCurrentQ(0); setShowExplanation(false); setScore(0); setScreen("scenarios");
-    setScenario(null); setLimitReached(false);
+    setScenario(null); setSessionStartIndex(0); setLimitReached(false);
   }
 
   // Back to the scenario picker without discarding the current scenario's
@@ -440,7 +448,7 @@ export default function RolePlay() {
   function backToScenarios() {
     setMessages([]); setInput(""); setQuiz(null); setQuizSessionId(null);
     setAnswers([]); setCurrentQ(0); setShowExplanation(false); setScore(0); setScreen("scenarios");
-    setScenario(null); setLimitReached(false); setMicError("");
+    setScenario(null); setSessionStartIndex(0); setLimitReached(false); setMicError("");
   }
 
   async function startListening() {
@@ -795,7 +803,7 @@ export default function RolePlay() {
         </div>
       )}
 
-      {messages.length >= 2 && !limitReached && (
+      {(messages.length - sessionStartIndex) >= 2 && !limitReached && (
         <div className="w-full max-w-2xl mb-2 flex gap-2">
           <button onClick={() => endConversation("quiz")} disabled={isLoading} className="flex-1 py-2.5 rounded-xl text-sm font-bold transition-all disabled:opacity-40" style={{ background: "transparent", border: "1px solid rgba(245,200,0,0.3)", color: "var(--yellow)" }}>
             🎯 Fazer quiz
