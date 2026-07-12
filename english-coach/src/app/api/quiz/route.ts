@@ -97,7 +97,7 @@ function quizLeaksAnswers(quiz: QuizPayload): boolean {
 async function generateQuiz(resolvedLevel: string, scenario: string | undefined, conversationText: string, extraWarning?: string): Promise<QuizPayload> {
   const response = await client.messages.create({
     model: "claude-sonnet-4-6",
-    max_tokens: 1200,
+    max_tokens: 2000,
     system: buildQuizPrompt(resolvedLevel) + (extraWarning ? `\n\n${extraWarning}` : ""),
     messages: [
       {
@@ -109,7 +109,11 @@ async function generateQuiz(resolvedLevel: string, scenario: string | undefined,
 
   const raw = response.content[0].type === "text" ? response.content[0].text.trim() : "";
   // Strip markdown code blocks if model wrapped the JSON
-  const cleaned = raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
+  let cleaned = raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
+  // Guard against stray text before/after the JSON object
+  const start = cleaned.indexOf("{");
+  const end = cleaned.lastIndexOf("}");
+  if (start !== -1 && end !== -1 && end > start) cleaned = cleaned.slice(start, end + 1);
   return JSON.parse(cleaned) as QuizPayload;
 }
 
@@ -136,8 +140,13 @@ export async function POST(req: NextRequest) {
       else console.warn("[quiz] retry still leaked, serving anyway");
     }
   } catch (parseErr) {
-    console.error("[quiz] parse error:", parseErr);
-    return NextResponse.json({ error: "Failed to parse quiz" }, { status: 500 });
+    console.error("[quiz] parse error, retrying once:", parseErr);
+    try {
+      quiz = await generateQuiz(resolvedLevel, scenario, conversationText);
+    } catch (retryErr) {
+      console.error("[quiz] retry parse error:", retryErr);
+      return NextResponse.json({ error: "Failed to parse quiz" }, { status: 500 });
+    }
   }
 
   // Save session to Supabase (without answers yet)
