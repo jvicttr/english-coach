@@ -73,10 +73,34 @@ const LEVEL_LABEL: Record<NonNullable<Level>, string> = {
   advanced: "Avançado",
 };
 
-// Ephemeral session cache for free/thematic chat (not trilha): survives tab
-// switches and backgrounding (sessionStorage lives for the tab/app process),
-// but resets on a real app close, unlike the trilha's Supabase-backed save.
+// Legacy single-slot session cache (pre per-topic history). Only kept around
+// so we can clean up stale entries from localStorage/sessionStorage.
 const FREE_CHAT_SESSION_KEY = "jv_freechat_session";
+
+// Persistent per-topic chat history for free/thematic chat (not trilha):
+// each topic keeps its own thread, like ChatGPT conversations, so picking a
+// topic always resumes exactly where the student left off. Survives tab
+// switches, backgrounding, and full app close — only a manual reset clears it.
+const CHAT_HISTORY_KEY = "jv_chat_history";
+
+type ChatHistoryEntry = { topic: TopicDef; messages: Message[]; level: Level; updatedAt: number };
+
+function loadChatHistory(): Record<string, ChatHistoryEntry> {
+  try {
+    const raw = localStorage.getItem(CHAT_HISTORY_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+}
+
+function saveChatHistoryEntry(topicId: string, entry: ChatHistoryEntry) {
+  try {
+    const all = loadChatHistory();
+    all[topicId] = entry;
+    localStorage.setItem(CHAT_HISTORY_KEY, JSON.stringify(all));
+  } catch {}
+}
 
 export default function Home() {
   const router = useRouter();
@@ -99,6 +123,8 @@ export default function Home() {
   const [pendingCoupon, setPendingCoupon] = useState<string | null>(null);
   const [couponLoading, setCouponLoading] = useState(false);
   const [topic, setTopic] = useState<TopicDef | null>(null);
+  // Which topic ids already have a saved conversation, so the picker can show "continuar"
+  const [topicsWithHistory, setTopicsWithHistory] = useState<Set<string>>(new Set());
   const [trilhaStep, setTrilhaStep] = useState<TrailStep | null>(null);
   const [trilhaPhase, setTrilhaPhase] = useState<"chat1" | "flashcards" | "quiz" | "review" | null>(null);
   const [trilhaMsgCount, setTrilhaMsgCount] = useState(0);
@@ -246,13 +272,13 @@ export default function Home() {
     return () => window.removeEventListener("beforeunload", handleUnload);
   }, [trilhaStep, trilhaPhase, messages, trilhaMsgCount]);
 
-  // Keep the free/thematic chat in sessionStorage so switching tabs/apps and
-  // coming back resumes the same conversation. Doesn't touch trilha's storage.
+  // Keep each free/thematic topic's conversation in localStorage, keyed by topic
+  // id, so it's there whenever the student picks that topic again — regardless
+  // of tab switches, backgrounding, or a full app close. Doesn't touch trilha's storage.
   useEffect(() => {
-    if (trilhaStep || !topic) return;
-    try {
-      sessionStorage.setItem(FREE_CHAT_SESSION_KEY, JSON.stringify({ topic, messages, level }));
-    } catch {}
+    if (trilhaStep || !topic || messages.length === 0) return;
+    saveChatHistoryEntry(topic.id, { topic, messages, level, updatedAt: Date.now() });
+    setTopicsWithHistory((prev) => (prev.has(topic.id) ? prev : new Set(prev).add(topic.id)));
   }, [trilhaStep, topic, messages, level]);
 
   useEffect(() => {
@@ -539,18 +565,12 @@ export default function Home() {
           }).finally(() => setIsLoading(false));
         } catch {}
       } else {
-        // No pending trilha step: try resuming an in-progress free/thematic chat
-        // (e.g. user switched tabs/apps and came back to this same session).
+        // No pending trilha step: always land on the topic picker. Each topic's
+        // history is preserved separately (see CHAT_HISTORY_KEY) and resumed
+        // only once the student explicitly picks that topic — never auto-jumped into.
+        try { sessionStorage.removeItem(FREE_CHAT_SESSION_KEY); } catch {}
         try {
-          const raw = sessionStorage.getItem(FREE_CHAT_SESSION_KEY);
-          if (raw) {
-            const saved = JSON.parse(raw);
-            if (saved?.topic && Array.isArray(saved?.messages)) {
-              setTopic(saved.topic);
-              setMessages(saved.messages);
-              if (saved.level) setLevel(saved.level as Level);
-            }
-          }
+          setTopicsWithHistory(new Set(Object.keys(loadChatHistory())));
         } catch {}
       }
     });
@@ -799,7 +819,16 @@ export default function Home() {
   async function startTopic(t: TopicDef) {
     setTopic(t);
     localStorage.setItem("lastTopic", JSON.stringify(t));
-    if (t.id === "free") return; // free chat: wait for user input
+
+    // Resume this topic's saved conversation if one exists, instead of starting over.
+    const saved = loadChatHistory()[t.id];
+    if (saved?.messages?.length > 0) {
+      setMessages(saved.messages);
+      if (saved.level) setLevel(saved.level as Level);
+      return;
+    }
+
+    if (t.id === "free") return; // free chat, no saved history: wait for user input
     unlockAudio();
     setIsLoading(true);
     try {
@@ -991,6 +1020,24 @@ export default function Home() {
     setFcFlipped(false);
     setFcShowTranslation(false);
     setLimitReached(false);
+    setShownCorrections(new Set());
+  }
+
+  // Back to the topic picker without discarding the current topic's saved
+  // conversation — unlike restartChat, this is a navigation action, not a reset.
+  function backToTopics() {
+    setMessages([]);
+    setInput("");
+    setQuiz(null);
+    setQuizSessionId(null);
+    setAnswers([]);
+    setCurrentQ(0);
+    setShowExplanation(false);
+    setScore(0);
+    setScreen("chat");
+    setTopic(null);
+    setLimitReached(false);
+    setMicError("");
     setShownCorrections(new Set());
   }
 
@@ -1594,10 +1641,15 @@ export default function Home() {
                 key={t.id}
                 onClick={() => startTopic(t)}
                 className="text-left transition-all active:scale-95"
-                style={{ background: "var(--dark2)", border: "1px solid #2a2a2a", borderRadius: "14px", padding: "12px", cursor: "pointer" }}
+                style={{ background: "var(--dark2)", border: "1px solid #2a2a2a", borderRadius: "14px", padding: "12px", cursor: "pointer", position: "relative" }}
                 onMouseEnter={(e) => (e.currentTarget.style.borderColor = t.color + "66")}
                 onMouseLeave={(e) => (e.currentTarget.style.borderColor = "#2a2a2a")}
               >
+                {topicsWithHistory.has(t.id) && (
+                  <span style={{ position: "absolute", top: 10, right: 10, fontSize: "0.6rem", fontWeight: 700, color: "#4ade80", background: "rgba(74,222,128,0.12)", border: "1px solid rgba(74,222,128,0.3)", borderRadius: "50px", padding: "1px 7px" }}>
+                    Continuar
+                  </span>
+                )}
                 <div style={{ fontSize: "1.4rem", marginBottom: 6 }}>{t.emoji}</div>
                 <p style={{ fontSize: "0.78rem", fontWeight: 700, color: "#fff", lineHeight: 1.3, marginBottom: 3 }}>{t.label}</p>
                 <p style={{ fontSize: "0.68rem", color: "var(--gray)", lineHeight: 1.3 }}>{t.desc}</p>
@@ -1782,7 +1834,7 @@ export default function Home() {
             )}
           </div>
           <button
-            onClick={restartChat}
+            onClick={backToTopics}
             style={{ fontSize: "0.68rem", color: "var(--gray2)", background: "transparent", border: "none", cursor: "pointer", opacity: 0.7 }}
           >
             Trocar tópico
@@ -1831,7 +1883,7 @@ export default function Home() {
               </p>
             </div>
             <button
-              onClick={() => setTopic(null)}
+              onClick={backToTopics}
               style={{ fontSize: "0.72rem", color: "var(--gray2)", background: "transparent", border: "none", cursor: "pointer", textDecoration: "underline" }}
             >
               Trocar tópico

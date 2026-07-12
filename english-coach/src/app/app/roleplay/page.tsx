@@ -34,14 +34,39 @@ const SCENARIOS: Scenario[] = [
   { id: "meeting",        emoji: "📋", name: "Reunião de Trabalho",  desc: "Participe de uma reunião em inglês",   color: "#f97316" },
 ];
 
-// Ephemeral session cache: survives tab switches/backgrounding (sessionStorage
-// lives for the tab/app process), resets on a real app close.
+// Legacy single-slot session cache (pre per-scenario history). Only kept
+// around so we can clean up stale entries from sessionStorage.
 const ROLEPLAY_SESSION_KEY = "jv_roleplay_session";
+
+// Persistent per-scenario history, mirrors conversar/page.tsx: each scenario
+// keeps its own thread so picking a scenario always resumes where the
+// student left off, instead of auto-jumping into the last one on page load.
+const ROLEPLAY_HISTORY_KEY = "jv_roleplay_history";
+
+type ScenarioHistoryEntry = { scenario: Scenario; messages: Message[]; level: Level; updatedAt: number };
+
+function loadScenarioHistory(): Record<string, ScenarioHistoryEntry> {
+  try {
+    const raw = localStorage.getItem(ROLEPLAY_HISTORY_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+}
+
+function saveScenarioHistoryEntry(scenarioId: string, entry: ScenarioHistoryEntry) {
+  try {
+    const all = loadScenarioHistory();
+    all[scenarioId] = entry;
+    localStorage.setItem(ROLEPLAY_HISTORY_KEY, JSON.stringify(all));
+  } catch {}
+}
 
 export default function RolePlay() {
   const router = useRouter();
   const [screen, setScreen] = useState<AppScreen>("scenarios");
   const [scenario, setScenario] = useState<Scenario | null>(null);
+  const [scenariosWithHistory, setScenariosWithHistory] = useState<Set<string>>(new Set());
   const [messages, setMessages] = useState<Message[]>([]);
   const [visibleTranslations, setVisibleTranslations] = useState<Set<number>>(new Set());
   const [input, setInput] = useState("");
@@ -117,28 +142,21 @@ export default function RolePlay() {
       if (d.level) setLevel(d.level as Level);
       else if (localStorage.getItem("userLevel")) setLevel(localStorage.getItem("userLevel") as Level);
     });
-    // Resume an in-progress role-play (e.g. user switched tabs/apps and came back)
+    // Always land on the scenario picker — each scenario's history is kept
+    // separately (see ROLEPLAY_HISTORY_KEY) and only resumed once the student
+    // explicitly picks that scenario, never auto-jumped into on page load.
+    try { sessionStorage.removeItem(ROLEPLAY_SESSION_KEY); } catch {}
     try {
-      const raw = sessionStorage.getItem(ROLEPLAY_SESSION_KEY);
-      if (raw) {
-        const saved = JSON.parse(raw);
-        if (saved?.scenario && Array.isArray(saved?.messages)) {
-          setScenario(saved.scenario);
-          setMessages(saved.messages);
-          if (saved.level) setLevel(saved.level as Level);
-          setScreen("chat");
-        }
-      }
+      setScenariosWithHistory(new Set(Object.keys(loadScenarioHistory())));
     } catch {}
   }, [router]);
 
-  // Keep the role-play chat in sessionStorage so switching tabs/apps and
-  // coming back resumes the same conversation.
+  // Keep each scenario's conversation in localStorage, keyed by scenario id,
+  // so it's there whenever the student picks that scenario again.
   useEffect(() => {
-    if (!scenario) return;
-    try {
-      sessionStorage.setItem(ROLEPLAY_SESSION_KEY, JSON.stringify({ scenario, messages, level }));
-    } catch {}
+    if (!scenario || messages.length === 0) return;
+    saveScenarioHistoryEntry(scenario.id, { scenario, messages, level, updatedAt: Date.now() });
+    setScenariosWithHistory((prev) => (prev.has(scenario.id) ? prev : new Set(prev).add(scenario.id)));
   }, [scenario, messages, level]);
 
   const SILENT_WAV = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=";
@@ -298,6 +316,15 @@ export default function RolePlay() {
   async function startScenario(sc: Scenario) {
     setScenario(sc);
     setScreen("chat");
+
+    // Resume this scenario's saved conversation if one exists.
+    const saved = loadScenarioHistory()[sc.id];
+    if (saved?.messages?.length > 0) {
+      setMessages(saved.messages);
+      if (saved.level) setLevel(saved.level as Level);
+      return;
+    }
+
     unlockAudio();
     setIsLoading(true);
     try {
@@ -406,6 +433,14 @@ export default function RolePlay() {
     setMessages([]); setInput(""); setLevel(null); setQuiz(null); setQuizSessionId(null);
     setAnswers([]); setCurrentQ(0); setShowExplanation(false); setScore(0); setScreen("scenarios");
     setScenario(null); setLimitReached(false);
+  }
+
+  // Back to the scenario picker without discarding the current scenario's
+  // saved conversation — unlike restartChat, this is navigation, not a reset.
+  function backToScenarios() {
+    setMessages([]); setInput(""); setQuiz(null); setQuizSessionId(null);
+    setAnswers([]); setCurrentQ(0); setShowExplanation(false); setScore(0); setScreen("scenarios");
+    setScenario(null); setLimitReached(false); setMicError("");
   }
 
   async function startListening() {
@@ -581,10 +616,15 @@ export default function RolePlay() {
                 key={sc.id}
                 onClick={() => startScenario(sc)}
                 className="text-left transition-all active:scale-95"
-                style={{ background: "var(--dark2)", border: "1px solid #2a2a2a", borderRadius: "14px", padding: "12px", cursor: "pointer" }}
+                style={{ background: "var(--dark2)", border: "1px solid #2a2a2a", borderRadius: "14px", padding: "12px", cursor: "pointer", position: "relative" }}
                 onMouseEnter={(e) => (e.currentTarget.style.borderColor = sc.color + "66")}
                 onMouseLeave={(e) => (e.currentTarget.style.borderColor = "#2a2a2a")}
               >
+                {scenariosWithHistory.has(sc.id) && (
+                  <span style={{ position: "absolute", top: 10, right: 10, fontSize: "0.6rem", fontWeight: 700, color: "#4ade80", background: "rgba(74,222,128,0.12)", border: "1px solid rgba(74,222,128,0.3)", borderRadius: "50px", padding: "1px 7px" }}>
+                    Continuar
+                  </span>
+                )}
                 <div style={{ fontSize: "1.4rem", marginBottom: 6 }}>{sc.emoji}</div>
                 <p style={{ fontSize: "0.78rem", fontWeight: 700, color: "#fff", lineHeight: 1.3, marginBottom: 3 }}>{sc.name}</p>
                 <p style={{ fontSize: "0.68rem", color: "var(--gray)", lineHeight: 1.3 }}>{sc.desc}</p>
@@ -600,9 +640,15 @@ export default function RolePlay() {
   return (
     <div ref={outerRef} className="flex flex-col items-center px-3 sm:px-4" style={{ background: "var(--black)", fontFamily: "'Inter', sans-serif", position: "fixed", top: 0, left: 0, right: 0, bottom: 0, overflow: "hidden", paddingTop: "calc(65px + env(safe-area-inset-top))", paddingBottom: "var(--chat-pb, 70px)" }}>
       {scenario && (
-        <div className="w-full max-w-2xl mb-3 flex items-center justify-center gap-2 shrink-0">
+        <div className="w-full max-w-2xl mb-3 flex items-center justify-center gap-2 shrink-0" style={{ position: "relative" }}>
           <span style={{ fontSize: "1rem" }}>{scenario.emoji}</span>
           <span style={{ fontSize: "0.78rem", fontWeight: 700, color: scenario.color }}>{scenario.name}</span>
+          <button
+            onClick={backToScenarios}
+            style={{ position: "absolute", right: 0, fontSize: "0.68rem", color: "var(--gray2)", background: "transparent", border: "none", cursor: "pointer", opacity: 0.7 }}
+          >
+            Trocar cenário
+          </button>
         </div>
       )}
 
