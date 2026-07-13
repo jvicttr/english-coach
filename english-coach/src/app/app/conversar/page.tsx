@@ -692,11 +692,11 @@ export default function Home() {
   // Streaming via MediaSource — reuses the persistent audio element.
   // play() is called immediately (before sourceopen) so it stays within the
   // user-gesture activation window on browsers that need it.
-  function playStream(res: Response): Promise<boolean> {
+  function playStream(res: Response, timeoutMs: number): Promise<boolean> {
     return new Promise((resolve) => {
       let resolved = false;
       const done = (v: boolean) => { if (!resolved) { resolved = true; resolve(v); } };
-      const timeout = setTimeout(() => done(false), 12000);
+      const timeout = setTimeout(() => done(false), timeoutMs);
 
       const player = getAudio();
       if (!player.paused) player.pause();
@@ -756,14 +756,14 @@ export default function Home() {
   }
 
   // Fallback for iOS Safari: fetch full blob then play on the persistent element.
-  async function playBlob(res: Response): Promise<boolean> {
+  async function playBlob(res: Response, timeoutMs: number): Promise<boolean> {
     const player = getAudio();
     const blob = await res.blob();
     const url = URL.createObjectURL(blob);
     return new Promise((resolve) => {
       let resolved = false;
       const done = (v: boolean) => { if (!resolved) { resolved = true; URL.revokeObjectURL(url); resolve(v); } };
-      const timeout = setTimeout(() => done(false), 12000);
+      const timeout = setTimeout(() => done(false), timeoutMs);
       if (!player.paused) player.pause();
       player.src = url;
       player.onended = () => { clearTimeout(timeout); done(true); };
@@ -776,7 +776,7 @@ export default function Home() {
     const clean = stripEmojis(text);
     if (!clean) return true;
     const controller = new AbortController();
-    const ttsTimeout = setTimeout(() => controller.abort(), 9000);
+    const ttsTimeout = setTimeout(() => controller.abort(), 15000);
     try {
       const res = await fetch("/api/tts", {
         method: "POST",
@@ -786,8 +786,10 @@ export default function Home() {
       });
       clearTimeout(ttsTimeout);
       if (!res.ok) return false;
-      if (supportsMediaSourceAudio()) return playStream(res);
-      return playBlob(res);
+      // Playback timeout scales with text length so long messages aren't cut off mid-read.
+      const playTimeoutMs = Math.max(15000, Math.round((clean.length * 100) / speed) + 8000);
+      if (supportsMediaSourceAudio()) return playStream(res, playTimeoutMs);
+      return playBlob(res, playTimeoutMs);
     } catch {
       clearTimeout(ttsTimeout);
       return false;

@@ -66,8 +66,19 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ use
     is_following: !!followRow.data,
   };
 
+  const posts = postsResult.data ?? [];
+  let countMap: Record<string, number> = {};
+  if (posts.length) {
+    const ids = posts.map((p: { id: string }) => p.id);
+    const { data: replies } = await supabase
+      .from("community_posts")
+      .select("parent_id")
+      .in("parent_id", ids);
+    replies?.forEach((r: { parent_id: string }) => { countMap[r.parent_id] = (countMap[r.parent_id] ?? 0) + 1; });
+  }
+
   return NextResponse.json({
-    posts: postsResult.data ?? [],
+    posts: posts.map((p: { id: string }) => ({ ...p, reply_count: countMap[p.id] ?? 0 })),
     profile,
     totalPosts: countResult.count ?? 0,
   });
