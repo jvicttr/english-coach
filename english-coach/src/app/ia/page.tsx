@@ -426,6 +426,29 @@ export default function IALanding() {
         </div>
       </section>
 
+      {/* ── VÍDEO DEMONSTRATIVO ─────────────────────────────────── */}
+      <section style={{ background:"#0d0d0d", borderTop:"1px solid #1a1a1a", borderBottom:"1px solid #1a1a1a" }}>
+        <div className="section-inner" style={{ textAlign:"center" }}>
+          <div className="anim" style={{ marginBottom:"2rem" }}>
+            <div className="section-label">Veja em ação</div>
+            <h2 className="big">Veja o JV IA <em>na prática</em></h2>
+            <p className="subtitle" style={{ margin:".75rem auto 0" }}>Assista ao vídeo abaixo e entenda como o coach de inglês com IA funciona no dia a dia.</p>
+          </div>
+          <div className="anim anim-delay-2" style={{ maxWidth:820, margin:"0 auto" }}>
+            <div style={{ position:"relative", width:"100%", paddingBottom:"56.25%", height:0, borderRadius:20, overflow:"hidden", boxShadow:"0 24px 80px rgba(0,0,0,.6)", border:"1px solid #1e1e1e" }}>
+              <iframe
+                src="https://www.youtube.com/embed/FIsMYavNhC0"
+                title="JV IA — vídeo demonstrativo"
+                style={{ position:"absolute", top:0, left:0, width:"100%", height:"100%", border:"none" }}
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowFullScreen
+                loading="lazy"
+              />
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* ── TÓPICOS ─────────────────────────────────────────────── */}
       <section style={{ background:"#0d0d0d", borderTop:"1px solid #1a1a1a", borderBottom:"1px solid #1a1a1a" }}>
         <div className="section-inner" style={{ textAlign:"center" }}>
