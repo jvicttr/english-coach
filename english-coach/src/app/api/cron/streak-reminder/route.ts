@@ -44,20 +44,33 @@ export async function GET(req: NextRequest) {
   const force = req.nextUrl.searchParams.get("force") === "true";
   const today = new Date().toISOString().split("T")[0];
 
-  const { data: allResults } = await supabase
-    .from("quiz_results")
-    .select("user_id, created_at")
-    .order("created_at", { ascending: false });
+  const sixtyDaysAgo = new Date();
+  sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
+  const sinceDate = sixtyDaysAgo.toISOString().split("T")[0];
+  const sinceIso = sixtyDaysAgo.toISOString();
 
-  if (!allResults || allResults.length === 0) {
+  // "Praticou hoje" conta qualquer atividade no app (chat IA, quiz, post na
+  // comunidade) — mesma definição usada em /api/home para o streak exibido
+  // ao usuário. Antes só olhava quiz_results, então quem só conversou no dia
+  // (sem terminar com quiz) recebia o lembrete por engano.
+  const [{ data: usageRows }, { data: quizRows }, { data: communityRows }] = await Promise.all([
+    supabase.from("usage").select("user_id, date").gte("date", sinceDate),
+    supabase.from("quiz_results").select("user_id, created_at").not("score", "is", null).gte("created_at", sinceIso),
+    supabase.from("community_posts").select("user_id, created_at").gte("created_at", sinceIso),
+  ]);
+
+  if ((!usageRows || usageRows.length === 0) && (!quizRows || quizRows.length === 0) && (!communityRows || communityRows.length === 0)) {
     return NextResponse.json({ sent: 0 });
   }
 
   const byUser: Record<string, string[]> = {};
-  for (const row of allResults) {
-    if (!byUser[row.user_id]) byUser[row.user_id] = [];
-    byUser[row.user_id].push(row.created_at);
-  }
+  const addDate = (userId: string, dateStr: string) => {
+    if (!byUser[userId]) byUser[userId] = [];
+    byUser[userId].push(dateStr);
+  };
+  for (const row of usageRows ?? []) addDate(row.user_id, row.date);
+  for (const row of quizRows ?? []) addDate(row.user_id, row.created_at);
+  for (const row of communityRows ?? []) addDate(row.user_id, row.created_at);
 
   const toNotify: { userId: string; streak: number }[] = [];
   for (const [userId, dates] of Object.entries(byUser)) {
