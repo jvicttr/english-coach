@@ -1,14 +1,15 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { Fragment, useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { shuffleQuizOptions } from "@/lib/quiz";
 import { AutoShareModal } from "@/components/AutoShareModal";
+import { ensureTimestamps, getBrasiliaDay, getDayLabel } from "@/lib/chatDate";
 
 type Correction = { wrong: string; right: string; phonetic: string; wrongSentence?: string; rightSentence?: string };
 type CorrectionList = Correction[];
-type Message = { role: "user" | "assistant"; content: string; translation?: string; correction?: Correction; corrections?: CorrectionList };
+type Message = { role: "user" | "assistant"; content: string; translation?: string; correction?: Correction; corrections?: CorrectionList; createdAt?: string };
 type Level = "beginner" | "elementary" | "intermediate" | "advanced" | null;
 type AnySpeechRecognition = any; // eslint-disable-line @typescript-eslint/no-explicit-any
 type AppScreen = "scenarios" | "chat" | "loading-quiz" | "loading-flashcards" | "quiz" | "result";
@@ -331,7 +332,7 @@ export default function RolePlay() {
     // Resume this scenario's saved conversation if one exists.
     const saved = loadScenarioHistory()[sc.id];
     if (saved?.messages?.length > 0) {
-      setMessages(saved.messages);
+      setMessages(ensureTimestamps(saved.messages, new Date(saved.updatedAt).toISOString()));
       // Note: level is intentionally NOT restored from this snapshot — it must
       // always reflect the student's current profile setting, not a stale
       // value frozen when this scenario was last saved.
@@ -352,7 +353,7 @@ export default function RolePlay() {
       if (!res.ok) return;
       const data = await res.json();
       if (data.limitReached) { setLimitReached(true); return; }
-      if (data.reply) setMessages([{ role: "assistant", content: data.reply, translation: data.translation ?? undefined }]);
+      if (data.reply) setMessages([{ role: "assistant", content: data.reply, translation: data.translation ?? undefined, createdAt: new Date().toISOString() }]);
       // Note: detectedLevel is only used server-side for XP tracking — the
       // level always stays locked to the student's profile setting.
     } finally {
@@ -363,7 +364,7 @@ export default function RolePlay() {
   async function sendMessage(text: string) {
     if (!text.trim() || isLoading) return;
     unlockAudio();
-    const userMessage: Message = { role: "user", content: text };
+    const userMessage: Message = { role: "user", content: text, createdAt: new Date().toISOString() };
     const updatedMessages = [...messages, userMessage];
     setMessages(updatedMessages);
     setInput("");
@@ -374,15 +375,15 @@ export default function RolePlay() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ messages: updatedMessages, level, topic: "free", roleplay: true, scenario: scenario?.id }),
       });
-      if (!res.ok) { setMessages((prev) => [...prev, { role: "assistant", content: "Ops, tive um problema. Tente enviar de novo!" }]); return; }
+      if (!res.ok) { setMessages((prev) => [...prev, { role: "assistant", content: "Ops, tive um problema. Tente enviar de novo!", createdAt: new Date().toISOString() }]); return; }
       const data = await res.json();
       if (data.limitReached) { setLimitReached(true); setMessages((prev) => prev.slice(0, -1)); return; }
-      if (!data.reply) { setMessages((prev) => [...prev, { role: "assistant", content: "Ops, não consegui responder. Tente de novo!" }]); return; }
-      setMessages((prev) => [...prev, { role: "assistant", content: data.reply, translation: data.translation ?? undefined, corrections: data.corrections?.length ? data.corrections : undefined }]);
+      if (!data.reply) { setMessages((prev) => [...prev, { role: "assistant", content: "Ops, não consegui responder. Tente de novo!", createdAt: new Date().toISOString() }]); return; }
+      setMessages((prev) => [...prev, { role: "assistant", content: data.reply, translation: data.translation ?? undefined, corrections: data.corrections?.length ? data.corrections : undefined, createdAt: new Date().toISOString() }]);
       // Note: detectedLevel is only used server-side for XP tracking — the
       // level always stays locked to the student's profile setting.
     } catch {
-      setMessages((prev) => [...prev, { role: "assistant", content: "Erro de conexão. Verifique sua internet e tente novamente." }]);
+      setMessages((prev) => [...prev, { role: "assistant", content: "Erro de conexão. Verifique sua internet e tente novamente.", createdAt: new Date().toISOString() }]);
     } finally {
       setIsLoading(false);
     }
@@ -705,8 +706,19 @@ export default function RolePlay() {
 
         <div style={{ flex: 1 }} />
 
-        {messages.map((msg, i) => (
-          <div key={i} className={`mb-3 flex ${msg.role === "user" ? "justify-end" : "justify-start"} items-end gap-2`}>
+        {messages.map((msg, i) => {
+          const prevDay = i > 0 ? messages[i - 1].createdAt : undefined;
+          const showSep = !!msg.createdAt && (i === 0 || !prevDay || getBrasiliaDay(msg.createdAt) !== getBrasiliaDay(prevDay));
+          return (
+          <Fragment key={i}>
+            {showSep && msg.createdAt && (
+              <div style={{ textAlign: "center", margin: "16px 0 8px" }}>
+                <span style={{ padding: "3px 14px", fontSize: "0.68rem", color: "var(--gray)", background: "#1a1a1a", border: "1px solid #2a2a2a", borderRadius: 50 }}>
+                  {getDayLabel(msg.createdAt)}
+                </span>
+              </div>
+            )}
+          <div className={`mb-3 flex ${msg.role === "user" ? "justify-end" : "justify-start"} items-end gap-2`}>
             {msg.role === "assistant" && (() => {
               const isLastAssistant = i === messages.reduce<number>((last, m, idx) => m.role === "assistant" ? idx : last, -1);
               const speaking = isSpeaking && isLastAssistant;
@@ -801,7 +813,9 @@ export default function RolePlay() {
               )}
             </div>
           </div>
-        ))}
+          </Fragment>
+          );
+        })}
 
         {isLoading && messages.length > 0 && (
           <div className="flex items-end gap-2 mb-3">

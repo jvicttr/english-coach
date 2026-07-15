@@ -1,16 +1,17 @@
 ﻿"use client";
 
-import { useState, useRef, useEffect, useLayoutEffect } from "react";
+import { Fragment, useState, useRef, useEffect, useLayoutEffect } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import type { TrailStep } from "@/lib/trilha-steps";
 import { shuffleQuizOptions } from "@/lib/quiz";
 import ChatTranslator from "@/components/ChatTranslator";
 import { AutoShareModal } from "@/components/AutoShareModal";
+import { ensureTimestamps, getBrasiliaDay, getDayLabel } from "@/lib/chatDate";
 
 type Correction = { wrong: string; right: string; phonetic: string; wrongSentence?: string; rightSentence?: string };
 type CorrectionList = Correction[];
-type Message = { role: "user" | "assistant"; content: string; translation?: string; correction?: Correction; corrections?: CorrectionList };
+type Message = { role: "user" | "assistant"; content: string; translation?: string; correction?: Correction; corrections?: CorrectionList; createdAt?: string };
 type Level = "beginner" | "elementary" | "intermediate" | "advanced" | null;
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnySpeechRecognition = any;
@@ -360,7 +361,7 @@ export default function Home() {
               const chatRaw = localStorage.getItem(`trilhaReview_chat_${stepId}`);
               if (chatRaw) {
                 const parsed = JSON.parse(chatRaw);
-                if (parsed?.length > 0) { setMessages(parsed); chatLoaded = true; }
+                if (parsed?.length > 0) { setMessages(ensureTimestamps(parsed)); chatLoaded = true; }
               }
             } catch {}
             if (!chatLoaded) {
@@ -368,7 +369,7 @@ export default function Home() {
                 const sessionRes = await fetch(`/api/trilha-session?stepId=${stepId}`);
                 const sessionData = await sessionRes.json();
                 if (sessionData.session?.messages?.length > 0) {
-                  setMessages(sessionData.session.messages as Message[]);
+                  setMessages(ensureTimestamps(sessionData.session.messages as Message[]));
                   chatLoaded = true;
                 }
               } catch {}
@@ -437,7 +438,7 @@ export default function Home() {
               } catch {}
             }
             if (savedMessages && savedMessages.length > 0) {
-              setMessages(savedMessages as Message[]);
+              setMessages(ensureTimestamps(savedMessages as Message[]));
               setTrilhaMsgCount(savedMsgCount);
               setIsLoading(false);
               return;
@@ -486,7 +487,7 @@ export default function Home() {
                 if (savedChat1Messages && savedChat1Messages.length > 0) {
                   // Regenerate flashcards from saved messages
                   setTrilhaChat1Messages(savedChat1Messages);
-                  setMessages(savedChat1Messages);
+                  setMessages(ensureTimestamps(savedChat1Messages));
                   setScreen("loading-flashcards");
                   try {
                     const res = await fetch("/api/flashcards/generate", {
@@ -579,7 +580,7 @@ export default function Home() {
             body: JSON.stringify({ messages: [], level: d.level ?? localStorage.getItem("userLevel") ?? null, topic: "free", topicStart: true, stepContext: ctx, stepLevel: (step as TrailStep).level }),
           }).then((r) => r.json()).then((chatData) => {
             if (chatData.reply) {
-              const initialMsgs = [{ role: "assistant" as const, content: chatData.reply, translation: chatData.translation ?? undefined }];
+              const initialMsgs = [{ role: "assistant" as const, content: chatData.reply, translation: chatData.translation ?? undefined, createdAt: new Date().toISOString() }];
               setMessages(initialMsgs);
               // Save even the initial AI message so the user can return and continue
               if (phase === "chat1") {
@@ -851,7 +852,7 @@ export default function Home() {
     // Resume this topic's saved conversation if one exists, instead of starting over.
     const saved = loadChatHistory()[t.id];
     if (saved?.messages?.length > 0) {
-      setMessages(saved.messages);
+      setMessages(ensureTimestamps(saved.messages, new Date(saved.updatedAt).toISOString()));
       // Note: level is intentionally NOT restored from this snapshot — it must
       // always reflect the student's current profile setting, not a stale
       // value frozen when this topic was last saved.
@@ -874,7 +875,7 @@ export default function Home() {
       const data = await res.json();
       if (data.limitReached) { setLimitReached(true); return; }
       if (data.reply) {
-        setMessages([{ role: "assistant", content: data.reply, translation: data.translation ?? undefined }]);
+        setMessages([{ role: "assistant", content: data.reply, translation: data.translation ?? undefined, createdAt: new Date().toISOString() }]);
       }
       // Note: detectedLevel is only used server-side for XP tracking — the
       // displayed level always stays locked to the student's profile setting.
@@ -886,7 +887,7 @@ export default function Home() {
   async function sendMessage(text: string) {
     if (!text.trim() || isLoading) return;
     unlockAudio();
-    const userMessage: Message = { role: "user", content: text };
+    const userMessage: Message = { role: "user", content: text, createdAt: new Date().toISOString() };
     const updatedMessages = [...messages, userMessage];
     setMessages(updatedMessages);
     setInput("");
@@ -900,14 +901,14 @@ export default function Home() {
         body: JSON.stringify({ messages: withFixTags(updatedMessages), level, topic: trilhaStep ? "free" : topic?.id ?? "free", stepContext: activeStepContext, stepLevel: trilhaStep?.level }),
       });
       if (!res.ok) {
-        setMessages((prev) => [...prev, { role: "assistant", content: "Ops, tive um problema. Tente enviar de novo!" }]);
+        setMessages((prev) => [...prev, { role: "assistant", content: "Ops, tive um problema. Tente enviar de novo!", createdAt: new Date().toISOString() }]);
         return;
       }
       const data = await res.json();
       if (data.limitReached) { setLimitReached(true); setMessages((prev) => prev.slice(0, -1)); return; }
       if (!isPro) setMessagesUsed((n) => Math.min(n + 1, 5));
       if (!data.reply) {
-        setMessages((prev) => [...prev, { role: "assistant", content: "Ops, não consegui responder. Tente de novo!" }]);
+        setMessages((prev) => [...prev, { role: "assistant", content: "Ops, não consegui responder. Tente de novo!", createdAt: new Date().toISOString() }]);
         return;
       }
       const newCorrections = (data.corrections ?? []).filter(
@@ -924,12 +925,12 @@ export default function Home() {
         });
       }
       setPendingSpeak(null); // clear stale pending audio from previous message
-      const newAssistantMsg = { role: "assistant" as const, content: data.reply, translation: data.translation ?? undefined, corrections: newCorrections.length ? newCorrections : undefined };
+      const newAssistantMsg = { role: "assistant" as const, content: data.reply, translation: data.translation ?? undefined, corrections: newCorrections.length ? newCorrections : undefined, createdAt: new Date().toISOString() };
       setMessages((prev) => [...prev, newAssistantMsg]);
       // Note: detectedLevel is only used server-side for XP tracking — the
       // displayed level always stays locked to the student's profile setting.
     } catch {
-      setMessages((prev) => [...prev, { role: "assistant", content: "Erro de conexão. Verifique sua internet e tente novamente." }]);
+      setMessages((prev) => [...prev, { role: "assistant", content: "Erro de conexão. Verifique sua internet e tente novamente.", createdAt: new Date().toISOString() }]);
     } finally {
       setIsLoading(false);
     }
@@ -1936,8 +1937,19 @@ export default function Home() {
         {/* Spacer — empurra as mensagens para baixo quando poucas */}
         <div style={{ flex: 1 }} />
 
-        {messages.map((msg, i) => (
-          <div key={i} className={`mb-3 flex ${msg.role === "user" ? "justify-end" : "justify-start"} items-end gap-2`}>
+        {messages.map((msg, i) => {
+          const prevDay = i > 0 ? messages[i - 1].createdAt : undefined;
+          const showSep = !!msg.createdAt && (i === 0 || !prevDay || getBrasiliaDay(msg.createdAt) !== getBrasiliaDay(prevDay));
+          return (
+          <Fragment key={i}>
+            {showSep && msg.createdAt && (
+              <div style={{ textAlign: "center", margin: "16px 0 8px" }}>
+                <span style={{ padding: "3px 14px", fontSize: "0.68rem", color: "var(--gray)", background: "#1a1a1a", border: "1px solid #2a2a2a", borderRadius: 50 }}>
+                  {getDayLabel(msg.createdAt)}
+                </span>
+              </div>
+            )}
+          <div className={`mb-3 flex ${msg.role === "user" ? "justify-end" : "justify-start"} items-end gap-2`}>
             {msg.role === "assistant" && (() => {
               const isLastAssistant = i === messages.reduce<number>((last, m, idx) => m.role === "assistant" ? idx : last, -1);
               const speaking = isSpeaking && isLastAssistant;
@@ -2072,7 +2084,9 @@ export default function Home() {
               })()}
             </div>
           </div>
-        ))}
+          </Fragment>
+          );
+        })}
 
         {isLoading && (
           <div className="flex items-end gap-2 mb-3">
