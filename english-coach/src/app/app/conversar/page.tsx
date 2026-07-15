@@ -1083,6 +1083,12 @@ export default function Home() {
     setShownCorrections(new Set());
   }
 
+  function clearChatHistory() {
+    if (!confirm("Limpar todas as conversas salvas (livre e temáticas)? Essa ação não pode ser desfeita.")) return;
+    try { localStorage.removeItem(CHAT_HISTORY_KEY); } catch {}
+    setTopicsWithHistory(new Set());
+  }
+
   async function proceedToFlashcards() {
     if (!trilhaStep) return;
     setTrilhaPhase("flashcards");
@@ -1699,6 +1705,16 @@ export default function Home() {
               </button>
             ))}
           </div>
+          {topicsWithHistory.size > 0 && (
+            <div className="flex justify-center mt-4">
+              <button
+                onClick={clearChatHistory}
+                style={{ background: "transparent", border: "1px solid #2a2a2a", borderRadius: 8, color: "var(--gray)", fontSize: "0.72rem", fontWeight: 600, padding: "5px 10px", cursor: "pointer" }}
+              >
+                🗑️ Limpar conversas salvas
+              </button>
+            </div>
+          )}
         </div>
       </div>
     );

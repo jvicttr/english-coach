@@ -456,6 +456,12 @@ export default function RolePlay() {
     setScenario(null); setSessionStartIndex(0); setLimitReached(false); setShareModalOpen(false);
   }
 
+  function clearScenarioHistory() {
+    if (!confirm("Limpar todas as conversas salvas de role-play? Essa ação não pode ser desfeita.")) return;
+    try { localStorage.removeItem(ROLEPLAY_HISTORY_KEY); } catch {}
+    setScenariosWithHistory(new Set());
+  }
+
   // Back to the scenario picker without discarding the current scenario's
   // saved conversation — unlike restartChat, this is navigation, not a reset.
   function backToScenarios() {
@@ -672,6 +678,16 @@ export default function RolePlay() {
               </button>
             ))}
           </div>
+          {scenariosWithHistory.size > 0 && (
+            <div className="flex justify-center mt-4">
+              <button
+                onClick={clearScenarioHistory}
+                style={{ background: "transparent", border: "1px solid #2a2a2a", borderRadius: 8, color: "var(--gray)", fontSize: "0.72rem", fontWeight: 600, padding: "5px 10px", cursor: "pointer" }}
+              >
+                🗑️ Limpar conversas salvas
+              </button>
+            </div>
+          )}
         </div>
       </div>
     );

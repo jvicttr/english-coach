@@ -28,6 +28,7 @@ export default function TrilhaPage() {
   const [userLevel, setUserLevel] = useState<string>("beginner");
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<TrailStep | null>(null);
+  const [clearingConversations, setClearingConversations] = useState(false);
   const stepRefsMap = useRef(new Map<string, HTMLDivElement>());
   const scrolledRef = useRef(false);
   function scanSavedSessions(): Set<string> {
@@ -94,6 +95,24 @@ export default function TrilhaPage() {
 
     localStorage.setItem("pendingTrilhaStep", JSON.stringify({ ...step, phase, isTrilha: true }));
     router.push("/app/conversar");
+  }
+
+  async function clearSavedConversations() {
+    if (clearingConversations) return;
+    if (!confirm("Limpar todas as conversas salvas da trilha? Isso reinicia o chat das etapas em andamento — seu progresso e XP não são afetados.")) return;
+    setClearingConversations(true);
+    try {
+      for (let i = localStorage.length - 1; i >= 0; i--) {
+        const key = localStorage.key(i);
+        if (key && (key.startsWith("trilhaContinue_") || key.startsWith("trilhaReview_chat_") || key.startsWith("trilhaReview_fc_") || key.startsWith("trilhaReview_quiz_"))) {
+          localStorage.removeItem(key);
+        }
+      }
+      await fetch("/api/trilha-session", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({}) });
+      setSavedSessions(new Set());
+    } finally {
+      setClearingConversations(false);
+    }
   }
 
   function getStepState(step: TrailStep): "completed" | "active" | "locked" {
@@ -167,7 +186,19 @@ export default function TrilhaPage() {
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2L2 7v10c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-10-5z"/><polyline points="10 12 14 16 10 20"/></svg>
           Trilha
         </div>
-        <span style={{ fontSize: "0.75rem", fontWeight: 700, color: "var(--gray)" }}>{completedCount}/{totalSteps} etapas</span>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <span style={{ fontSize: "0.75rem", fontWeight: 700, color: "var(--gray)" }}>{completedCount}/{totalSteps} etapas</span>
+          {savedSessions.size > 0 && (
+            <button
+              onClick={clearSavedConversations}
+              disabled={clearingConversations}
+              title="Limpar conversas salvas da trilha"
+              style={{ background: "transparent", border: "1px solid #2a2a2a", borderRadius: 8, color: "var(--gray)", fontSize: "0.68rem", fontWeight: 600, padding: "4px 9px", cursor: clearingConversations ? "default" : "pointer", opacity: clearingConversations ? 0.5 : 1 }}
+            >
+              🗑️ {clearingConversations ? "Limpando..." : "Limpar conversas"}
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Overall progress bar */}

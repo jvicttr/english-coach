@@ -57,14 +57,17 @@ export async function POST(req: NextRequest) {
 }
 
 // DELETE /api/trilha-session → remove session (user completed or restarted)
+// Omitting stepId clears every saved-in-progress session for the user
+// (used by "clear saved conversations" on the trilha page).
 export async function DELETE(req: NextRequest) {
   const { userId } = await auth();
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { stepId } = await req.json();
-  if (!stepId) return NextResponse.json({ error: "Missing stepId" }, { status: 400 });
 
-  await supabase.from("trilha_sessions").delete().eq("user_id", userId).eq("step_id", stepId);
+  let query = supabase.from("trilha_sessions").delete().eq("user_id", userId);
+  if (stepId) query = query.eq("step_id", stepId);
+  await query;
 
   return NextResponse.json({ ok: true });
 }
