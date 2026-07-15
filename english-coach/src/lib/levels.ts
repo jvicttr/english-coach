@@ -31,10 +31,11 @@ export const LEVEL_OPTIONS: { id: LevelId; emoji: string; label: string; desc: s
   },
 ];
 
-// Mantém compatível com o campo de 3 níveis usado pelo chat/roleplay
-export const LEVEL_TO_CHAT_LEVEL: Record<LevelId, "beginner" | "intermediate" | "advanced"> = {
+// Nível usado pelo chat/roleplay/quiz/flashcards — cada um dos 4 níveis do
+// perfil tem seu próprio valor distinto, nenhum colapsa em outro.
+export const LEVEL_TO_CHAT_LEVEL: Record<LevelId, "beginner" | "elementary" | "intermediate" | "advanced"> = {
   iniciante: "beginner",
-  basico: "beginner",
+  basico: "elementary",
   intermediario: "intermediate",
   avancado: "advanced",
 };

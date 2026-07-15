@@ -8,7 +8,7 @@ import { shuffleQuizOptions } from "@/lib/quiz";
 type Correction = { wrong: string; right: string; phonetic: string; wrongSentence?: string; rightSentence?: string };
 type CorrectionList = Correction[];
 type Message = { role: "user" | "assistant"; content: string; translation?: string; correction?: Correction; corrections?: CorrectionList };
-type Level = "beginner" | "intermediate" | "advanced" | null;
+type Level = "beginner" | "elementary" | "intermediate" | "advanced" | null;
 type AnySpeechRecognition = any; // eslint-disable-line @typescript-eslint/no-explicit-any
 type AppScreen = "scenarios" | "chat" | "loading-quiz" | "loading-flashcards" | "quiz" | "result";
 
@@ -299,7 +299,7 @@ export default function RolePlay() {
   async function speak(text: string, slow = false) {
     const player = getAudio();
     if (!player.paused) player.pause();
-    const speed = slow ? 0.75 : level === "beginner" ? 0.78 : level === "advanced" ? 0.95 : 0.9;
+    const speed = slow ? 0.75 : level === "beginner" ? 0.78 : level === "elementary" ? 0.83 : level === "advanced" ? 0.95 : 0.9;
     const segments = splitSpeechSegments(text);
     if (segments.length === 0) return;
     if (!supportsMediaSourceAudio()) {
@@ -326,7 +326,9 @@ export default function RolePlay() {
     const saved = loadScenarioHistory()[sc.id];
     if (saved?.messages?.length > 0) {
       setMessages(saved.messages);
-      if (saved.level) setLevel(saved.level as Level);
+      // Note: level is intentionally NOT restored from this snapshot — it must
+      // always reflect the student's current profile setting, not a stale
+      // value frozen when this scenario was last saved.
       // Everything loaded here is prior-session history — today's practice starts after it.
       setSessionStartIndex(saved.messages.length);
       return;
@@ -345,7 +347,8 @@ export default function RolePlay() {
       const data = await res.json();
       if (data.limitReached) { setLimitReached(true); return; }
       if (data.reply) setMessages([{ role: "assistant", content: data.reply, translation: data.translation ?? undefined }]);
-      if (data.detectedLevel) setLevel(data.detectedLevel as Level);
+      // Note: detectedLevel is only used server-side for XP tracking — the
+      // level always stays locked to the student's profile setting.
     } finally {
       setIsLoading(false);
     }
@@ -370,7 +373,8 @@ export default function RolePlay() {
       if (data.limitReached) { setLimitReached(true); setMessages((prev) => prev.slice(0, -1)); return; }
       if (!data.reply) { setMessages((prev) => [...prev, { role: "assistant", content: "Ops, não consegui responder. Tente de novo!" }]); return; }
       setMessages((prev) => [...prev, { role: "assistant", content: data.reply, translation: data.translation ?? undefined, corrections: data.corrections?.length ? data.corrections : undefined }]);
-      if (data.detectedLevel) setLevel(data.detectedLevel as Level);
+      // Note: detectedLevel is only used server-side for XP tracking — the
+      // level always stays locked to the student's profile setting.
     } catch {
       setMessages((prev) => [...prev, { role: "assistant", content: "Erro de conexão. Verifique sua internet e tente novamente." }]);
     } finally {

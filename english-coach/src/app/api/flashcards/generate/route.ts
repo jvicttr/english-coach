@@ -23,6 +23,7 @@ export async function POST(req: NextRequest) {
 
   const levelGuide: Record<string, string> = {
     beginner: "The student is a BEGINNER. Pick simple, high-frequency vocabulary they need to survive basic conversations. Avoid advanced idioms or complex phrases. Examples of good picks: 'schedule a meeting', 'I'd like to', 'by the way'.",
+    elementary: "The student is ELEMENTARY/BASIC (a step above beginner). Pick common everyday vocabulary and simple expressions, slightly beyond survival level but still no idioms. Examples: 'I usually', 'it depends on', 'a couple of'.",
     intermediate: "The student is INTERMEDIATE. Pick useful phrases and expressions that go beyond basics. Avoid trivial words (go, eat, want). Examples: 'get along with', 'it turns out', 'I was wondering'.",
     advanced: "The student is ADVANCED. Pick sophisticated vocabulary, nuanced expressions, and idiomatic language. Skip anything too common. Examples: 'in retrospect', 'bear in mind', 'come across as'.",
   };

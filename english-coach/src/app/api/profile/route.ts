@@ -25,10 +25,10 @@ export async function POST(req: NextRequest) {
 
   const { level } = await req.json();
 
-  // Mantém level (3 niveis, usado pelo chat/roleplay) sincronizado com este campo
+  // Mantém level (usado pelo chat/roleplay/quiz/flashcards) sincronizado com este campo
   const levelMap: Record<string, string> = {
     iniciante: "beginner",
-    basico: "beginner",
+    basico: "elementary",
     intermediario: "intermediate",
     avancado: "advanced",
   };

@@ -21,6 +21,13 @@ const LEVEL_QUIZ_GUIDE: Record<string, string> = {
 - Translation questions are fine ("Como se diz 'escola' em inglês?") as long as the English target word never appears anywhere in the Portuguese stem
 - Gap-fill questions must NOT include the base/infinitive form of the target verb in parentheses or nearby text (e.g. never "I ___ (go) to school yesterday") — the student must know the verb from the conversation, not read it off the question`,
 
+  elementary: `The student is ELEMENTARY/BASIC (a step above beginner). Quiz rules for this level:
+- Focus on basic vocabulary plus simple past/future tense, still no idioms or phrasal verbs
+- Options must use common everyday words, slightly less basic than pure beginner but still very accessible
+- Wrong options should be plausible but clearly different (avoid trick questions)
+- Keep questions short and direct — no complex grammar in the question itself
+- Gap-fill questions must NOT include the base/infinitive form of the target verb in parentheses or nearby text`,
+
   intermediate: `The student is INTERMEDIATE. Quiz rules for this level:
 - Mix grammar questions (tense choice, prepositions, articles) with vocabulary and phrases
 - Include 1-2 phrasal verb or common expression questions from the conversation

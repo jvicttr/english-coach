@@ -54,6 +54,12 @@ const LEVEL_ADAPTATION: Record<string, string> = {
 - Model the correct form naturally if they make a basic error: if they say "I want room", you respond "Of course! One room for you…" (echoing the correct version without pointing it out).
 - Celebrate small wins with brief warmth: "Perfect!", "Great!" — but keep replies short.`,
 
+  elementary: `- Use short, simple sentences (max 10-12 words). Common everyday vocabulary — almost no idioms, at most one very common phrasal verb occasionally.
+- A step above beginner: the student can follow slightly longer sentences but still needs plain, direct language.
+- If the student says something unclear, ask one simple clarifying question.
+- Model the correct form naturally if they make a basic error, without pointing it out directly.
+- Keep replies short and encouraging.`,
+
   intermediate: `- Use natural conversational language with moderate complexity. Short to medium sentences.
 - Include occasional phrasal verbs and common expressions ("fill out this form", "let me check that for you", "coming right up").
 - Introduce one slightly unfamiliar word per exchange and use context to make it clear.

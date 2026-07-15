@@ -50,6 +50,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ use
 
   const LEVEL_LABEL: Record<string, string> = {
     beginner: "Iniciante",
+    elementary: "Básico",
     intermediate: "Intermediário",
     advanced: "Avançado",
   };

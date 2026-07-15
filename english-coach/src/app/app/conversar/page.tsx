@@ -10,7 +10,7 @@ import ChatTranslator from "@/components/ChatTranslator";
 type Correction = { wrong: string; right: string; phonetic: string; wrongSentence?: string; rightSentence?: string };
 type CorrectionList = Correction[];
 type Message = { role: "user" | "assistant"; content: string; translation?: string; correction?: Correction; corrections?: CorrectionList };
-type Level = "beginner" | "intermediate" | "advanced" | null;
+type Level = "beginner" | "elementary" | "intermediate" | "advanced" | null;
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnySpeechRecognition = any;
 
@@ -68,7 +68,8 @@ function withFixTags(msgs: Message[]): { role: string; content: string }[] {
 }
 
 const LEVEL_LABEL: Record<NonNullable<Level>, string> = {
-  beginner: "Básico",
+  beginner: "Iniciante",
+  elementary: "Básico",
   intermediate: "Intermediário",
   advanced: "Avançado",
 };
@@ -812,7 +813,7 @@ export default function Home() {
     const player = getAudio();
     if (!player.paused) player.pause();
 
-    const speed = slow ? 0.75 : level === "beginner" ? 0.78 : level === "advanced" ? 0.95 : 0.9;
+    const speed = slow ? 0.75 : level === "beginner" ? 0.78 : level === "elementary" ? 0.83 : level === "advanced" ? 0.95 : 0.9;
     const segments = splitSpeechSegments(text);
     if (segments.length === 0) return;
 
@@ -1860,7 +1861,7 @@ export default function Home() {
             <span style={{ fontSize: "0.72rem", fontWeight: 700, color: topic.color }}>{topic.label}</span>
             {level && (
               <span style={{ fontSize: "0.62rem", color: "var(--gray2)", background: "var(--dark2)", padding: "1px 7px", borderRadius: "50px", border: "1px solid #2a2a2a" }}>
-                {level === "beginner" ? "Básico" : level === "intermediate" ? "Intermediário" : "Avançado"}
+                {LEVEL_LABEL[level]}
               </span>
             )}
           </div>
