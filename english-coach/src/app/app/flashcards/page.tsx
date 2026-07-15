@@ -89,12 +89,26 @@ export default function Flashcards() {
       })
       .then((d) => {
         if (!d) return;
-        setPacks(d.packs ?? []);
+        const loadedPacks: Pack[] = d.packs ?? [];
+        setPacks(loadedPacks);
         setLoading(false);
+        // Deep link from another screen (e.g. progresso) straight into one card:
+        // /app/flashcards?pack=<pack_id>&card=<card_id>
+        const params = new URLSearchParams(window.location.search);
+        const packId = params.get("pack");
+        const cardId = params.get("card");
+        if (packId) {
+          const targetPack = loadedPacks.find((p) => p.pack_id === packId);
+          if (targetPack) {
+            startPack(targetPack, cardId ?? undefined);
+            window.history.replaceState(null, "", "/app/flashcards");
+          }
+        }
       });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [router]);
 
-  function startPack(pack: Pack) {
+  function startPack(pack: Pack, startCardId?: string) {
     // Sort: hardest cards first (lowest ease_factor = most missed), then by next_review ascending
     const sorted = [...pack.cards].sort((a, b) => {
       const aHard = (a.ease_factor ?? 2.5) < 1.6 ? 0 : 1;
@@ -103,7 +117,8 @@ export default function Flashcards() {
       return (a.ease_factor ?? 2.5) - (b.ease_factor ?? 2.5);
     });
     setActivePack({ ...pack, cards: sorted });
-    setCurrentIndex(0);
+    const startIndex = startCardId ? sorted.findIndex((c) => c.id === startCardId) : 0;
+    setCurrentIndex(startIndex >= 0 ? startIndex : 0);
     setFlipped(false);
     setDone(false);
     setSessionResults({ easy: 0, hard: 0, miss: 0 });

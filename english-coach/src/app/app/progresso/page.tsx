@@ -27,6 +27,7 @@ type Flashcard = {
   topic: string | null;
   next_review: string;
   created_at?: string;
+  pack_id: string | null;
 };
 
 const LEVEL_LABEL: Record<string, string> = { beginner: "Básico", intermediate: "Intermediário", advanced: "Avançado" };
@@ -255,8 +256,9 @@ export default function Progresso() {
                   {(showAllFlashcards ? flashcards : flashcards.slice(0, 5)).map((fc) => {
                     const today = new Date().toISOString().split("T")[0];
                     const isPending = fc.next_review <= today;
+                    const href = fc.pack_id ? `/app/flashcards?pack=${encodeURIComponent(fc.pack_id)}&card=${encodeURIComponent(fc.id)}` : "/app/flashcards";
                     return (
-                      <div key={fc.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 12px", background: "var(--dark2)", borderRadius: 10, border: "1px solid #2a2a2a" }}>
+                      <a key={fc.id} href={href} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 12px", background: "var(--dark2)", borderRadius: 10, border: "1px solid #2a2a2a", textDecoration: "none", cursor: "pointer" }}>
                         <div>
                           <p style={{ fontSize: "0.85rem", fontWeight: 700, color: "#fff", margin: 0 }}>{fc.word}</p>
                           <p style={{ fontSize: "0.72rem", color: "var(--gray)", margin: "2px 0 0" }}>{fc.translation}</p>
@@ -269,7 +271,7 @@ export default function Progresso() {
                             {isPending ? "Revisar hoje" : `Próxima: ${new Date(fc.next_review + "T12:00:00").toLocaleDateString("pt-BR")}`}
                           </span>
                         </div>
-                      </div>
+                      </a>
                     );
                   })}
                 </div>
