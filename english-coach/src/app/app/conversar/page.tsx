@@ -286,6 +286,18 @@ export default function Home() {
     setTopicsWithHistory((prev) => (prev.has(topic.id) ? prev : new Set(prev).add(topic.id)));
   }, [trilhaStep, topic, messages, level]);
 
+  // Keeps the level in sync in real time if the student changes it on the
+  // Profile page in another tab/window while this chat is open — no reload needed.
+  useEffect(() => {
+    function onStorage(e: StorageEvent) {
+      if (e.key === "userLevel" && e.newValue) {
+        setLevel(e.newValue as Level);
+      }
+    }
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, []);
+
   useEffect(() => {
     fetch("/api/me").then((r) => r.json()).then(async (d) => {
       const pro = d.plan === "pro";
@@ -831,7 +843,9 @@ export default function Home() {
     const saved = loadChatHistory()[t.id];
     if (saved?.messages?.length > 0) {
       setMessages(saved.messages);
-      if (saved.level) setLevel(saved.level as Level);
+      // Note: level is intentionally NOT restored from this snapshot — it must
+      // always reflect the student's current profile setting, not a stale
+      // value frozen when this topic was last saved.
       // Everything loaded here is prior-session history — today's practice starts after it.
       setSessionStartIndex(saved.messages.length);
       return;
@@ -853,7 +867,8 @@ export default function Home() {
       if (data.reply) {
         setMessages([{ role: "assistant", content: data.reply, translation: data.translation ?? undefined }]);
       }
-      if (data.detectedLevel) setLevel(data.detectedLevel as Level);
+      // Note: detectedLevel is only used server-side for XP tracking — the
+      // displayed level always stays locked to the student's profile setting.
     } finally {
       setIsLoading(false);
     }
@@ -902,7 +917,8 @@ export default function Home() {
       setPendingSpeak(null); // clear stale pending audio from previous message
       const newAssistantMsg = { role: "assistant" as const, content: data.reply, translation: data.translation ?? undefined, corrections: newCorrections.length ? newCorrections : undefined };
       setMessages((prev) => [...prev, newAssistantMsg]);
-      if (data.detectedLevel) setLevel(data.detectedLevel as Level);
+      // Note: detectedLevel is only used server-side for XP tracking — the
+      // displayed level always stays locked to the student's profile setting.
     } catch {
       setMessages((prev) => [...prev, { role: "assistant", content: "Erro de conexão. Verifique sua internet e tente novamente." }]);
     } finally {

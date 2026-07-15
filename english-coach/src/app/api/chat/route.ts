@@ -67,9 +67,9 @@ export async function POST(req: NextRequest) {
   const effectiveLevel = savedLevel || "intermediate";
 
   const levelInstructions: Record<string, string> = {
-    beginner: "BEGINNER level — Use very short, simple sentences. Present tense only. Survival vocabulary. No idioms, no phrasal verbs. Speak slowly and clearly. If the student writes more than you expect, do NOT upgrade their level — they chose beginner.",
-    intermediate: "INTERMEDIATE level — Use past and future tenses naturally. Introduce phrasal verbs and common expressions. Medium-length sentences. Do NOT simplify to beginner just because a message is short, and do NOT upgrade to advanced just because a message is fluent.",
-    advanced: "ADVANCED level — Use rich vocabulary, idioms, varied tenses, conditionals, passive voice, nuance, humor. Never simplify your language. Treat them as near-native. Even if a message is short or has errors, keep your advanced-level output — the student has explicitly chosen this level.",
+    beginner: "BEGINNER level — Use very short, simple sentences. Present tense only. Survival vocabulary. No idioms, no phrasal verbs. Speak slowly and clearly. If the student writes more than you expect, do NOT upgrade their level — they chose beginner. LENGTH: 1 short sentence (max ~10 words), a second only if truly necessary. Straight to the point, one simple direct question — never a long or elaborate reply.",
+    intermediate: "INTERMEDIATE level — Use past and future tenses naturally. Introduce phrasal verbs and common expressions. Medium-length sentences. Do NOT simplify to beginner just because a message is short, and do NOT upgrade to advanced just because a message is fluent. LENGTH: 2 sentences max. Natural but tight — no rambling, no extra explanations tacked on.",
+    advanced: "ADVANCED level — Use rich vocabulary, idioms, varied tenses, conditionals, passive voice, nuance, humor. Never simplify your language. Treat them as near-native. Even if a message is short or has errors, keep your advanced-level output — the student has explicitly chosen this level. LENGTH: up to 3 sentences max. Rich language is fine, but stay conversational and punchy — never write a paragraph.",
   };
 
   let systemFull = `${SYSTEM_PROMPT}\n\n## LOCKED STUDENT LEVEL: ${effectiveLevel.toUpperCase()}\n${levelInstructions[effectiveLevel] ?? levelInstructions.intermediate}\nThis level is set by the student's profile and CANNOT change mid-conversation. The [LEVEL:xxx] token you output is for logging only — it does NOT affect your vocabulary or complexity for this session.`;
@@ -140,7 +140,7 @@ Guide the conversation around this theme. Keep it natural and engaging, not like
 
   const response = await client.messages.create({
     model: "claude-sonnet-4-6",
-    max_tokens: 1800,
+    max_tokens: 700,
     system: systemFull,
     messages: baseMessages,
     ...(enableSearch ? { tools: [{ type: "web_search_20250305" as const, name: "web_search" as const, max_uses: 3 }] } : {}),

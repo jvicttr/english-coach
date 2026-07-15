@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useUser } from "@clerk/nextjs";
+import { LEVEL_OPTIONS, LEVEL_TO_CHAT_LEVEL, type LevelId } from "@/lib/levels";
 
 type ProfileData = {
   isPro: boolean;
@@ -13,16 +14,11 @@ type ProfileData = {
   flashcardPending: number;
 };
 
-const LEVEL_INFO: Record<string, { emoji: string; label: string; color: string }> = {
-  beginner:     { emoji: "🌱", label: "Iniciante",     color: "#60a5fa" },
-  intermediate: { emoji: "🔥", label: "Intermediário", color: "#F5C800" },
-  advanced:     { emoji: "🚀", label: "Avançado",      color: "#4ade80" },
-};
-
 export default function PerfilPage() {
   const { user } = useUser();
   const [data, setData] = useState<ProfileData | null>(null);
-  const [level, setLevel] = useState<string | null>(null);
+  const [level, setLevel] = useState<LevelId | null>(null);
+  const [pendingLevel, setPendingLevel] = useState<LevelId | null>(null);
   const [plan, setPlan] = useState<"free" | "pro">("free");
   const [changingLevel, setChangingLevel] = useState(false);
   const [savingLevel, setSavingLevel] = useState(false);
@@ -53,25 +49,27 @@ export default function PerfilPage() {
       fetch("/api/home").then((r) => r.json()),
       fetch("/api/community/handle").then((r) => r.json()),
       fetch("/api/community/name").then((r) => r.json()),
-    ]).then(([me, home, h, n]) => {
+      fetch("/api/profile").then((r) => r.json()),
+    ]).then(([me, home, h, n, prof]) => {
       setPlan(me.plan ?? "free");
-      setLevel(me.level ?? localStorage.getItem("userLevel") ?? "intermediate");
+      setLevel((prof.level as LevelId) ?? "intermediario");
       setData(home);
       setHandle(h.handle ?? null);
       setDisplayName(n.displayName ?? null);
     });
   }, []);
 
-  async function saveLevel(newLevel: string) {
+  async function saveLevel() {
+    if (!pendingLevel) return;
     setSavingLevel(true);
     try {
-      await fetch("/api/level", {
+      await fetch("/api/profile", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ level: newLevel }),
+        body: JSON.stringify({ level: pendingLevel }),
       });
-      localStorage.setItem("userLevel", newLevel);
-      setLevel(newLevel);
+      localStorage.setItem("userLevel", LEVEL_TO_CHAT_LEVEL[pendingLevel]);
+      setLevel(pendingLevel);
       setChangingLevel(false);
     } finally {
       setSavingLevel(false);
@@ -114,7 +112,7 @@ export default function PerfilPage() {
     }
   }
 
-  const levelInfo = level ? LEVEL_INFO[level] : null;
+  const levelInfo = level ? LEVEL_OPTIONS.find((o) => o.id === level) ?? null : null;
   const xpToNext = data?.nextTier ? data.nextTier.min - (data.totalXp ?? 0) : null;
   const xpPct = data?.nextTier
     ? Math.min(100, Math.round(((data.totalXp - data.tier.min) / (data.nextTier.min - data.tier.min)) * 100))
@@ -232,7 +230,13 @@ export default function PerfilPage() {
               </div>
             </div>
             <button
-              onClick={() => setChangingLevel((v) => !v)}
+              onClick={() => {
+                setChangingLevel((v) => {
+                  const next = !v;
+                  if (next) setPendingLevel(level);
+                  return next;
+                });
+              }}
               style={{ fontSize: "0.7rem", fontWeight: 700, color: "var(--yellow)", background: "rgba(245,200,0,.08)", border: "1px solid rgba(245,200,0,.25)", borderRadius: 8, padding: "5px 12px", cursor: "pointer" }}
             >
               {changingLevel ? "Cancelar" : "Trocar"}
@@ -241,23 +245,28 @@ export default function PerfilPage() {
 
           {changingLevel && (
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              {Object.entries(LEVEL_INFO).map(([key, info]) => (
+              {LEVEL_OPTIONS.map((opt) => (
                 <button
-                  key={key}
-                  onClick={() => saveLevel(key)}
+                  key={opt.id}
+                  onClick={() => setPendingLevel(opt.id)}
                   disabled={savingLevel}
-                  style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", borderRadius: 12, border: `1px solid ${level === key ? info.color : "#2a2a2a"}`, background: level === key ? `${info.color}15` : "#1a1a1a", cursor: "pointer", textAlign: "left", opacity: savingLevel ? 0.6 : 1 }}
+                  style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", borderRadius: 12, border: `1px solid ${pendingLevel === opt.id ? opt.color : "#2a2a2a"}`, background: pendingLevel === opt.id ? `${opt.color}15` : "#1a1a1a", cursor: "pointer", textAlign: "left", opacity: savingLevel ? 0.6 : 1 }}
                 >
-                  <span style={{ fontSize: "1.3rem" }}>{info.emoji}</span>
+                  <span style={{ fontSize: "1.3rem" }}>{opt.emoji}</span>
                   <div>
-                    <p style={{ fontSize: "0.85rem", fontWeight: 800, color: info.color, margin: 0 }}>{info.label}</p>
-                    <p style={{ fontSize: "0.68rem", color: "var(--gray2)", margin: "2px 0 0" }}>
-                      {key === "beginner" ? "Sei pouco ou nada. Quero começar do zero." : key === "intermediate" ? "Me viro, mas erro bastante e travo às vezes." : "Me comunico bem, quero refinar fluência."}
-                    </p>
+                    <p style={{ fontSize: "0.85rem", fontWeight: 800, color: opt.color, margin: 0 }}>{opt.label}</p>
+                    <p style={{ fontSize: "0.68rem", color: "var(--gray2)", margin: "2px 0 0" }}>{opt.desc}</p>
                   </div>
-                  {level === key && <span style={{ marginLeft: "auto", fontSize: "0.75rem", color: info.color }}>✓</span>}
+                  {pendingLevel === opt.id && <span style={{ marginLeft: "auto", fontSize: "0.75rem", color: opt.color }}>✓</span>}
                 </button>
               ))}
+              <button
+                onClick={saveLevel}
+                disabled={savingLevel || !pendingLevel || pendingLevel === level}
+                style={{ background: "var(--yellow)", color: "#000", fontWeight: 800, fontSize: "0.82rem", border: "none", borderRadius: 10, padding: "10px", cursor: "pointer", opacity: savingLevel || !pendingLevel || pendingLevel === level ? 0.5 : 1, marginTop: 4 }}
+              >
+                {savingLevel ? "Salvando…" : "Salvar"}
+              </button>
             </div>
           )}
         </div>
