@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
+import { AutoShareModal } from "@/components/AutoShareModal";
 
 type Flashcard = {
   id: string;
@@ -39,8 +40,7 @@ export default function Flashcards() {
   const [sessionResults, setSessionResults] = useState({ easy: 0, hard: 0, miss: 0 });
   const [sessionRatings, setSessionRatings] = useState<Record<string, "easy" | "hard" | "miss">>({});
   const [rating, setRating] = useState<string | null>(null);
-  const [sharing, setSharing] = useState(false);
-  const [shared, setShared] = useState(false);
+  const [shareModalOpen, setShareModalOpen] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [showExampleTranslation, setShowExampleTranslation] = useState(false);
   const [exampleTranslationText, setExampleTranslationText] = useState<string | null>(null);
@@ -78,6 +78,10 @@ export default function Flashcards() {
   }
 
   useEffect(() => {
+    if (done) setShareModalOpen(true);
+  }, [done]);
+
+  useEffect(() => {
     fetch("/api/flashcards")
       .then((r) => {
         if (r.status === 403) { router.replace("/planos"); return null; }
@@ -105,11 +109,13 @@ export default function Flashcards() {
     setSessionResults({ easy: 0, hard: 0, miss: 0 });
     setSessionRatings({});
     setRating(null);
+    setShareModalOpen(false);
   }
 
   function backToList() {
     setActivePack(null);
     setDone(false);
+    setShareModalOpen(false);
   }
 
   async function fetchExampleTranslation(cardId: string, example: string, savedTranslation: string | null) {
@@ -240,34 +246,19 @@ export default function Flashcards() {
   if (done && activePack) {
     const total = sessionResults.easy + sessionResults.hard + sessionResults.miss;
     const pct = total > 0 ? Math.round((sessionResults.easy / total) * 100) : 0;
-
-    async function shareFlashcardResult() {
-      if (sharing || shared) return;
-      setSharing(true);
-      const resultEmoji = pct >= 80 ? "🏆" : pct >= 60 ? "💪" : "📚";
-      const content = `${resultEmoji} Just reviewed ${total} flashcard${total !== 1 ? "s" : ""} from the pack "${activePack!.pack_name}"!\n\n✅ Knew it: ${sessionResults.easy}  😅 Was hard: ${sessionResults.hard}  ❌ Missed: ${sessionResults.miss}`;
-      const flashcardTranscript = JSON.stringify({
-        type: "flashcard_result",
-        pack_name: activePack!.pack_name,
-        cards: activePack!.cards.map((c) => ({
-          word: c.word,
-          translation: c.translation,
-          phonetic: c.phonetic,
-          example: c.example,
-          rating: sessionRatings[c.id] ?? null,
-        })),
-      });
-      try {
-        await fetch("/api/community/posts", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ content, transcript: flashcardTranscript, isShare: true }),
-        });
-        setShared(true);
-      } finally {
-        setSharing(false);
-      }
-    }
+    const resultEmoji = pct >= 80 ? "🏆" : pct >= 60 ? "💪" : "📚";
+    const shareContent = `${resultEmoji} Just reviewed ${total} flashcard${total !== 1 ? "s" : ""} from the pack "${activePack.pack_name}"!\n\n✅ Knew it: ${sessionResults.easy}  😅 Was hard: ${sessionResults.hard}  ❌ Missed: ${sessionResults.miss}`;
+    const shareTranscript = JSON.stringify({
+      type: "flashcard_result",
+      pack_name: activePack.pack_name,
+      cards: activePack.cards.map((c) => ({
+        word: c.word,
+        translation: c.translation,
+        phonetic: c.phonetic,
+        example: c.example,
+        rating: sessionRatings[c.id] ?? null,
+      })),
+    });
 
     return (
       <div className="app-scroll" style={{ background: "var(--black)", fontFamily: "'Inter', sans-serif", paddingTop: "calc(65px + env(safe-area-inset-top))", paddingBottom: 70 }}>
@@ -290,17 +281,19 @@ export default function Flashcards() {
               </div>
             ))}
           </div>
-          <button
-            onClick={shareFlashcardResult}
-            disabled={sharing || shared}
-            style={{ background: shared ? "rgba(74,222,128,.15)" : "var(--dark1)", color: shared ? "#4ade80" : "#fff", border: `1.5px solid ${shared ? "rgba(74,222,128,.5)" : "#2a2a2a"}`, padding: "0.85rem 1.5rem", borderRadius: "50px", fontWeight: 800, fontSize: "0.9rem", cursor: sharing || shared ? "default" : "pointer", width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}
-          >
-            {shared ? "✅ Compartilhado na comunidade!" : sharing ? "Compartilhando..." : <><span>🌐</span><span>Compartilhar na comunidade</span></>}
-          </button>
+          {!shareModalOpen && (
+            <button
+              onClick={() => setShareModalOpen(true)}
+              style={{ background: "var(--dark1)", color: "#fff", border: "1.5px solid #2a2a2a", padding: "0.85rem 1.5rem", borderRadius: "50px", fontWeight: 800, fontSize: "0.9rem", cursor: "pointer", width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}
+            >
+              <span>🌐</span><span>Compartilhar na comunidade</span>
+            </button>
+          )}
           <button onClick={backToList} style={{ background: "var(--yellow)", color: "#000", padding: "0.75rem 2rem", borderRadius: "50px", border: "none", fontWeight: 800, fontSize: "0.9rem", cursor: "pointer" }}>
             Ver todos os packs
           </button>
         </div>
+        <AutoShareModal open={shareModalOpen} content={shareContent} transcript={shareTranscript} onClose={() => setShareModalOpen(false)} />
       </div>
     );
   }

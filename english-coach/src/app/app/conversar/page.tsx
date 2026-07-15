@@ -6,6 +6,7 @@ import Image from "next/image";
 import type { TrailStep } from "@/lib/trilha-steps";
 import { shuffleQuizOptions } from "@/lib/quiz";
 import ChatTranslator from "@/components/ChatTranslator";
+import { AutoShareModal } from "@/components/AutoShareModal";
 
 type Correction = { wrong: string; right: string; phonetic: string; wrongSentence?: string; rightSentence?: string };
 type CorrectionList = Correction[];
@@ -158,8 +159,7 @@ export default function Home() {
   const [answers, setAnswers] = useState<(number | null)[]>([]);
   const [showExplanation, setShowExplanation] = useState(false);
   const [score, setScore] = useState(0);
-  const [sharing, setSharing] = useState(false);
-  const [shared, setShared] = useState(false);
+  const [shareModalOpen, setShareModalOpen] = useState(false);
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputBarRef = useRef<HTMLDivElement>(null);
@@ -190,6 +190,14 @@ export default function Home() {
 
   // Warn before closing tab mid-trilha
   const trilhaSaveRef = useRef({ trilhaStep, messages });
+  // Auto-open the share preview once a non-trilha quiz result or a trilha
+  // step summary is ready — trilha per-step quizzes stay silent here since
+  // they get folded into the single trail-complete summary post instead.
+  useEffect(() => {
+    if (screen === "result" && !trilhaStep) setShareModalOpen(true);
+    if (screen === "trail-complete") setShareModalOpen(true);
+  }, [screen, trilhaStep]);
+
   useEffect(() => { trilhaSaveRef.current = { trilhaStep, messages }; });
   useEffect(() => {
     const handler = (e: BeforeUnloadEvent) => {
@@ -1052,6 +1060,7 @@ export default function Home() {
     setFcShowTranslation(false);
     setLimitReached(false);
     setShownCorrections(new Set());
+    setShareModalOpen(false);
   }
 
   // Back to the topic picker without discarding the current topic's saved
@@ -1422,6 +1431,17 @@ export default function Home() {
 
   // ── Trail Complete Screen ─────────────────────────────────────────────────
   if (screen === "trail-complete" && trilhaStep) {
+    const stepScore = trilhaQuizScore?.score ?? score;
+    const stepTotal = trilhaQuizScore?.total ?? quiz?.questions.length ?? 0;
+    const stepShareContent = `🏆 Completed the "${trilhaStep.title}" step on my English learning path!\n\n✅ Conversation practice\n✅ Vocabulary review\n📝 Quiz: ${stepScore}/${stepTotal}`;
+    const stepShareTranscript = JSON.stringify({
+      type: "trail_step_result",
+      step_title: trilhaStep.title,
+      step_emoji: trilhaStep.emoji,
+      score: stepScore,
+      total: stepTotal,
+    });
+
     return (
       <div className="flex flex-col items-center justify-center px-4 pb-8 min-h-screen" style={{ background: "var(--black)", fontFamily: "'Inter', sans-serif", paddingTop: "calc(65px + env(safe-area-inset-top, 0px))" }}>
         <div className="w-full max-w-lg flex flex-col items-center text-center gap-5">
@@ -1452,6 +1472,7 @@ export default function Home() {
             Voltar à trilha →
           </button>
         </div>
+        <AutoShareModal open={shareModalOpen} content={stepShareContent} transcript={stepShareTranscript} onClose={() => setShareModalOpen(false)} />
       </div>
     );
   }
@@ -1547,36 +1568,21 @@ export default function Home() {
     const emoji = pct >= 80 ? "🏆" : pct >= 60 ? "💪" : "📚";
     const msg = pct >= 80 ? "Excelente! Você dominou essa conversa." : pct >= 60 ? "Bom trabalho! Continue praticando." : "Continue assim! Cada conversa te deixa melhor.";
     const scoreColor = pct >= 80 ? "#4ade80" : pct >= 60 ? "var(--yellow)" : "#f87171";
-
-    async function shareQuizResult() {
-      if (sharing || shared) return;
-      setSharing(true);
-      const resultEmoji = pct >= 80 ? "🏆" : pct >= 60 ? "💪" : "📚";
-      const content = `${resultEmoji} Just scored ${score}/${total} (${pct}%) on a quiz!\n\n"${quiz!.title}"`;
-      const quizTranscript = JSON.stringify({
-        type: "quiz_result",
-        title: quiz!.title,
-        score,
-        total,
-        questions: quiz!.questions.map((q, i) => ({
-          question: q.question,
-          options: q.options,
-          correct: q.correct,
-          explanation: q.explanation,
-          userAnswer: answers[i] ?? null,
-        })),
-      });
-      try {
-        await fetch("/api/community/posts", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ content, transcript: quizTranscript, isShare: true }),
-        });
-        setShared(true);
-      } finally {
-        setSharing(false);
-      }
-    }
+    const resultEmoji = pct >= 80 ? "🏆" : pct >= 60 ? "💪" : "📚";
+    const shareContent = `${resultEmoji} Just scored ${score}/${total} (${pct}%) on a quiz!\n\n"${quiz.title}"`;
+    const shareTranscript = JSON.stringify({
+      type: "quiz_result",
+      title: quiz.title,
+      score,
+      total,
+      questions: quiz.questions.map((q, i) => ({
+        question: q.question,
+        options: q.options,
+        correct: q.correct,
+        explanation: q.explanation,
+        userAnswer: answers[i] ?? null,
+      })),
+    });
     const trilhaPassed = !!(trilhaStep && pct >= 70);
 
     return (
@@ -1620,14 +1626,15 @@ export default function Home() {
             })}
           </div>
 
-          <button
-            onClick={shareQuizResult}
-            disabled={sharing || shared}
-            className="w-full py-3 rounded-xl font-bold text-sm"
-            style={{ background: shared ? "rgba(74,222,128,.15)" : "rgba(255,255,255,.06)", color: shared ? "#4ade80" : "var(--gray)", border: `1px solid ${shared ? "rgba(74,222,128,.3)" : "#2a2a2a"}`, cursor: sharing || shared ? "default" : "pointer" }}
-          >
-            {shared ? "✓ Compartilhado na comunidade!" : sharing ? "Compartilhando..." : "🌐 Compartilhar resultado na comunidade"}
-          </button>
+          {!trilhaStep && !shareModalOpen && (
+            <button
+              onClick={() => setShareModalOpen(true)}
+              className="w-full py-3 rounded-xl font-bold text-sm"
+              style={{ background: "rgba(255,255,255,.06)", color: "var(--gray)", border: "1px solid #2a2a2a", cursor: "pointer" }}
+            >
+              🌐 Compartilhar resultado na comunidade
+            </button>
+          )}
 
           <div className="flex gap-3 w-full">
             {trilhaStep ? (
@@ -1658,6 +1665,9 @@ export default function Home() {
             )}
           </div>
         </div>
+        {!trilhaStep && (
+          <AutoShareModal open={shareModalOpen} content={shareContent} transcript={shareTranscript} onClose={() => setShareModalOpen(false)} />
+        )}
       </div>
     );
   }

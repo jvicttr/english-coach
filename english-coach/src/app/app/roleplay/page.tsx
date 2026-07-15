@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { shuffleQuizOptions } from "@/lib/quiz";
+import { AutoShareModal } from "@/components/AutoShareModal";
 
 type Correction = { wrong: string; right: string; phonetic: string; wrongSentence?: string; rightSentence?: string };
 type CorrectionList = Correction[];
@@ -87,6 +88,7 @@ export default function RolePlay() {
   const [answers, setAnswers] = useState<(number | null)[]>([]);
   const [showExplanation, setShowExplanation] = useState(false);
   const [score, setScore] = useState(0);
+  const [shareModalOpen, setShareModalOpen] = useState(false);
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputBarRef = useRef<HTMLDivElement>(null);
@@ -100,6 +102,10 @@ export default function RolePlay() {
   const autoStopTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const recognitionRef = useRef<AnySpeechRecognition>(null);
+
+  useEffect(() => {
+    if (screen === "result") setShareModalOpen(true);
+  }, [screen]);
 
   useEffect(() => {
     const el = inputBarRef.current;
@@ -446,7 +452,7 @@ export default function RolePlay() {
     try { sessionStorage.removeItem(ROLEPLAY_SESSION_KEY); } catch {}
     setMessages([]); setInput(""); setLevel(null); setQuiz(null); setQuizSessionId(null);
     setAnswers([]); setCurrentQ(0); setShowExplanation(false); setScore(0); setScreen("scenarios");
-    setScenario(null); setSessionStartIndex(0); setLimitReached(false);
+    setScenario(null); setSessionStartIndex(0); setLimitReached(false); setShareModalOpen(false);
   }
 
   // Back to the scenario picker without discarding the current scenario's
@@ -585,6 +591,20 @@ export default function RolePlay() {
     const emoji = pct >= 80 ? "🏆" : pct >= 60 ? "💪" : "📚";
     const msg = pct >= 80 ? "Excelente! Você dominou esse cenário." : pct >= 60 ? "Bom trabalho! Continue praticando." : "Continue assim! Cada conversa te deixa melhor.";
     const scoreColor = pct >= 80 ? "#4ade80" : pct >= 60 ? "var(--yellow)" : "#f87171";
+    const shareContent = `${emoji} Just scored ${score}/${total} (${pct}%) on a role-play quiz!\n\n"${scenario?.name ?? quiz.title}"`;
+    const shareTranscript = JSON.stringify({
+      type: "quiz_result",
+      title: quiz.title,
+      score,
+      total,
+      questions: quiz.questions.map((q, i) => ({
+        question: q.question,
+        options: q.options,
+        correct: q.correct,
+        explanation: q.explanation,
+        userAnswer: answers[i] ?? null,
+      })),
+    });
     return (
       <div className="flex flex-col items-center justify-center px-4 pt-6 pb-8 min-h-screen" style={{ background: "var(--black)", fontFamily: "'Inter', sans-serif" }}>
         <div className="w-full max-w-lg flex flex-col items-center text-center gap-5">
@@ -610,11 +630,17 @@ export default function RolePlay() {
               );
             })}
           </div>
+          {!shareModalOpen && (
+            <button onClick={() => setShareModalOpen(true)} className="w-full py-3 rounded-xl font-bold text-sm" style={{ background: "rgba(255,255,255,.06)", color: "var(--gray)", border: "1px solid #2a2a2a" }}>
+              🌐 Compartilhar resultado na comunidade
+            </button>
+          )}
           <div className="flex gap-3 w-full mt-2">
             <button onClick={() => window.location.href = "/app/progresso"} className="flex-1 py-3 rounded-xl font-bold text-sm" style={{ background: "var(--dark2)", color: "var(--gray)", border: "1px solid #2a2a2a" }}>Ver progresso</button>
             <button onClick={restartChat} className="flex-1 py-3 rounded-xl font-bold text-sm" style={{ background: "var(--yellow)", color: "var(--black)" }}>Novo cenário</button>
           </div>
         </div>
+        <AutoShareModal open={shareModalOpen} content={shareContent} transcript={shareTranscript} onClose={() => setShareModalOpen(false)} />
       </div>
     );
   }

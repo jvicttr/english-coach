@@ -335,6 +335,14 @@ type FlashcardResultData = {
   cards: { word: string; translation: string; phonetic: string | null; example: string | null; rating: "easy" | "hard" | "miss" | null }[];
 };
 
+type TrailStepResultData = {
+  type: "trail_step_result";
+  step_title: string;
+  step_emoji: string;
+  score: number;
+  total: number;
+};
+
 function QuizResultEmbed({ data }: { data: QuizResultData }) {
   const [open, setOpen] = React.useState(false);
   const pct = data.total > 0 ? Math.round((data.score / data.total) * 100) : 0;
@@ -431,6 +439,19 @@ function FlashcardResultEmbed({ data }: { data: FlashcardResultData }) {
   );
 }
 
+function TrailStepResultEmbed({ data }: { data: TrailStepResultData }) {
+  const pct = data.total > 0 ? Math.round((data.score / data.total) * 100) : 0;
+  return (
+    <div style={{ background: "#0a0a0a", border: "1px solid #1e1e1e", borderRadius: 12, marginBottom: 10, padding: "10px 14px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <span style={{ fontSize: "0.75rem" }}>{data.step_emoji || "🏆"}</span>
+        <span style={{ fontSize: "0.75rem", color: "#ccc", fontWeight: 600 }}>Trilha · {data.step_title}</span>
+      </div>
+      <span style={{ fontSize: "0.72rem", fontWeight: 700, color: pct >= 80 ? "#4ade80" : pct >= 60 ? "var(--yellow)" : "#f87171" }}>{data.score}/{data.total} · {pct}%</span>
+    </div>
+  );
+}
+
 function RepostEmbed({ data }: { data: { original_post_id?: string; original_user_id: string; original_display_name: string; original_avatar_url: string | null; original_content: string; original_image_url?: string | null; original_created_at: string } }) {
   function goToOriginal() {
     if (!data.original_post_id) return;
@@ -471,6 +492,7 @@ function StructuredContent({ transcript }: { transcript: string | null }) {
     if (data.type === "repost") return <RepostEmbed data={data} />;
     if (data.type === "quiz_result") return <QuizResultEmbed data={data as QuizResultData} />;
     if (data.type === "flashcard_result") return <FlashcardResultEmbed data={data as FlashcardResultData} />;
+    if (data.type === "trail_step_result") return <TrailStepResultEmbed data={data as TrailStepResultData} />;
   } catch { /* not JSON */ }
   return null;
 }
