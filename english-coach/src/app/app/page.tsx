@@ -241,18 +241,18 @@ export default function AppHome() {
             {[
               {
                 href: "/app/conversar",
-                icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>,
+                icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--yellow)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>,
                 title: "Conversar",
                 desc: "Conversa livre ou por tópico",
-                iconBg: "rgba(96,165,250,.12)",
+                iconBg: "rgba(245,200,0,.12)",
                 badge: null,
               },
               {
                 href: isPro === true ? "/app/roleplay" : "/planos",
-                icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M15 3H5a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2v4l4-4h4a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2z" fill="rgba(167,139,250,.1)"/><path d="M19 9h2a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-1v3l-3-3h-3a2 2 0 0 1-2-2v-1" fill="rgba(167,139,250,.08)"/></svg>,
+                icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--yellow)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M15 3H5a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2v4l4-4h4a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2z" fill="rgba(245,200,0,.1)"/><path d="M19 9h2a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-1v3l-3-3h-3a2 2 0 0 1-2-2v-1" fill="rgba(245,200,0,.08)"/></svg>,
                 title: "Role-play",
                 desc: isPro === true ? "Situações reais" : "Exclusivo Pro",
-                iconBg: "rgba(167,139,250,.12)",
+                iconBg: "rgba(245,200,0,.12)",
                 badge: isPro === false ? { label: "🔒 Pro", color: "var(--yellow)", bg: "rgba(245,200,0,.1)" } : null,
               },
             ].map((card) => (
