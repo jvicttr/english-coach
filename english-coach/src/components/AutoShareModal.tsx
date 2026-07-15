@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 
 export function AutoShareModal({
   open,
@@ -16,6 +17,9 @@ export function AutoShareModal({
   const [text, setText] = useState(content);
   const [posting, setPosting] = useState(false);
   const [posted, setPosted] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => { setMounted(true); }, []);
 
   useEffect(() => {
     if (open) {
@@ -26,7 +30,7 @@ export function AutoShareModal({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
-  if (!open) return null;
+  if (!open || !mounted) return null;
 
   async function publish() {
     if (posting || posted) return;
@@ -44,14 +48,14 @@ export function AutoShareModal({
     }
   }
 
-  return (
+  return createPortal(
     <div
       onClick={onClose}
       style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.65)", zIndex: 300, display: "flex", alignItems: "flex-end", justifyContent: "center" }}
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        style={{ background: "var(--dark1)", border: "1px solid #2a2a2a", borderBottom: "none", borderRadius: "20px 20px 0 0", padding: "20px 18px calc(20px + env(safe-area-inset-bottom))", width: "100%", maxWidth: 480, display: "flex", flexDirection: "column", gap: 12, animation: "autoShareSlideUp .25s ease" }}
+        style={{ background: "var(--dark1)", border: "1px solid #2a2a2a", borderBottom: "none", borderRadius: "20px 20px 0 0", padding: "20px 18px calc(20px + env(safe-area-inset-bottom))", width: "100%", maxWidth: 480, maxHeight: "85vh", overflowY: "auto", display: "flex", flexDirection: "column", gap: 12, animation: "autoShareSlideUp .25s ease" }}
       >
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <p style={{ fontSize: "0.95rem", fontWeight: 800, color: "#fff", margin: 0 }}>🌐 Compartilhar na comunidade</p>
@@ -85,6 +89,7 @@ export function AutoShareModal({
         </div>
       </div>
       <style>{`@keyframes autoShareSlideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}`}</style>
-    </div>
+    </div>,
+    document.body
   );
 }
