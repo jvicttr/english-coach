@@ -105,6 +105,24 @@ function saveChatHistoryEntry(topicId: string, entry: ChatHistoryEntry) {
   } catch {}
 }
 
+// The saved conversations themselves only live in localStorage (per device), but the
+// "clear saved conversations" action is mirrored to Supabase as a timestamp so every
+// device can notice a clear performed elsewhere and wipe its own local cache too.
+const CHAT_CLEAR_SYNC_KEY = "jv_chat_cleared_sync_applied";
+
+async function syncChatClearFromServer() {
+  try {
+    const res = await fetch("/api/conversation-sync");
+    const data = await res.json();
+    const serverClearedAt = data?.chatClearedAt as string | null;
+    if (!serverClearedAt) return;
+    const applied = localStorage.getItem(CHAT_CLEAR_SYNC_KEY);
+    if (applied === serverClearedAt) return;
+    localStorage.removeItem(CHAT_HISTORY_KEY);
+    localStorage.setItem(CHAT_CLEAR_SYNC_KEY, serverClearedAt);
+  } catch {}
+}
+
 export default function Home() {
   const router = useRouter();
   const [messages, setMessages] = useState<Message[]>([]);
@@ -596,6 +614,7 @@ export default function Home() {
         // history is preserved separately (see CHAT_HISTORY_KEY) and resumed
         // only once the student explicitly picks that topic — never auto-jumped into.
         try { sessionStorage.removeItem(FREE_CHAT_SESSION_KEY); } catch {}
+        await syncChatClearFromServer();
         try {
           setTopicsWithHistory(new Set(Object.keys(loadChatHistory())));
         } catch {}
@@ -1087,6 +1106,13 @@ export default function Home() {
     if (!confirm("Limpar todas as conversas salvas (livre e temáticas)? Essa ação não pode ser desfeita.")) return;
     try { localStorage.removeItem(CHAT_HISTORY_KEY); } catch {}
     setTopicsWithHistory(new Set());
+    fetch("/api/conversation-sync", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ type: "chat" }),
+    }).then(r => r.json()).then(d => {
+      if (d?.clearedAt) { try { localStorage.setItem(CHAT_CLEAR_SYNC_KEY, d.clearedAt); } catch {} }
+    }).catch(() => {});
   }
 
   async function proceedToFlashcards() {

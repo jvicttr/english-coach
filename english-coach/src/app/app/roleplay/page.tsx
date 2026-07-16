@@ -64,6 +64,24 @@ function saveScenarioHistoryEntry(scenarioId: string, entry: ScenarioHistoryEntr
   } catch {}
 }
 
+// The saved conversations themselves only live in localStorage (per device), but the
+// "clear saved conversations" action is mirrored to Supabase as a timestamp so every
+// device can notice a clear performed elsewhere and wipe its own local cache too.
+const ROLEPLAY_CLEAR_SYNC_KEY = "jv_roleplay_cleared_sync_applied";
+
+async function syncRoleplayClearFromServer() {
+  try {
+    const res = await fetch("/api/conversation-sync");
+    const data = await res.json();
+    const serverClearedAt = data?.roleplayClearedAt as string | null;
+    if (!serverClearedAt) return;
+    const applied = localStorage.getItem(ROLEPLAY_CLEAR_SYNC_KEY);
+    if (applied === serverClearedAt) return;
+    localStorage.removeItem(ROLEPLAY_HISTORY_KEY);
+    localStorage.setItem(ROLEPLAY_CLEAR_SYNC_KEY, serverClearedAt);
+  } catch {}
+}
+
 export default function RolePlay() {
   const router = useRouter();
   const [screen, setScreen] = useState<AppScreen>("scenarios");
@@ -156,9 +174,12 @@ export default function RolePlay() {
     // separately (see ROLEPLAY_HISTORY_KEY) and only resumed once the student
     // explicitly picks that scenario, never auto-jumped into on page load.
     try { sessionStorage.removeItem(ROLEPLAY_SESSION_KEY); } catch {}
-    try {
-      setScenariosWithHistory(new Set(Object.keys(loadScenarioHistory())));
-    } catch {}
+    (async () => {
+      await syncRoleplayClearFromServer();
+      try {
+        setScenariosWithHistory(new Set(Object.keys(loadScenarioHistory())));
+      } catch {}
+    })();
   }, [router]);
 
   // Keep each scenario's conversation in localStorage, keyed by scenario id,
@@ -460,6 +481,13 @@ export default function RolePlay() {
     if (!confirm("Limpar todas as conversas salvas de role-play? Essa ação não pode ser desfeita.")) return;
     try { localStorage.removeItem(ROLEPLAY_HISTORY_KEY); } catch {}
     setScenariosWithHistory(new Set());
+    fetch("/api/conversation-sync", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ type: "roleplay" }),
+    }).then(r => r.json()).then(d => {
+      if (d?.clearedAt) { try { localStorage.setItem(ROLEPLAY_CLEAR_SYNC_KEY, d.clearedAt); } catch {} }
+    }).catch(() => {});
   }
 
   // Back to the scenario picker without discarding the current scenario's
