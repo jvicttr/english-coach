@@ -9,6 +9,32 @@ interface UserResult {
   email: string;
   image_url: string | null;
   handle: string | null;
+  last_active: string | null;
+}
+
+function formatLastActive(dateStr: string): string {
+  const [y, m, d] = dateStr.split("-").map(Number);
+  const date = new Date(Date.UTC(y, m - 1, d));
+  return date.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric", timeZone: "UTC" });
+}
+
+function ActivityBadge({ lastActive }: { lastActive: string | null }) {
+  if (!lastActive) return null;
+  const today = new Date().toISOString().split("T")[0];
+  const practicedToday = lastActive === today;
+  return (
+    <div style={{
+      fontSize: "0.72rem",
+      marginTop: 3,
+      color: practicedToday ? "#4ade80" : "#666",
+      display: "flex",
+      alignItems: "center",
+      gap: 4,
+    }}>
+      {practicedToday && <span>🔥</span>}
+      <span>{practicedToday ? "Praticou hoje" : `Último acesso em ${formatLastActive(lastActive)}`}</span>
+    </div>
+  );
 }
 
 function UserCard({ u, onClick }: { u: UserResult; onClick: () => void }) {
@@ -57,6 +83,7 @@ function UserCard({ u, onClick }: { u: UserResult; onClick: () => void }) {
         {u.handle && (
           <div style={{ fontSize: "0.8rem", color: "#666", marginTop: 2 }}>@{u.handle}</div>
         )}
+        <ActivityBadge lastActive={u.last_active} />
       </div>
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#333" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <polyline points="9 18 15 12 9 6"/>

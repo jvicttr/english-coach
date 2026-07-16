@@ -61,12 +61,22 @@ export async function GET(req: NextRequest) {
       ((xpRows as any[]) || []).map((r: any) => [r.user_id, r.handle])
     );
 
+    // Última data de prática (mesma fonte usada no cálculo de streak)
+    const { data: usageRows } = allIds.length
+      ? await supabase.from("usage").select("user_id, date").in("user_id", allIds).order("date", { ascending: false })
+      : { data: [] };
+    const lastActiveMap: Record<string, string> = {};
+    for (const row of (usageRows as any[]) || []) {
+      if (!lastActiveMap[row.user_id]) lastActiveMap[row.user_id] = row.date;
+    }
+
     const formatted = allUsers.map(u => ({
       id: u.id,
       email: u.email,
       name: u.name || u.email,
       image_url: u.image_url || null,
       handle: handleMap[u.id] ?? null,
+      last_active: lastActiveMap[u.id] ?? null,
     }));
 
     return NextResponse.json({ users: formatted });

@@ -36,6 +36,15 @@ export async function GET(req: NextRequest) {
     const handleMap = Object.fromEntries(((xpRows as any[]) || []).map((r: any) => [r.user_id, r.handle]));
     const nameMap = Object.fromEntries(((xpRows as any[]) || []).map((r: any) => [r.user_id, r.display_name]));
 
+    // Última data de prática (mesma fonte usada no cálculo de streak)
+    const { data: usageRows } = ids.length
+      ? await supabase.from("usage").select("user_id, date").in("user_id", ids).order("date", { ascending: false })
+      : { data: [] };
+    const lastActiveMap: Record<string, string> = {};
+    for (const row of (usageRows as any[]) || []) {
+      if (!lastActiveMap[row.user_id]) lastActiveMap[row.user_id] = row.date;
+    }
+
     // Auto-generate handle for users who don't have one yet
     const needsHandle = (users || []).filter(u => !handleMap[u.id]);
     if (needsHandle.length > 0) {
@@ -56,6 +65,7 @@ export async function GET(req: NextRequest) {
       name: nameMap[u.id] || u.name || u.email,
       image_url: u.image_url || null,
       handle: handleMap[u.id] ?? null,
+      last_active: lastActiveMap[u.id] ?? null,
     }));
 
     return NextResponse.json({ users: formattedUsers });
