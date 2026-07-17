@@ -222,24 +222,6 @@ export default function AppHome() {
           </a>
         )}
 
-        {/* ── Community preview ────────────────────────────────────────────────  */}
-        {isPro === null ? (
-          <div style={{ background: "var(--dark1)", border: "1px solid #1e1e1e", borderRadius: 16, padding: "14px 16px", display: "flex", flexDirection: "column", gap: 10 }}>
-            <div className="sk" style={{ height: 10, width: 100 }} />
-            {Array.from({ length: 2 }, (_, i) => (
-              <div key={i} style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                <div className="sk" style={{ width: 28, height: 28, borderRadius: "50%", flexShrink: 0 }} />
-                <div style={{ flex: 1 }}>
-                  <div className="sk" style={{ height: 10, width: "40%", marginBottom: 6 }} />
-                  <div className="sk" style={{ height: 10, width: "80%" }} />
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <CommunityPreview />
-        )}
-
         {/* ── Activities ─────────────────────────────────────────────────────── */}
         <div>
           <p style={{ fontSize: "0.65rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: ".08em", color: "var(--gray)", marginBottom: 10 }}>Atividades</p>
@@ -328,6 +310,24 @@ export default function AppHome() {
             <p style={{ fontWeight: 700, color: "#fff", fontSize: "0.95rem", margin: 0 }}>Boas-vindas ao JV IA!</p>
             <p style={{ color: "var(--gray)", fontSize: "0.8rem", margin: 0, lineHeight: 1.5 }}>Escolha uma atividade acima para começar a praticar inglês agora.</p>
           </div>
+        )}
+
+        {/* ── Community preview ────────────────────────────────────────────────  */}
+        {isPro === null ? (
+          <div style={{ background: "var(--dark1)", border: "1px solid #1e1e1e", borderRadius: 16, padding: "14px 16px", display: "flex", flexDirection: "column", gap: 10 }}>
+            <div className="sk" style={{ height: 10, width: 100 }} />
+            {Array.from({ length: 2 }, (_, i) => (
+              <div key={i} style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                <div className="sk" style={{ width: 28, height: 28, borderRadius: "50%", flexShrink: 0 }} />
+                <div style={{ flex: 1 }}>
+                  <div className="sk" style={{ height: 10, width: "40%", marginBottom: 6 }} />
+                  <div className="sk" style={{ height: 10, width: "80%" }} />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <CommunityPreview />
         )}
       </div>
 
