@@ -298,9 +298,6 @@ export default function AppHome() {
           </a>
         )}
 
-        {/* ── Adicionar à tela inicial (some sozinho se já instalado) ─────────── */}
-        {!isMobileView && <InstallAppCard />}
-
         {/* ── No-content CTA ─────────────────────────────────────────────────── */}
         {isPro !== null && streak === 0 && !lastTopic && (
           <div style={{ background: "var(--dark1)", border: "1px solid #1e1e1e", borderRadius: 16, padding: "20px 16px", textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
@@ -317,6 +314,9 @@ export default function AppHome() {
              its own skeleton) so there's a single source of truth for the
              layout — no separate page-level placeholder to keep in sync. */}
         <CommunityPreview />
+
+        {/* ── Adicionar à tela inicial (some sozinho se já instalado) ─────────── */}
+        {!isMobileView && <InstallAppCard />}
       </div>
 
       {/* Botão FAB Mensagens */}
