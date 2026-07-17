@@ -1,12 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Script from "next/script";
 
 // Set once the Google AdSense account for the site is approved — the publisher
 // id looks like "ca-pub-XXXXXXXXXXXXXXXX" and the (single, reused) display ad
 // unit's slot id is numeric. Until both are set this whole component is a
-// no-op, so it's safe to have it mounted across the app already.
+// no-op, so it's safe to have it mounted across the app already. The AdSense
+// loader script itself lives in the root layout (see src/app/layout.tsx) so
+// it's present on public pages too, where Google's crawler can reach it.
 const ADSENSE_CLIENT_ID = process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID;
 const ADSENSE_SLOT_ID = process.env.NEXT_PUBLIC_ADSENSE_SLOT_ID;
 
@@ -26,7 +27,6 @@ export function AdBanner({ slot = ADSENSE_SLOT_ID }: { slot?: string }) {
     if (typeof window === "undefined") return true;
     return localStorage.getItem("userPlan") === "pro";
   });
-  const [scriptReady, setScriptReady] = useState(false);
 
   useEffect(() => {
     fetch("/api/me")
@@ -36,22 +36,16 @@ export function AdBanner({ slot = ADSENSE_SLOT_ID }: { slot?: string }) {
   }, []);
 
   useEffect(() => {
-    if (isPro || !scriptReady || !ADSENSE_CLIENT_ID) return;
+    if (isPro || !ADSENSE_CLIENT_ID || !slot) return;
     try {
       (window.adsbygoogle = window.adsbygoogle || []).push({});
     } catch {}
-  }, [isPro, scriptReady]);
+  }, [isPro, slot]);
 
   if (!ADSENSE_CLIENT_ID || !slot || isPro) return null;
 
   return (
     <div style={{ margin: "16px 0", textAlign: "center", minHeight: 60 }}>
-      <Script
-        src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE_CLIENT_ID}`}
-        crossOrigin="anonymous"
-        strategy="afterInteractive"
-        onReady={() => setScriptReady(true)}
-      />
       <ins
         className="adsbygoogle"
         style={{ display: "block" }}

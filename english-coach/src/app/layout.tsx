@@ -2,8 +2,15 @@ import type { Metadata, Viewport } from "next";
 import { Inter, Caveat } from "next/font/google";
 import { ClerkProvider } from "@clerk/nextjs";
 import { Analytics } from "@vercel/analytics/react";
+import Script from "next/script";
 import FCMInit from "@/components/FCMInit";
 import "./globals.css";
+
+// Loaded in the public root layout (not just the logged-in /app pages, which
+// Google's crawler can't reach behind Clerk's auth.protect()) so AdSense can
+// verify site ownership and review content. Actual ad units still only
+// render inside AdBanner, gated to free users.
+const ADSENSE_CLIENT_ID = process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID;
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 const caveat = Caveat({ subsets: ["latin"], variable: "--font-caveat", weight: ["700"] });
@@ -115,11 +122,19 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       <html lang="pt-BR" className={`${inter.variable} ${caveat.variable}`}>
         <head>
           <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+          {ADSENSE_CLIENT_ID && <meta name="google-adsense-account" content={ADSENSE_CLIENT_ID} />}
         </head>
         <body>
           {children}
           <Analytics />
           <FCMInit />
+          {ADSENSE_CLIENT_ID && (
+            <Script
+              src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE_CLIENT_ID}`}
+              crossOrigin="anonymous"
+              strategy="afterInteractive"
+            />
+          )}
         </body>
       </html>
     </ClerkProvider>
