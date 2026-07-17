@@ -75,12 +75,14 @@ export async function POST(req: NextRequest) {
 
   const isPro = sub.data?.plan === "pro" || sub.data?.plan === "combo";
 
-  // Share posts bypass the free post limit
+  // Share posts bypass the free post limit. Auto-generated posts (e.g. welcome
+  // message on signup) don't count toward it either.
   if (!isPro && !parentId && !isShare) {
     const { count } = await supabase
       .from("community_posts")
       .select("*", { count: "exact", head: true })
       .eq("user_id", userId)
+      .eq("is_auto_post", false)
       .is("parent_id", null);
     if ((count ?? 0) >= FREE_POST_LIMIT) {
       return NextResponse.json({ error: "free_limit" }, { status: 403 });
@@ -186,6 +188,7 @@ export async function POST(req: NextRequest) {
         .from("community_posts")
         .select("*", { count: "exact", head: true })
         .eq("user_id", userId)
+        .eq("is_auto_post", false)
         .is("parent_id", null);
 
       const { data: xpRow } = await supabase.from("user_xp").select("total_xp").eq("user_id", userId).maybeSingle();

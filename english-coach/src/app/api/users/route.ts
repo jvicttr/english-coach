@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { auth } from "@clerk/nextjs/server";
+import { auth, currentUser } from "@clerk/nextjs/server";
 
 const supabase = createClient(
   process.env.SUPABASE_URL!,
@@ -83,6 +83,9 @@ export async function POST(req: NextRequest) {
   try {
     const { email, name, image } = await req.json();
 
+    const { data: existing } = await supabase.from("users").select("id").eq("id", userId).maybeSingle();
+    const isNewUser = !existing;
+
     const fields: Record<string, string> = { id: userId, email, name };
     if (image) fields.image_url = image; // só atualiza foto se vier valor — evita apagar o que sync-all gravou
 
@@ -93,6 +96,32 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (error) throw error;
+
+    if (isNewUser) {
+      try {
+        const { data: existingAutoPost } = await supabase
+          .from("community_posts")
+          .select("id")
+          .eq("user_id", userId)
+          .eq("is_auto_post", true)
+          .maybeSingle();
+
+        if (!existingAutoPost) {
+          const clerkUser = await currentUser();
+          const firstName = clerkUser?.firstName || name?.split(" ")[0] || "there";
+          await supabase.from("community_posts").insert({
+            user_id: userId,
+            display_name: name || clerkUser?.fullName || clerkUser?.username || "Student",
+            avatar_url: clerkUser?.imageUrl ?? null,
+            content: `Hey, my name is ${firstName}! How are you all doing today?`,
+            is_auto_post: true,
+          });
+        }
+      } catch (postError) {
+        console.error("Erro ao criar post de boas-vindas:", postError);
+      }
+    }
+
     return NextResponse.json({ user: data });
   } catch (error) {
     console.error("Erro ao sincronizar usuário:", error);
