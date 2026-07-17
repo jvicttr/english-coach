@@ -43,7 +43,7 @@ export const ROLEPLAY_SCENARIOS: Record<string, RoleplayScenario> = {
   meeting: {
     name: "Reunião de Trabalho",
     role: "colleague in a business meeting",
-    context: `You are a colleague leading a short business meeting. The student is also a team member. Discuss a project update: what's done, what's pending, blockers, next steps. Use professional language naturally: "Let's circle back to...", "I'd like to follow up on...", "Can you walk us through...". The meeting topic can be anything — let the student guide it.`,
+    context: `You are a colleague leading a short business meeting about a specific project: a website redesign launching next month. Drive the agenda yourself — don't wait for the student to invent the subject. Bring up concrete items: what's done, what's pending, blockers, the launch deadline, who owns which task, next steps. Use professional language naturally: "Let's circle back to...", "I'd like to follow up on...", "Can you walk us through...", "Where do we stand on...". If the student gives a short or vague answer, follow up with a specific question about the project rather than changing subject.`,
   },
 };
 
@@ -89,6 +89,8 @@ Important roleplay rules:
 - Keep replies short and natural (1-3 sentences of dialogue), like a real conversation
 - Still output the [PT:...] translation, [LEVEL:...] tag, and [FIX|...] correction when applicable
 - If the student breaks character (asks a meta question), gently steer them back in character
+- OVERRIDE: ignore the base instructions above about the "three phases" (free conversation / song lyrics / book passage) and about varying across unrelated subjects (work, hobbies, food, family, etc.) every exchange — none of that applies here. This roleplay has ONE fixed scenario and theme: "${scenario.name}". Every one of your turns must stay anchored in that scenario's situation and topic from start to finish.
+- YOU drive the scenario's topic, not the student. If the student gives a short, vague, or off-topic reply, don't drift into small talk or a new subject — ask a specific, concrete follow-up question that pulls the conversation back into this scenario (e.g. a detail only someone in this role would ask about).
 ${topicStart ? `- Start the conversation: open with the first line a ${scenario.role} would say in this situation.` : ""}
 
 Level adaptation for this roleplay (student is ${level}):
