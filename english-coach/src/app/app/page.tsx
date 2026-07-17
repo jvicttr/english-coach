@@ -109,6 +109,21 @@ export default function AppHome() {
   const weekDays = streakData?.weekDays ?? [];
   const todayIdx = (new Date().getDay() + 6) % 7; // 0=Mon
 
+  const revisaoAulaCard = (
+    <a href="/app/resumo" style={{ background: "var(--dark1)", border: "1px solid rgba(245,200,0,.2)", borderRadius: 16, padding: "14px 16px", textDecoration: "none", display: "flex", alignItems: "center", gap: 14 }}>
+      <div style={{ width: 40, height: 40, borderRadius: 12, background: "rgba(245,200,0,.1)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--yellow)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+      </div>
+      <div>
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <p style={{ fontSize: "0.85rem", fontWeight: 700, color: "#fff", margin: 0 }}>Revisão de Aula</p>
+        </div>
+        <p style={{ fontSize: "0.72rem", color: "var(--gray)", margin: "2px 0 0" }}>Envie o PDF da sua aula e tire dúvidas</p>
+      </div>
+      <svg style={{ marginLeft: "auto", flexShrink: 0 }} width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--gray)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+    </a>
+  );
+
   return (
     <>
     {showLevelSelect && <LevelSelect onDone={() => setShowLevelSelect(false)} />}
@@ -282,21 +297,8 @@ export default function AppHome() {
         {/* ── Quick Translator ───────────────────────────────────────────────── */}
         <QuickTranslator />
 
-        {/* ── PRO exclusive ──────────────────────────────────────────────────── */}
-        {isPro === true && (
-          <a href="/app/resumo" style={{ background: "var(--dark1)", border: "1px solid rgba(245,200,0,.2)", borderRadius: 16, padding: "14px 16px", textDecoration: "none", display: "flex", alignItems: "center", gap: 14 }}>
-            <div style={{ width: 40, height: 40, borderRadius: 12, background: "rgba(245,200,0,.1)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--yellow)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
-            </div>
-            <div>
-              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                <p style={{ fontSize: "0.85rem", fontWeight: 700, color: "#fff", margin: 0 }}>Revisão de Aula</p>
-              </div>
-              <p style={{ fontSize: "0.72rem", color: "var(--gray)", margin: "2px 0 0" }}>Envie o PDF da sua aula e tire dúvidas</p>
-            </div>
-            <svg style={{ marginLeft: "auto", flexShrink: 0 }} width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--gray)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-          </a>
-        )}
+        {/* ── PRO exclusive (desktop: aqui embaixo do tradutor) ────────────────── */}
+        {isPro === true && !isMobileView && revisaoAulaCard}
 
         {/* ── No-content CTA ─────────────────────────────────────────────────── */}
         {isPro !== null && streak === 0 && !lastTopic && (
@@ -314,6 +316,9 @@ export default function AppHome() {
              its own skeleton) so there's a single source of truth for the
              layout — no separate page-level placeholder to keep in sync. */}
         <CommunityPreview />
+
+        {/* ── PRO exclusive (mobile: aqui embaixo da comunidade) ───────────────── */}
+        {isPro === true && isMobileView && revisaoAulaCard}
 
         {/* ── Adicionar à tela inicial (some sozinho se já instalado) ─────────── */}
         {!isMobileView && <InstallAppCard />}
