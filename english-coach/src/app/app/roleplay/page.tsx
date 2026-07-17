@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { shuffleQuizOptions } from "@/lib/quiz";
 import { AutoShareModal } from "@/components/AutoShareModal";
+import { AdBanner } from "@/components/AdBanner";
 import { ensureTimestamps, getBrasiliaDay, getDayLabel } from "@/lib/chatDate";
 
 type Correction = { wrong: string; right: string; phonetic: string; wrongSentence?: string; rightSentence?: string };
@@ -706,6 +707,7 @@ export default function RolePlay() {
               </button>
             ))}
           </div>
+          <AdBanner />
           {scenariosWithHistory.size > 0 && (
             <div className="flex justify-center mt-4">
               <button

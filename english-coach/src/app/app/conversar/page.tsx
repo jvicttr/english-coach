@@ -7,6 +7,7 @@ import type { TrailStep } from "@/lib/trilha-steps";
 import { shuffleQuizOptions } from "@/lib/quiz";
 import ChatTranslator from "@/components/ChatTranslator";
 import { AutoShareModal } from "@/components/AutoShareModal";
+import { AdBanner } from "@/components/AdBanner";
 import { ensureTimestamps, getBrasiliaDay, getDayLabel } from "@/lib/chatDate";
 
 type Correction = { wrong: string; right: string; phonetic: string; wrongSentence?: string; rightSentence?: string };
@@ -1731,6 +1732,7 @@ export default function Home() {
               </button>
             ))}
           </div>
+          <AdBanner />
           {topicsWithHistory.size > 0 && (
             <div className="flex justify-center mt-4">
               <button

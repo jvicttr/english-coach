@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { TIERS, getTier as getTierFromXp } from "@/lib/tiers";
+import { AdBanner } from "@/components/AdBanner";
 
 type TierInfo = { id: string; label: string; emoji: string; color: string; min: number; max: number };
 
@@ -303,6 +304,7 @@ export default function ConquistasPage() {
           </div>
         )}
 
+        <AdBanner />
         <div style={{ height: 32 }} />
       </div>
 

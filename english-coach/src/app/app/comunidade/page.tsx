@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useUser } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import { PostCard, type Post, EMOJI_LIST } from "@/components/PostCard";
+import { AdBanner } from "@/components/AdBanner";
 
 function getSupportedMime() {
   const types = ["audio/webm;codecs=opus", "audio/webm", "audio/mp4", "audio/ogg"];
@@ -444,8 +445,11 @@ export default function ComunidadePage() {
           </div>
         )}
 
-        {posts.map(post => (
-          <PostCard key={post.id} post={post} myId={user?.id ?? ""} user={user} router={router} onReaction={toggleReaction} onImageClick={(url) => { setSelectedImage(url); setImageZoom(1); }} onDeleted={id => setPosts(prev => prev.filter(p => p.id !== id))} />
+        {posts.map((post, i) => (
+          <React.Fragment key={post.id}>
+            <PostCard post={post} myId={user?.id ?? ""} user={user} router={router} onReaction={toggleReaction} onImageClick={(url) => { setSelectedImage(url); setImageZoom(1); }} onDeleted={id => setPosts(prev => prev.filter(p => p.id !== id))} />
+            {(i + 1) % 6 === 0 && <AdBanner />}
+          </React.Fragment>
         ))}
       </div>
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { AdBanner } from "@/components/AdBanner";
 
 type QuizQuestion = {
   question: string;
@@ -440,6 +441,8 @@ export default function Progresso() {
             </a>
           </div>
         )}
+
+        <AdBanner />
       </div>
 
     </div>

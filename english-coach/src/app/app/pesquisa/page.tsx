@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { AdBanner } from "@/components/AdBanner";
 
 interface UserResult {
   id: string;
@@ -251,6 +252,12 @@ export default function PesquisaPage() {
         {!isLoading && displayUsers.map(u => (
           <UserCard key={u.id} u={u} onClick={() => goToProfile(u.id)} />
         ))}
+
+        {!isLoading && displayUsers.length > 0 && (
+          <div style={{ padding: "0 16px" }}>
+            <AdBanner />
+          </div>
+        )}
       </div>
     </div>
   );

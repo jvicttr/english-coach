@@ -80,7 +80,7 @@ export default function PlanosPage() {
           <div style={{ fontSize: "2.5rem", fontWeight: 900, color: "var(--white)", marginBottom: ".25rem" }}>R$ 97</div>
           <div style={{ fontSize: ".85rem", color: "var(--gray)", marginBottom: "2rem" }}>por mês</div>
           <ul style={{ listStyle: "none", padding: 0, margin: "0 0 2rem", display: "flex", flexDirection: "column", gap: ".75rem" }}>
-            {["Conversas ilimitadas com áudio e correção", "Detecção automática de nível", "Trilha de aprendizado do A1 ao C1", "Role-play em cenários reais", "Flashcards + quizzes automáticos", "IA com busca em tempo real na web", "Revisão de aula com PDF", "Comunidade, mensagens e conquistas", "Suporte por WhatsApp"].map((f) => (
+            {["Conversas ilimitadas com áudio e correção", "Sem anúncios", "Detecção automática de nível", "Trilha de aprendizado do A1 ao C1", "Role-play em cenários reais", "Flashcards + quizzes automáticos", "IA com busca em tempo real na web", "Revisão de aula com PDF", "Comunidade, mensagens e conquistas", "Suporte por WhatsApp"].map((f) => (
               <li key={f} style={{ display: "flex", alignItems: "center", gap: ".6rem", fontSize: ".9rem", color: "var(--white)" }}>
                 <span style={{ color: "var(--yellow)" }}>✓</span> {f}
               </li>
