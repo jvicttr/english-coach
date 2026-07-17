@@ -188,11 +188,12 @@ Guide the conversation around this theme. Keep it natural and engaging, not like
 
   // Level is never auto-updated from chat detection — only changes via learning path progression
 
+  let newBadges: Awaited<ReturnType<typeof grantXP>>["newBadges"] = [];
   if (!topicStart) {
-    await grantXP(userId, { type: "message", detectedLevel: detectedLevel ?? undefined }).catch(() => {});
+    newBadges = (await grantXP(userId, { type: "message", detectedLevel: detectedLevel ?? undefined }).catch(() => ({ newXp: 0, newBadges: [] }))).newBadges;
   }
 
-  return NextResponse.json({ reply, detectedLevel, translation: finalTranslation, corrections });
+  return NextResponse.json({ reply, detectedLevel, translation: finalTranslation, corrections, newBadges });
 }
 
 const CEFR_DESCRIPTIONS = {

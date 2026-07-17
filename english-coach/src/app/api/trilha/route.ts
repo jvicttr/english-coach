@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
       { onConflict: "user_id,step_id" }
     );
 
-  await grantXP(userId, { type: "trail_step", stepId }).catch(() => {});
+  const { newBadges } = await grantXP(userId, { type: "trail_step", stepId }).catch(() => ({ newXp: 0, newBadges: [] }));
 
   // Check if user just completed all steps of a CEFR level — if so, advance their profile level
   const completedStep = TRAIL_STEPS.find((s) => s.id === stepId)!;
@@ -69,7 +69,7 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({ ok: true, newBadges });
 }
 
 export async function DELETE(req: NextRequest) {

@@ -7,6 +7,7 @@ import { shuffleQuizOptions } from "@/lib/quiz";
 import { AutoShareModal } from "@/components/AutoShareModal";
 import { AdBanner } from "@/components/AdBanner";
 import { ensureTimestamps, getBrasiliaDay, getDayLabel } from "@/lib/chatDate";
+import { emitTierUp } from "@/lib/tierEvents";
 
 type Correction = { wrong: string; right: string; phonetic: string; wrongSentence?: string; rightSentence?: string };
 type CorrectionList = Correction[];
@@ -400,6 +401,7 @@ export default function RolePlay() {
       if (!res.ok) { setMessages((prev) => [...prev, { role: "assistant", content: "Ops, tive um problema. Tente enviar de novo!", createdAt: new Date().toISOString() }]); return; }
       const data = await res.json();
       if (data.limitReached) { setLimitReached(true); setMessages((prev) => prev.slice(0, -1)); return; }
+      emitTierUp(data.newBadges);
       if (!data.reply) { setMessages((prev) => [...prev, { role: "assistant", content: "Ops, não consegui responder. Tente de novo!", createdAt: new Date().toISOString() }]); return; }
       setMessages((prev) => [...prev, { role: "assistant", content: data.reply, translation: data.translation ?? undefined, corrections: data.corrections?.length ? data.corrections : undefined, createdAt: new Date().toISOString() }]);
       // Note: detectedLevel is only used server-side for XP tracking — the

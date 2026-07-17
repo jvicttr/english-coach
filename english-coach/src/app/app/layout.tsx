@@ -5,6 +5,7 @@ import IOSInstallBanner from "@/components/IOSInstallBanner";
 import NotificationPromptBanner from "@/components/NotificationPromptBanner";
 import PushNavigationHandler from "@/components/PushNavigationHandler";
 import InstallRewardChecker from "@/components/InstallRewardChecker";
+import TierUpModal from "@/components/TierUpModal";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -14,6 +15,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       <AppHeader />
       <NotificationPromptBanner />
       <InstallRewardChecker />
+      <TierUpModal />
       {/* Flex column fixo que ocupa toda a tela — nav é filho estático, não fixed */}
       <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, display: "flex", flexDirection: "column" }}>
         <div

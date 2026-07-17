@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { shuffleQuizOptions } from "@/lib/quiz";
+import { emitTierUp } from "@/lib/tierEvents";
 
 type Message = { role: "user" | "assistant"; content: string; translation?: string };
 type QuizQuestion = { question: string; options: string[]; correct: number; explanation: string };
@@ -278,7 +279,8 @@ export default function ResumoAula() {
       const finalScore = answers.reduce<number>((acc, a, i) => acc + (a === quiz!.questions[i].correct ? 1 : 0), 0);
       setScore(finalScore);
       if (quizSessionId) {
-        await fetch("/api/quiz", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ sessionId: quizSessionId, score: finalScore, answers }) });
+        const quizRes = await fetch("/api/quiz", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ sessionId: quizSessionId, score: finalScore, answers }) });
+        emitTierUp((await quizRes.json().catch(() => null))?.newBadges);
       }
       setScreen("result");
     }

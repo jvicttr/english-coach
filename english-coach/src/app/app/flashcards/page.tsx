@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { AutoShareModal } from "@/components/AutoShareModal";
+import { emitTierUp } from "@/lib/tierEvents";
 
 type Flashcard = {
   id: string;
@@ -194,11 +195,12 @@ export default function Flashcards() {
     setRating(r);
     setSessionResults((prev) => ({ ...prev, [r]: prev[r] + 1 }));
     setSessionRatings((prev) => ({ ...prev, [card.id]: r }));
-    await fetch("/api/flashcards", {
+    const rateRes = await fetch("/api/flashcards", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id: card.id, rating: r }),
     });
+    emitTierUp((await rateRes.json().catch(() => null))?.newBadges);
     setTimeout(() => {
       setRating(null);
       setFlipped(false);

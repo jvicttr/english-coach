@@ -214,8 +214,8 @@ export async function PATCH(req: NextRequest) {
       console.error("[quiz] update error:", updateError.message);
       // Fall through to insert as last resort
     } else {
-      await grantXP(userId, { type: "quiz", score, total }).catch(() => {});
-      return NextResponse.json({ ok: true });
+      const { newBadges } = await grantXP(userId, { type: "quiz", score, total }).catch(() => ({ newXp: 0, newBadges: [] }));
+      return NextResponse.json({ ok: true, newBadges });
     }
   }
 
@@ -239,6 +239,6 @@ export async function PATCH(req: NextRequest) {
     }
   }
 
-  await grantXP(userId, { type: "quiz", score, total }).catch(() => {});
-  return NextResponse.json({ ok: true });
+  const { newBadges } = await grantXP(userId, { type: "quiz", score, total }).catch(() => ({ newXp: 0, newBadges: [] }));
+  return NextResponse.json({ ok: true, newBadges });
 }

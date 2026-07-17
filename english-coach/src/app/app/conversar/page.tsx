@@ -9,6 +9,7 @@ import ChatTranslator from "@/components/ChatTranslator";
 import { AutoShareModal } from "@/components/AutoShareModal";
 import { AdBanner } from "@/components/AdBanner";
 import { ensureTimestamps, getBrasiliaDay, getDayLabel } from "@/lib/chatDate";
+import { emitTierUp } from "@/lib/tierEvents";
 
 type Correction = { wrong: string; right: string; phonetic: string; wrongSentence?: string; rightSentence?: string };
 type CorrectionList = Correction[];
@@ -926,6 +927,7 @@ export default function Home() {
       }
       const data = await res.json();
       if (data.limitReached) { setLimitReached(true); setMessages((prev) => prev.slice(0, -1)); return; }
+      emitTierUp(data.newBadges);
       if (!isPro) setMessagesUsed((n) => Math.min(n + 1, 5));
       if (!data.reply) {
         setMessages((prev) => [...prev, { role: "assistant", content: "Ops, não consegui responder. Tente de novo!", createdAt: new Date().toISOString() }]);
@@ -1023,7 +1025,7 @@ export default function Home() {
       setScore(finalScore);
       setScreen("result");
       // Save to Supabase — always send quiz data so server can insert if sessionId is missing
-      await fetch("/api/quiz", {
+      const quizRes = await fetch("/api/quiz", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -1034,6 +1036,7 @@ export default function Home() {
           level,
         }),
       });
+      emitTierUp((await quizRes.json().catch(() => null))?.newBadges);
       // Trilha: save quiz score for review mode
       if (trilhaStep && trilhaPhase === "chat1") {
         setTrilhaQuizScore({ score: finalScore, total: quiz?.questions.length ?? 0 });
@@ -1043,11 +1046,12 @@ export default function Home() {
       }
       // Non-trilha: mark step complete immediately if score ≥70%
       if (trilhaStep && trilhaPhase !== "chat1" && finalScore / (quiz?.questions.length ?? 1) >= 0.7) {
-        await fetch("/api/trilha", {
+        const trilhaRes = await fetch("/api/trilha", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ stepId: trilhaStep.id, score: finalScore, total: quiz?.questions.length ?? 0 }),
         });
+        emitTierUp((await trilhaRes.json().catch(() => null))?.newBadges);
       }
     }
   }
@@ -1203,11 +1207,12 @@ export default function Home() {
     // Use the current quiz score directly (score/quiz state is still active on result screen)
     const finalScore = score;
     const finalTotal = quiz?.questions.length ?? trilhaQuizScore?.total ?? 0;
-    await fetch("/api/trilha", {
+    const trilhaRes = await fetch("/api/trilha", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ stepId: trilhaStep.id, score: finalScore, total: finalTotal }),
     });
+    emitTierUp((await trilhaRes.json().catch(() => null))?.newBadges);
     setScreen("trail-complete");
   }
 
