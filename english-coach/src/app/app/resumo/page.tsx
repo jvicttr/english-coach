@@ -168,18 +168,12 @@ export default function ResumoAula() {
     setDeletingId(null);
   }
 
-  async function processFile(file: File) {
-    if (file.type !== "application/pdf") { setError("Por favor, envie um arquivo PDF."); return; }
-    setFileName(file.name);
+  async function analyzePdf(base64: string, name: string) {
+    setFileName(name);
     setError(null);
     setLoadingPdf(true);
     setReviewId(null);
     try {
-      const buffer = await file.arrayBuffer();
-      const bytes = new Uint8Array(buffer);
-      let binary = "";
-      for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
-      const base64 = btoa(binary);
       const res = await fetch("/api/resumo-chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -196,6 +190,32 @@ export default function ResumoAula() {
       setLoadingPdf(false);
     }
   }
+
+  async function processFile(file: File) {
+    if (file.type !== "application/pdf") { setError("Por favor, envie um arquivo PDF."); return; }
+    const buffer = await file.arrayBuffer();
+    const bytes = new Uint8Array(buffer);
+    let binary = "";
+    for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
+    const base64 = btoa(binary);
+    await analyzePdf(base64, file.name);
+  }
+
+  // PDF enviado a partir de um anexo recebido no chat direto (via botão "Enviar para Revisão de Aula")
+  useEffect(() => {
+    if (isPro === null) return;
+    const pending = sessionStorage.getItem("resumo_pending_pdf");
+    if (!pending) return;
+    sessionStorage.removeItem("resumo_pending_pdf");
+    if (!isPro) return;
+    const timer = setTimeout(() => {
+      try {
+        const { base64, fileName: name } = JSON.parse(pending);
+        if (base64) analyzePdf(base64, name || "aula.pdf");
+      } catch {}
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [isPro]);
 
   async function sendMessage() {
     if (!input.trim() || isLoading || !lessonContext) return;

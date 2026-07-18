@@ -123,6 +123,40 @@ function ChatAudioPlayer({ src, isOwn }: { src: string; isOwn: boolean }) {
   );
 }
 
+function ChatFilePreview({ url, name, isOwn, onSendToReview }: { url: string; name: string | null; isOwn: boolean; onSendToReview?: () => void }) {
+  const bg = isOwn ? "rgba(0,0,0,0.15)" : "rgba(255,255,255,0.06)";
+  const border = isOwn ? "1px solid rgba(0,0,0,0.2)" : "1px solid rgba(255,255,255,0.12)";
+  const textColor = isOwn ? "#000" : "#fff";
+  const subColor = isOwn ? "rgba(0,0,0,0.6)" : "var(--gray)";
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 200, maxWidth: 260, marginBottom: 4 }}>
+      <a
+        href={url}
+        target="_blank"
+        rel="noopener noreferrer"
+        onClick={(e) => e.stopPropagation()}
+        onTouchStart={(e) => e.stopPropagation()}
+        style={{ display: "flex", alignItems: "center", gap: 10, background: bg, border, borderRadius: 10, padding: "9px 11px", textDecoration: "none" }}
+      >
+        <div style={{ width: 32, height: 32, borderRadius: 8, background: isOwn ? "rgba(0,0,0,0.2)" : "var(--yellow)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1rem", flexShrink: 0 }}>📄</div>
+        <div style={{ minWidth: 0, flex: 1 }}>
+          <div style={{ fontSize: "0.8rem", fontWeight: 700, color: textColor, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{name || "Documento.pdf"}</div>
+          <div style={{ fontSize: "0.68rem", color: subColor }}>PDF · toque para abrir</div>
+        </div>
+      </a>
+      {onSendToReview && (
+        <button
+          onClick={(e) => { e.stopPropagation(); onSendToReview(); }}
+          onTouchStart={(e) => e.stopPropagation()}
+          style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, background: "transparent", border: `1px solid ${isOwn ? "rgba(0,0,0,0.25)" : "rgba(255,255,255,0.15)"}`, borderRadius: 8, padding: "6px 10px", fontSize: "0.72rem", fontWeight: 600, color: isOwn ? "rgba(0,0,0,0.75)" : "var(--yellow)", cursor: "pointer" }}
+        >
+          🎓 Enviar para Revisão de Aula
+        </button>
+      )}
+    </div>
+  );
+}
+
 function parseDate(dateStr: string): Date {
   let s = dateStr.replace(" ", "T");
   if (!s.endsWith("Z") && !/[+-]\d{2}:?\d{2}$/.test(s)) s += "Z";
@@ -273,6 +307,9 @@ export default function ChatPage() {
   const chunksRef = useRef<Blob[]>([]);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const pdfInputRef = useRef<HTMLInputElement>(null);
+  const [draggingPdf, setDraggingPdf] = useState(false);
+  const dragCounterRef = useRef(0);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const msgRefsMap = useRef<Map<string, HTMLElement>>(new Map());
   const chatScrollRef = useRef<HTMLDivElement>(null);
@@ -418,9 +455,9 @@ export default function ChatPage() {
     } catch (e) { console.error(e); }
   }
 
-  async function send(content?: string, imageUrl?: string, audioUrlParam?: string) {
+  async function send(content?: string, imageUrl?: string, audioUrlParam?: string, fileUrl?: string, fileName?: string) {
     if (!conversationId || sending) return;
-    if (!content?.trim() && !imageUrl && !audioUrlParam) return;
+    if (!content?.trim() && !imageUrl && !audioUrlParam && !fileUrl) return;
     setSending(true);
     const currentReplyTo = replyTo;
     setReplyTo(null);
@@ -443,6 +480,8 @@ export default function ChatPage() {
           imageUrl: imageUrl || null,
           audioUrl: audioUrlParam || null,
           videoUrl: null,
+          fileUrl: fileUrl || null,
+          fileName: fileName || null,
           replyToId: currentReplyTo?.id || null,
         }),
       });
@@ -572,6 +611,55 @@ export default function ChatPage() {
       setSending(false);
     }
     e.target.value = "";
+  }
+
+  async function handlePdf(file: File) {
+    if (file.type !== "application/pdf") { alert("Envie um arquivo PDF."); return; }
+    if (file.size > 15 * 1024 * 1024) { alert("O PDF deve ter até 15MB."); return; }
+    setSending(true);
+    const localUrl = URL.createObjectURL(file);
+    const tmpId = `tmp-${Date.now()}`;
+    setMessages(prev => [...prev, {
+      id: tmpId,
+      sender_id: user?.id,
+      file_url: localUrl,
+      file_name: file.name,
+      content: null,
+      created_at: new Date().toISOString(),
+    }]);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch("/api/messages/upload-file", { method: "POST", body: fd });
+      const data = await res.json();
+      if (!res.ok || !data.url) throw new Error(data.error || "Upload falhou");
+      await send(undefined, undefined, undefined, data.url, file.name);
+      setMessages(prev => prev.filter(m => m.id !== tmpId));
+    } catch (err) {
+      console.error(err);
+      setMessages(prev => prev.filter(m => m.id !== tmpId));
+      setSending(false);
+      alert(err instanceof Error ? err.message : "Erro ao enviar o PDF.");
+    }
+  }
+
+  function handlePdfInputChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (file) handlePdf(file);
+    e.target.value = "";
+  }
+
+  async function sendToReview(fileUrl: string, fileName: string | null) {
+    try {
+      const res = await fetch(`/api/messages/fetch-pdf?url=${encodeURIComponent(fileUrl)}`);
+      const data = await res.json();
+      if (!res.ok || !data.base64) throw new Error(data.error || "Erro ao carregar o PDF");
+      sessionStorage.setItem("resumo_pending_pdf", JSON.stringify({ base64: data.base64, fileName: fileName || "aula.pdf" }));
+      router.push("/app/resumo");
+    } catch (err) {
+      console.error(err);
+      alert("Não foi possível carregar o PDF. Tente novamente.");
+    }
   }
 
   function handleInputChange(e: React.ChangeEvent<HTMLTextAreaElement>) {
@@ -718,6 +806,7 @@ export default function ChatPage() {
     if (msg.content) return msg.content.length > 80 ? msg.content.slice(0, 80) + "…" : msg.content;
     if (msg.image_url) return "📷 Imagem";
     if (msg.audio_url) return "🎵 Áudio";
+    if (msg.file_url) return `📄 ${msg.file_name || "Arquivo"}`;
     return "📎 Arquivo";
   }
 
@@ -756,8 +845,20 @@ export default function ChatPage() {
       <div
         ref={chatScrollRef}
         className="w-full max-w-2xl flex-1 min-h-0 p-3 sm:p-4 overflow-y-auto flex flex-col"
-        style={{ background: "var(--dark1)", border: "1px solid #1f1f1f", borderRadius: "var(--radius)", boxShadow: "var(--shadow)", overflowX: "hidden" }}
+        style={{ background: "var(--dark1)", border: draggingPdf ? "1px dashed var(--yellow)" : "1px solid #1f1f1f", borderRadius: "var(--radius)", boxShadow: "var(--shadow)", overflowX: "hidden", position: "relative" }}
+        onDragEnter={(e) => { e.preventDefault(); if (e.dataTransfer.types.includes("Files")) { dragCounterRef.current++; setDraggingPdf(true); } }}
+        onDragOver={(e) => { e.preventDefault(); }}
+        onDragLeave={(e) => { e.preventDefault(); dragCounterRef.current = Math.max(0, dragCounterRef.current - 1); if (dragCounterRef.current === 0) setDraggingPdf(false); }}
+        onDrop={(e) => { e.preventDefault(); dragCounterRef.current = 0; setDraggingPdf(false); const f = e.dataTransfer.files?.[0]; if (f) handlePdf(f); }}
       >
+        {draggingPdf && (
+          <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.65)", zIndex: 20, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "var(--radius)", pointerEvents: "none" }}>
+            <div style={{ textAlign: "center" }}>
+              <div style={{ fontSize: "2rem", marginBottom: 8 }}>📄</div>
+              <p style={{ color: "var(--yellow)", fontWeight: 700, fontSize: "0.9rem" }}>Solte o PDF para enviar</p>
+            </div>
+          </div>
+        )}
         {messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center gap-3">
             <div style={{ fontSize: "2rem" }}>💬</div>
@@ -1064,6 +1165,14 @@ export default function ChatPage() {
                     />
                   )}
                   {msg.audio_url && <ChatAudioPlayer src={msg.audio_url} isOwn={isOwn} />}
+                  {msg.file_url && (
+                    <ChatFilePreview
+                      url={msg.file_url}
+                      name={msg.file_name}
+                      isOwn={isOwn}
+                      onSendToReview={isTmp ? undefined : () => sendToReview(msg.file_url, msg.file_name)}
+                    />
+                  )}
 
                   {/* Timestamp + status */}
                   <div style={{ fontSize: "0.62rem", opacity: 0.65, display: "flex", alignItems: "center", gap: 4, justifyContent: "flex-end", marginTop: 2 }}>
@@ -1436,12 +1545,18 @@ export default function ChatPage() {
           {/* Ícones esquerdos: tradutor + foto */}
           <div style={{ display: "flex", gap: 6, alignItems: "center", paddingBottom: 6, flexShrink: 0 }}>
             <ChatTranslator onUse={(text) => { setInput(prev => prev ? prev + " " + text : text); setTimeout(() => textareaRef.current?.focus(), 50); }} />
-            <button onClick={() => fileInputRef.current?.click()} style={{ width: 36, height: 36, background: "transparent", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }}>
+            <button onClick={() => fileInputRef.current?.click()} title="Enviar imagem" style={{ width: 36, height: 36, background: "transparent", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }}>
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#666" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/>
               </svg>
             </button>
             <input ref={fileInputRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handleImage} />
+            <button onClick={() => pdfInputRef.current?.click()} title="Enviar PDF" style={{ width: 36, height: 36, background: "transparent", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#666" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
+              </svg>
+            </button>
+            <input ref={pdfInputRef} type="file" accept="application/pdf" style={{ display: "none" }} onChange={handlePdfInputChange} />
           </div>
 
           {/* Pill input */}

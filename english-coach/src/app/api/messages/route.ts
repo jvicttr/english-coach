@@ -155,9 +155,9 @@ export async function POST(req: NextRequest) {
   const { userId } = await auth();
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { conversationId, content, imageUrl, audioUrl, videoUrl, replyToId } = await req.json();
+  const { conversationId, content, imageUrl, audioUrl, videoUrl, fileUrl, fileName, replyToId } = await req.json();
 
-  if (!conversationId || (!content && !imageUrl && !audioUrl && !videoUrl)) {
+  if (!conversationId || (!content && !imageUrl && !audioUrl && !videoUrl && !fileUrl)) {
     return NextResponse.json({ error: "Invalid request" }, { status: 400 });
   }
 
@@ -170,6 +170,8 @@ export async function POST(req: NextRequest) {
       image_url: imageUrl,
       audio_url: audioUrl,
       video_url: videoUrl,
+      file_url: fileUrl,
+      file_name: fileName,
       reply_to_id: replyToId,
     })
     .select()
@@ -226,6 +228,7 @@ export async function POST(req: NextRequest) {
         ? content.substring(0, 100)
         : imageUrl ? "📸 Enviou uma imagem"
         : audioUrl ? "🎵 Enviou áudio"
+        : fileUrl ? "📄 Enviou um PDF"
         : "Enviou uma mensagem";
       pushToUser(recipientId, handle, preview, `https://www.faleinglesjv.com/app/mensagens/${userId}`).catch(() => {});
     }
