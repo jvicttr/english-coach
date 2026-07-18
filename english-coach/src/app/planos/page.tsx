@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { AppHeader } from "@/components/AppHeader";
+import { BottomNavFixed } from "@/components/BottomNav";
 
 export default function PlanosPage() {
   const [loading, setLoading] = useState(false);
@@ -31,7 +33,9 @@ export default function PlanosPage() {
   }
 
   return (
-    <div style={{ minHeight: "100vh", background: "var(--black)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "2rem 1.2rem", fontFamily: "'Inter', sans-serif" }}>
+    <>
+    <AppHeader />
+    <div style={{ minHeight: "100vh", background: "var(--black)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "2rem 1.2rem", paddingTop: "calc(65px + env(safe-area-inset-top) + 2rem)", paddingBottom: "calc(65px + env(safe-area-inset-bottom) + 2rem)", fontFamily: "'Inter', sans-serif" }}>
 
       {/* Voltar */}
       <button onClick={() => router.back()} style={{ alignSelf: "flex-start", background: "none", border: "none", color: "var(--gray)", cursor: "pointer", fontSize: ".9rem", marginBottom: "2rem", display: "flex", alignItems: "center", gap: ".4rem" }}>
@@ -110,6 +114,8 @@ export default function PlanosPage() {
         Pagamento seguro via Stripe · Cancele quando quiser
       </p>
     </div>
+    <BottomNavFixed />
+    </>
   );
 }
 
