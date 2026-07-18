@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { auth } from "@clerk/nextjs/server";
 
 const supabase = createClient(
   process.env.SUPABASE_URL!,
@@ -7,6 +8,11 @@ const supabase = createClient(
 );
 
 export async function GET(req: NextRequest) {
+  const { userId } = await auth();
+  if (!userId || userId !== process.env.ADMIN_USER_ID) {
+    return NextResponse.json({ error: "Acesso negado." }, { status: 403 });
+  }
+
   try {
     const clerkRes = await fetch("https://api.clerk.com/v1/users?limit=500", {
       headers: {

@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
+import { auth } from "@clerk/nextjs/server";
 
 export async function GET(req: NextRequest) {
+  const { userId } = await auth();
+  if (!userId || userId !== process.env.ADMIN_USER_ID) {
+    return NextResponse.json({ error: "Acesso negado." }, { status: 403 });
+  }
+
   try {
     const clerkRes = await fetch("https://api.clerk.com/v1/users?limit=20", {
       headers: { Authorization: `Bearer ${process.env.CLERK_SECRET_KEY}` },
