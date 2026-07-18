@@ -310,6 +310,8 @@ export default function ChatPage() {
   const pdfInputRef = useRef<HTMLInputElement>(null);
   const [draggingPdf, setDraggingPdf] = useState(false);
   const dragCounterRef = useRef(0);
+  const [attachMenuOpen, setAttachMenuOpen] = useState(false);
+  const attachMenuRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const msgRefsMap = useRef<Map<string, HTMLElement>>(new Map());
   const chatScrollRef = useRef<HTMLDivElement>(null);
@@ -414,6 +416,16 @@ export default function ChatPage() {
     document.addEventListener("click", handler);
     return () => document.removeEventListener("click", handler);
   }, [longPressMenu]);
+
+  // Close attach menu (mobile) on outside click
+  useEffect(() => {
+    if (!attachMenuOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (attachMenuRef.current && !attachMenuRef.current.contains(e.target as Node)) setAttachMenuOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [attachMenuOpen]);
 
   async function init() {
     try {
@@ -1542,20 +1554,42 @@ export default function ChatPage() {
         )}
         <div style={{ display: "flex", gap: 8, alignItems: "flex-end" }}>
 
-          {/* Ícones esquerdos: tradutor + foto */}
+          {/* Ícones esquerdos: tradutor + anexos */}
           <div style={{ display: "flex", gap: 6, alignItems: "center", paddingBottom: 6, flexShrink: 0 }}>
             <ChatTranslator onUse={(text) => { setInput(prev => prev ? prev + " " + text : text); setTimeout(() => textareaRef.current?.focus(), 50); }} />
-            <button onClick={() => fileInputRef.current?.click()} title="Enviar imagem" style={{ width: 36, height: 36, background: "transparent", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }}>
+
+            {/* Desktop: imagem e PDF como ícones separados */}
+            <button onClick={() => fileInputRef.current?.click()} title="Enviar imagem" className="hidden sm:flex" style={{ width: 36, height: 36, background: "transparent", border: "none", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }}>
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#666" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/>
               </svg>
             </button>
-            <input ref={fileInputRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handleImage} />
-            <button onClick={() => pdfInputRef.current?.click()} title="Enviar PDF" style={{ width: 36, height: 36, background: "transparent", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }}>
+            <button onClick={() => pdfInputRef.current?.click()} title="Enviar PDF" className="hidden sm:flex" style={{ width: 36, height: 36, background: "transparent", border: "none", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#666" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
               </svg>
             </button>
+
+            {/* Mobile: um único botão de anexo com menu (economiza espaço pro campo de texto) */}
+            <div ref={attachMenuRef} className="flex sm:hidden" style={{ position: "relative" }}>
+              {attachMenuOpen && (
+                <div style={{ position: "absolute", bottom: "calc(100% + 8px)", left: 0, background: "#161616", border: "1px solid #2a2a2a", borderRadius: 12, overflow: "hidden", zIndex: 200, minWidth: 150, boxShadow: "0 -8px 24px rgba(0,0,0,0.5)" }}>
+                  <button onClick={() => { setAttachMenuOpen(false); fileInputRef.current?.click(); }} style={{ display: "flex", alignItems: "center", gap: 8, width: "100%", padding: "10px 14px", background: "transparent", border: "none", color: "#fff", fontSize: "0.85rem", fontWeight: 500, cursor: "pointer", textAlign: "left" }}>
+                    🖼️ Foto
+                  </button>
+                  <button onClick={() => { setAttachMenuOpen(false); pdfInputRef.current?.click(); }} style={{ display: "flex", alignItems: "center", gap: 8, width: "100%", padding: "10px 14px", background: "transparent", border: "none", borderTop: "1px solid #1e1e1e", color: "#fff", fontSize: "0.85rem", fontWeight: 500, cursor: "pointer", textAlign: "left" }}>
+                    📄 PDF
+                  </button>
+                </div>
+              )}
+              <button onClick={() => setAttachMenuOpen(o => !o)} title="Anexar" style={{ width: 36, height: 36, background: "transparent", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }}>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#666" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
+                </svg>
+              </button>
+            </div>
+
+            <input ref={fileInputRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handleImage} />
             <input ref={pdfInputRef} type="file" accept="application/pdf" style={{ display: "none" }} onChange={handlePdfInputChange} />
           </div>
 
