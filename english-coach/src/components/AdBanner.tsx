@@ -23,26 +23,26 @@ declare global {
 // unit needs to exist in AdSense — override `slot` if a placement ever needs
 // its own unit (e.g. to track performance separately).
 export function AdBanner({ slot = ADSENSE_SLOT_ID }: { slot?: string }) {
-  const [isPaid, setIsPaid] = useState(() => {
+  const [isPro, setIsPro] = useState(() => {
     if (typeof window === "undefined") return true;
-    return localStorage.getItem("userPlan") !== "free";
+    return localStorage.getItem("userPlan") === "pro";
   });
 
   useEffect(() => {
     fetch("/api/me")
       .then(r => r.json())
-      .then(d => setIsPaid(d.plan !== "free"))
+      .then(d => setIsPro(d.plan === "pro"))
       .catch(() => {});
   }, []);
 
   useEffect(() => {
-    if (isPaid || !ADSENSE_CLIENT_ID || !slot) return;
+    if (isPro || !ADSENSE_CLIENT_ID || !slot) return;
     try {
       (window.adsbygoogle = window.adsbygoogle || []).push({});
     } catch {}
-  }, [isPaid, slot]);
+  }, [isPro, slot]);
 
-  if (!ADSENSE_CLIENT_ID || !slot || isPaid) return null;
+  if (!ADSENSE_CLIENT_ID || !slot || isPro) return null;
 
   return (
     <div style={{ margin: "16px 0", textAlign: "center", minHeight: 60 }}>

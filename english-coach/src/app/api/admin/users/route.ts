@@ -58,12 +58,12 @@ export async function PATCH(req: NextRequest) {
   const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
   const { userId, plan } = await req.json();
-  if (!userId || !["free", "essencial", "pro"].includes(plan)) {
+  if (!userId || !["free", "pro"].includes(plan)) {
     return NextResponse.json({ error: "Invalid" }, { status: 400 });
   }
 
   let stripeCustomerId: string | undefined;
-  if (plan !== "free") {
+  if (plan === "pro") {
     const { data: existing } = await supabase
       .from("subscriptions")
       .select("stripe_customer_id")

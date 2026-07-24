@@ -6,12 +6,11 @@ import { AppHeader } from "@/components/AppHeader";
 import { BottomNavFixed } from "@/components/BottomNav";
 
 export default function PlanosPage() {
-  const [loading, setLoading] = useState<"essencial" | "pro" | null>(null);
+  const [loading, setLoading] = useState(false);
   const [plan, setPlan] = useState(() => {
     if (typeof window === "undefined") return "free";
     return localStorage.getItem("userPlan") ?? "free";
   });
-  const isEssencial = plan === "essencial";
   const isPro = plan === "pro";
   const router = useRouter();
 
@@ -22,18 +21,14 @@ export default function PlanosPage() {
     });
   }, []);
 
-  async function handleAssinar(plano: "essencial" | "pro") {
-    setLoading(plano);
+  async function handleAssinar() {
+    setLoading(true);
     try {
-      const res = await fetch("/api/checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ plano }),
-      });
+      const res = await fetch("/api/checkout", { method: "POST" });
       const data = await res.json();
       if (data.url) window.location.href = data.url;
     } finally {
-      setLoading(null);
+      setLoading(false);
     }
   }
 
@@ -80,32 +75,6 @@ export default function PlanosPage() {
           </button>
         </div>
 
-        {/* Essencial */}
-        <div style={{ background: "var(--dark1)", border: "1px solid #2a2a2a", borderRadius: "var(--radius)", padding: "2rem", flex: "1 1 300px", maxWidth: 340, position: "relative" }}>
-          {isEssencial && (
-            <div style={{ position: "absolute", top: "-13px", left: "50%", transform: "translateX(-50%)", background: "var(--white)", color: "var(--black)", fontSize: ".72rem", fontWeight: 800, padding: ".3rem .9rem", borderRadius: "50px", whiteSpace: "nowrap" }}>
-              ✓ SEU PLANO
-            </div>
-          )}
-          <div style={{ fontSize: ".8rem", fontWeight: 700, color: "var(--gray)", textTransform: "uppercase", letterSpacing: ".5px", marginBottom: ".75rem" }}>Essencial</div>
-          <div style={{ fontSize: "2.5rem", fontWeight: 900, color: "var(--white)", marginBottom: ".25rem" }}>R$ 47</div>
-          <div style={{ fontSize: ".85rem", color: "var(--gray)", marginBottom: "2rem" }}>por mês</div>
-          <ul style={{ listStyle: "none", padding: 0, margin: "0 0 2rem", display: "flex", flexDirection: "column", gap: ".75rem" }}>
-            {["Conversas ilimitadas com áudio e correção", "Sem anúncios", "Detecção automática de nível", "Comunidade e conquistas com XP"].map((f) => (
-              <li key={f} style={{ display: "flex", alignItems: "center", gap: ".6rem", fontSize: ".9rem", color: "var(--white)" }}>
-                <span style={{ color: "var(--yellow)" }}>✓</span> {f}
-              </li>
-            ))}
-          </ul>
-          <button
-            onClick={() => handleAssinar("essencial")}
-            disabled={loading !== null || isEssencial}
-            style={{ width: "100%", padding: ".85rem", borderRadius: "50px", background: "var(--dark2)", border: "1px solid #2a2a2a", color: "var(--white)", fontWeight: 700, fontSize: ".95rem", cursor: loading !== null || isEssencial ? "not-allowed" : "pointer", opacity: loading !== null && loading !== "essencial" ? .5 : 1, transition: "opacity .2s" }}
-          >
-            {isEssencial ? "Plano atual" : loading === "essencial" ? "Redirecionando..." : "Assinar Essencial"}
-          </button>
-        </div>
-
         {/* JV IA */}
         <div style={{ background: "var(--dark1)", border: "2px solid var(--yellow)", borderRadius: "var(--radius)", padding: "2rem", flex: "1 1 300px", maxWidth: 340, position: "relative" }}>
           <div style={{ position: "absolute", top: "-13px", left: "50%", transform: "translateX(-50%)", background: "var(--yellow)", color: "var(--black)", fontSize: ".72rem", fontWeight: 800, padding: ".3rem .9rem", borderRadius: "50px", whiteSpace: "nowrap" }}>
@@ -122,11 +91,11 @@ export default function PlanosPage() {
             ))}
           </ul>
           <button
-            onClick={() => handleAssinar("pro")}
-            disabled={loading !== null || isPro}
-            style={{ width: "100%", padding: ".85rem", borderRadius: "50px", background: "var(--yellow)", border: "none", color: "var(--black)", fontWeight: 800, fontSize: ".95rem", cursor: loading !== null || isPro ? "not-allowed" : "pointer", opacity: loading !== null && loading !== "pro" ? .5 : 1, transition: "opacity .2s" }}
+            onClick={handleAssinar}
+            disabled={loading || isPro}
+            style={{ width: "100%", padding: ".85rem", borderRadius: "50px", background: "var(--yellow)", border: "none", color: "var(--black)", fontWeight: 800, fontSize: ".95rem", cursor: loading || isPro ? "not-allowed" : "pointer", opacity: loading ? .5 : 1, transition: "opacity .2s" }}
           >
-            {isPro ? "Plano atual" : loading === "pro" ? "Redirecionando..." : "Assinar agora"}
+            {isPro ? "Plano atual" : loading ? "Redirecionando..." : "Assinar agora"}
           </button>
 
           <a
