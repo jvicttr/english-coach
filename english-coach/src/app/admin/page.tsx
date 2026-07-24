@@ -149,7 +149,7 @@ export default function AdminPage() {
               />
               <span style={{ color: "var(--gray)", fontSize: ".85rem" }}>% off</span>
               <span style={{ color: "var(--gray)", fontSize: ".78rem" }}>
-                → <strong style={{ color: "var(--yellow)" }}>R$ {Math.round(97 * (1 - Number(shareable.percent) / 100))}/mês</strong>
+                → <strong style={{ color: "var(--yellow)" }}>R$ {(54.9 * (1 - Number(shareable.percent) / 100)).toFixed(2).replace(".", ",")}/mês</strong>
               </span>
             </div>
             <button
@@ -263,7 +263,7 @@ export default function AdminPage() {
                     <span style={{ color: "var(--gray)", fontSize: "0.85rem" }}>% de desconto</span>
                   </div>
                   <div style={{ color: "var(--gray)", fontSize: "0.78rem" }}>
-                    R$ 97 → <strong style={{ color: "var(--yellow)" }}>R$ {(97 * (1 - Number(discountPercent) / 100)).toFixed(0)}/mês</strong>
+                    R$ 54,90 → <strong style={{ color: "var(--yellow)" }}>R$ {(54.9 * (1 - Number(discountPercent) / 100)).toFixed(2).replace(".", ",")}/mês</strong>
                   </div>
                   <button
                     onClick={() => generateDiscountLink(u.id)}

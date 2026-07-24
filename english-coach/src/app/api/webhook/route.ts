@@ -35,17 +35,19 @@ export async function POST(req: NextRequest) {
     const session = event.data.object as Stripe.Checkout.Session;
     const userId = getUserId(session);
     if (userId) {
+      const plano = session.metadata?.plano === "essencial" ? "essencial" : "pro";
       await supabase.from("subscriptions").upsert({
         user_id: userId,
         stripe_customer_id: session.customer as string,
         stripe_subscription_id: session.subscription as string,
-        plan: "pro",
+        plan: plano,
         updated_at: new Date().toISOString(),
       }, { onConflict: "user_id" });
 
       const email = session.customer_details?.email ?? "email não disponível";
       const name = session.customer_details?.name ?? "Nome não informado";
-      await notifyWhatsApp(`🎉 Nova assinatura! \n👤 ${name}\n📧 ${email}\n💰 R$ 97/mês\n\nEntre em contato para dar boas-vindas!`);
+      const preco = plano === "essencial" ? "R$ 47/mês" : "R$ 54,90/mês";
+      await notifyWhatsApp(`🎉 Nova assinatura (${plano})! \n👤 ${name}\n📧 ${email}\n💰 ${preco}\n\nEntre em contato para dar boas-vindas!`);
     }
   }
 

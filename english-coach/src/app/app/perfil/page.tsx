@@ -356,7 +356,7 @@ export default function PerfilPage() {
             <span style={{ fontSize: "1.6rem" }}>⭐</span>
             <div style={{ flex: 1 }}>
               <p style={{ fontSize: "0.85rem", fontWeight: 800, color: "var(--yellow)", margin: 0 }}>Assine o JV IA PRO</p>
-              <p style={{ fontSize: "0.7rem", color: "rgba(245,200,0,.65)", margin: "2px 0 0" }}>Trilha, roleplay, flashcards e sem limites — R$ 97/mês</p>
+              <p style={{ fontSize: "0.7rem", color: "rgba(245,200,0,.65)", margin: "2px 0 0" }}>Trilha, roleplay, flashcards e sem limites — R$ 54,90/mês</p>
             </div>
             <span style={{ fontSize: "0.85rem", color: "var(--yellow)" }}>→</span>
           </a>

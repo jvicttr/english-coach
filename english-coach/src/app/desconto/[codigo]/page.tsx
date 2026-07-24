@@ -52,8 +52,9 @@ export default function DescontoPage() {
     }
   }
 
-  const precoOriginal = 97;
-  const precoComDesconto = percent ? Math.round(precoOriginal * (1 - percent / 100)) : null;
+  const precoOriginal = 54.9;
+  const precoComDesconto = percent ? precoOriginal * (1 - percent / 100) : null;
+  const formatPreco = (v: number) => `R$ ${v.toFixed(2).replace(".", ",")}`;
 
   if (!isLoaded) {
     return (
@@ -94,9 +95,9 @@ export default function DescontoPage() {
 
         {/* Preço */}
         <div style={{ margin: "1.5rem 0", display: "flex", alignItems: "center", justifyContent: "center", gap: "1rem" }}>
-          <span style={{ fontSize: "1rem", color: "#666", textDecoration: "line-through" }}>R$ {precoOriginal}/mês</span>
+          <span style={{ fontSize: "1rem", color: "#666", textDecoration: "line-through" }}>{formatPreco(precoOriginal)}/mês</span>
           <span style={{ fontSize: "2.2rem", fontWeight: 900, color: "#F5C800" }}>
-            {precoComDesconto ? `R$ ${precoComDesconto}/mês` : "Preço especial"}
+            {precoComDesconto ? `${formatPreco(precoComDesconto)}/mês` : "Preço especial"}
           </span>
         </div>
 
@@ -134,7 +135,7 @@ export default function DescontoPage() {
             disabled={loading || couponOk === false}
             style={{ width: "100%", padding: "1rem", borderRadius: 50, background: "#F5C800", border: "none", color: "#000", fontWeight: 800, fontSize: "1rem", cursor: loading || couponOk === false ? "not-allowed" : "pointer", opacity: loading || couponOk === false ? .6 : 1, transition: "opacity .2s", fontFamily: "'Inter', sans-serif" }}
           >
-            {loading ? "Redirecionando..." : `Assinar por R$ ${precoComDesconto ?? "..."}/mês`}
+            {loading ? "Redirecionando..." : `Assinar por ${precoComDesconto ? formatPreco(precoComDesconto) : "..."}/mês`}
           </button>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: ".75rem" }}>

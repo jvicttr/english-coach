@@ -28,11 +28,12 @@ export async function POST(req: NextRequest) {
     .single();
 
   const isPro = sub?.plan === "pro";
+  const isPaid = isPro || sub?.plan === "essencial";
   const savedLevel = sub?.level ?? null;
 
   const today = new Date().toISOString().split("T")[0];
 
-  if (!isPro) {
+  if (!isPaid) {
     const { data: row } = await supabase
       .from("usage")
       .select("count")

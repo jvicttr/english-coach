@@ -912,7 +912,7 @@ export default function RolePlay() {
         <div className="w-full max-w-2xl mb-3 px-4 py-5 flex flex-col items-center gap-3 text-center" style={{ background: "var(--dark2)", border: "1px solid rgba(245,200,0,.3)", borderRadius: "var(--radius)" }}>
           <div className="text-2xl">🎯</div>
           <p className="font-bold text-white text-sm">Você usou suas 10 mensagens de hoje</p>
-          <a href="/planos" className="px-5 py-2 rounded-full text-sm font-bold" style={{ background: "var(--yellow)", color: "var(--black)" }}>Assinar JV IA — R$ 47/mês</a>
+          <a href="/planos" className="px-5 py-2 rounded-full text-sm font-bold" style={{ background: "var(--yellow)", color: "var(--black)" }}>Assinar JV IA — R$ 54,90/mês</a>
         </div>
       )}
 
