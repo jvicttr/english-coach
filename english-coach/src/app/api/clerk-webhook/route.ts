@@ -65,7 +65,9 @@ export async function POST(req: NextRequest) {
     const fullName = [firstName, lastName].filter(Boolean).join(" ") || "Aluno";
     const imageUrl = (data.image_url as string) || null;
 
-    // Store in Supabase (upsert into subscriptions — adds email/name cols)
+    // Store in Supabase (upsert into subscriptions — adds email/name cols).
+    // ignoreDuplicates: if a row already exists (e.g. created moments earlier by the
+    // guest-checkout flow with plan "pro"), skip instead of resetting it back to "free".
     if (userId && primaryEmail) {
       await supabase.from("subscriptions").upsert(
         {
@@ -75,7 +77,7 @@ export async function POST(req: NextRequest) {
           plan: "free",
           updated_at: new Date().toISOString(),
         },
-        { onConflict: "user_id" }
+        { onConflict: "user_id", ignoreDuplicates: true }
       );
     }
 

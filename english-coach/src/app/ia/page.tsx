@@ -3,7 +3,6 @@
 import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import { useAuth } from "@clerk/nextjs";
-import { useRouter } from "next/navigation";
 
 const WPP = "https://wa.me/5561995691219?text=Ol%C3%A1%2C+quero+saber+mais+sobre+o+JV+IA%21";
 
@@ -335,21 +334,27 @@ function QuizMockup() {
 export default function IALanding() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [showTop, setShowTop] = useState(false);
   const [loadingCheckout, setLoadingCheckout] = useState(false);
-  const { isLoaded, isSignedIn } = useAuth();
-  const router = useRouter();
+  const { isSignedIn } = useAuth();
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 40);
+    const onScroll = () => {
+      setScrolled(window.scrollY > 40);
+      setShowTop(window.scrollY > 600);
+    };
     window.addEventListener("scroll", onScroll);
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
   async function handleAssinar() {
-    if (!isSignedIn) { router.push("/cadastro"); return; }
     setLoadingCheckout(true);
     try {
-      const res = await fetch("/api/checkout", { method: "POST" });
+      // Já logado: usa o checkout autenticado (vincula direto à conta).
+      // Ainda sem conta: checkout "convidado" — a conta é criada no próprio
+      // checkout da Stripe e o login acontece automaticamente depois do pagamento.
+      const endpoint = isSignedIn ? "/api/checkout" : "/api/checkout-guest";
+      const res = await fetch(endpoint, { method: "POST" });
       const data = await res.json();
       if (data.url) window.location.href = data.url;
     } finally {
@@ -695,17 +700,11 @@ export default function IALanding() {
               disabled={loadingCheckout}
               style={{ width:"100%", padding:"1rem", borderRadius:50, background:"var(--yellow)", border:"none", color:"#000", fontWeight:800, fontSize:"1rem", cursor: loadingCheckout ? "not-allowed" : "pointer", opacity: loadingCheckout ? .6 : 1, transition:"opacity .2s" }}
             >
-              {loadingCheckout ? "Redirecionando..." : isSignedIn ? "Assinar agora" : "Criar conta e assinar"}
+              {loadingCheckout ? "Redirecionando..." : "Assinar agora"}
             </button>
-            {isLoaded && !isSignedIn && (
-              <button
-                onClick={() => router.push("/entrar")}
-                style={{ width:"100%", marginTop:".75rem", padding:".8rem", borderRadius:50, background:"transparent", border:"1px solid rgba(245,200,0,.3)", color:"var(--yellow)", fontWeight:600, fontSize:".85rem", cursor:"pointer" }}
-              >
-                Já tenho conta — entrar
-              </button>
-            )}
-            <p style={{ marginTop:"1rem", fontSize:".72rem", color:"rgba(255,255,255,.35)" }}>Pagamento seguro via Stripe · Cancele quando quiser</p>
+            <p style={{ marginTop:"1rem", fontSize:".72rem", color:"rgba(255,255,255,.35)" }}>
+              {isSignedIn ? "Pagamento seguro via Stripe · Cancele quando quiser" : "Sua conta é criada no próprio checkout · Pagamento seguro via Stripe"}
+            </p>
           </div>
           <p style={{ marginTop:"1.5rem", fontSize:".85rem", color:"rgba(255,255,255,.4)" }}>
             Quer só experimentar? <a href="/app" style={{ color:"var(--yellow)", textDecoration:"none", fontWeight:600 }}>Comece grátis</a> com 5 mensagens por dia.
@@ -749,6 +748,22 @@ export default function IALanding() {
           <a href="/planos" style={{ color:"rgba(255,255,255,.35)", fontSize:".78rem", textDecoration:"none" }}>Planos</a>
         </div>
       </footer>
+
+      {/* VOLTAR AO TOPO */}
+      <button
+        onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+        title="Voltar ao topo"
+        aria-label="Voltar ao topo"
+        style={{
+          position: "fixed", bottom: 20, right: 20, zIndex: 200, width: 44, height: 44, borderRadius: "50%",
+          background: "#111", border: "1px solid rgba(245,200,0,.3)", display: "flex", alignItems: "center", justifyContent: "center",
+          color: "var(--yellow)", fontSize: "1.1rem", cursor: "pointer", boxShadow: "0 4px 16px rgba(0,0,0,.4)",
+          opacity: showTop ? 1 : 0, transform: showTop ? "translateY(0)" : "translateY(10px)", pointerEvents: showTop ? "auto" : "none",
+          transition: "opacity .25s ease, transform .25s ease",
+        }}
+      >
+        <i className="fas fa-arrow-up" />
+      </button>
     </div>
   );
 }

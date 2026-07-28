@@ -334,6 +334,11 @@ input:-webkit-autofill:active {
 .landing .wpp-float { position: fixed; bottom: 20px; right: 20px; z-index: 200; width: 52px; height: 52px; border-radius: 50%; background: #25d366; display: flex; align-items: center; justify-content: center; color: var(--white); font-size: 1.5rem; text-decoration: none; box-shadow: 0 4px 20px rgba(37,211,102,.5); animation: wpp-pulse 2.5s infinite; }
 @keyframes wpp-pulse { 0%,100% { box-shadow: 0 4px 20px rgba(37,211,102,.5); } 50% { box-shadow: 0 4px 36px rgba(37,211,102,.8); } }
 
+/* BACK TO TOP */
+.landing .back-to-top { position: fixed; bottom: 84px; right: 20px; z-index: 200; width: 44px; height: 44px; border-radius: 50%; background: var(--dark1); border: 1px solid rgba(245,200,0,.3); display: flex; align-items: center; justify-content: center; color: var(--yellow); font-size: 1.1rem; cursor: pointer; box-shadow: 0 4px 16px rgba(0,0,0,.4); opacity: 0; transform: translateY(10px); pointer-events: none; transition: opacity .25s ease, transform .25s ease, border-color .2s; }
+.landing .back-to-top.visible { opacity: 1; transform: translateY(0); pointer-events: auto; }
+.landing .back-to-top:hover { border-color: var(--yellow); }
+
 /* SCROLL ANIMATIONS */
 .landing .anim { opacity: 0; transform: translateY(36px); transition: opacity .6s ease, transform .6s ease; }
 .landing .anim.from-left { transform: translateX(-40px); }
@@ -377,6 +382,7 @@ input:-webkit-autofill:active {
   .landing .footer-logo { justify-content: flex-start; }
   .landing .footer-social { justify-content: flex-start; }
   .landing .wpp-float { width: 58px; height: 58px; font-size: 1.6rem; bottom: 28px; right: 28px; }
+  .landing .back-to-top { width: 48px; height: 48px; font-size: 1.2rem; bottom: 96px; right: 28px; }
 }
 @media (min-width: 1025px) {
   .landing nav { padding: 0 5vw; }

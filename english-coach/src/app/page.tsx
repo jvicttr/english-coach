@@ -40,6 +40,13 @@ const FAQS = [
 export default function LandingPage() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
+  const [showTop, setShowTop] = useState(false);
+
+  useEffect(() => {
+    const onScroll = () => setShowTop(window.scrollY > 600);
+    window.addEventListener("scroll", onScroll);
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -300,6 +307,16 @@ export default function LandingPage() {
           <a href={WPP} target="_blank" rel="noopener noreferrer" title="WhatsApp"><i className="fab fa-whatsapp" /></a>
         </div>
       </footer>
+
+      {/* VOLTAR AO TOPO */}
+      <button
+        className={`back-to-top ${showTop ? "visible" : ""}`}
+        onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+        title="Voltar ao topo"
+        aria-label="Voltar ao topo"
+      >
+        <i className="fas fa-arrow-up" />
+      </button>
 
       {/* WPP FLUTUANTE */}
       <a className="wpp-float" href={WPP} target="_blank" rel="noopener noreferrer" title="Fale comigo no WhatsApp">
