@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
+import { useAuth } from "@clerk/nextjs";
+import { useRouter } from "next/navigation";
 
 const WPP = "https://wa.me/5561995691219?text=Ol%C3%A1%2C+quero+saber+mais+sobre+o+JV+IA%21";
 
@@ -333,12 +335,27 @@ function QuizMockup() {
 export default function IALanding() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [loadingCheckout, setLoadingCheckout] = useState(false);
+  const { isLoaded, isSignedIn } = useAuth();
+  const router = useRouter();
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 40);
     window.addEventListener("scroll", onScroll);
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
+
+  async function handleAssinar() {
+    if (!isSignedIn) { router.push("/cadastro"); return; }
+    setLoadingCheckout(true);
+    try {
+      const res = await fetch("/api/checkout", { method: "POST" });
+      const data = await res.json();
+      if (data.url) window.location.href = data.url;
+    } finally {
+      setLoadingCheckout(false);
+    }
+  }
 
   useEffect(() => {
     const observer = new IntersectionObserver((entries) => {
@@ -382,7 +399,8 @@ export default function IALanding() {
           <Image src="/favicon.png" alt="JV IA" width={30} height={30} style={{ borderRadius:8 }} />
           <span style={{ fontWeight:800, fontSize:".95rem", color:"#fff" }}>JV <span style={{ color:"var(--yellow)" }}>IA</span></span>
         </a>
-        <div style={{ display:"flex", alignItems:"center", gap:"1rem" }}>
+        <div style={{ display:"flex", alignItems:"center", gap:"1.25rem" }}>
+          <a href="#preco" style={{ color:"rgba(255,255,255,.7)", textDecoration:"none", fontWeight:600, fontSize:".85rem" }}>Preço</a>
           <a href="/app" style={{ background:"var(--yellow)", color:"#000", padding:".45rem 1.1rem", borderRadius:"50px", textDecoration:"none", fontWeight:700, fontSize:".85rem" }}>Experimentar</a>
         </div>
       </nav>
@@ -643,6 +661,55 @@ export default function IALanding() {
           <div className="anim anim-delay-2" style={{ display:"flex", justifyContent:"center" }}>
             <CommunityMockup />
           </div>
+        </div>
+      </section>
+
+      {/* ── PREÇO ───────────────────────────────────────────────── */}
+      <section id="preco" style={{ background:"var(--black)" }}>
+        <div className="section-inner" style={{ maxWidth:460, margin:"0 auto", textAlign:"center" }}>
+          <div className="anim" style={{ marginBottom:"2rem" }}>
+            <div className="section-label">Assinatura</div>
+            <h2 className="big">Um plano. <em>Tudo incluso.</em></h2>
+            <p className="subtitle" style={{ margin:".75rem auto 0" }}>Sem pegadinha, sem taxa extra. Cancele quando quiser.</p>
+          </div>
+          <div className="anim anim-delay-1" style={{ background:"#111", border:"2px solid var(--yellow)", borderRadius:20, padding:"2rem", boxShadow:"0 24px 80px rgba(0,0,0,.4)" }}>
+            <div style={{ fontSize:"2.75rem", fontWeight:900, color:"#fff", lineHeight:1 }}>
+              R$ 54,90<span style={{ fontSize:"1rem", fontWeight:600, color:"rgba(255,255,255,.5)" }}>/mês</span>
+            </div>
+            <ul style={{ listStyle:"none", padding:0, margin:"1.5rem 0", display:"flex", flexDirection:"column", gap:".65rem", textAlign:"left" }}>
+              {[
+                "Conversas ilimitadas com áudio e correção",
+                "Trilha de aprendizado do A1 ao C1",
+                "Role-play em cenários reais",
+                "Flashcards + quizzes automáticos",
+                "Revisão de aula com PDF",
+                "Comunidade, mensagens e conquistas",
+              ].map((item) => (
+                <li key={item} style={{ display:"flex", gap:".6rem", alignItems:"flex-start", fontSize:".88rem", color:"rgba(255,255,255,.7)" }}>
+                  <span style={{ color:"var(--yellow)", fontWeight:700, flexShrink:0 }}>✓</span> {item}
+                </li>
+              ))}
+            </ul>
+            <button
+              onClick={handleAssinar}
+              disabled={loadingCheckout}
+              style={{ width:"100%", padding:"1rem", borderRadius:50, background:"var(--yellow)", border:"none", color:"#000", fontWeight:800, fontSize:"1rem", cursor: loadingCheckout ? "not-allowed" : "pointer", opacity: loadingCheckout ? .6 : 1, transition:"opacity .2s" }}
+            >
+              {loadingCheckout ? "Redirecionando..." : isSignedIn ? "Assinar agora" : "Criar conta e assinar"}
+            </button>
+            {isLoaded && !isSignedIn && (
+              <button
+                onClick={() => router.push("/entrar")}
+                style={{ width:"100%", marginTop:".75rem", padding:".8rem", borderRadius:50, background:"transparent", border:"1px solid rgba(245,200,0,.3)", color:"var(--yellow)", fontWeight:600, fontSize:".85rem", cursor:"pointer" }}
+              >
+                Já tenho conta — entrar
+              </button>
+            )}
+            <p style={{ marginTop:"1rem", fontSize:".72rem", color:"rgba(255,255,255,.35)" }}>Pagamento seguro via Stripe · Cancele quando quiser</p>
+          </div>
+          <p style={{ marginTop:"1.5rem", fontSize:".85rem", color:"rgba(255,255,255,.4)" }}>
+            Quer só experimentar? <a href="/app" style={{ color:"var(--yellow)", textDecoration:"none", fontWeight:600 }}>Comece grátis</a> com 5 mensagens por dia.
+          </p>
         </div>
       </section>
 
