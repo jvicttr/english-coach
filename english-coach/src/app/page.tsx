@@ -37,110 +37,6 @@ const FAQS = [
   { q: "Em quanto tempo verei resultados?", a: "Depende do seu objetivo, mas a maioria dos alunos relata progresso perceptível já nas primeiras semanas. Consistência é a chave — quem estuda regularmente evolui muito rápido." },
 ];
 
-const MENSAL = [
-  { freq: "1x por semana", aulas: "4 aulas/mês",  soAula: "R$ 259,90", coach: "R$ 58,20", total: "R$ 318,10/mês" },
-  { freq: "2x por semana", aulas: "8 aulas/mês",  soAula: "R$ 359,90", coach: "R$ 58,20", total: "R$ 418,10/mês" },
-  { freq: "3x por semana", aulas: "12 aulas/mês", soAula: "R$ 459,90", coach: "R$ 58,20", total: "R$ 518,10/mês" },
-];
-
-const SEMESTRAL = [
-  { freq: "1x por semana", aulas: "4 aulas/mês",  parcela: "R$ 200,00", coach: "R$ 58,20", total: "6x de R$ 258,20" },
-  { freq: "2x por semana", aulas: "8 aulas/mês",  parcela: "R$ 300,00", coach: "R$ 58,20", total: "6x de R$ 358,20" },
-  { freq: "3x por semana", aulas: "12 aulas/mês", parcela: "R$ 400,00", coach: "R$ 58,20", total: "6x de R$ 458,20" },
-];
-
-const WPP_PLANOS = "https://wa.me/5561995691219?text=Ol%C3%A1%20JV!%20Vi%20os%20planos%20de%20aula%20%2B%20Coach%20IA%20no%20site%20e%20quero%20saber%20mais%20%F0%9F%91%8B";
-
-function PlanosToggle() {
-  const [tab, setTab] = useState<"mensal" | "semestral">("mensal");
-  const planos = tab === "mensal" ? MENSAL : SEMESTRAL;
-
-  const blur: React.CSSProperties = { filter: "blur(6px)", userSelect: "none", pointerEvents: "none" };
-
-  return (
-    <div>
-      {/* Toggle */}
-      <div style={{ display: "flex", justifyContent: "center", gap: ".5rem", margin: "2.5rem 0 2rem" }}>
-        {(["mensal", "semestral"] as const).map((t) => (
-          <button
-            key={t}
-            onClick={() => setTab(t)}
-            style={{
-              padding: ".55rem 1.6rem", borderRadius: "50px", fontWeight: 700, fontSize: ".9rem",
-              cursor: "pointer", border: "none", fontFamily: "'Inter', sans-serif",
-              background: tab === t ? "var(--yellow)" : "var(--dark2)",
-              color: tab === t ? "var(--black)" : "var(--gray)",
-              transition: "background .2s, color .2s",
-            }}
-          >
-            {t === "mensal" ? "Mensal" : "Semestral"}
-            {t === "semestral" && <span style={{ marginLeft: ".4rem", fontSize: ".72rem", background: tab === "semestral" ? "rgba(0,0,0,.18)" : "rgba(245,200,0,.2)", color: tab === "semestral" ? "var(--black)" : "var(--yellow)", padding: "2px 7px", borderRadius: "50px" }}>-22%</span>}
-          </button>
-        ))}
-      </div>
-
-      {/* Cards */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "1.2rem", maxWidth: 960, margin: "0 auto" }}>
-        {planos.map((p, i) => (
-          <div
-            key={i}
-            className="why-card"
-            style={{ position: "relative", border: i === 1 ? "2px solid var(--yellow)" : undefined }}
-          >
-            {i === 1 && (
-              <div style={{ position: "absolute", top: "-13px", left: "50%", transform: "translateX(-50%)", background: "var(--yellow)", color: "var(--black)", fontSize: ".72rem", fontWeight: 800, padding: ".25rem .9rem", borderRadius: "50px", whiteSpace: "nowrap" }}>
-                MAIS POPULAR
-              </div>
-            )}
-
-            {/* Frequência — visível */}
-            <div style={{ marginBottom: "1.2rem" }}>
-              <div style={{ fontSize: ".8rem", fontWeight: 700, color: "var(--yellow)", textTransform: "uppercase" as const, letterSpacing: ".5px", marginBottom: ".4rem" }}>{p.freq}</div>
-              <div style={{ fontSize: ".85rem", color: "var(--gray)" }}>{p.aulas}</div>
-            </div>
-
-            {/* Preços — borrados */}
-            <div style={{ display: "flex", flexDirection: "column", gap: ".6rem", marginBottom: "1.4rem", fontSize: ".85rem" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", color: "var(--gray)" }}>
-                <span>Aulas particulares</span>
-                <span style={{ ...blur, color: "var(--white)", fontWeight: 600 }}>{"parcela" in p ? p.parcela : p.soAula}</span>
-              </div>
-              <div style={{ display: "flex", justifyContent: "space-between", color: "var(--gray)" }}>
-                <span>JV IA <span style={{ background: "rgba(245,200,0,.12)", color: "var(--yellow)", fontSize: ".7rem", fontWeight: 700, padding: "1px 7px", borderRadius: "50px" }}>50% OFF</span></span>
-                <span style={{ ...blur, color: "var(--yellow)", fontWeight: 600 }}>{p.coach}/mês</span>
-              </div>
-              <div style={{ borderTop: "1px solid rgba(255,255,255,.07)", paddingTop: ".6rem", display: "flex", justifyContent: "space-between" }}>
-                <span style={{ fontWeight: 700, color: "var(--white)" }}>Total</span>
-                <span style={{ ...blur, fontWeight: 800, color: "var(--yellow)", fontSize: "1rem" }}>{p.total}</span>
-              </div>
-            </div>
-
-            {/* CTA WhatsApp */}
-            <a
-              href={WPP_PLANOS}
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{
-                display: "flex", alignItems: "center", justifyContent: "center", gap: ".5rem",
-                textAlign: "center", padding: ".8rem", borderRadius: "50px", fontWeight: 800, fontSize: ".9rem", textDecoration: "none",
-                background: i === 1 ? "var(--yellow)" : "transparent",
-                color: i === 1 ? "var(--black)" : "var(--yellow)",
-                border: i === 1 ? "none" : "1px solid rgba(245,200,0,.4)",
-              }}
-            >
-              <i className="fab fa-whatsapp" /> Ver preço no WhatsApp
-            </a>
-          </div>
-        ))}
-      </div>
-
-      <p style={{ textAlign: "center", marginTop: "1.5rem", fontSize: ".78rem", color: "var(--gray2)" }}>
-        JV IA com <strong style={{ color: "var(--yellow)" }}>50% de desconto</strong> exclusivo para alunos — fale comigo para saber o valor exato do seu plano
-      </p>
-    </div>
-  );
-}
-
 export default function LandingPage() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
@@ -335,14 +231,6 @@ export default function LandingPage() {
             Saiba mais →
           </a>
         </div>
-      </section>
-
-      {/* PLANOS */}
-      <section className="why" id="planos" style={{ background: "var(--black)" }}>
-        <div className="section-label anim">Planos</div>
-        <h2 className="anim anim-delay-1">Aulas ao vivo + JV IA: <em>combo completo</em></h2>
-        <p className="subtitle anim anim-delay-2">Combine aulas particulares com o JV IA e pratique inglês todos os dias — com 50% de desconto exclusivo no coach.</p>
-        <PlanosToggle />
       </section>
 
       {/* CTA CONTATO */}
