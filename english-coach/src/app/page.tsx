@@ -289,7 +289,7 @@ export default function LandingPage() {
             </div>
           </div>
           <div className="footer-info">
-            📱 (61) 99569-1219 · ✉️ contato@faleinglesjv.com.br<br />
+            <i className="fas fa-phone" /> (61) 99569-1219 · <i className="fas fa-envelope" /> contato@faleinglesjv.com.br<br />
             CNPJ: 46.794.713/0001-75 · © 2026 Fale Inglês JV. Todos os direitos reservados.
           </div>
         </div>
