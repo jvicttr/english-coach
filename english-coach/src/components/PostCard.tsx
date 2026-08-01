@@ -146,8 +146,55 @@ export function ReplyComposer({ postId, user, onDone }: { postId: string; user: 
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const taRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [mentionOpen, setMentionOpen] = useState(false);
+  const [mentionQuery, setMentionQuery] = useState("");
+  const [mentionUsers, setMentionUsers] = useState<Array<{ id: string; name: string; image_url: string | null; handle: string | null }>>([]);
+  const [mentionRect, setMentionRect] = useState<{ top: number; left: number; width: number; height: number } | null>(null);
 
   useEffect(() => { setTimeout(() => taRef.current?.focus(), 80); }, []);
+
+  async function fetchMentionUsers() {
+    if (mentionUsers.length > 0) return;
+    try {
+      const res = await fetch("/api/users");
+      const data = await res.json();
+      setMentionUsers(data.users || []);
+    } catch {}
+  }
+
+  function handleTextChange(e: React.ChangeEvent<HTMLTextAreaElement>) {
+    const val = e.target.value;
+    setText(val);
+    setError("");
+    const cursor = e.target.selectionStart ?? val.length;
+    const match = val.slice(0, cursor).match(/@(\w*)$/);
+    if (match) {
+      setMentionQuery(match[1].toLowerCase());
+      setMentionOpen(true);
+      fetchMentionUsers();
+      const rect = e.target.getBoundingClientRect();
+      setMentionRect({ top: rect.top, left: rect.left, width: rect.width, height: rect.height });
+    } else {
+      setMentionOpen(false);
+      setMentionRect(null);
+    }
+  }
+
+  function insertMention(u: { id: string; name: string; handle: string | null }) {
+    const ta = taRef.current;
+    const cursor = ta?.selectionStart ?? text.length;
+    const before = text.slice(0, cursor);
+    const atIdx = before.lastIndexOf("@");
+    const tag = u.handle ?? u.name.split(" ")[0];
+    const newText = before.slice(0, atIdx) + `@${tag} ` + text.slice(cursor);
+    setText(newText);
+    setMentionOpen(false);
+    setTimeout(() => ta?.focus(), 0);
+  }
+
+  const filteredMentions = mentionUsers
+    .filter(u => u.name.toLowerCase().includes(mentionQuery) || (u.handle ?? "").toLowerCase().includes(mentionQuery))
+    .slice(0, 5);
 
   async function startRec() {
     try {
@@ -254,15 +301,37 @@ export function ReplyComposer({ postId, user, onDone }: { postId: string; user: 
               <button onClick={() => { setImageFile(null); setImagePreview(null); }} style={{ position: "absolute", top: 4, right: 4, background: "#f87171", border: "none", color: "#fff", cursor: "pointer", fontSize: "0.8rem", width: 20, height: 20, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700 }}>✕</button>
             </div>
           ) : (
-            <textarea
-              ref={taRef}
-              value={text}
-              onChange={e => { setText(e.target.value); setError(""); }}
-              placeholder="Reply in English… 🇺🇸"
-              maxLength={280}
-              rows={2}
-              style={{ width: "100%", background: "transparent", border: "none", outline: "none", fontSize: "0.85rem", color: "#fff", resize: "none", fontFamily: "'Inter', sans-serif", lineHeight: 1.5, boxSizing: "border-box", padding: 0 }}
-            />
+            <>
+              <textarea
+                ref={taRef}
+                value={text}
+                onChange={handleTextChange}
+                onBlur={() => setTimeout(() => setMentionOpen(false), 150)}
+                placeholder="Reply in English… 🇺🇸"
+                maxLength={280}
+                rows={2}
+                style={{ width: "100%", background: "transparent", border: "none", outline: "none", fontSize: "0.85rem", color: "#fff", resize: "none", fontFamily: "'Inter', sans-serif", lineHeight: 1.5, boxSizing: "border-box", padding: 0 }}
+              />
+              {mentionOpen && filteredMentions.length > 0 && mentionRect && typeof document !== "undefined" && createPortal(
+                <div style={{ position: "fixed", top: mentionRect.top + mentionRect.height + 4, left: mentionRect.left, width: mentionRect.width, background: "#1a1a1a", border: "1px solid #2a2a2a", borderRadius: 10, overflow: "hidden", zIndex: 99999, boxShadow: "0 4px 16px rgba(0,0,0,0.5)" }}>
+                  {filteredMentions.map(u => (
+                    <button key={u.id} onMouseDown={e => { e.preventDefault(); insertMention(u); }} style={{ display: "flex", alignItems: "center", gap: 8, width: "100%", padding: "8px 12px", background: "none", border: "none", color: "#fff", cursor: "pointer", textAlign: "left", fontSize: "0.85rem" }}
+                      onMouseEnter={e => (e.currentTarget.style.background = "#252525")}
+                      onMouseLeave={e => (e.currentTarget.style.background = "none")}
+                    >
+                      <div style={{ width: 28, height: 28, borderRadius: "50%", background: "#333", overflow: "hidden", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.75rem" }}>
+                        {u.image_url ? <img src={u.image_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : (u.name[0] ?? "?").toUpperCase()}
+                      </div>
+                      <div>
+                        <div style={{ fontWeight: 700, fontSize: "0.82rem" }}>{u.name}</div>
+                        {u.handle && <div style={{ fontSize: "0.72rem", color: "#888" }}>@{u.handle}</div>}
+                      </div>
+                    </button>
+                  ))}
+                </div>,
+                document.body
+              )}
+            </>
           )}
           {showEmoji && (
             <div style={{ display: "flex", flexWrap: "wrap", gap: 3, background: "#0d0d0d", borderRadius: 8, padding: "6px 8px", marginBottom: 6 }}>
@@ -452,7 +521,7 @@ function TrailStepResultEmbed({ data }: { data: TrailStepResultData }) {
   );
 }
 
-function RepostEmbed({ data }: { data: { original_post_id?: string; original_user_id: string; original_display_name: string; original_avatar_url: string | null; original_content: string; original_image_url?: string | null; original_created_at: string } }) {
+function RepostEmbed({ data }: { data: { original_post_id?: string; original_user_id: string; original_display_name: string; original_avatar_url: string | null; original_content: string; original_image_url?: string | null; original_created_at: string; original_transcript?: string | null } }) {
   function goToOriginal() {
     if (!data.original_post_id) return;
     const el = document.getElementById(`post-${data.original_post_id}`);
@@ -481,6 +550,11 @@ function RepostEmbed({ data }: { data: { original_post_id?: string; original_use
       </div>
       {data.original_content?.trim() && <p style={{ fontSize: "0.82rem", color: "#ddd", margin: "0 0 6px 0", lineHeight: 1.5, whiteSpace: "pre-wrap" }}>{renderWithMentions(data.original_content)}</p>}
       {data.original_image_url && <img src={data.original_image_url} alt="" style={{ width: "100%", maxHeight: 200, objectFit: "contain", borderRadius: 8, background: "#0d0d0d" }} />}
+      {data.original_transcript && (
+        <div onClick={e => e.stopPropagation()}>
+          <StructuredContent transcript={data.original_transcript} />
+        </div>
+      )}
     </div>
   );
 }
@@ -721,6 +795,7 @@ export function PostCard({ post, myId, user, router, isReply = false, onReaction
         original_image_url: post.image_url,
         original_audio_url: post.audio_url,
         original_created_at: post.created_at,
+        original_transcript: post.transcript,
       });
       await fetch("/api/community/posts", {
         method: "POST", headers: { "Content-Type": "application/json" },
